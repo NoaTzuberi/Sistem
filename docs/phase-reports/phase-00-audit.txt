@@ -1,0 +1,403 @@
+SISTEM — PHASE 0 REPORT: AUDIT & PROJECT MEMORY
+Date: 2026-09-29 · Revision 3 (after second owner review — all open questions answered)
+Scope: read-only audit of the ATLAS fork against docs/PRD.md. No code changes.
+
+================================================================================
+1. SUMMARY
+================================================================================
+- Mapped the ATLAS codebase: client (React 19 + Vite + TS), server (Express 5 +
+  Mongoose, 12 feature modules), auth, onboarding, exercise library + import pipeline.
+- Classified every major module as KEEP / ADAPT / REMOVE (revised with the owner's
+  decisions — see §3 and §4).
+- Traced every onboarding dependency so Phase 1 removals cannot break onboarding (§5).
+- Checked the Kaggle exercise dataset license (§8) — not verifiable; owner decided
+  to treat it as not cleared and keep facts only.
+- Proposed the monorepo structure (approved; move happens in Phase 2) (§9).
+- Replaced the ATLAS CLAUDE.md with a Sistem CLAUDE.md (stays gitignored). Updated
+  docs/BUILD_PLAN.md with the decisions, a new Phase 2c and a Backlog section.
+- Restored docs/Onboarding.txt and docs/THIRD_PARTY_CONTENT.md to the working tree
+  (they had been deleted before this phase; the owner wants both kept).
+
+Baseline health (as found, before any change):
+- server: `npx tsc --noEmit` clean; `npm test` = 7 files, 54 tests passing.
+- client: `npm run lint` (oxlint) exit 0 with 4 warnings.
+- client: `npm run build` currently FAILS at `tsc -b` with 2 errors:
+    src/features/exercises/pages/ExerciseLibraryPage/ExerciseLibraryPage.tsx(6): unused 'GlassCard'
+    src/hooks/usePrevious.ts(5): TS2554 Expected 1 arguments, but got 0
+  (Phase 1 fixes these.)
+
+================================================================================
+2. OWNER DECISIONS (2026-09-29)
+================================================================================
+- Onboarding is fully protected: everything in the onboarding flow is KEEP.
+  Keep docs/Onboarding.txt. (Revision 2 also protected features/activities; that was
+  reversed in revision 3 — see below.)
+- CLAUDE.md stays gitignored; never committed, never in suggested commits.
+- Onboarding answers -> separate OnboardingResponse collection (PRD §10);
+  migration from User.profile planned for Phase 3.
+- Onboarding answers saved to the server after every step.
+- Onboarding videos stay local/gitignored in Phase 1; compressed and hosted on
+  Cloudinary in the new Phase 2c. Cloudinary also stores Daily Pump and progress
+  photos (Phases 9–10).
+- AI chat deleted (client widget + server aiCoach). Knowledge (RAG) kept for Phase 12.
+- All RepDB content removed incl. media. Exercises text-only for MVP. Kaggle license
+  to be reported before relying on it.
+- No trainee exercise library screen; exercise components kept; library UI moves
+  into the dashboard plan builder.
+- One coach for now; trainees get the coach id automatically on sign-up (config/seed);
+  model stays multi-coach-ready.
+- Week starts Sunday; default time zone Asia/Jerusalem, stored per user.
+- Fresh database — no ATLAS user migration.
+- Password reset not in MVP -> Backlog.
+- Monorepo approved: Phase 1 removals in the current structure, move in Phase 2.
+- Delete ATLAS docs 01–11 + screenshots; keep Onboarding.txt; keep
+  THIRD_PARTY_CONTENT.md and update it to what remains (done in Phase 1, when the
+  RepDB code is actually removed — until then the file still describes real code).
+
+Second review (answers to Q-A1 … Q-A6):
+- A1 Kaggle: license not confirmed -> treated as NOT cleared for commercial use.
+  Keep only factual fields (name, body part, equipment, level). Drop descriptions and
+  any other copied text (tips, instructions, ratings such as "Average"). Record the
+  decision and reason in THIRD_PARTY_CONTENT.md (Phase 1). Backlog: "Write original
+  exercise descriptions — AI draft reviewed and approved by the coach." Until then the
+  coach's per-exercise notes in the plan are the instructions trainees see.
+- A2 features/activities (client + server) is REMOVED — it is a separate activity
+  logger, not onboarding. Onboarding's own activity list stays untouched.
+  DashboardCalendar and AchievementBadges are ADAPT: decoupled from activities in
+  Phase 1, reworked in Phase 7 (Home weekly view) and Phase 11 (achievements).
+- A3 DashboardPage stays as the post-onboarding screen until Phase 4.
+- A4 ATLAS logo replaced by a single Logo component with a "SISTEM" text
+  placeholder; ATLAS logo files deleted (Phase 1).
+- A5 Onboarding copy: only "ATLAS" -> "Sistem"; new wording comes from the owner.
+- A6 Delete only RepDB data, import, route and attribution; keep Exercise schema
+  fields (contentTier, gallery).
+
+================================================================================
+3. CODEBASE MAP
+================================================================================
+CLIENT (client/)
+- Entry: main.tsx -> AppProviders (BrowserRouter + AuthProvider) -> App -> AppRouter.
+- Global styles: styles/variables.css (ATLAS dark navy/orange tokens), globals.css,
+  typography.css, animations.css. App.css and index.css exist but are NOT imported.
+- Routes: public /, /showcase, /login, /register, /forgot-password, /reset-password.
+  Guarded (ProtectedRoute): /dashboard, /profile, /workouts, /workouts/new,
+  /workouts/:id, /workouts/:id/edit, /workouts/session/:id,
+  /workouts/session/:id/summary, /onboarding, /onboarding/:step, /exercises,
+  /exercises/:slug. Global <CoachWidget/> (AI chat) on every route.
+- Layout: PageLayout = Navbar + main + Footer (used by auth pages, ProtectedRoute
+  gate, Landing, Showcase). AppShell = Sidebar + main (all logged-in pages incl. onboarding).
+- Shared components: Autocomplete, Badge, Button, GlassCard, Input, Modal, Select, Spinner.
+- Services: axios apiClient (Bearer token from localStorage 'atlas_auth_token';
+  401 -> window.location.href = /login), one service per domain.
+- Dependencies: react, react-dom, react-router-dom, axios, gsap, @tabler/icons-react,
+  three, @react-three/fiber, @react-three/drei (three/fiber/drei unused).
+
+SERVER (server/)
+- /api: health, auth, users, exercises, workout-templates, workouts,
+  personal-records, progress, activities, dashboard, coach (AI chat).
+  Static /media/repdb from gitignored server/data/repdb-preview.
+- Auth: register, login, me, forgot/reset password. JWT {sub}, 7d, bcrypt.
+  requireAuth only, no roles.
+- User: profile{birthDate, height, weight, gender, goals, trainingFrequency,
+  preferredActivities, exercisePreferences, equipment, recovery}, preferences{units},
+  onboardingCompleted. No role/coachId/pushTokens/onboardingCompletedAt/timezone.
+- Onboarding: client wizard (9 steps) keeps answers in React state; one
+  PUT /api/users/profile at the end sets onboardingCompleted=true. No resume.
+- Exercise library: Exercise model + public GET /api/exercises and /:slug.
+  Kaggle CSV import pipeline (importExercises -> normalize -> dedupe -> upsert, report)
+  with tests; RepDB "enhanced" layer on top (16 exercises + images).
+- Workout (session), WorkoutTemplate, PersonalRecord, Progress, Activity, dashboard
+  summary, aiCoach (Gemini agent), knowledge (Voyage embeddings, seed script).
+- Env: PORT, DATABASE_URL, JWT_SECRET, GEMINI_API_KEY, VOYAGE_API_KEY,
+  CLIENT_ORIGIN ('*' default), CLIENT_URL, RESEND_API_KEY, EMAIL_FROM. No .env.example.
+
+================================================================================
+4. KEEP / ADAPT / REMOVE (revised)
+================================================================================
+Legend: KEEP = keep as is (small fixes ok) · ADAPT = keep and change · REMOVE = delete in Phase 1
+"(changed)" marks rows that differ from revision 1.
+
+CLIENT
+| Module | Verdict | Reason |
+|---|---|---|
+| pages/Landing (Hero, Features, HowItWorks, CTA, DashboardPreview, VideoBackground) | REMOVE | Marketing homepage (PRD §1, §11). Not used by onboarding. |
+| pages/Showcase | REMOVE | Design demo page. Not used by onboarding. |
+| layout/Navbar, layout/Footer | REMOVE | Website-only nav. Only reached via PageLayout — PageLayout must be adapted first (§5). |
+| layout/PageLayout | ADAPT | Wraps Register (the entry to onboarding) and ProtectedRoute. Strip Navbar/Footer, keep as a minimal auth layout. |
+| layout/Section, Container | KEEP (changed) | Direct onboarding dependencies. |
+| layout/AppShell + Sidebar | ADAPT | Onboarding renders inside AppShell. Phase 1: fix links to removed routes, keep working. Phase 2: becomes mobile tab shell. |
+| components/common/* (Button, Input, Select, Autocomplete, Spinner, Modal, Badge) | KEEP/ADAPT | Button, Input, Select, Autocomplete, Spinner are onboarding dependencies. Restyle only (Phase 2/2b). |
+| components/common/GlassCard | ADAPT | Onboarding card wrapper. Keep; visual decided by the owner later. |
+| styles/* tokens | ADAPT | Sistem palette in Phase 2. |
+| App.css, index.css | REMOVE | Not imported anywhere. |
+| hooks/useScrollReveal | REMOVE | Landing only. |
+| hooks/usePageEnter, useStaggerReveal | ADAPT | usePageEnter is used by AppShell (onboarding). Keep, tone down later. |
+| hooks/useDebouncedValue, usePrevious | KEEP | Utilities (fix usePrevious TS error). |
+| features/auth + services/auth + apiClient | KEEP | Reuse JWT auth. Adapt redirects/fields later. |
+| features/auth/components/AuthCard | KEEP | Switches to the new Logo component (Phase 1). |
+| features/auth ForgotPassword, ResetPassword pages | KEEP (changed) | Password reset is Backlog, not deleted. Hide from MVP navigation later; keep code. |
+| features/auth/ProtectedRoute | ADAPT | Becomes PRD §4.2 guard (Phase 2). Guards onboarding. |
+| features/onboarding (all steps, components, data, page) | KEEP (changed) | Protected by owner decision. Behaviour changes only in Phases 3/4/2b/2c. Phase 1 only swaps the word "ATLAS" -> "Sistem" in its copy. |
+| onboarding videos (assets/onBoardingvid) + activityVideoMap + StepVideoBackground | KEEP (changed) | Untouched in Phase 1; moved to Cloudinary in Phase 2c. |
+| services/onboarding, services/users | KEEP (changed) | Onboarding save and edit-mode profile load. |
+| features/activities + services/activities | REMOVE (rev 3) | Separate activity logger, not onboarding (A2). Onboarding's own list in features/onboarding/data/activities.ts stays. |
+| features/exercises components (ExerciseCard, ExerciseMedia, FilterChip, filters, pagination, icons, types) + services/exercises | KEEP | Needed by workout session and the dashboard plan builder. |
+| features/exercises pages (ExerciseLibraryPage, ExerciseDetailPage) | ADAPT (changed) | Remove the trainee routes /exercises, /exercises/:slug in Phase 1; keep the page code as source for the dashboard plan builder (Phase 6). Remove RepDB attribution block. Descriptions/instructions will be empty (A1). |
+| features/workouts ActiveWorkoutPage, WorkoutSummaryPage, WorkoutsPage | ADAPT | Bases for PRD §5.2–§5.4. |
+| features/workouts WorkoutBuilderPage, ExercisePicker, WorkoutExerciseRow, steps | ADAPT | Move to dashboard plan builder. |
+| features/workouts WorkoutTemplateDetailPage, FeaturedWorkoutCard, GoalCard, TemplateCard, data/recommendation.ts | REMOVE | Trainee template self-selection. Not used by onboarding (verified). |
+| features/workouts MuscleCoverageMap, CategoryBadge, bodyRegions | ADAPT | Possible plan-builder use. |
+| features/dashboard DashboardPage | ADAPT (changed) | Post-onboarding screen until the Phase 4 waiting screen (A3). |
+| features/dashboard DashboardCalendar, AchievementBadges | ADAPT (changed) | Phase 1: decouple from features/activities (drop activity fetch, "Log Activity" modal and activity entries / activity badges) so they build. Reworked in Phase 7 and Phase 11 (A2). AchievementBadges is also used by ProfilePage. |
+| features/dashboard StreakRing, WeekDotStrip, MilestoneBar, ProgressRing, MonthCalendar | ADAPT | Material for Home/achievements. |
+| features/profile | ADAPT | Onboarding edit mode (/onboarding/:step) starts from and returns to Profile. |
+| features/progress + services/progress, services/personalRecords | ADAPT/KEEP | Body metrics, PRs. |
+| features/coach (CoachWidget AI chat) + services/coach + <CoachWidget/> in AppRouter | REMOVE | Owner decision. |
+| services/api/mediaUrl.ts | ADAPT | Comment/behaviour references /media/repdb; keep helper for Cloudinary URLs. |
+| assets/Logo/ATLASlogo3.png | REMOVE (rev 3) | Replaced first by a new components/common/Logo ("SISTEM" text placeholder) in AuthCard and Sidebar, then deleted (A4). Navbar/Footer also import it but are deleted anyway. |
+| components/common/Logo (new) | ADD in Phase 1 | Single place for the brand mark; the owner swaps in the real logo later. |
+| assets HeroVid, homePage/, screenshots/, hero.png, react.svg, vite.svg, atlas_human_model.glb, profile-bg-wide-dimmed.jpg | REMOVE | Website / unused. |
+| assets core/full-body/lower-body/pull/push/upper-body.jpg | ADAPT | Category imagery, owner to confirm later. |
+| index.html, public/favicon.svg, icons.svg, vercel.json | ADAPT | Sistem name/icon; vercel.json moves to dashboard in Phase 2. |
+| deps three, @react-three/fiber, @react-three/drei, @types/three | REMOVE | Unused. |
+
+SERVER
+| Module | Verdict | Reason |
+|---|---|---|
+| features/health | KEEP | |
+| features/auth (incl. forgot/reset + email.service) | KEEP | Reset flow kept for Backlog. Adapt role/public user in Phase 3. |
+| middleware/auth.middleware | ADAPT | + requireRole, ownership helpers (Phase 3). |
+| features/users | ADAPT | Onboarding endpoint — self-contained (only depends on its own model/validation/constants + requireAuth). Role, coachId, timezone, OnboardingResponse in Phase 3. |
+| features/activities + /api/activities | REMOVE (rev 3) | Separate activity logger (A2). No other server feature imports it now that aiCoach goes. Onboarding's list in users.constants.ts stays. |
+| features/exercises model, routes, search, tests | KEEP | Schema fields kept (A6). |
+| Kaggle import pipeline (importExercises, normalizeExercises) | ADAPT (rev 3) | Facts only (A1): today Desc is copied into instructions.execution and the whole CSV row (incl. Desc, Rating, RatingDesc) is stored in source.raw. Phase 1 stops both, keeps only Title, BodyPart, Equipment, Level, Type; updates normalize/dedup tests. |
+| RepDB: scripts/importRepDbPreview.ts, `import:repdb` npm script, REPDB_* mappings in exercise.constants.ts, RawRepDb/NormalizedRepDb types, __tests__/repdbNormalize.test.ts, 'enhanced' attribution in exercise.service.ts, /media/repdb route in app.ts, server/data/repdb-preview/ | REMOVE (changed: full list) | Non-commercial license. contentTier/gallery schema fields are kept (A6). |
+| features/workouts | ADAPT | -> WorkoutLog. |
+| features/workoutTemplates | ADAPT | -> Plan workouts / coach Templates. Generic seed script removal can wait until Phase 3. |
+| features/personalRecords | KEEP | |
+| features/progress | ADAPT | -> BodyMetric. |
+| features/dashboard | ADAPT | -> trainee Home summary; weekly streak. |
+| features/aiCoach (agent, tools, memory, conversations, migration script) + /api/coach | REMOVE | Owner decision. |
+| features/knowledge | KEEP | Only consumer today is aiCoach/tools.ts; after deletion it is dormant until Phase 12. |
+| dep @google/genai | REMOVE (changed) | Only used by aiCoach; unused after deletion (Phase 1 removes unused packages). Phase 12 chooses the LLM provider again. |
+| config/env, database, server.ts | ADAPT | Sistem naming, CORS for Capacitor, .env.example. |
+
+REPO
+| Item | Verdict | Reason |
+|---|---|---|
+| docs/01–11, docs/screenshots/ | REMOVE | Owner decision (already deleted in working tree). |
+| docs/Onboarding.txt | KEEP (changed) | Restored. It is ATLAS-worded onboarding copy (the source of the current steps). |
+| docs/THIRD_PARTY_CONTENT.md | KEEP + update in Phase 1 (changed) | Restored; Phase 1 rewrites it: RepDB removed, Kaggle facts-only with the decision and reason (A1). |
+| CLAUDE.md, AGENTS.md, .agents/, .claude/ | KEEP local, gitignored | Owner decision. |
+| README.md | ADAPT | Rewrite for Sistem. |
+
+================================================================================
+5. ONBOARDING DEPENDENCIES ON ANYTHING MARKED REMOVE
+================================================================================
+Traced from OnboardingPage.tsx, all 9 steps, onboarding components/data,
+services/onboarding, services/users, and the server users feature.
+
+Direct imports of the onboarding feature (client):
+  AppShell -> Sidebar, usePageEnter · Container · Section · GlassCard · Button ·
+  Spinner · Input · Select · Autocomplete · OnboardingProgress · SelectableChip ·
+  StepVideoBackground · data/{options, activities, exerciseBank, stepVideoMap,
+  activityVideoMap -> assets/onBoardingvid/*.mp4} · services/onboarding ·
+  services/users (getMyProfile) · AuthContext · app/config/routes.
+  => None of these are REMOVE after this revision.
+
+Onboarding does NOT import: Navbar, Footer, Landing, Showcase, recommendation.ts,
+workout templates, dashboard components, features/activities, CoachWidget, RepDB,
+three.js. Server onboarding (features/users) imports only its own files + requireAuth.
+
+Dependencies that WOULD break onboarding if Phase 1 is careless (keep or replace):
+ D1. Sidebar (inside AppShell, around every onboarding screen) imports
+     assets/Logo/ATLASlogo3.png and links to ROUTES.HOME ("/", the Landing page),
+     ROUTES.DASHBOARD, ROUTES.EXERCISES; logout navigates to ROUTES.HOME.
+     -> Swap the logo for the new Logo component before deleting the file (A4).
+        Point "/" at the login redirect. Remove the Exercises nav link with the route.
+ D2. Onboarding completion navigates to ROUTES.DASHBOARD (DashboardPage).
+     -> DashboardPage stays until Phase 4 (A3). It renders DashboardCalendar and
+        AchievementBadges, so those must be decoupled from activities, not deleted (A2).
+ D3. Register (the only way into onboarding for a new user) and ProtectedRoute
+     (which guards /onboarding) render inside PageLayout -> Navbar + Footer, both
+     importing the ATLAS logo and linking to "/".
+     -> Adapt PageLayout to a minimal layout without Navbar/Footer BEFORE deleting them.
+ D4. AuthCard (Register/Login) imports the ATLAS logo. -> Logo component (A4).
+ D5. Onboarding edit mode (/onboarding/:step) is opened from ProfilePage and returns
+     to ROUTES.PROFILE. -> ProfilePage stays (ADAPT). ProfilePage also renders
+     AchievementBadges -> covered by the decoupling in D2.
+ D6. Onboarding user-facing copy says "ATLAS" in 6 places (WelcomeStep,
+     FrequencyStep, ExercisePreferencesStep, RecoveryStep x2, ReviewStep).
+     -> Replace only the word with "Sistem" (A5).
+ D7. activityVideoMap statically imports gitignored videos: a fresh clone cannot
+     build. Accepted until Phase 2c by owner decision; Phase 1 must not touch it.
+     (Note for the owner's own machine: builds only work where the videos exist.)
+
+================================================================================
+6. GAPS — PRD MVP items that do not exist yet
+================================================================================
+Auth/roles: no role, requireRole, coach seed, coachId assignment, ownership checks.
+Onboarding/routing: no onboardingStatus/CompletedAt, per-step save/resume,
+  OnboardingResponse collection, server-driven routing state, 48h waiting screen.
+Plans: no Plan model/CRUD/publish/duplicate; no per-week workout status.
+Coach: no dashboard app, no coach mode, no trainees list/detail.
+Notifications: no Capacitor, push, token storage, Notification inbox, event bus.
+Trainee app: no mobile shell/tabs, no Home; WorkoutLog not linked to plan;
+  offline session persistence and rest timer to verify in Phase 8.
+Media: no Cloudinary integration; Workout.photo is a plain string.
+Time: no timezone per user; week start not defined in code.
+Design: no Sistem tokens.
+Tooling: no .env.example, no server linter, no client tests, no shared types.
+
+================================================================================
+7. RISKS
+================================================================================
+R1. Removing Navbar/Footer before adapting PageLayout breaks Register/Login and the
+    onboarding guard (§5 D3).
+R2. Removing DashboardPage breaks the end of onboarding (§5 D2).
+R3. apiClient 401 -> window.location reload; wrong inside Capacitor.
+R4. Onboarding answers only saved at the end (fixed in Phase 3/4).
+R5. Onboarding videos (~1 GB) statically imported and gitignored — fresh clones and
+    CI cannot build until Phase 2c.
+R6. Client build currently fails (2 TS errors).
+R7. Kaggle dataset license/provenance not verified (§8). Mitigated by the facts-only
+    decision; trainees see no exercise instructions except coach notes until the
+    Backlog item "original exercise descriptions" is done.
+R8. "coach" naming clash disappears once aiCoach/CoachWidget are deleted.
+R9. CORS '*' default; insecure dev JWT default; public registration must never create
+    coaches.
+R10. Monorepo move changes paths/scripts/deploy roots (Phase 2).
+R11. Removing contentTier 'enhanced' carelessly could break exercise search sorting
+     (exercise.service sorts enhanced first) — handle in Phase 1 with tests.
+
+================================================================================
+8. KAGGLE DATASET LICENSE CHECK
+================================================================================
+Dataset: "Gym Exercise Dataset" — niharika41298/gym-exercise-data
+URL: https://www.kaggle.com/datasets/niharika41298/gym-exercise-data
+File used: server/data/raw/gym-exercise-data/megaGymDataset.csv (2,918 rows;
+  columns Title, Desc, Type, BodyPart, Equipment, Level, Rating, RatingDesc).
+
+Findings:
+- Web search result metadata for the dataset page reports the license as
+  CC0-1.0 (Public Domain Dedication).
+- I could NOT confirm this on the Kaggle page itself (it is behind a bot check), and
+  the mirrors checked (Gigasheet, Baselight) state no license. Treat CC0 as
+  "reported, not verified".
+- The repo records no license: normalizeExercises.ts writes `license: null` for
+  every Kaggle record.
+- Provenance is not stated anywhere I could access. The columns Rating/RatingDesc
+  (862 rows rated "Average") and the editorial style of the descriptions suggest the
+  data was collected from an existing exercise website. This is an inference, not
+  verified. A CC0 dedication by the uploader only covers rights the uploader had.
+- Exposure: 1,368 rows have free-text descriptions (Desc) — the part most likely
+  to be someone's copyrighted text. Names, body part, equipment, level are facts
+  and low-risk.
+
+What the importer copies today (normalizeExercises.ts):
+- Title -> name, BodyPart -> primaryMuscles/category, Equipment -> equipment,
+  Level -> difficulty, Type -> movementType (required; rows without it are skipped).
+- Desc -> instructions.execution (copied text).
+- The entire CSV row, incl. Desc, Rating, RatingDesc -> source.raw (copied text + ratings).
+
+OWNER DECISION (A1): license not confirmed -> dataset treated as NOT cleared for
+commercial use. Keep only factual fields: name, body part, equipment, level.
+Drop Desc and any other copied text or ratings.
+
+Note on Type: Type (e.g. "Strength", "Cardio") is a one-word factual category like
+Level, and the schema requires movementType. The Phase 1 plan keeps it for that
+reason. Owner confirmed: keep Type / movementType as is.
+
+Phase 1 actions: stop mapping Desc, store only factual fields in source.raw, never
+import Rating/RatingDesc, update tests, set source.license to "unconfirmed — facts
+only", rewrite THIRD_PARTY_CONTENT.md with the decision and reason.
+Backlog: original exercise descriptions (AI draft, coach-approved). Until then the
+coach's per-exercise notes are the instructions trainees see.
+
+================================================================================
+9. REPO STRUCTURE (approved — move happens in Phase 2)
+================================================================================
+npm workspaces monorepo:
+  apps/mobile      current client/: React + Vite + Capacitor; trainee + coach shells by role
+  apps/dashboard   new React + Vite coach web app (desktop-first)
+  apps/server      current server/, same internal structure
+  packages/types       @sistem/types — API contract types shared by all three
+  packages/api-client  @sistem/api-client — axios factory (token getter + onUnauthorized
+                       injected per app) + typed calls per domain
+  packages/tokens      @sistem/tokens — tokens.css (PRD §12)
+  packages/ui          optional, later
+Server imports only packages/types. Order: Phase 1 removals in the current
+structure, then the move in Phase 2.
+
+================================================================================
+10. OPEN QUESTIONS
+================================================================================
+None. All questions are answered (§2). Resolved notes:
+N1. Kaggle "Type" -> movementType: owner confirmed keep as is.
+N2. PRD updated by owner request: §5.2 now shows name, media if available, target
+    sets × reps × weight, rest, and the coach's notes as the instructions; new PRD
+    §14 Backlog lists original exercise descriptions.
+
+================================================================================
+11. FILES CHANGED IN PHASE 0
+================================================================================
+Added:
+- docs/phase-reports/phase-00-audit.txt
+Modified:
+- docs/BUILD_PLAN.md — "Owner decisions" section, Phase 1 rules, new Phase 2c,
+  Phase 3/4/7/8/9/12 adjustments, Backlog section
+- CLAUDE.md — Sistem instructions + owner decisions (gitignored, not committed)
+- docs/PRD.md — §5.2 exercise display (coach notes as instructions), new §14 Backlog
+  (edited at the owner's explicit request)
+Restored (from HEAD, unchanged content):
+- docs/Onboarding.txt
+- docs/THIRD_PARTY_CONTENT.md
+Deleted by this phase: none.
+
+================================================================================
+12. DEPENDENCIES
+================================================================================
+Added: none. Removed: none.
+Planned for Phase 1: remove three, @react-three/fiber, @react-three/drei,
+@types/three (client), @google/genai (server, after aiCoach deletion).
+No new dependency is needed for the Logo component.
+
+================================================================================
+13. HOW TO TEST
+================================================================================
+No code changed. Baseline reproduction:
+- cd server && npx tsc --noEmit && npm test     -> clean, 54 tests pass
+- cd client && npm run lint                     -> exit 0, 4 warnings
+- cd client && npm run build                    -> fails with the 2 TS errors in §1
+- git status docs/                               -> Onboarding.txt and THIRD_PARTY_CONTENT.md
+                                                    no longer shown as deleted
+
+================================================================================
+14. KNOWN ISSUES / TODOs
+================================================================================
+- Client build fails (2 TS errors) — Phase 1.
+- All open questions answered (§10).
+- THIRD_PARTY_CONTENT.md still describes RepDB — rewritten in Phase 1.
+- If the owner's dev database already holds Kaggle descriptions, they stay there until
+  the database is reset / re-imported (fresh DB per decision) — Phase 1 documents this.
+- Not verified: ActiveWorkoutPage offline persistence and rest timer (Phase 8).
+
+================================================================================
+15. SUGGESTED COMMITS
+================================================================================
+(CLAUDE.md is gitignored and intentionally excluded.)
+
+1) docs: remove ATLAS product docs and screenshots
+   Files (deletions): docs/01_PRD.md, docs/02_PRODUCT_SPECIFICATION.md,
+     docs/03_TECHNICAL_ARCHITECTURE.md, docs/04_DATABASE_SCHEMA.md,
+     docs/05_AI_AGENT_SPEC.md, docs/06_RAG_KNOWLEDGE_PLAN.md,
+     docs/07_DEVELOPMENT_ROADMAP.md, docs/08_TASK_BACKLOG.md,
+     docs/09_CLAUDE_CODE_RULES.md, docs/10_PROJECT_SETUP_GUIDE.md,
+     docs/11_DEPLOYMENT_GUIDE.md, docs/screenshots/coach.png,
+     docs/screenshots/create-workout.png, docs/screenshots/dashboard.png,
+     docs/screenshots/exercises.png, docs/screenshots/landing.png,
+     docs/screenshots/profile.png, docs/screenshots/workouts.png
+   (docs/Onboarding.txt and docs/THIRD_PARTY_CONTENT.md are NOT included — kept.)
+
+2) docs: add Sistem PRD, build plan and phase 0 audit report
+   Files: docs/PRD.md, docs/BUILD_PLAN.md, docs/phase-reports/phase-00-audit.txt
