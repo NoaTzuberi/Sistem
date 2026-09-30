@@ -19,7 +19,7 @@ export interface WorkoutTemplateDocument {
   duration?: number;
   category?: WorkoutCategory;
   exercises: WorkoutTemplateExerciseEntry[];
-  /** null = ATLAS ready-made template; otherwise the owning user's id. */
+  /** null = Sistem ready-made template; otherwise the owning user's id. */
   createdBy: Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;

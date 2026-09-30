@@ -78,7 +78,7 @@ export function FrequencyStep({ formState, updateFormState }: FrequencyStepProps
       />
 
       <p className="text-caption frequency-note">
-        ATLAS can adapt recommendations when your available time changes.
+        Sistem can adapt recommendations when your available time changes.
       </p>
     </div>
   );

@@ -3,7 +3,6 @@ import { AppShell } from '../../../../components/layout/AppShell/AppShell';
 import { Container } from '../../../../components/layout/Container/Container';
 import { Section } from '../../../../components/layout/Section/Section';
 import { Spinner } from '../../../../components/common/Spinner/Spinner';
-import { GlassCard } from '../../../../components/common/GlassCard/GlassCard';
 import { ExerciseFilters } from '../../components/ExerciseFilters/ExerciseFilters';
 import { ExerciseCard } from '../../components/ExerciseCard/ExerciseCard';
 import { ExercisePagination } from '../../components/ExercisePagination/ExercisePagination';

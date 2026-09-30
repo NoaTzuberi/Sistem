@@ -26,7 +26,7 @@ export function RecoveryStep({ formState, updateFormState }: RecoveryStepProps) 
 
   return (
     <div className="onboarding-step recovery-step">
-      <h1>Anything ATLAS should consider?</h1>
+      <h1>Anything Sistem should consider?</h1>
       <p className="text-body">Optional.</p>
 
       <div className="recovery-flags">
@@ -49,7 +49,7 @@ export function RecoveryStep({ formState, updateFormState }: RecoveryStepProps) 
       )}
 
       <p className="text-caption recovery-note">
-        ATLAS can adapt training suggestions, but it does not diagnose medical conditions.
+        Sistem can adapt training suggestions, but it does not diagnose medical conditions.
       </p>
     </div>
   );

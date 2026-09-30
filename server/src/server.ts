@@ -11,7 +11,7 @@ async function startServer(): Promise<void> {
   }
 
   app.listen(config.port, () => {
-    console.log(`ATLAS server running on port ${config.port}`);
+    console.log(`Sistem server running on port ${config.port}`);
   });
 }
 

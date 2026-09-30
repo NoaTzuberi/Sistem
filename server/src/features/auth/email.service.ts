@@ -12,11 +12,11 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string): Prom
   await resend.emails.send({
     from: config.emailFrom,
     to,
-    subject: 'Reset your ATLAS password',
+    subject: 'Reset your Sistem password',
     html: `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a1a;">
         <h2 style="margin-bottom: 8px;">Reset your password</h2>
-        <p>We received a request to reset the password for your ATLAS account. Click the button below to choose a new one — this link expires in 1 hour.</p>
+        <p>We received a request to reset the password for your Sistem account. Click the button below to choose a new one — this link expires in 1 hour.</p>
         <p style="margin: 24px 0;">
           <a href="${resetUrl}" style="background-color: #ff7a1a; color: #0b1929; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">Reset Password</a>
         </p>

@@ -30,7 +30,7 @@ export function ExercisePreferencesStep({
 
   return (
     <div className="onboarding-step exercise-preferences-step">
-      <h1>What would you like ATLAS to prioritize?</h1>
+      <h1>What would you like Sistem to prioritize?</h1>
       <p className="text-body">All answers are optional — you can edit this later.</p>
 
       <Autocomplete

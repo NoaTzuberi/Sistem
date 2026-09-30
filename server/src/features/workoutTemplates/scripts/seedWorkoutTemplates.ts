@@ -1,5 +1,5 @@
 /**
- * Seeds ATLAS's ready-made workout templates (createdBy: null) — 10 per
+ * Seeds Sistem's ready-made workout templates (createdBy: null) — 10 per
  * category (upper_body/push/pull/legs/full_body/core), each with 6-8
  * exercises drawn from a curated real-exercise pool per category. Manual/dev
  * script only — not run automatically at startup, same pattern as
