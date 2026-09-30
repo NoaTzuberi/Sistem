@@ -1,0 +1,389 @@
+SISTEM — PHASE 1 REPORT: STRIP THE WEBSITE
+Date: 2026-09-29
+Scope: docs/BUILD_PLAN.md Phase 1, executed in the order approved by the owner
+(Steps 1–6). Nothing from Phase 2 was started.
+
+================================================================================
+1. SUMMARY
+================================================================================
+- Removed the ATLAS website: Landing, Showcase, Navbar, Footer, scroll-reveal hook,
+  unused CSS and website-only assets. "/" now redirects to /login.
+- Before deleting anything, adapted the onboarding dependencies: PageLayout is now a
+  minimal layout (no Navbar/Footer), and AuthCard and Sidebar use a new single Logo
+  component ("SISTEM" text placeholder). Sidebar has no Exercises link, and logout goes to /login.
+- Removed the AI chat (client CoachWidget + server aiCoach + /api/coach + @google/genai)
+  and the separate activity logger (client + server + /api/activities). Decoupled
+  DashboardCalendar, MonthCalendar and AchievementBadges from activities.
+- Removed all RepDB content. The Kaggle import keeps facts only (name, body part,
+  equipment, level, type). Rewrote THIRD_PARTY_CONTENT.md with the decision.
+- Renamed ATLAS -> Sistem (onboarding copy "ATLAS" word only, package names, title,
+  server log, email sender and reset email, token key). Fixed the 2 client TS errors.
+  Removed three.js packages. Added .env.example files and a short Sistem README.
+- Final state: client build OK, client lint OK (0 errors, 3 pre-existing warnings),
+  server build OK, server tests 45/45 passing.
+
+================================================================================
+2. FILES CHANGED
+================================================================================
+ADDED
+- client/src/components/common/Logo/Logo.tsx
+- client/src/components/common/Logo/Logo.css
+- client/.env.example
+- server/.env.example
+- docs/phase-reports/phase-01-strip-website.txt
+
+MODIFIED — client
+- client/index.html                         <title>Sistem</title>
+- client/package.json, client/package-lock.json   name sistem-mobile; three.js deps removed
+- client/src/app/config/routes.ts           SHOWCASE removed; exercise paths kept (see §5)
+- client/src/app/router/AppRouter.tsx       "/" -> /login redirect; Landing, Showcase,
+                                            /exercises, /exercises/:slug routes and
+                                            <CoachWidget/> removed
+- client/src/components/layout/PageLayout/PageLayout.tsx   minimal layout, no Navbar/Footer
+- client/src/components/layout/Sidebar/Sidebar.tsx, Sidebar.css, icons.tsx
+                                            Logo component, Exercises link + PulseIcon
+                                            removed, brand -> /dashboard, logout -> /login
+- client/src/features/auth/components/AuthCard/AuthCard.tsx, AuthCard.css   Logo component
+- client/src/features/dashboard/components/DashboardCalendar/DashboardCalendar.tsx, .css
+                                            workouts only; no activity fetch, "Log Activity"
+                                            modal or activity entries
+- client/src/features/dashboard/components/MonthCalendar/MonthCalendar.tsx, .css
+                                            activity cell tint/icon removed (it also imported
+                                            features/activities — not listed in the plan, found
+                                            while decoupling)
+- client/src/features/dashboard/components/AchievementBadges/AchievementBadges.tsx
+                                            "Multi-Sport" and "All-Rounder" (activity-type)
+                                            badges and the activity fetch removed
+- client/src/features/dashboard/components/icons.tsx   unused CompassIcon removed
+- client/src/features/exercises/pages/ExerciseDetailPage/ExerciseDetailPage.tsx, .css
+                                            RepDB attribution block removed
+- client/src/features/exercises/pages/ExerciseLibraryPage/ExerciseLibraryPage.tsx
+                                            TS fix: unused GlassCard import
+- client/src/features/exercises/types.ts    attribution / ExerciseAttribution removed
+- client/src/features/onboarding/steps/{WelcomeStep,FrequencyStep,ExercisePreferencesStep,
+  RecoveryStep,ReviewStep}/*.tsx            "ATLAS" -> "Sistem" only (7 occurrences in
+                                            5 files: RecoveryStep x2, ReviewStep x2)
+- client/src/hooks/usePrevious.ts           TS fix: useRef<T | undefined>(undefined)
+- client/src/services/api/mediaUrl.ts       comment no longer mentions RepDB
+- client/src/services/auth/tokenStorage.ts  key 'sistem_auth_token'
+- client/src/styles/globals.css             global .logo rule moved into Logo.css
+
+MODIFIED — server
+- server/package.json, server/package-lock.json   name sistem-server; @google/genai
+                                            removed; import:repdb script removed
+- server/src/app.ts                         /api/activities, /api/coach, /media/repdb removed
+- server/src/config/env.ts                  geminiApiKey removed; EMAIL_FROM default "Sistem"
+- server/src/server.ts                      "Sistem server running…"
+- server/src/features/auth/email.service.ts "ATLAS" -> "Sistem" in the reset email
+- server/src/features/exercises/exercise.constants.ts   REPDB_* mappings removed; comments
+- server/src/features/exercises/exercise.types.ts       RawRepDb/NormalizedRepDb types
+                                            removed; RawExerciseRow = factual columns only
+- server/src/features/exercises/exercise.service.ts     RepDB attribution removed;
+                                            contentTier sort kept (see §4)
+- server/src/features/exercises/scripts/normalizeExercises.ts   facts only (see §4)
+- server/src/features/exercises/scripts/importExercises.ts      no Desc-based dedup
+                                            preference; report counts bodyPart, not description
+- server/src/features/exercises/__tests__/normalize.test.ts     facts-only test added
+- server/src/features/exercises/__tests__/dedup.test.ts         "prefers instructions"
+                                            test replaced by "keeps first record"
+- server/src/features/exercises/__tests__/publicApi.test.ts     2 sorting tests (standard
+                                            tier only) + no-attribution assertion
+- server/src/features/workoutTemplates/workoutTemplate.types.ts,
+  scripts/seedWorkoutTemplates.ts           comment "ATLAS" -> "Sistem"
+
+MODIFIED — docs
+- README.md                                 replaced with a short Sistem README
+- docs/THIRD_PARTY_CONTENT.md               rewritten: Kaggle facts-only decision + reason,
+                                            RepDB removed, react-body-highlighter kept
+- docs/BUILD_PLAN.md                        Global rule 2/3: reports end with ready-to-paste
+                                            git commands (owner request after review)
+- CLAUDE.md (gitignored, not committed)     same rule added
+
+DELETED — client (tracked)
+- client/src/pages/Landing/ (Landing + Hero, Features, HowItWorks, CTA,
+  DashboardPreview, VideoBackground — .tsx + .css each)
+- client/src/pages/Showcase/Showcase.tsx, Showcase.css
+- client/src/components/layout/Navbar/Navbar.tsx, Navbar.css
+- client/src/components/layout/Footer/Footer.tsx, Footer.css
+- client/src/hooks/useScrollReveal.ts
+- client/src/App.css, client/src/index.css
+- client/src/assets/HeroVid/hero_final_v3.mp4
+- client/src/assets/homePage/dashboard.png, profile.png
+- client/src/assets/screenshots/dashboard-1.png, dashboard-2.png
+- client/src/assets/hero.png, react.svg, vite.svg, atlas_human_model.glb
+- client/src/assets/Logo/ATLASlogo3.png (and the folder)
+- client/public/icons.svg  (Vite template social-icon sprite, unused — not in the
+  pre-approved list but covered by "unused assets")
+- client/src/features/coach/ (CoachWidget.tsx/.css, data/suggestedQuestions.ts, types.ts)
+- client/src/services/coach/coachService.ts
+- client/src/features/activities/ (data/activityOptions.ts, types.ts)
+- client/src/services/activities/activityService.ts
+
+DELETED — server (tracked)
+- server/src/features/aiCoach/ (agent.service, aiCoach.controller/routes/validation,
+  aiMemory.constants/model/service/types, conversation.model/types, tools,
+  scripts/migrateConversationsToSessions)
+- server/src/features/activities/ (activity.constants/controller/model/routes/
+  service/types/validation)
+- server/src/features/exercises/scripts/importRepDbPreview.ts
+- server/src/features/exercises/__tests__/repdbNormalize.test.ts
+
+DELETED — untracked / gitignored (local only, not visible in git)
+- server/data/repdb-preview/ (53 MB RepDB pack)
+- client/public/Images/, client/public/Videos/, server/scripts/ (empty folders)
+
+NOT TOUCHED (by decision)
+- client/src/assets/onBoardingvid/ (Phase 2c), onboarding activity lists
+  (features/onboarding/data/activities.ts, server users.constants.ts), features/knowledge,
+  Exercise schema fields (contentTier, media.gallery, …), CLAUDE.md.
+
+================================================================================
+3. DEPENDENCIES
+================================================================================
+Added: none.
+Removed:
+- client: three, @react-three/fiber, @react-three/drei, @types/three
+- server: @google/genai
+
+================================================================================
+4. NOTES ON THE EXERCISE CHANGES
+================================================================================
+Kaggle facts only (normalizeExercises.ts):
+- instructions.* are always empty; Desc is never read. RawExerciseRow no longer
+  declares Desc/Rating/RatingDesc, so no code can read them by mistake.
+- source.raw = { Title, Type, BodyPart, Equipment, Level } only.
+- source.license = "unconfirmed — facts only" (exported constant KAGGLE_LICENSE).
+- The dedup "prefer the variant with a description" rule no longer applies
+  (none has one); the first record of a duplicate group is kept.
+Search sorting: the contentTier sort (enhanced first, then name) is unchanged because
+the field is kept. With no 'enhanced' records it falls through to name order. Two
+new tests cover this for the list path and for search score ties.
+
+================================================================================
+5. HOW TO TEST
+================================================================================
+Automated (all run and passing at the end of this phase):
+- cd client && npm run build      -> OK (tsc -b + vite build, 0 errors)
+- cd client && npm run lint       -> exit 0, 0 errors, 3 warnings (all pre-existing:
+                                     2x only-export-components, 1x exhaustive-deps)
+- cd server && npm run build      -> OK
+- cd server && npm test           -> 6 files, 45 tests passed
+  (baseline 54 − 12 removed RepDB tests + 3 new tests)
+
+Smoke test run (server): booted dist/server.js on a spare port:
+  GET /api/health 200 · GET /api/exercises 200 · /api/coach 404 ·
+  /api/activities 404 · /media/repdb/* 404.
+
+Manual checks (not run in a browser in this phase — please verify):
+1. cd server && npm run dev ; cd client && npm run dev
+2. Open http://localhost:5173/ -> lands on /login (no homepage, no navbar/footer).
+3. Login/Register show "SISTEM" text instead of the ATLAS logo.
+4. Register a new user -> onboarding runs end to end; copy says "Sistem"
+   (Welcome, Frequency, Exercise preferences, Recovery x2, Review) -> finishes on
+   /dashboard.
+5. Dashboard: calendar shows workouts only (no "Log Activity" button); achievement
+   badges render without Multi-Sport / All-Rounder.
+6. Sidebar: Dashboard / Workouts / Profile only; brand "SISTEM" links to /dashboard;
+   Log Out -> /login.
+7. Profile -> edit an onboarding step -> saves and returns to Profile.
+8. /exercises and /showcase show nothing (no route). No AI chat bubble anywhere.
+9. You will be logged out once (token key renamed to sistem_auth_token).
+
+Kaggle re-import (only if your dev DB has old descriptions): drop the `exercises`
+collection, then `cd server && npm run import:exercises` (see THIRD_PARTY_CONTENT.md).
+
+================================================================================
+6. KNOWN ISSUES / TODOs
+================================================================================
+- server/.env: one line has no KEY= and looks like a bare token value. It is ignored
+  by dotenv but probably a mis-paste. Please check it and rotate that secret if it is
+  real. GEMINI_API_KEY in server/.env is now unused and can be removed. I did not
+  edit your .env files.
+- Deviation (small): ROUTES.EXERCISES, EXERCISE_DETAIL_PATH and exercisePath() were
+  kept (with a comment) because the kept ExerciseCard / ExerciseDetailPage code
+  imports them. They are not routed. Clean up when that code moves to the dashboard
+  (Phase 6).
+- Workout template pieces (WorkoutTemplateDetailPage + /workouts/:id route,
+  FeaturedWorkoutCard, GoalCard, TemplateCard, data/recommendation.ts) are left in
+  place by owner decision, to be handled in Phase 6/7.
+- Sidebar tablet rail (769–1024px): the brand is hidden there now (text logo does
+  not fit a 72px rail). The shell is replaced in Phase 2 anyway.
+- AuthCard page (.auth-page min-height 80vh) and all styles still use the ATLAS dark
+  palette. Tokens change in Phase 2 and scale in Phase 2b.
+- client/public/favicon.svg is still the Vite logo, waiting for a Sistem icon from the owner.
+- client/README.md is still the Vite template readme (untouched).
+- Password-reset email still has inline ATLAS colors (email HTML needs inline
+  styles). It is Backlog anyway.
+- R5 unchanged: the client builds only where the onboarding videos exist locally
+  (the build output includes ~1 GB of video) until Phase 2c.
+- Lint warnings (3) are pre-existing and were left as they are.
+
+================================================================================
+7. SUGGESTED COMMITS
+================================================================================
+(CLAUDE.md is gitignored and intentionally excluded. Some files carry changes from
+more than one step, so each is assigned to one commit, noted where relevant.
+Deleted files: use `git add -A <path>` or `git rm`.)
+
+1) refactor: replace website layout with minimal app layout and Logo placeholder
+   Files:
+   - client/src/components/common/Logo/Logo.tsx, Logo.css (new)
+   - client/src/features/auth/components/AuthCard/AuthCard.tsx, AuthCard.css
+   - client/src/components/layout/Sidebar/Sidebar.tsx, Sidebar.css, icons.tsx
+   - client/src/components/layout/PageLayout/PageLayout.tsx
+   - client/src/styles/globals.css
+   - client/src/app/config/routes.ts
+   - client/src/app/router/AppRouter.tsx (also drops <CoachWidget/>)
+   - deleted: client/src/pages/ (Landing, Showcase), client/src/components/layout/Navbar/,
+     client/src/components/layout/Footer/, client/src/hooks/useScrollReveal.ts,
+     client/src/App.css, client/src/index.css, client/public/icons.svg,
+     client/src/assets/HeroVid/, client/src/assets/homePage/, client/src/assets/screenshots/,
+     client/src/assets/hero.png, client/src/assets/react.svg, client/src/assets/vite.svg,
+     client/src/assets/atlas_human_model.glb, client/src/assets/Logo/
+
+2) refactor: remove AI chat (CoachWidget and aiCoach)
+   Files:
+   - deleted: client/src/features/coach/, client/src/services/coach/,
+     server/src/features/aiCoach/
+   - server/src/app.ts (also removes /api/activities and /media/repdb)
+   - server/src/config/env.ts (also renames the EMAIL_FROM default)
+   - server/package.json, server/package-lock.json (@google/genai removed; also drops
+     the import:repdb script and renames the package)
+
+3) refactor: remove activity logger and decouple dashboard calendar and badges
+   Files:
+   - deleted: client/src/features/activities/, client/src/services/activities/,
+     server/src/features/activities/
+   - client/src/features/dashboard/components/DashboardCalendar/DashboardCalendar.tsx, .css
+   - client/src/features/dashboard/components/MonthCalendar/MonthCalendar.tsx, .css
+   - client/src/features/dashboard/components/AchievementBadges/AchievementBadges.tsx
+   - client/src/features/dashboard/components/icons.tsx
+
+4) refactor: remove RepDB content and import only factual Kaggle fields
+   Files:
+   - deleted: server/src/features/exercises/scripts/importRepDbPreview.ts,
+     server/src/features/exercises/__tests__/repdbNormalize.test.ts
+   - server/src/features/exercises/exercise.constants.ts
+   - server/src/features/exercises/exercise.types.ts
+   - server/src/features/exercises/exercise.service.ts
+   - server/src/features/exercises/scripts/normalizeExercises.ts
+   - server/src/features/exercises/scripts/importExercises.ts
+   - server/src/features/exercises/__tests__/normalize.test.ts
+   - server/src/features/exercises/__tests__/dedup.test.ts
+   - server/src/features/exercises/__tests__/publicApi.test.ts
+   - client/src/features/exercises/pages/ExerciseDetailPage/ExerciseDetailPage.tsx, .css
+   - client/src/features/exercises/types.ts
+   - client/src/services/api/mediaUrl.ts
+   - docs/THIRD_PARTY_CONTENT.md
+
+5) chore: rename ATLAS to Sistem, drop three.js, fix TS errors, add env examples
+   Files:
+   - client/index.html
+   - client/package.json, client/package-lock.json
+   - client/src/services/auth/tokenStorage.ts
+   - client/src/features/onboarding/steps/WelcomeStep/WelcomeStep.tsx
+   - client/src/features/onboarding/steps/FrequencyStep/FrequencyStep.tsx
+   - client/src/features/onboarding/steps/ExercisePreferencesStep/ExercisePreferencesStep.tsx
+   - client/src/features/onboarding/steps/RecoveryStep/RecoveryStep.tsx
+   - client/src/features/onboarding/steps/ReviewStep/ReviewStep.tsx
+   - client/src/hooks/usePrevious.ts
+   - client/src/features/exercises/pages/ExerciseLibraryPage/ExerciseLibraryPage.tsx
+   - server/src/server.ts
+   - server/src/features/auth/email.service.ts
+   - server/src/features/workoutTemplates/workoutTemplate.types.ts
+   - server/src/features/workoutTemplates/scripts/seedWorkoutTemplates.ts
+   - client/.env.example, server/.env.example (new)
+
+6) docs: add Sistem README, phase 1 report and ready-to-paste commit rule
+   Files:
+   - README.md
+   - docs/BUILD_PLAN.md
+   - docs/phase-reports/phase-01-strip-website.txt
+
+================================================================================
+8. READY-TO-PASTE GIT COMMANDS
+================================================================================
+Run from the repo root, in this order. Claude Code did not run them. `git add -A`
+also stages the deletions. CLAUDE.md is gitignored and not included. Checked:
+together these cover all 117 changed/added/deleted paths, each exactly once.
+
+# 1) refactor: website layout -> minimal layout + Logo
+git add -A -- \
+  client/src/components/common/Logo \
+  client/src/features/auth/components/AuthCard/AuthCard.tsx \
+  client/src/features/auth/components/AuthCard/AuthCard.css \
+  client/src/components/layout/Sidebar \
+  client/src/components/layout/PageLayout/PageLayout.tsx \
+  client/src/styles/globals.css \
+  client/src/app/config/routes.ts \
+  client/src/app/router/AppRouter.tsx \
+  client/src/pages \
+  client/src/components/layout/Navbar \
+  client/src/components/layout/Footer \
+  client/src/hooks/useScrollReveal.ts \
+  client/src/App.css \
+  client/src/index.css \
+  client/public/icons.svg \
+  client/src/assets/HeroVid \
+  client/src/assets/homePage \
+  client/src/assets/screenshots \
+  client/src/assets/hero.png \
+  client/src/assets/react.svg \
+  client/src/assets/vite.svg \
+  client/src/assets/atlas_human_model.glb \
+  client/src/assets/Logo
+git commit -m "refactor: replace website layout with minimal app layout and Logo placeholder"
+
+# 2) refactor: remove AI chat
+git add -A -- \
+  client/src/features/coach \
+  client/src/services/coach \
+  server/src/features/aiCoach \
+  server/src/app.ts \
+  server/src/config/env.ts \
+  server/package.json \
+  server/package-lock.json
+git commit -m "refactor: remove AI chat (CoachWidget and aiCoach)"
+
+# 3) refactor: remove activity logger
+git add -A -- \
+  client/src/features/activities \
+  client/src/services/activities \
+  server/src/features/activities \
+  client/src/features/dashboard/components/DashboardCalendar \
+  client/src/features/dashboard/components/MonthCalendar \
+  client/src/features/dashboard/components/AchievementBadges/AchievementBadges.tsx \
+  client/src/features/dashboard/components/icons.tsx
+git commit -m "refactor: remove activity logger and decouple dashboard calendar and badges"
+
+# 4) refactor: RepDB removal + Kaggle facts only
+git add -A -- \
+  server/src/features/exercises \
+  client/src/features/exercises/pages/ExerciseDetailPage \
+  client/src/features/exercises/types.ts \
+  client/src/services/api/mediaUrl.ts \
+  docs/THIRD_PARTY_CONTENT.md
+git commit -m "refactor: remove RepDB content and import only factual Kaggle fields"
+
+# 5) chore: rename, deps, TS fixes, env examples
+git add -A -- \
+  client/index.html \
+  client/package.json \
+  client/package-lock.json \
+  client/src/services/auth/tokenStorage.ts \
+  client/src/features/onboarding/steps \
+  client/src/hooks/usePrevious.ts \
+  client/src/features/exercises/pages/ExerciseLibraryPage/ExerciseLibraryPage.tsx \
+  server/src/server.ts \
+  server/src/features/auth/email.service.ts \
+  server/src/features/workoutTemplates \
+  client/.env.example \
+  server/.env.example
+git commit -m "chore: rename ATLAS to Sistem, drop three.js, fix TS errors, add env examples"
+
+# 6) docs
+git add -A -- \
+  README.md \
+  docs/BUILD_PLAN.md \
+  docs/phase-reports/phase-01-strip-website.txt
+git commit -m "docs: add Sistem README, phase 1 report and ready-to-paste commit rule"

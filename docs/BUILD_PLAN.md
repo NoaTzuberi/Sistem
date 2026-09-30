@@ -14,7 +14,8 @@ How to use this file:
    - **How to test** — exact commands and manual checks
    - **Known issues / TODOs** — anything left open or needing a decision
    - **Suggested commits** — one or more commits in Conventional Commits format (`feat:`, `fix:`, `chore:`, `refactor:`, `docs:`), each with the list of files it should include, so the owner can commit them in logical chunks
-3. After writing the report, stop and print the report path and the suggested commits in chat.
+   - The report **ends with the suggested commits as ready-to-paste git commands** (`git add -A -- <paths>` + `git commit -m "..."`, in order, one block per commit). Claude Code never runs them. CLAUDE.md is never included.
+3. After writing the report, stop and print the report path and the suggested commits (as the ready-to-paste git commands) in chat.
 4. `docs/PRD.md` is the source of truth. If something conflicts with it, ask before deviating.
 5. **Mobile-first always** (mobile app only; the coach dashboard is desktop-first): design for 360–430px wide screens first, touch targets at least 44×44px, no hover-only interactions, no scroll-driven website effects. Every new screen must look right on a small phone (iPhone SE size) and a large one (Pro Max size).
 
