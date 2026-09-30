@@ -48,11 +48,12 @@ export function WorkoutSummaryPage() {
       { opacity: 0, y: 14, scale: 0.94 },
       { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: 'back.out(1.6)', stagger: 0.12 },
     );
+    // A short pulse instead of the ATLAS glow (no hard-coded colors in motion code).
     timeline.fromTo(
       badges,
-      { boxShadow: '0 0 0 0 rgba(217, 162, 76, 0)' },
+      { scale: 1 },
       {
-        boxShadow: '0 0 0 6px rgba(217, 162, 76, 0.28)',
+        scale: 1.08,
         duration: 0.35,
         ease: 'power2.out',
         stagger: 0.12,

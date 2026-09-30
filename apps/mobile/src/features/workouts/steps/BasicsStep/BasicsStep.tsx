@@ -29,6 +29,7 @@ export function BasicsStep({
         <Input
           label="Duration (min)"
           type="number"
+          inputMode="numeric"
           min={1}
           value={duration}
           onChange={(event: ChangeEvent<HTMLInputElement>) => onDurationChange(event.target.value)}

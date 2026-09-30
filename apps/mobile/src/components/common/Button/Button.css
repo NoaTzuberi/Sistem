@@ -3,21 +3,27 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
+  min-height: var(--touch-target-min);
   padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-none);
   border: 1px solid transparent;
-  font-family: var(--font-body);
-  font-size: var(--font-size-sm);
+  font-family: var(--font-family-body);
+  font-size: var(--text-base);
   font-weight: var(--font-weight-semibold);
   line-height: var(--line-height-tight);
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
   transition:
     background-color var(--transition-fast) var(--ease-standard),
     border-color var(--transition-fast) var(--ease-standard),
     color var(--transition-fast) var(--ease-standard),
-    box-shadow var(--transition-fast) var(--ease-standard),
     transform var(--transition-fast) var(--ease-standard),
     opacity var(--transition-fast) var(--ease-standard);
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .btn:disabled {
@@ -25,45 +31,44 @@
   opacity: var(--opacity-disabled);
 }
 
+/* ATLAS bracket pattern (PRD §12 "sharp cuts" basis): side brackets, and corner
+   segments that close in on press (and on hover where a mouse exists). */
 .btn-primary {
-  width: 9.9em;
-  height: 3.2em;
   position: relative;
+  /* ATLAS used a fixed 9.9em width; padding keeps that feel but lets the button
+     shrink in tight phone rows (e.g. Back · Cancel · Save). */
+  min-height: max(var(--touch-target-min), 3.2em);
+  padding-inline: var(--space-5);
   border: none;
-  border-left: 3px ridge #ff9966;
-  border-right: 3px ridge #ff9966;
-  border-radius: 0.3em;
-  outline: none;
+  border-left: 3px solid var(--color-primary);
+  border-right: 3px solid var(--color-primary);
   background-color: transparent;
-  color: white;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
+  color: var(--color-primary-deep);
+  font-weight: var(--font-weight-bold);
 
   background-image:
-    linear-gradient(#ff9966, #ff9966),
-    linear-gradient(#ff9966, #ff9966),
-    linear-gradient(#ff9966, #ff9966),
-    linear-gradient(#ff9966, #ff9966);
-
+    linear-gradient(var(--color-primary), var(--color-primary)),
+    linear-gradient(var(--color-primary), var(--color-primary)),
+    linear-gradient(var(--color-primary), var(--color-primary)),
+    linear-gradient(var(--color-primary), var(--color-primary));
   background-repeat: no-repeat;
-
   background-position:
     left top,
     right top,
     left bottom,
     right bottom;
-
   background-size:
     0 3px,
     0 3px,
     0 3px,
     0 3px;
-
-  transition: background-size 0.4s ease;
+  transition:
+    background-size var(--transition-slow) ease,
+    transform var(--transition-fast) var(--ease-standard),
+    opacity var(--transition-fast) var(--ease-standard);
 }
 
-.btn-primary:hover {
+.btn-primary:active:not(:disabled) {
   background-size:
     54% 3px,
     54% 3px,
@@ -71,45 +76,69 @@
     54% 3px;
 }
 
+@media (hover: hover) {
+  .btn-primary:hover:not(:disabled) {
+    background-size:
+      54% 3px,
+      54% 3px,
+      54% 3px,
+      54% 3px;
+  }
+}
+
 .btn-primary .btn-label {
   position: relative;
   z-index: 1;
 }
 
-
 .btn-secondary {
   background-color: transparent;
-  border-color: var(--color-border-strong);
-  color: var(--color-neutral-100);
+  border-color: var(--color-border);
+  color: var(--color-text);
 }
 
-.btn-secondary:hover:not(:disabled) {
-  border-color: var(--color-orange-500);
-  color: var(--color-orange-500);
+.btn-secondary:active:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary-deep);
 }
 
 .btn-ghost {
   background-color: transparent;
   border-color: transparent;
-  color: var(--color-neutral-300);
+  color: var(--color-text-muted);
 }
 
-.btn-ghost:hover:not(:disabled) {
-  background-color: var(--surface-glass-bg);
-  color: var(--color-neutral-100);
+.btn-ghost:active:not(:disabled) {
+  background-color: var(--color-surface);
+  color: var(--color-text);
 }
 
-/* Same danger tint recipe as Badge's danger variant — the app's one
-   established destructive-action color language. */
 .btn-danger {
   background-color: var(--color-error-soft);
-  border-color: rgba(232, 93, 93, 0.35);
-  color: var(--color-error-hover);
+  border-color: var(--color-error);
+  color: var(--color-error);
 }
 
-.btn-danger:hover:not(:disabled) {
-  background-color: var(--color-error-strong);
-  border-color: rgba(232, 93, 93, 0.5);
+.btn-danger:active:not(:disabled) {
+  background-color: var(--color-error);
+  color: var(--color-on-primary);
+}
+
+@media (hover: hover) {
+  .btn-secondary:hover:not(:disabled) {
+    border-color: var(--color-primary);
+    color: var(--color-primary-deep);
+  }
+
+  .btn-ghost:hover:not(:disabled) {
+    background-color: var(--color-surface);
+    color: var(--color-text);
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    background-color: var(--color-error);
+    color: var(--color-on-primary);
+  }
 }
 
 .btn-icon,

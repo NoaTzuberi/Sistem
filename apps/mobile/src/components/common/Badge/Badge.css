@@ -3,68 +3,35 @@
   align-items: center;
   gap: var(--space-1);
   padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-xs);
+  border-radius: var(--radius-none);
+  border: 1px solid transparent;
+  font-size: var(--text-xs);
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-tight);
   text-transform: capitalize;
-  transition:
-    background-color var(--transition-fast) var(--ease-standard),
-    border-color var(--transition-fast) var(--ease-standard);
 }
 
 .badge-default {
-  background-color: var(--surface-glass-bg);
-  border: 1px solid var(--legacy-color-border);
-  color: var(--color-neutral-300);
+  background-color: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
 }
 
-.badge-accent {
-  background-color: var(--color-orange-soft);
-  border: 1px solid rgba(255, 122, 26, 0.35);
-  color: var(--color-orange-hover);
-}
-
-.badge-accent:hover {
-  background-color: var(--color-orange-strong);
-  border-color: rgba(255, 122, 26, 0.5);
-}
-
-.badge-achievement {
-  background-color: var(--color-amber-soft);
-  border: 1px solid transparent;
-  color: var(--color-amber-500);
-}
-
+/* Achievement and success share the accent: no extra success color (owner decision). */
+.badge-accent,
+.badge-achievement,
 .badge-success {
-  background-color: var(--color-teal-soft);
-  border: 1px solid rgba(47, 191, 143, 0.35);
-  color: var(--color-teal-hover);
-}
-
-.badge-success:hover {
-  background-color: var(--color-teal-strong);
-  border-color: rgba(47, 191, 143, 0.5);
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary-deep);
 }
 
 .badge-danger {
   background-color: var(--color-error-soft);
-  border: 1px solid rgba(232, 93, 93, 0.35);
-  color: var(--color-error-hover);
-}
-
-.badge-danger:hover {
-  background-color: var(--color-error-strong);
-  border-color: rgba(232, 93, 93, 0.5);
+  color: var(--color-error);
 }
 
 .badge-neutral {
-  background-color: var(--surface-glass-bg-strong);
-  border: 1px solid var(--color-border-strong);
-  color: var(--color-neutral-100);
-}
-
-.badge-neutral:hover {
-  background-color: rgba(255, 255, 255, 0.16);
-  border-color: rgba(245, 246, 248, 0.4);
+  background-color: var(--color-bg);
+  border-color: var(--color-border);
+  color: var(--color-text);
 }

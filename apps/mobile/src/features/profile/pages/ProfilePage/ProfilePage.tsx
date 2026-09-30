@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import profileBannerImage from '../../../../assets/profile-bg-wide-dimmed.jpg';
 import { AppShell } from '../../../../components/layout/AppShell/AppShell';
 import { Container } from '../../../../components/layout/Container/Container';
 import { Section } from '../../../../components/layout/Section/Section';
@@ -191,9 +190,6 @@ export function ProfilePage() {
                 <GlassCard
                   variant="flat"
                   className="profile-header-card"
-                  style={{
-                    backgroundImage: `linear-gradient(to bottom, rgba(10, 12, 16, 0.5) 0%, rgba(10, 12, 16, 0.68) 60%, rgba(10, 12, 16, 0.88) 100%), url(${profileBannerImage})`,
-                  }}
                 >
                   <div className="profile-header-banner">
                     <span className="profile-header-avatar" aria-hidden="true">

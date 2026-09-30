@@ -20,8 +20,15 @@ export function Modal({ isOpen, onClose, title, className, variant = 'default', 
       if (event.key === 'Escape') onClose();
     }
 
+    // The page behind a sheet must not scroll with it.
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;

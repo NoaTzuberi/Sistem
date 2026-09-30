@@ -11,8 +11,8 @@
   justify-content: space-between;
   gap: var(--space-4);
   padding: var(--space-3) var(--space-5);
-  background: var(--background-secondary);
-  border-bottom: 1px solid rgba(255, 122, 26, 0.2);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-primary-soft);
 }
 
 .active-workout-header-info {
@@ -23,9 +23,9 @@
 }
 
 .active-workout-title {
-  font-family: var(--font-body);
+  font-family: var(--font-family-body);
   font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-base);
+  font-size: var(--text-base);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -33,10 +33,10 @@
 
 .active-workout-progress {
   font-family: var(--font-mono, monospace);
-  font-size: 10px;
+  font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: var(--color-neutral-500);
+  color: var(--color-text-muted);
 }
 
 .active-workout-header-controls {
@@ -48,39 +48,39 @@
 
 .active-workout-timer {
   font-family: var(--font-mono, monospace);
-  font-size: var(--font-size-xl);
-  color: var(--color-orange-500);
+  font-size: var(--text-xl);
+  color: var(--color-primary-deep);
   font-variant-numeric: tabular-nums;
 }
 
 .active-workout-header-button {
-  width: 32px;
-  height: 32px;
-  border-radius: 4px;
-  border: 1px solid rgba(245, 246, 248, 0.14);
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  border-radius: var(--radius-none);
+  border: 1px solid var(--color-border);
   background: transparent;
-  color: var(--color-neutral-300);
+  color: var(--color-text-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: var(--text-xs);
   transition:
     background-color var(--transition-fast) var(--ease-standard),
     border-color var(--transition-fast) var(--ease-standard);
 }
 
-.active-workout-header-button:hover {
-  background-color: rgba(245, 246, 248, 0.06);
+.active-workout-header-button:active {
+  background-color: var(--color-border);
 }
 
 .active-workout-header-button-danger {
-  border-color: rgba(232, 93, 93, 0.3);
-  color: var(--color-error-hover, #e88888);
+  border-color: var(--color-error);
+  color: var(--color-error);
 }
 
-.active-workout-header-button-danger:hover {
-  background-color: rgba(232, 93, 93, 0.1);
+.active-workout-header-button-danger:active {
+  background-color: var(--color-error-soft);
 }
 
 .active-workout-page .container {
@@ -94,7 +94,7 @@
 }
 
 .active-workout-error {
-  color: var(--color-error-500);
+  color: var(--color-error);
 }
 
 .active-workout-exercises {
@@ -111,23 +111,23 @@
   gap: var(--space-3);
   width: 100%;
   padding: var(--space-3);
-  border-radius: 4px;
-  border: 1px solid rgba(245, 246, 248, 0.08);
-  background: var(--background-secondary);
-  color: var(--color-neutral-300);
+  border-radius: var(--radius-none);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
   cursor: pointer;
   text-align: left;
   transition: border-color var(--transition-fast) var(--ease-standard);
 }
 
-.active-workout-exercise-collapsed:hover {
-  border-color: rgba(245, 246, 248, 0.18);
+.active-workout-exercise-collapsed:active {
+  border-color: var(--color-border);
 }
 
 .active-workout-exercise-collapsed-name {
   flex: 1;
   min-width: 0;
-  font-size: var(--font-size-sm);
+  font-size: var(--text-sm);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -135,39 +135,39 @@
 
 .active-workout-exercise-collapsed-count {
   font-family: var(--font-mono, monospace);
-  font-size: var(--font-size-xs);
-  color: var(--color-neutral-500);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
 }
 
 .active-workout-exercise-tag {
   flex-shrink: 0;
   min-width: 34px;
   padding: 2px 6px;
-  border-radius: 2px;
-  border: 1px solid rgba(245, 246, 248, 0.14);
+  border-radius: var(--radius-none);
+  border: 1px solid var(--color-border);
   font-family: var(--font-mono, monospace);
-  font-size: 10px;
+  font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.02em;
   text-align: center;
-  color: var(--color-neutral-500);
+  color: var(--color-text-muted);
 }
 
 .active-workout-exercise-tag-now {
-  border-color: var(--color-orange-500);
-  background-color: rgba(255, 122, 26, 0.1);
-  color: var(--color-orange-500);
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary-deep);
 }
 
 .active-workout-exercise-tag-next {
-  border-color: rgba(245, 246, 248, 0.25);
-  color: var(--color-neutral-300);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
 }
 
 .active-workout-exercise-tag-done {
-  border-color: rgba(47, 191, 143, 0.35);
-  background-color: rgba(47, 191, 143, 0.08);
-  color: var(--color-teal-hover);
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary-deep);
 }
 
 .active-workout-exercise-card {
@@ -175,9 +175,9 @@
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-4);
-  border-radius: 4px;
-  border: 1px solid rgba(255, 122, 26, 0.25);
-  background: var(--background-secondary);
+  border-radius: var(--radius-none);
+  border: 1px solid var(--color-primary-soft);
+  background: var(--color-surface);
 }
 
 .active-workout-exercise-header {
@@ -190,7 +190,7 @@
   width: 56px;
   height: 56px;
   flex-shrink: 0;
-  border-radius: 2px;
+  border-radius: var(--radius-none);
   overflow: hidden;
 }
 
@@ -200,7 +200,7 @@
 }
 
 .active-workout-exercise-name {
-  font-family: var(--font-body);
+  font-family: var(--font-family-body);
   font-weight: var(--font-weight-bold);
 }
 
@@ -217,53 +217,52 @@
   gap: var(--space-2);
   padding: var(--space-1) var(--space-2);
   min-width: 0;
-  border-radius: 4px;
+  border-radius: var(--radius-none);
   transition: background-color var(--transition-fast) var(--ease-standard);
 }
 
 .active-workout-set-row-done {
-  background-color: rgba(255, 122, 26, 0.08);
+  background-color: var(--color-primary-soft);
 }
 
 .active-workout-set-row-header {
-  color: var(--color-neutral-500);
+  color: var(--color-text-muted);
   font-family: var(--font-mono, monospace);
-  font-size: 10px;
+  font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 0 var(--space-2);
 }
 
 .active-workout-set-number {
-  color: var(--color-orange-500);
+  color: var(--color-primary-deep);
   font-family: var(--font-mono, monospace);
   font-weight: var(--font-weight-semibold);
 }
 
 .active-workout-set-input {
   font-family: var(--font-mono, monospace);
-  font-size: var(--font-size-base);
-  color: var(--color-neutral-100);
-  background-color: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(245, 246, 248, 0.1);
-  border-radius: 4px;
+  font-size: var(--text-base);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-none);
   padding: var(--space-2);
   width: 100%;
 }
 
 .active-workout-set-input:focus {
   outline: none;
-  border-color: rgba(255, 122, 26, 0.5);
+  border-color: var(--color-primary);
 }
 
 .active-workout-set-check {
-  width: 32px;
-  height: 32px;
-  min-width: 0;
-  border-radius: 4px;
-  border: 1px solid rgba(245, 246, 248, 0.14);
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  border-radius: var(--radius-none);
+  border: 1px solid var(--color-border);
   background-color: transparent;
-  color: var(--color-neutral-500);
+  color: var(--color-text-muted);
   cursor: pointer;
   font-weight: var(--font-weight-bold);
   transition:
@@ -273,9 +272,9 @@
 }
 
 .active-workout-set-check-done {
-  background-color: var(--color-orange-500);
-  border-color: var(--color-orange-500);
-  color: var(--background-primary);
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-bg);
 }
 
 .active-workout-wrapup {
@@ -284,17 +283,17 @@
   gap: var(--space-3);
   margin-bottom: var(--space-5);
   padding: var(--space-4);
-  border-radius: 4px;
-  border: 1px solid rgba(245, 246, 248, 0.1);
-  background: var(--background-secondary);
+  border-radius: var(--radius-none);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
 }
 
 .active-workout-wrapup h2 {
   font-family: var(--font-mono, monospace);
-  font-size: var(--font-size-xs);
+  font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--color-neutral-500);
+  color: var(--color-text-muted);
 }
 
 .active-workout-rating {
@@ -303,14 +302,14 @@
 }
 
 .active-workout-rating-star {
-  width: 36px;
-  height: 36px;
-  border-radius: 4px;
-  border: 1px solid rgba(245, 246, 248, 0.14);
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  border-radius: var(--radius-none);
+  border: 1px solid var(--color-border);
   background-color: transparent;
-  color: var(--color-neutral-500);
+  color: var(--color-text-muted);
   cursor: pointer;
-  font-size: var(--font-size-lg);
+  font-size: var(--text-lg);
   transition:
     background-color var(--transition-fast) var(--ease-standard),
     border-color var(--transition-fast) var(--ease-standard),
@@ -318,26 +317,26 @@
 }
 
 .active-workout-rating-star-selected {
-  border-color: var(--color-amber-500);
-  color: var(--color-amber-500);
-  background-color: rgba(217, 162, 76, 0.1);
+  border-color: var(--color-primary-deep);
+  color: var(--color-primary-deep);
+  background-color: var(--color-primary-soft);
 }
 
 .active-workout-notes {
   width: 100%;
-  font-family: var(--font-body);
-  font-size: var(--font-size-base);
-  color: var(--color-neutral-100);
-  background-color: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(245, 246, 248, 0.1);
-  border-radius: 4px;
+  font-family: var(--font-family-body);
+  font-size: var(--text-base);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-none);
   padding: var(--space-2) var(--space-3);
   resize: vertical;
 }
 
 .active-workout-notes:focus {
   outline: none;
-  border-color: rgba(255, 122, 26, 0.5);
+  border-color: var(--color-primary);
 }
 
 .active-workout-actions {
@@ -348,8 +347,8 @@
 }
 
 .active-workout-exit-detail {
-  color: var(--color-neutral-500);
-  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
 }
 
 .active-workout-exit-actions {
@@ -359,13 +358,25 @@
   margin-top: var(--space-4);
 }
 
+/* Phone row: labels stay on one line and the primary action takes the free space. */
+.active-workout-actions .btn,
+.active-workout-exit-actions .btn {
+  padding-inline: var(--space-3);
+  white-space: nowrap;
+}
+
+.active-workout-actions .btn-primary,
+.active-workout-exit-actions .btn-primary {
+  flex: 1 1 auto;
+}
+
 .active-workout-stepper {
   display: flex;
   align-items: center;
   gap: 2px;
-  background-color: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(245, 246, 248, 0.1);
-  border-radius: 4px;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-none);
   padding: 2px;
   /* Grid items default to min-width: auto, which is content-based — the
      plain <input> inside here carries the browser's default ~20-character
@@ -375,26 +386,22 @@
 }
 
 .active-workout-stepper-button {
-  width: 30px;
-  height: 30px;
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
   flex-shrink: 0;
-  border-radius: 3px;
+  border-radius: var(--radius-none);
   border: none;
   background: transparent;
-  color: var(--color-neutral-300);
-  font-size: 18px;
+  color: var(--color-text-muted);
+  font-size: var(--text-lg);
   line-height: 1;
   cursor: pointer;
   transition: background-color var(--transition-fast) var(--ease-standard);
 }
 
-.active-workout-stepper-button:hover {
-  background-color: rgba(245, 246, 248, 0.08);
-}
-
 .active-workout-stepper-button:active {
-  background-color: rgba(255, 122, 26, 0.16);
-  color: var(--color-orange-500);
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary-deep);
 }
 
 .active-workout-stepper-input {
@@ -402,9 +409,9 @@
   min-width: 0;
   text-align: center;
   font-family: var(--font-mono, monospace);
-  font-size: var(--font-size-base);
+  font-size: var(--text-base);
   font-variant-numeric: tabular-nums;
-  color: var(--color-neutral-100);
+  color: var(--color-text);
   background: transparent;
   border: none;
   padding: 0;
@@ -415,6 +422,38 @@
 }
 
 .active-workout-stepper-input:focus-visible {
-  outline: 1px solid rgba(255, 122, 26, 0.4);
-  border-radius: 2px;
+  outline: 1px solid var(--color-primary);
+  border-radius: var(--radius-none);
+}
+
+/* Phones: two 44px -/+ pairs per set row leave no room for the number itself, so
+   the field fills the cell and the numeric keypad does the work. The active session
+   is rebuilt in Phase 8. */
+@media (max-width: 480px) {
+  .active-workout-stepper-button {
+    display: none;
+  }
+
+  .active-workout-stepper-input {
+    min-height: var(--touch-target-min);
+  }
+}
+
+/* Hover only where a real pointer exists; touch uses the :active state above. */
+@media (hover: hover) {
+  .active-workout-header-button:hover {
+    background-color: var(--color-border);
+  }
+
+  .active-workout-header-button-danger:hover {
+    background-color: var(--color-error-soft);
+  }
+
+  .active-workout-exercise-collapsed:hover {
+    border-color: var(--color-border);
+  }
+
+  .active-workout-stepper-button:hover {
+    background-color: var(--color-border);
+  }
 }

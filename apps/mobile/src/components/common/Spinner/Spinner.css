@@ -1,8 +1,8 @@
 .spinner {
   display: inline-block;
-  border-radius: 50%;
-  border: 2px solid var(--legacy-color-border);
-  border-top-color: var(--color-orange-500);
+  border-radius: var(--radius-round);
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-primary);
   animation: spinner-rotate calc(var(--transition-slow) * 2) linear infinite;
 }
 

@@ -1,9 +1,18 @@
+/* Screens outside the app shell (auth) still need the safe areas. */
 .page-layout {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: var(--color-bg);
+  padding:
+    var(--safe-top)
+    calc(var(--space-3) + var(--safe-right))
+    var(--safe-bottom)
+    calc(var(--space-3) + var(--safe-left));
 }
 
 .page-layout-main {
+  display: flex;
   flex: 1;
+  flex-direction: column;
 }

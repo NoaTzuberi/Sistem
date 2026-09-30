@@ -18,8 +18,8 @@
 .day-dot {
   width: 14px;
   height: 14px;
-  border-radius: 50%;
-  border: 1.5px solid var(--surface-glass-bg-strong);
+  border-radius: var(--radius-round);
+  border: 1.5px solid var(--color-surface);
   background-color: transparent;
   transition: background-color var(--transition-base) var(--ease-standard);
 }
@@ -31,12 +31,11 @@
 }
 
 .day-dot-filled {
-  background-color: var(--color-orange-500);
-  border-color: var(--color-orange-500);
-  box-shadow: 0 0 4px rgba(255, 122, 26, 0.35);
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
 }
 
 .day-dot-letter {
-  font-size: 10px;
-  color: var(--color-neutral-500);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
 }

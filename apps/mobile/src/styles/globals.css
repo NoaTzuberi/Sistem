@@ -1,6 +1,6 @@
-@import url('https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800&f[]=satoshi@400,500,600,700&f[]=boxing@400&display=swap');
+@import url('https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800&f[]=satoshi@400,500,600,700&display=swap');
 
-/* Depends on @sistem/tokens and the legacy layer (legacy-atlas.css, removed in Phase 2b). */
+/* Depends on @sistem/tokens (imported first in main.tsx). */
 
 *,
 *::before,
@@ -18,21 +18,27 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  /* Keep iOS from inflating text on rotation; no page zoom is needed (inputs >= 16px). */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
-  background-color: var(--background-primary);
-  color: var(--color-neutral-100);
-  font-family: var(--font-body);
-  font-size: var(--font-size-base);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-family-body);
+  font-size: var(--text-base);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-base);
-  min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
+  /* App feel: no grey flash on tap, no rubber-band scroll chaining past the page. */
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
 }
 
 #root {
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 img,
@@ -61,6 +67,7 @@ button {
   background: none;
   border: none;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 ul,
@@ -71,6 +78,6 @@ ol {
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-orange-500);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }

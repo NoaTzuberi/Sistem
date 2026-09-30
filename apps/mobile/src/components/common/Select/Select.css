@@ -5,23 +5,24 @@
 }
 
 .select-label {
-  font-size: var(--font-size-sm);
+  font-size: var(--text-sm);
   font-weight: var(--font-weight-medium);
-  color: var(--color-neutral-300);
+  color: var(--color-text);
 }
 
 .select-field {
-  font-family: var(--font-body);
-  font-size: var(--font-size-base);
-  color: var(--color-neutral-100);
-  background-color: var(--surface-glass-bg);
-  border: 1px solid var(--legacy-color-border);
-  border-radius: var(--radius-sm);
+  min-height: var(--touch-target-min);
+  font-family: var(--font-family-body);
+  font-size: var(--text-base);
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-none);
   padding: var(--space-2) var(--space-3);
   transition: border-color var(--transition-fast) var(--ease-standard);
 }
 
 .select-field:focus {
   outline: none;
-  border-color: var(--color-orange-500);
+  border-color: var(--color-primary);
 }

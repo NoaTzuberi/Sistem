@@ -75,6 +75,7 @@ export function WorkoutExerciseRow({
           <label>Sets</label>
           <Input
             type="number"
+            inputMode="numeric"
             min={1}
             value={value.defaultSets}
             onChange={(event) => onChange({ defaultSets: Number(event.target.value) })}
@@ -92,6 +93,7 @@ export function WorkoutExerciseRow({
           <label>Kg</label>
           <Input
             type="number"
+            inputMode="decimal"
             min={0}
             value={value.defaultWeight ?? ''}
             placeholder="—"
@@ -104,6 +106,7 @@ export function WorkoutExerciseRow({
           <label>Rest</label>
           <Input
             type="number"
+            inputMode="numeric"
             min={0}
             value={value.restTime ?? ''}
             placeholder="—"

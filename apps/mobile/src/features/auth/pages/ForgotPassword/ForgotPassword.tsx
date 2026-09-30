@@ -55,6 +55,11 @@ export function ForgotPassword() {
                 <Input
                   type="email"
                   label="Email"
+                  inputMode="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  enterKeyHint="send"
                   placeholder="you@example.com"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}

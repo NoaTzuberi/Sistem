@@ -1,25 +1,23 @@
 .onboarding-progress {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: var(--space-2);
-  margin-bottom: var(--space-5);
 }
 
+/* One segment per step, spanning the screen width. */
 .onboarding-progress-track {
   display: flex;
   gap: var(--space-1);
 }
 
 .onboarding-progress-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background-color: var(--color-border-strong);
+  flex: 1;
+  height: 4px;
+  background-color: var(--color-border);
 }
 
 .onboarding-progress-dot-filled {
-  background-color: var(--color-orange-500);
+  background-color: var(--color-primary);
 }
 
 /* Scoped through .onboarding-progress (not just the label's own class) so
@@ -27,9 +25,9 @@
    applied at the call site — same specificity otherwise, which would leave
    the win to stylesheet import order. */
 .onboarding-progress .onboarding-progress-label {
-  font-family: var(--font-mono, monospace);
-  font-size: 10px;
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-neutral-500);
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--color-text-muted);
 }

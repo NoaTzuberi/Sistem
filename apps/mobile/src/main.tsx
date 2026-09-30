@@ -1,8 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import '@sistem/tokens/tokens.css'
-// Legacy ATLAS variables for the kept screens — removed in Phase 2b.
-import './styles/legacy-atlas.css'
 import './styles/globals.css'
 import './styles/typography.css'
 import './styles/animations.css'

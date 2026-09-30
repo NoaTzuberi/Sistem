@@ -64,10 +64,17 @@ export function Register() {
                 onChange={(event) => setName(event.target.value)}
                 error={nameError}
                 autoComplete="name"
+                autoCapitalize="words"
+                enterKeyHint="next"
               />
               <Input
                 type="email"
                 label="Email"
+                inputMode="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="next"
                 placeholder="you@example.com"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
@@ -82,6 +89,7 @@ export function Register() {
                 onChange={(event) => setPassword(event.target.value)}
                 error={passwordError}
                 autoComplete="new-password"
+                enterKeyHint="go"
               />
               {formError && <p className="auth-form-error">{formError}</p>}
               <Button type="submit" variant="primary" loading={isSubmitting}>

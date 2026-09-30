@@ -11,9 +11,20 @@
   --color-bg: #fcfcfc;            /* Bright Snow — app background */
   --color-surface: #eeeeee;       /* Platinum — cards, inputs, sections */
   --color-border: #e2e2e2;        /* Alabaster Grey — dividers, borders, disabled */
-  --color-text: #111111;          /* Body copy (PRD §12 accessibility note) */
+  --color-text: #26222a;          /* Body copy — the charcoal from the logo */
   /* Text/icons placed on a Neon Pink fill. */
   --color-on-primary: #ffffff;
+
+  /* TEMPORARY — owner will finalize these two values. */
+  --color-error: #d92d20;         /* Form errors, destructive actions */
+  --color-text-muted: #6b6b6b;    /* Captions, helper text, secondary copy */
+
+  /* Tints mixed from the palette above (no new colors). Success / "done" states
+     use Cherry Rose + --color-primary-soft — no green (owner decision). */
+  --color-primary-soft: color-mix(in srgb, var(--color-primary) 12%, var(--color-bg));
+  --color-error-soft: color-mix(in srgb, var(--color-error) 10%, var(--color-bg));
+  /* Dims the page behind a bottom sheet / modal. */
+  --color-overlay: color-mix(in srgb, var(--color-text) 55%, transparent);
 
   /* Spacing (8px base scale) */
   --space-1: 4px;
@@ -51,6 +62,9 @@
   --line-height-tight: 1.15;
   --line-height-base: 1.5;
 
+  --letter-spacing-tight: -0.02em;
+  --letter-spacing-wide: 0.08em;   /* Uppercase labels */
+
   /* App chrome */
   --touch-target-min: 44px;
   --tab-bar-height: 64px;
@@ -58,5 +72,8 @@
   --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
+  --opacity-disabled: 0.5;
+
   --z-tab-bar: 100;
+  --z-modal: 1000;
 }

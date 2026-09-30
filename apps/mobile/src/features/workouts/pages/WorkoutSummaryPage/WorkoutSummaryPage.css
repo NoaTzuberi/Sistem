@@ -9,11 +9,11 @@
 }
 
 .workout-summary-error {
-  color: var(--color-error-500);
+  color: var(--color-error);
 }
 
 .workout-summary-title {
-  font-family: var(--font-display);
+  font-family: var(--font-family-display);
   margin-bottom: var(--space-5);
 }
 
@@ -31,28 +31,26 @@
   gap: var(--space-1);
   text-align: center;
   background:
-    var(--gradient-card-glow),
-    var(--background-secondary);
-  border-color: rgba(245, 246, 248, 0.14);
+    var(--color-surface);
+  border-color: var(--color-border);
 }
 
 .workout-summary-stat-value {
-  font-family: var(--font-display);
-  font-size: var(--font-size-xl);
+  font-family: var(--font-family-display);
+  font-size: var(--text-xl);
 }
 
 .workout-summary-stat-label {
-  color: var(--color-neutral-500);
-  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
 }
 
 .workout-summary-prs,
 .workout-summary-notes {
   margin-bottom: var(--space-5);
   background:
-    var(--gradient-card-glow),
-    var(--background-secondary);
-  border-color: rgba(245, 246, 248, 0.14);
+    var(--color-surface);
+  border-color: var(--color-border);
 }
 
 .workout-summary-pr-list {
@@ -70,9 +68,9 @@
 
 .workout-summary-pr-badge {
   padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
-  background-color: var(--color-amber-soft);
-  color: var(--color-amber-500);
-  font-size: var(--font-size-xs);
+  border-radius: var(--radius-none);
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary-deep);
+  font-size: var(--text-xs);
   font-weight: var(--font-weight-bold);
 }

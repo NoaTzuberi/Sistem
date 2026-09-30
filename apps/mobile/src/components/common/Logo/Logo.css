@@ -1,15 +1,14 @@
+/* Height-driven so both variants keep their own aspect ratio. */
 .logo {
-  display: inline-block;
-  font-family: var(--font-logo);
-  font-weight: var(--font-weight-bold);
-  line-height: 1;
-  color: var(--color-neutral-100);
+  display: block;
+  width: auto;
+  max-width: 100%;
 }
 
 .logo-md {
-  font-size: var(--font-size-lg);
+  height: 40px;
 }
 
 .logo-lg {
-  font-size: var(--font-size-xl);
+  height: 72px;
 }

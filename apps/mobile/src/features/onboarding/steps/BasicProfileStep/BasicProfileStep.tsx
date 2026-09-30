@@ -23,24 +23,32 @@ export function BasicProfileStep({ formState, updateFormState }: BasicProfileSte
       <div className="basic-profile-fields">
         <Input
           label="Name"
+          autoComplete="name"
+          autoCapitalize="words"
+          enterKeyHint="next"
           value={formState.name}
           onChange={(event) => updateFormState({ name: event.target.value })}
         />
         <Input
           label="Birth Date"
           type="date"
+          autoComplete="bday"
           value={formState.birthDate}
           onChange={(event) => updateFormState({ birthDate: event.target.value })}
         />
         <Input
           label="Height (cm)"
           type="number"
+          inputMode="decimal"
+          enterKeyHint="next"
           value={formState.height}
           onChange={(event) => updateFormState({ height: event.target.value })}
         />
         <Input
           label="Weight"
           type="number"
+          inputMode="decimal"
+          enterKeyHint="done"
           value={formState.weight}
           onChange={(event) => updateFormState({ weight: event.target.value })}
         />

@@ -2,38 +2,39 @@
   position: relative;
 }
 
+/* In the document flow (not absolutely positioned) so the list pushes content down
+   and scrolls with the page instead of hiding under the on-screen keyboard. */
 .autocomplete-list {
-  position: absolute;
-  top: calc(100% + var(--space-1));
-  left: 0;
-  right: 0;
-  z-index: var(--z-modal);
-  background-color: var(--surface-glass-bg-strong);
-  border: 1px solid var(--surface-glass-border);
-  border-radius: var(--radius-md);
-  backdrop-filter: blur(var(--surface-glass-blur));
-  -webkit-backdrop-filter: blur(var(--surface-glass-blur));
-  box-shadow: var(--shadow-lg);
-  max-height: 220px;
+  margin-top: var(--space-1);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  max-height: calc(var(--touch-target-min) * 4);
   overflow-y: auto;
-  padding: var(--space-1);
 }
 
 .autocomplete-option {
   display: block;
   width: 100%;
+  min-height: var(--touch-target-min);
   text-align: left;
   padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
   background: none;
   border: none;
-  color: var(--color-neutral-100);
-  font-family: var(--font-body);
-  font-size: var(--font-size-sm);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-family: var(--font-family-body);
+  font-size: var(--text-base);
   cursor: pointer;
 }
 
-.autocomplete-option:hover {
-  background-color: var(--surface-glass-bg);
-  color: var(--color-orange-500);
+.autocomplete-option:active {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary-deep);
+}
+
+@media (hover: hover) {
+  .autocomplete-option:hover {
+    background-color: var(--color-surface);
+    color: var(--color-primary-deep);
+  }
 }

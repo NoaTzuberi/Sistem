@@ -1,53 +1,12 @@
-/* Background visuals below are legacy ATLAS styling — restyled in Phase 2b. */
+/* Plain app background — the owner designs the real backgrounds later. */
 .app-shell {
-  position: relative;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
   min-height: 100dvh;
-  background-color: var(--background-primary);
-  background-image: url("data:image/svg+xml,...");
+  background-color: var(--color-bg);
 }
-
-/* `fixed` (not `absolute`) is load-bearing here: .app-shell is a flex
-   container that grows taller than 100vh to fit its content, and an
-   `absolute; inset:0` pseudo-element sizes to that full scrollable height —
-   so these gradients' percentage-based ellipses were being measured against
-   a height that varies with page content (a short loading-spinner page vs.
-   a long loaded grid of cards), making the effect look weak on short pages
-   and strong on tall ones purely by coincidence of content length. `fixed`
-   sizes them to the actual viewport instead, so the effect is consistent
-   regardless of how tall the page ends up being, and stays put on scroll. */
-.app-shell::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  background:
-    radial-gradient(circle at 8% -5%, rgba(255, 122, 26, 0.12), rgba(255, 122, 26, 0) 40%),
-    radial-gradient(circle at 100% 100%, rgba(79, 143, 224, 0.08), rgba(79, 143, 224, 0) 35%),
-    radial-gradient(ellipse 90% 70% at 50% 40%, transparent 50%, rgba(0, 0, 0, 0.35) 100%);
-  pointer-events: none;
-}
-
-.app-shell::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  background-image:
-    linear-gradient(rgba(245, 246, 248, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(245, 246, 248, 0.025) 1px, transparent 1px);
-  background-size: 48px 48px;
-  pointer-events: none;
-  mask-image: radial-gradient(ellipse 100% 90% at 50% 0%, black 0%, transparent 88%);
-  -webkit-mask-image: radial-gradient(ellipse 100% 90% at 50% 0%, black 0%, transparent 88%);
-}
-
 
 .app-shell-main {
-  position: relative;
-  z-index: 1;
   flex: 1;
   min-width: 0;
   /* Mobile-first app container: safe areas on every side (notch, home indicator). */

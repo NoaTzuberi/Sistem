@@ -16,14 +16,14 @@
 
 .streak-ring-value {
   font-family: var(--font-mono, monospace);
-  font-size: var(--font-size-3xl);
-  color: var(--color-orange-hover);
+  font-size: var(--text-3xl);
+  color: var(--color-primary-deep);
   line-height: 1;
   animation: dashboard-stat-fade-in 200ms ease-out;
 }
 
 .streak-ring-value-compact {
-  font-size: var(--font-size-lg);
+  font-size: var(--text-lg);
 }
 
 @media (prefers-reduced-motion: reduce) {

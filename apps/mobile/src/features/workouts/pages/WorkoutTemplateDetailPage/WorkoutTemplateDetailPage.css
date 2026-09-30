@@ -22,7 +22,7 @@
 }
 
 .workout-detail-name {
-  font-family: var(--font-body);
+  font-family: var(--font-family-body);
   font-weight: var(--font-weight-bold);
   padding-right: var(--space-6);
 }
@@ -32,7 +32,7 @@
   height: 1px;
   width: 28px;
   margin-top: var(--space-2);
-  background: var(--color-orange-500, #ff7a1a);
+  background: var(--color-primary);
 }
 
 .workout-detail-tags {
@@ -46,19 +46,19 @@
   display: inline-flex;
   align-items: center;
   padding: var(--space-1) var(--space-2);
-  border-radius: 2px;
-  border: 1px solid rgba(245, 246, 248, 0.14);
-  background-color: var(--surface-glass-bg);
-  color: var(--color-neutral-300);
+  border-radius: var(--radius-none);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text-muted);
   font-family: var(--font-mono, monospace);
-  font-size: var(--font-size-xs);
+  font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
 
 .workout-detail-description {
   margin-top: var(--space-3);
-  color: var(--color-neutral-300);
+  color: var(--color-text-muted);
 }
 
 .workout-detail-start-button {
@@ -78,16 +78,16 @@
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-2);
-  border-radius: 4px;
-  background-color: var(--background-secondary);
-  border: 1px solid rgba(245, 246, 248, 0.1);
+  border-radius: var(--radius-none);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
 }
 
 .workout-detail-exercise-media {
   width: 56px;
   height: 56px;
   flex-shrink: 0;
-  border-radius: 2px;
+  border-radius: var(--radius-none);
   overflow: hidden;
 }
 
@@ -117,52 +117,52 @@
   display: inline-flex;
   align-items: center;
   padding: 2px 6px;
-  border-radius: 2px;
+  border-radius: var(--radius-none);
   font-family: var(--font-mono, monospace);
-  font-size: 10px;
+  font-size: var(--text-xs);
   font-weight: var(--font-weight-medium);
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
 
 .workout-detail-exercise-tag-upper_body {
-  background-color: var(--color-blue-soft);
-  border: 1px solid rgba(79, 143, 224, 0.35);
-  color: var(--color-blue-hover);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
 }
 .workout-detail-exercise-tag-back {
-  background-color: var(--color-teal-soft);
-  border: 1px solid rgba(47, 191, 143, 0.35);
-  color: var(--color-teal-hover);
+  background-color: var(--color-primary-soft);
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary-deep);
 }
 .workout-detail-exercise-tag-core {
-  background-color: var(--color-plum-soft);
-  border: 1px solid rgba(165, 107, 138, 0.35);
-  color: var(--color-plum-hover);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
 }
 .workout-detail-exercise-tag-lower_body {
-  background-color: var(--color-olive-soft);
-  border: 1px solid rgba(138, 140, 79, 0.35);
-  color: var(--color-olive-hover);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
 }
 
 .workout-detail-exercise-tag-equipment {
   display: inline-flex;
   align-items: center;
   padding: 2px 6px;
-  border-radius: 2px;
-  background-color: var(--surface-glass-bg);
-  border: 1px solid var(--legacy-color-border);
-  color: var(--color-neutral-300);
+  border-radius: var(--radius-none);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
   font-family: var(--font-mono, monospace);
-  font-size: 10px;
+  font-size: var(--text-xs);
   font-weight: var(--font-weight-medium);
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
 
 .workout-detail-exercise-scheme {
-  color: var(--color-neutral-500);
+  color: var(--color-text-muted);
   font-family: var(--font-mono, monospace);
 }
 
@@ -172,5 +172,5 @@
   gap: var(--space-3);
   margin-top: var(--space-5);
   padding-top: var(--space-4);
-  border-top: 1px solid var(--legacy-color-border);
+  border-top: 1px solid var(--color-border);
 }

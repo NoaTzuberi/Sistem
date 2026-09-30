@@ -54,6 +54,11 @@ export function Login() {
               <Input
                 type="email"
                 label="Email"
+                inputMode="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="next"
                 placeholder="you@example.com"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
@@ -68,8 +73,9 @@ export function Login() {
                 onChange={(event) => setPassword(event.target.value)}
                 error={passwordError}
                 autoComplete="current-password"
+                enterKeyHint="go"
               />
-              <Link to={ROUTES.FORGOT_PASSWORD} className="login-forgot-password">
+              <Link to={ROUTES.FORGOT_PASSWORD} className="auth-link login-forgot-password">
                 Forgot password?
               </Link>
               {formError && <p className="auth-form-error">{formError}</p>}

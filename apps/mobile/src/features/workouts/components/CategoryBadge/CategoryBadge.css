@@ -3,12 +3,10 @@
   align-items: center;
   gap: 6px;
   padding: var(--space-1) var(--space-2);
-  border-radius: 2px;
-  background-color: rgba(3, 8, 15, 0.4);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  border-radius: var(--radius-none);
+  background-color: var(--color-bg);
   font-family: var(--font-mono, monospace);
-  font-size: var(--font-size-xs);
+  font-size: var(--text-xs);
   font-weight: var(--font-weight-medium);
   text-transform: uppercase;
   letter-spacing: 0.02em;
@@ -32,31 +30,31 @@
 }
 
 .category-badge-push {
-  border: 1px solid rgba(181, 84, 58, 0.45);
-  color: var(--color-rust-hover);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
 }
 
 .category-badge-pull {
-  border: 1px solid rgba(47, 191, 143, 0.45);
-  color: var(--color-teal-hover);
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary-deep);
 }
 
 .category-badge-upper_body {
-  border: 1px solid rgba(79, 143, 224, 0.45);
-  color: var(--color-blue-hover);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
 }
 
 .category-badge-legs {
-  border: 1px solid rgba(138, 140, 79, 0.45);
-  color: var(--color-olive-hover);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
 }
 
 .category-badge-full_body {
-  border: 1px solid rgba(201, 122, 74, 0.45);
-  color: var(--color-terracotta-hover);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
 }
 
 .category-badge-core {
-  border: 1px solid rgba(165, 107, 138, 0.45);
-  color: var(--color-plum-hover);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
 }

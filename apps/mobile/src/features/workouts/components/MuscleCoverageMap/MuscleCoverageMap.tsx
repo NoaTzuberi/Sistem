@@ -8,16 +8,13 @@ interface MuscleCoverageMapProps {
   rows: WorkoutExerciseRowValue[];
 }
 
-const NEUTRAL_RGB: [number, number, number] = [64, 68, 76];
-const ORANGE_RGB: [number, number, number] = [255, 122, 26];
-/** Regions hit by 3+ exercises render at full orange — past that, more volume
+/** Regions hit by 3+ exercises render at full intensity — past that, more volume
  * doesn't need to read as visually different. */
 const MAX_INTENSITY_COUNT = 3;
 
-function regionFill(count: number): string {
-  const t = Math.min(1, count / MAX_INTENSITY_COUNT);
-  const mixed = NEUTRAL_RGB.map((from, i) => Math.round(from + (ORANGE_RGB[i] - from) * t));
-  return `rgb(${mixed.join(',')})`;
+// Fill intensity is a CSS class per level (tokens in MuscleCoverageMap.css).
+function regionLevelClass(count: number): string {
+  return `muscle-map-region-level-${Math.min(MAX_INTENSITY_COUNT, count)}`;
 }
 
 /**
@@ -102,26 +99,19 @@ const NEUTRAL_POLYGONS = [
   '65.7142857 140 72.244898 147.755102 72.244898 152.244898 69.7959184 157.142857 64.8979592 156.734694 62.8571429 151.020408',
 ];
 
-const NEUTRAL_FILL = 'rgba(255, 255, 255, 0.08)';
-const NEUTRAL_STROKE = 'rgba(255, 255, 255, 0.16)';
-
 interface RegionShapeProps {
   region: BodyRegion;
   count: number;
 }
 
 function RegionShape({ region, count }: RegionShapeProps) {
-  const style = {
-    fill: regionFill(count),
-    transition: 'fill 0.3s ease',
-  };
   return (
     <g
-      className="muscle-map-region"
+      className={`muscle-map-region ${regionLevelClass(count)}`}
       aria-label={`${BODY_REGION_LABELS[region]}: ${count} exercise${count === 1 ? '' : 's'}`}
     >
       {REGION_POLYGONS[region].map((points, index) => (
-        <polygon key={index} points={points} stroke={NEUTRAL_STROKE} style={style} />
+        <polygon key={index} points={points} />
       ))}
     </g>
   );
@@ -136,7 +126,7 @@ export function MuscleCoverageMap({ rows }: MuscleCoverageMapProps) {
 
       <svg className="muscle-map-figure" viewBox="0 0 100 200" role="img" aria-label="Muscle coverage diagram">
         {NEUTRAL_POLYGONS.map((points, index) => (
-          <polygon key={index} points={points} fill={NEUTRAL_FILL} stroke={NEUTRAL_STROKE} />
+          <polygon key={index} points={points} className="muscle-map-neutral" />
         ))}
 
         {(Object.keys(REGION_POLYGONS) as BodyRegion[]).map((region) => (

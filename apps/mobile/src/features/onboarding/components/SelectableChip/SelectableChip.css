@@ -1,34 +1,47 @@
+/* Solid backgrounds, so chips stay readable over the video background too. */
 .selectable-chip {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+  min-height: var(--touch-target-min);
   padding: var(--space-2) var(--space-3);
-  border-radius: 4px;
-  border: 1px solid rgba(245, 246, 248, 0.1);
-  background-color: transparent;
-  color: var(--color-neutral-100);
-  font-family: var(--font-body);
-  font-size: var(--font-size-sm);
+  border-radius: var(--radius-none);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-family-body);
+  font-size: var(--text-base);
   font-weight: var(--font-weight-medium);
+  text-align: left;
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
   transition:
     border-color var(--transition-fast) var(--ease-standard),
     background-color var(--transition-fast) var(--ease-standard),
-    color var(--transition-fast) var(--ease-standard);
+    color var(--transition-fast) var(--ease-standard),
+    transform var(--transition-fast) var(--ease-standard);
 }
 
-.selectable-chip:hover {
-  border-color: rgba(245, 246, 248, 0.18);
-  background-color: rgba(245, 246, 248, 0.06);
+.selectable-chip:active {
+  transform: scale(0.97);
+  background-color: var(--color-surface);
 }
 
-.selectable-chip-selected {
-  border-color: rgba(255, 122, 26, 0.45);
-  color: var(--color-orange-500);
-  background-color: var(--color-orange-soft);
+@media (hover: hover) {
+  .selectable-chip:hover {
+    border-color: var(--color-primary);
+  }
+}
+
+.selectable-chip-selected,
+.selectable-chip-selected:active {
+  border-color: var(--color-primary);
+  color: var(--color-primary-deep);
+  background-color: var(--color-primary-soft);
 }
 
 .selectable-chip-emoji {
-  font-size: var(--font-size-base);
+  font-size: var(--text-base);
   line-height: 1;
 }

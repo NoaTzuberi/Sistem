@@ -2,8 +2,16 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="icon" type="image/png" href="/app-icon-512.png" />
+    <link rel="apple-touch-icon" href="/app-icon-512.png" />
+    <!-- viewport-fit=cover: draw under the notch (safe areas are handled in CSS).
+         interactive-widget=resizes-content: the on-screen keyboard shrinks the layout,
+         so sticky footers stay above it. No maximum-scale: inputs are >= 16px, so iOS
+         does not zoom on focus and pinch-zoom stays available for accessibility. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
+    />
     <title>Sistem</title>
   </head>
   <body>

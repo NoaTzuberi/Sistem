@@ -36,7 +36,6 @@ export function ActivitiesStep({ formState, updateFormState, onPreviewActivity }
                 emoji={activity.emoji}
                 selected={formState.preferredActivities.includes(activity.id)}
                 onClick={() => toggleActivity(activity.id)}
-                onMouseEnter={() => onPreviewActivity(activity.id)}
               />
             ))}
           </div>

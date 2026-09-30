@@ -277,8 +277,8 @@ export function DashboardPage() {
                     >
                       <defs>
                         <linearGradient id="weight-chart-gradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="var(--color-orange-500)" stopOpacity="0.35" />
-                          <stop offset="100%" stopColor="var(--color-orange-500)" stopOpacity="0" />
+                          <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.35" />
+                          <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
                         </linearGradient>
                       </defs>
                       <line x1="0" y1="25" x2={WEIGHT_CHART_WIDTH} y2="25" className="weight-chart-gridline" />
@@ -358,6 +358,7 @@ export function DashboardPage() {
         <Input
           label="Weight (kg)"
           type="number"
+          inputMode="decimal"
           min={0}
           value={weightInput}
           onChange={(event) => setWeightInput(event.target.value)}

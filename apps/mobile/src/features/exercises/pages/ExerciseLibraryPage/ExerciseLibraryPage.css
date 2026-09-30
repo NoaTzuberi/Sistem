@@ -10,7 +10,7 @@
 }
 
 .exercise-library-error {
-  color: var(--color-error-500);
+  color: var(--color-error);
   text-align: center;
   padding: var(--space-6) 0;
 }

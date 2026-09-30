@@ -43,6 +43,7 @@ export function RecoveryStep({ formState, updateFormState }: RecoveryStepProps) 
       {showNotes && (
         <Input
           label="Tell us anything helpful for adapting your training."
+          enterKeyHint="done"
           value={recovery.notes}
           onChange={(event) => updateFormState({ recovery: { ...recovery, notes: event.target.value } })}
         />

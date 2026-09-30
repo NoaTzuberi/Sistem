@@ -1,0 +1,14 @@
+/* Height-driven so both variants keep their own aspect ratio. */
+.logo {
+  display: block;
+  width: auto;
+  max-width: 100%;
+}
+
+.logo-md {
+  height: 40px;
+}
+
+.logo-lg {
+  height: 72px;
+}

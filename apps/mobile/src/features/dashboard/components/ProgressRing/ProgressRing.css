@@ -7,7 +7,7 @@
 }
 
 .progress-ring-track {
-  stroke: var(--surface-glass-bg-strong);
+  stroke: var(--color-surface);
 }
 
 /* The active arc is a "lit up" indicator, not a decorative card — a tight,
@@ -15,8 +15,7 @@
    0% progress the arc has no visible length, so this has no effect until
    there's real progress to show. */
 .progress-ring-fill {
-  stroke: var(--color-orange-500);
-  filter: drop-shadow(0 0 4px rgba(255, 122, 26, 0.35));
+  stroke: var(--color-primary-deep);
   transition: stroke-dashoffset 1s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -28,5 +27,5 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
-  color: var(--color-orange-500);
+  color: var(--color-primary-deep);
 }

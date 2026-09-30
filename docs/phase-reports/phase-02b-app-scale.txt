@@ -1,0 +1,308 @@
+SISTEM — PHASE 2b REPORT: ADAPT KEPT ATLAS SCREENS TO APP SCALE
+Date: 2026-09-30
+Scope: docs/BUILD_PLAN.md Phase 2b (audit + steps 1–7), executed with the owner's answers:
+full adapt for foundation / shared components / auth / onboarding; tokens-only + phone
+breakers for Dashboard / Profile / Workouts / Exercises; legacy-atlas.css deleted; two
+TEMPORARY tokens; text token #26222A; the 9 onboarding steps kept; Modal = bottom sheet on
+phones; dark overlay kept on onboarding videos; real logo files from brand/.
+Phase 2c (onboarding videos to Cloudinary) was NOT started.
+
+================================================================================
+1. SUMMARY
+================================================================================
+- The mobile app is now fully on @sistem/tokens: legacy-atlas.css is deleted and there are
+  no hard-coded colors left in apps/mobile or apps/dashboard (CSS or TSX, including an
+  encoded color inside an SVG data URL). Radii are sharp (--radius-none), no glass/blur,
+  no dark shadows or glows. Mobile type scale (h1 34px instead of 64px).
+- Foundation: viewport meta for Capacitor (viewport-fit=cover +
+  interactive-widget=resizes-content), 100dvh, safe areas on every screen, inputs >= 16px
+  (no zoom on focus), 44px touch targets, press (:active) states everywhere, hover only
+  inside @media (hover: hover).
+- Onboarding: full-screen phone layout — segmented progress on top, the step scrolls,
+  sticky bottom Back / Skip / Next bar that stays above the keyboard; each step is a
+  browser-history entry, so the system back gesture goes to the previous step. Questions,
+  copy, steps, validation and the save logic are unchanged.
+- Modal is a full-width bottom sheet on phones (safe-area padding, 44px close, page scroll
+  locked), a centered panel from 600px.
+- Real logo: Logo component (mobile + dashboard) renders the pink logo / the mark from
+  packages/tokens/brand; favicons of both apps = app_icon_512.png.
+- Final state: root build OK; lint 0 errors (same 4 warnings as before); server tests
+  56/56; `npm run dev` from the root works. Checked in a browser at 375x667 and 430x932.
+
+================================================================================
+2. AUDIT (shown and approved before any change)
+================================================================================
+Global: legacy dark layer (~500 uses + ~300 hard-coded colors in 45 files), 64px h1,
+website glows/grid texture, rounded glass cards, 50 hover-only rules, 100vh.
+Shared: Button (fixed 9.9em width, hard-coded #ff9966, hover-only), Input/Select (legacy
+glass, no 44px), Autocomplete (absolute list under the keyboard, 32px options), Modal
+(centered 480px, 32px close), Container/Section (1500px, 64px padding).
+Auth: 440px card with 48px padding, no keyboard hints, small text links.
+Onboarding: desktop card (760px, 88vh), non-sticky nav that overflows at 375px, system back
+left onboarding and lost all answers, 10px progress label, 36px chips, hover-only preview.
+Other screens: 4-column/2fr-1fr grids, 180–540px fixed widths, 24–36px buttons.
+(The full list is in the chat of this phase.)
+
+================================================================================
+3. WHAT CHANGED, BY AREA
+================================================================================
+Tokens (packages/tokens/tokens.css)
+- --color-text #111111 -> #26222a (charcoal from the logo).
+- TEMPORARY (commented "owner will finalize"): --color-error #d92d20, --color-text-muted #6b6b6b.
+- Mixed from the palette (no new colors): --color-primary-soft, --color-error-soft,
+  --color-overlay (color-mix).
+- Non-color: --letter-spacing-tight, --letter-spacing-wide, --opacity-disabled, --z-modal.
+- Legacy mapping used everywhere: orange -> primary (text: primary-deep); amber/teal
+  (achievements, success, "done") -> primary-deep + primary-soft (no green); blue, rust,
+  terracotta, olive, plum category/section accents -> text / border / surface (neutral);
+  error -> --color-error; neutral text -> --color-text / --color-text-muted.
+
+Foundation (apps/mobile)
+- index.html: PNG favicon + apple-touch-icon, viewport adds interactive-widget=resizes-content
+  (no maximum-scale: pinch-zoom stays for accessibility; inputs are >= 16px instead).
+- globals.css / typography.css: tokens only, 100dvh, text-size-adjust, no tap highlight,
+  overscroll-behavior none, token focus ring. The unused "Boxing" logo font is no longer loaded.
+- AppShell: plain --color-bg (website glows + grid texture removed — owner designs
+  backgrounds later). PageLayout: safe areas for the auth screens. Container: 640px reading
+  cap (the shell already pads 16px). Section: 16px instead of 64px vertical padding.
+
+Shared components
+- Button: 44px min, :active press (scale 0.97). Primary keeps the ATLAS bracket pattern
+  (PRD §12) in pink — side brackets + corner segments that close in on press / hover; fixed
+  9.9em width replaced by padding so it can shrink in phone rows.
+- Input: 44px, 16px text, token states; on focus it scrolls itself into view after the
+  keyboard opens. Select: 44px, tokens. Autocomplete: list is in the flow (not absolute),
+  44px options. Badge/Spinner/GlassCard: tokens, sharp. Modal: see Summary.
+- Logo: <img> with variants `full` (pink horizontal) and `mark`; sizes md 40px / lg 72px.
+
+Auth (Login, Register, Forgot/Reset)
+- Full-width phone layout (no floating card), centered, scrollable with the keyboard open.
+- Email: inputMode=email, autoCapitalize=none, autoCorrect=off, spellCheck=false,
+  enterKeyHint; name: autoCapitalize=words; password: enterKeyHint=go. Links have 44px
+  tap areas.
+
+Onboarding (protected — layout/behavior only)
+- OnboardingPage: new OnboardingScreen layout (see Summary) replaces AppShell + Section +
+  Container + GlassCard. Step changes fade in (CSS, 250ms) and scroll to top.
+- History: Continue/Skip push a history entry {onboardingStep}; Back = history back. A step
+  is never shown past the first step whose required answers are missing (protects a
+  reload/back into a later step — answers are only in memory until Phase 3/4). A fresh
+  mount starts at step 1.
+- useKeyboardInset (new hook): exposes the iOS keyboard height as --keyboard-inset so the
+  sticky bar sits above it (Android uses interactive-widget; Capacitor Keyboard plugin can
+  replace this in Phase 5).
+- Video background now fills the screen behind the step; the dark overlay is kept (mixed
+  from --color-text); step text switches to white only while a video is showing. Chips have
+  solid backgrounds so they stay readable on the video.
+- OnboardingProgress: 9 segments across the width + 12px label. SelectableChip: 44px, press state.
+- BasicProfileStep: name autoComplete=name, birth date autoComplete=bday, height/weight
+  inputMode=decimal, enterKeyHint. RecoveryStep notes: enterKeyHint=done.
+- ActivitiesStep: removed the hover-only onMouseEnter preview (tapping already previews).
+- Edit mode (/onboarding/:step from Profile): same screen, Cancel / Save changes in the bar.
+
+Dashboard / Profile / Workouts / Exercises (tokens + phone breakers, no redesign)
+- All legacy variables, hard-coded colors, px radii and px font sizes -> tokens (scripted,
+  then reviewed file by file). Hover rules -> :active + @media (hover: hover).
+- Fixed at 375px (found in the browser):
+  - MonthCalendar overflowed its card (7 x 44px) -> fluid 7 equal columns, square cells
+    (42px at 375 / 44px max), 44px month arrows.
+  - Workout builder step 2 overflowed (445px): stacked layout now stretches; exercise rows
+    no longer need a 540px sideways scroller — the Sets/Reps/Kg/Rest fields wrap onto a
+    full-width line; reorder/remove buttons 44px; Back · Cancel · Save fit one row.
+  - Builder text inputs were 14px (iOS zoom) -> 16px, 44px; GlassSelect trigger/options,
+    GoalCard, WorkoutChip, FilterChip -> 44px.
+  - Active workout: the -/+ steppers squeezed the reps/weight inputs to 0px -> below 480px
+    the steppers are hidden and the field fills the cell (44px, numeric keypad). Header,
+    set-check, rating stars -> 44px. Cancel / Finish labels stay on one line.
+  - Profile banner: its inline style moved to CSS; the text on the darkened photo (name,
+    summary, email, change-password link) is now white / pink and readable.
+  - Achievement arrows, training-block edit, exercise search clear -> 44px.
+- MuscleCoverageMap: RGB-interpolated inline fills -> 4 token-based level classes.
+- WorkoutSummary PR badge: amber glow (hard-coded) -> short scale pulse.
+- Dashboard weight chart gradient + welcome-banner line: token colors (the banner SVG is now
+  a mask filled with --color-primary).
+- inputMode on all 7 numeric inputs (decimal for kg/weight, numeric for the rest).
+
+Coach dashboard (apps/dashboard)
+- Logo component (mirror of the mobile one): pink logo on the login card, mark in the home
+  header. Favicon = app_icon_512.png. Nothing else changed (desktop-first, already tokens).
+
+================================================================================
+4. FILES CHANGED
+================================================================================
+ADDED
+- packages/tokens/brand/sistem_logo_horizontal_pink.png, sistem_mark_transparent.png
+  (copied from brand/)
+- apps/mobile/public/app-icon-512.png, apps/dashboard/public/app-icon-512.png (from brand/)
+- apps/mobile/src/hooks/useKeyboardInset.ts
+- apps/dashboard/src/components/common/Logo/Logo.tsx, Logo.css
+- brand/ (10 files — your source logo folder, untracked until now; see §8)
+- docs/phase-reports/phase-02b-app-scale.txt
+
+DELETED
+- apps/mobile/src/styles/legacy-atlas.css
+- apps/mobile/public/favicon.svg, apps/dashboard/public/favicon.svg (Vite default icons)
+
+MODIFIED
+- packages/tokens/tokens.css, packages/tokens/package.json (export "./brand/*")
+- apps/mobile/index.html, src/main.tsx, src/styles/globals.css, src/styles/typography.css
+- apps/mobile/src/components/common/: Autocomplete, Badge, Button, GlassCard, Input (tsx+css),
+  Logo (tsx+css), Modal (tsx+css), Select, Spinner (CSS unless noted)
+- apps/mobile/src/components/layout/: AppShell, Container, PageLayout, Section (CSS)
+- apps/mobile/src/features/auth/: AuthCard (tsx+css), ProtectedRoute.css, Login (tsx+css),
+  Register.tsx, ForgotPassword (tsx+css), ResetPassword.css
+- apps/mobile/src/features/onboarding/: OnboardingPage (tsx+css), OnboardingProgress.css,
+  SelectableChip.css, StepVideoBackground.css, ActivitiesStep.tsx, BasicProfileStep.tsx,
+  RecoveryStep.tsx
+- apps/mobile/src/features/dashboard/: DashboardPage (tsx+css), AchievementBadges,
+  DashboardCalendar, MilestoneBar, MonthCalendar, ProgressRing, StreakRing, WeekDotStrip (CSS)
+- apps/mobile/src/features/profile/pages/ProfilePage (tsx+css)
+- apps/mobile/src/features/workouts/: ActiveWorkoutPage.css, WorkoutBuilderPage.css,
+  WorkoutSummaryPage (tsx+css), WorkoutTemplateDetailPage.css, WorkoutsPage.css,
+  ReviewWorkoutStep.css, BasicsStep.tsx, CategoryBadge, ExercisePicker, FeaturedWorkoutCard,
+  GlassSelect, GoalCard, TemplateCard, WorkoutChip, WorkoutSummaryCard (CSS),
+  MuscleCoverageMap (tsx+css), WorkoutExerciseRow (tsx+css)
+- apps/mobile/src/features/exercises/: ExerciseCard, ExerciseEmptyState, ExerciseFilters,
+  ExerciseMedia, ExercisePagination, FilterChip, ExerciseDetailPage, ExerciseLibraryPage (CSS)
+- apps/dashboard/index.html, Login (tsx+css), HomePage (tsx+css)
+- CLAUDE.md (gitignored, NOT committed): logo location/variants, tokens rules, styles folder.
+
+================================================================================
+5. DEPENDENCIES
+================================================================================
+None added, none removed.
+
+================================================================================
+6. HOW TO TEST
+================================================================================
+Automated (all run and passing at the end of this phase, from the repo root):
+- npm run build   -> dashboard, mobile, server OK
+- npm run lint    -> exit 0, 0 errors; warnings unchanged (mobile 3, dashboard 1)
+- npm test        -> 7 files, 56 tests passed
+- npm run dev     -> run with PORT=5022 VITE_API_URL=http://localhost:5022/api because your
+                     own dev servers held 5002/5173: "MongoDB connected", server up,
+                     /api/health 200, /api/auth/me 401 without token, mobile index 200,
+                     tokens.css + logo PNG + favicon served.
+
+Browser check I ran (Chrome, app in exact-size iframes 375x667 and 430x932, against an
+IN-MEMORY MongoDB on spare ports — your dev database was not touched):
+- Login, Register (form submit) -> /onboarding; all 9 steps; video step (Activities);
+  Autocomplete; Skip bar; system back/forward + Back button through steps; submit ->
+  /dashboard. Profile -> edit Goals (Cancel/Save bar) -> saved. Workouts: builder (both
+  steps), save, detail bottom sheet, active session, finish -> summary. Dashboard Log Weight
+  bottom sheet (scroll lock on/off). Coach dashboard login + home with logo.
+- No horizontal scroll on any of these at 375 or 430 (document scrollWidth = viewport).
+
+Manual checks for you (Chrome devtools device mode, iPhone SE and iPhone 14/15 Pro Max):
+1. `npm run dev`, register a new user: onboarding bar stays at the bottom; tap a field on
+   step 2 — the field scrolls into view and the bar sits above the keyboard (best checked
+   on a real phone via `npm run dev -w @sistem/mobile -- --host`).
+2. Use the browser back button inside onboarding -> previous step, answers kept.
+3. Activities step: tap an activity -> video behind, white text, chips readable.
+4. Dashboard -> Log Weight: sheet from the bottom, background does not scroll.
+5. Pinch-zoom still works; focusing any input does not zoom the page on iOS.
+
+================================================================================
+7. KNOWN ISSUES / TODOs
+================================================================================
+- DECISION for you (Phase 8): on phones (< 480px) the active-workout -/+ steppers are
+  hidden so the reps/weight fields have room; typing uses the numeric keypad. Phase 8
+  rebuilds this screen anyway.
+- Month calendar cells are 42px at 375px wide (7 columns + card padding can't fit 44px);
+  they touch each other with 2px gaps. 44px from ~390px up.
+- Achievement badge tooltips: were hover-only; now also on press-and-hold and keyboard
+  focus. They can clip at the carousel edge — Phase 11 reworks this component.
+- `--font-mono` is used by ATLAS labels but was never defined (falls back to the system
+  monospace, as before). Say if you want it as a token or replaced by the body font.
+- Keyboard handling is verified by layout/code, not on a physical iPhone keyboard (the
+  browser check can't open a soft keyboard). Capacitor's Keyboard plugin (Phase 5) is the
+  long-term answer; useKeyboardInset covers iOS Safari until then.
+- The profile "Change password" link still points to the backlog password-reset flow
+  (unchanged behavior, restyled only).
+- PRE-EXISTING (found during testing, not changed): `npm run seed:workout-templates` fails
+  on a fresh database — "Missing exercises for slugs: side-lying-lateral-raise, …" (12
+  slugs). Those templates reference exercises that only existed in the RepDB data removed
+  in Phase 1. Needs a decision (edit the templates or drop them) — probably with Phase 6/7.
+- PRE-EXISTING: imported Kaggle exercises have reviewStatus 'imported' and the API only
+  returns 'published' ones, so a fresh DB shows no exercises in the builder until they are
+  published. Intended workflow, noted for Phase 6 (plan builder).
+- Onboarding videos are still bundled (Phase 2c); the mobile build output still lists them.
+- The dashboard Logo is a mirror of the mobile one (two small components, one set of
+  files). A shared packages/ui can merge them later.
+- Placeholder copy unchanged; no new user-facing copy was added.
+
+================================================================================
+8. SUGGESTED COMMITS
+================================================================================
+(CLAUDE.md is gitignored and intentionally excluded. Coverage checked read-only with
+`git status -- <pathspecs>`: commits 1–5 cover all 103 changed paths exactly once; commit 6
+is this report.)
+Note on brand/: it is your source logo folder and was untracked. Commit 2 includes it so
+the originals are versioned next to the copies the apps use. If you'd rather keep it out
+of git, drop `brand` from commit 2 (and add it to .gitignore yourself).
+Only the final state (after commit 5) was built and tested. Commit 5 also deletes the
+legacy layer, so earlier commits still build but look half-migrated.
+
+1) feat: add temporary error/muted tokens, logo charcoal text color and brand assets
+   - packages/tokens/
+2) feat: use the real Sistem logo and app-icon favicons in mobile and dashboard
+   - brand/, apps/dashboard/, apps/mobile/public/, apps/mobile/src/components/common/Logo/
+3) refactor: mobile app-scale foundation and touch-ready shared components
+   - apps/mobile/index.html, apps/mobile/src/styles/globals.css, typography.css,
+     apps/mobile/src/components/ (except common/Logo)
+4) feat: phone layout for auth and onboarding with sticky actions and history back
+   - apps/mobile/src/features/auth/, apps/mobile/src/features/onboarding/,
+     apps/mobile/src/hooks/useKeyboardInset.ts
+5) refactor: move remaining ATLAS screens to tokens, fix phone breakers, drop legacy layer
+   - apps/mobile/src/features/{dashboard,profile,workouts,exercises}/,
+     apps/mobile/src/styles/legacy-atlas.css, apps/mobile/src/main.tsx
+6) docs: add phase 2b report
+   - docs/phase-reports/phase-02b-app-scale.txt
+
+================================================================================
+9. READY-TO-PASTE GIT COMMANDS
+================================================================================
+Run from the repo root, in this order. Claude Code did not run them. `git add -A` also
+stages the deletions. The ':(exclude)' pathspec is quoted, so this works in zsh and bash.
+
+# 1) tokens + brand assets in the tokens package
+git add -A -- packages/tokens
+git commit -m "feat: add temporary error/muted tokens, logo charcoal text color and brand assets"
+
+# 2) real logo + favicons
+git add -A -- \
+  brand \
+  apps/dashboard \
+  apps/mobile/public \
+  apps/mobile/src/components/common/Logo
+git commit -m "feat: use the real Sistem logo and app-icon favicons in mobile and dashboard"
+
+# 3) foundation + shared components
+git add -A -- \
+  apps/mobile/index.html \
+  apps/mobile/src/styles/globals.css \
+  apps/mobile/src/styles/typography.css \
+  apps/mobile/src/components \
+  ':(exclude)apps/mobile/src/components/common/Logo'
+git commit -m "refactor: mobile app-scale foundation and touch-ready shared components"
+
+# 4) auth + onboarding
+git add -A -- \
+  apps/mobile/src/features/auth \
+  apps/mobile/src/features/onboarding \
+  apps/mobile/src/hooks/useKeyboardInset.ts
+git commit -m "feat: phone layout for auth and onboarding with sticky actions and history back"
+
+# 5) remaining screens + legacy layer removal
+git add -A -- \
+  apps/mobile/src/features/dashboard \
+  apps/mobile/src/features/profile \
+  apps/mobile/src/features/workouts \
+  apps/mobile/src/features/exercises \
+  apps/mobile/src/styles/legacy-atlas.css \
+  apps/mobile/src/main.tsx
+git commit -m "refactor: move remaining ATLAS screens to tokens, fix phone breakers, drop legacy layer"
+
+# 6) report
+git add -A -- docs/phase-reports/phase-02b-app-scale.txt
+git commit -m "docs: add phase 2b report"

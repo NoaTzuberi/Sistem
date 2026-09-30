@@ -1,37 +1,37 @@
 .workout-exercise-row {
   display: flex;
-  flex-wrap: nowrap;
+  /* Phones: the four fields wrap onto their own full-width line below the name. */
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  border-radius: 4px;
-  border: 1px solid rgba(245, 246, 248, 0.1);
-  background: var(--background-secondary);
+  border-radius: var(--radius-none);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
   transition: border-color var(--transition-fast) var(--ease-standard);
 }
 
-.workout-exercise-row:hover {
-  border-color: rgba(245, 246, 248, 0.2);
+.workout-exercise-row:active {
+  border-color: var(--color-border);
 }
 
 .workout-exercise-row-order {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  width: 24px;
   flex-shrink: 0;
 }
 
 .workout-exercise-row-order button {
-  width: 20px;
-  height: 20px;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 3px;
-  border: 1px solid rgba(245, 246, 248, 0.1);
+  border-radius: var(--radius-none);
+  border: 1px solid var(--color-border);
   background: transparent;
-  color: var(--color-neutral-300);
+  color: var(--color-text-muted);
   cursor: pointer;
   transition:
     border-color var(--transition-fast) var(--ease-standard),
@@ -49,17 +49,17 @@
   cursor: not-allowed;
 }
 
-.workout-exercise-row-order button:hover:not(:disabled) {
-  border-color: rgba(255, 122, 26, 0.4);
-  background-color: rgba(255, 122, 26, 0.1);
-  color: var(--color-orange-hover);
+.workout-exercise-row-order button:active:not(:disabled) {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary-deep);
 }
 
 .workout-exercise-row-media {
   width: 48px;
   height: 48px;
   flex-shrink: 0;
-  border-radius: 2px;
+  border-radius: var(--radius-none);
   overflow: hidden;
 }
 
@@ -71,7 +71,7 @@
 .workout-exercise-row-info {
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-width: 0;
   gap: 1px;
 }
@@ -81,7 +81,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: var(--font-weight-medium);
-  font-size: var(--font-size-sm);
+  font-size: var(--text-sm);
 }
 
 .workout-exercise-row-history {
@@ -89,13 +89,15 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: var(--font-mono, monospace);
-  font-size: 10px;
-  color: var(--color-neutral-500);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
 }
 
 .workout-exercise-row-fields {
-  display: flex;
-  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  flex: 1 1 100%;
+  order: 1;
   gap: var(--space-2);
 }
 
@@ -106,23 +108,14 @@
   flex-shrink: 0;
 }
 
-.workout-exercise-row-field-sets,
-.workout-exercise-row-field-reps,
-.workout-exercise-row-field-rest {
-  width: 84px;
-}
-
-.workout-exercise-row-field-weight {
-  width: 92px;
-}
 
 .workout-exercise-row-field label {
   font-family: var(--font-mono, monospace);
-  font-size: 10px;
+  font-size: var(--text-xs);
   font-weight: var(--font-weight-medium);
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: var(--color-neutral-500);
+  color: var(--color-text-muted);
   white-space: nowrap;
 }
 
@@ -133,17 +126,17 @@
 .workout-exercise-row-field .input-field {
   width: 100%;
   font-family: var(--font-mono, monospace);
-  font-size: var(--font-size-base);
+  font-size: var(--text-base);
   font-weight: var(--font-weight-medium);
-  color: var(--color-neutral-100);
+  color: var(--color-text);
   text-align: center;
-  padding: 6px 8px;
-  background-color: rgba(0, 0, 0, 0.25);
-  border-color: rgba(245, 246, 248, 0.1);
+  padding: var(--space-2) var(--space-1);
+  background-color: var(--color-bg);
+  border-color: var(--color-border);
 }
 
 .workout-exercise-row-field .input-field:focus {
-  border-color: rgba(255, 122, 26, 0.5);
+  border-color: var(--color-primary);
 }
 
 .workout-exercise-row-field .input-field[type='number'] {
@@ -158,15 +151,15 @@
 
 .workout-exercise-row-remove {
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
-  border: 1px solid rgba(245, 246, 248, 0.1);
+  border-radius: var(--radius-none);
+  border: 1px solid var(--color-border);
   background: transparent;
-  color: var(--color-neutral-500);
+  color: var(--color-text-muted);
   cursor: pointer;
   transition:
     background-color var(--transition-fast) var(--ease-standard),
@@ -179,8 +172,27 @@
   height: 13px;
 }
 
-.workout-exercise-row-remove:hover {
-  background-color: rgba(232, 93, 93, 0.08);
-  border-color: rgba(232, 93, 93, 0.4);
-  color: var(--color-error-500);
+.workout-exercise-row-remove:active {
+  background-color: var(--color-error-soft);
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+/* Hover only where a real pointer exists; touch uses the :active state above. */
+@media (hover: hover) {
+  .workout-exercise-row:hover {
+    border-color: var(--color-border);
+  }
+
+  .workout-exercise-row-order button:hover:not(:disabled) {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary-soft);
+    color: var(--color-primary-deep);
+  }
+
+  .workout-exercise-row-remove:hover {
+    background-color: var(--color-error-soft);
+    border-color: var(--color-error);
+    color: var(--color-error);
+  }
 }

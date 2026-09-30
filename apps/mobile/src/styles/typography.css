@@ -1,4 +1,4 @@
-/* Depends on @sistem/tokens and the legacy layer (legacy-atlas.css, removed in Phase 2b). */
+/* Mobile type scale from @sistem/tokens. */
 
 h1,
 h2,
@@ -6,74 +6,70 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: var(--font-display);
-  color: var(--color-neutral-100);
-  font-weight: var(--font-display-weight);
+  font-family: var(--font-family-display);
+  color: var(--color-text);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
   margin: 0;
 }
 
 h1 {
-  font-size: var(--font-size-4xl);
-  letter-spacing: var(--letter-spacing-tighter);
-  line-height: var(--line-height-tight);
+  font-size: var(--text-3xl);
+  letter-spacing: var(--letter-spacing-tight);
 }
 
 h2 {
-  font-size: var(--font-size-3xl);
+  font-size: var(--text-2xl);
   letter-spacing: var(--letter-spacing-tight);
-  line-height: var(--line-height-tight);
 }
 
 h3 {
-  font-size: var(--font-size-2xl);
-  letter-spacing: var(--letter-spacing-tight);
-  line-height: var(--line-height-tight);
+  font-size: var(--text-xl);
 }
 
 h4 {
-  font-size: var(--font-size-xl);
-  letter-spacing: var(--letter-spacing-normal);
+  font-size: var(--text-lg);
 }
 
 h5 {
-  font-size: var(--font-size-lg);
+  font-size: var(--text-base);
   font-weight: var(--font-weight-medium);
 }
 
 h6 {
-  font-size: var(--font-size-base);
+  font-size: var(--text-sm);
   font-weight: var(--font-weight-medium);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--letter-spacing-wide);
 }
 
 p {
-  font-family: var(--font-body);
+  font-family: var(--font-family-body);
   margin: 0;
-  font-size: var(--font-size-base);
+  font-size: var(--text-base);
   font-weight: var(--font-weight-regular);
-  color: var(--color-neutral-300);
+  color: var(--color-text);
   line-height: var(--line-height-base);
 }
 
 .text-body {
-  font-family: var(--font-body);
-  font-size: var(--font-size-base);
+  font-family: var(--font-family-body);
+  font-size: var(--text-base);
   font-weight: var(--font-weight-regular);
-  color: var(--color-neutral-300);
+  color: var(--color-text);
   line-height: var(--line-height-base);
 }
 
 .text-label {
-  font-size: var(--font-size-sm);
+  font-size: var(--text-sm);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-neutral-500);
+  color: var(--color-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--letter-spacing-wide);
 }
 
 .text-caption {
-  font-size: var(--font-size-xs);
+  font-size: var(--text-sm);
   font-weight: var(--font-weight-regular);
-  color: var(--color-neutral-500);
+  color: var(--color-text-muted);
 }

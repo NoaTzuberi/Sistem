@@ -1,11 +1,12 @@
+/* Fills the screen behind the onboarding step. The dark overlay stays for text
+   readability (owner decision); it is mixed from the text token, not hard-coded. */
 .step-video-background {
-  position: absolute;
+  position: fixed;
   inset: 0;
+  z-index: 0;
   isolation: isolate;
   overflow: hidden;
-  background:
-    linear-gradient(135deg, rgba(18, 22, 29, 0.94) 0%, rgba(22, 30, 39, 0.88) 58%, rgba(255, 122, 26, 0.2) 100%),
-    var(--background-secondary);
+  background-color: var(--color-text);
 }
 
 .step-video-background-media {
@@ -22,5 +23,10 @@
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: linear-gradient(135deg, rgba(18, 22, 29, 0.82) 0%, rgba(22, 30, 39, 0.72) 55%, rgba(255, 122, 26, 0.16) 100%);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-text) 85%, transparent) 0%,
+    color-mix(in srgb, var(--color-text) 72%, transparent) 55%,
+    color-mix(in srgb, var(--color-primary) 20%, transparent) 100%
+  );
 }

@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { AppShell } from '../../../../components/layout/AppShell/AppShell';
-import { Container } from '../../../../components/layout/Container/Container';
-import { Section } from '../../../../components/layout/Section/Section';
-import { GlassCard } from '../../../../components/common/GlassCard/GlassCard';
+import type { ReactNode } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../../../../components/common/Button/Button';
 import { Spinner } from '../../../../components/common/Spinner/Spinner';
 import { OnboardingProgress } from '../../components/OnboardingProgress/OnboardingProgress';
@@ -27,11 +24,19 @@ import { ROUTES } from '../../../../app/config/routes';
 import { STEP_VIDEO_MAP } from '../../data/stepVideoMap';
 import type { OnboardingStepId } from '../../data/stepVideoMap';
 import { ACTIVITY_VIDEO_MAP } from '../../data/activityVideoMap';
+import { usePageEnter } from '../../../../hooks/usePageEnter';
+import { useKeyboardInset } from '../../../../hooks/useKeyboardInset';
 import './OnboardingPage.css';
 
 const STEP_COUNT = 9;
 const EXERCISE_PREFERENCES_STEP_INDEX = 5;
 const ACTIVITIES_STEP_INDEX = 4;
+
+// Each step is its own browser-history entry, so the system back gesture / Android
+// back button goes to the previous step instead of leaving onboarding.
+interface OnboardingHistoryState {
+  onboardingStep?: number;
+}
 
 const STEP_IDS: OnboardingStepId[] = [
   'welcome',
@@ -77,6 +82,42 @@ function isEditableStepId(value: string | undefined): value is OnboardingStepId 
   );
 }
 
+// Answers live in memory until they are submitted, so history can point at a step
+// whose earlier required answers are gone (e.g. after a reload). Never show a step
+// past the first one that still needs an answer.
+function clampToFirstInvalidStep(requestedIndex: number, state: OnboardingFormState): number {
+  for (let index = 0; index < requestedIndex; index += 1) {
+    if (!isStepValid(index, state)) return index;
+  }
+  return requestedIndex;
+}
+
+interface OnboardingScreenProps {
+  videoSrc: string | undefined;
+  header?: ReactNode;
+  footer: ReactNode;
+  children: ReactNode;
+}
+
+// Full-screen phone layout: progress on top, the step scrolls in the middle, and the
+// actions stay in a sticky bottom bar above the keyboard.
+function OnboardingScreen({ videoSrc, header, footer, children }: OnboardingScreenProps) {
+  const screenRef = usePageEnter<HTMLDivElement>();
+  useKeyboardInset();
+
+  return (
+    <div
+      ref={screenRef}
+      className={'onboarding-screen' + (videoSrc ? ' onboarding-screen-has-video' : '')}
+    >
+      <StepVideoBackground videoSrc={videoSrc} />
+      {header && <header className="onboarding-header">{header}</header>}
+      <main className="onboarding-body">{children}</main>
+      <footer className="onboarding-footer">{footer}</footer>
+    </div>
+  );
+}
+
 /** Builds edit-mode's starting formState from the user's already-saved profile
  * (fetched via getMyProfile) — same shape saveOnboardingProfile's payload
  * expects, so fields the user isn't editing round-trip unchanged on save. */
@@ -110,13 +151,14 @@ function mapProfileToFormState(profile: MyProfileResponse, fallbackName: string)
 
 export function OnboardingPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, updateUser } = useAuth();
   const params = useParams<{ step?: string }>();
   const editStepId = isEditableStepId(params.step) ? params.step : undefined;
   const isEditMode = params.step !== undefined;
   const isValidEditStep = editStepId !== undefined;
 
-  const [stepIndex, setStepIndex] = useState(() => (editStepId ? STEP_IDS.indexOf(editStepId) : 0));
+  const historyStep = (location.state as OnboardingHistoryState | null)?.onboardingStep ?? 0;
   const [formState, setFormState] = useState<OnboardingFormState>(() => ({
     ...INITIAL_ONBOARDING_STATE,
     name: user?.name ?? '',
@@ -126,6 +168,25 @@ export function OnboardingPage() {
   const [previewActivityId, setPreviewActivityId] = useState<string | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(isEditMode);
   const [profileLoadError, setProfileLoadError] = useState<string>();
+
+  const stepIndex = editStepId
+    ? STEP_IDS.indexOf(editStepId)
+    : clampToFirstInvalidStep(Math.min(historyStep, STEP_COUNT - 1), formState);
+
+  // A fresh mount (e.g. a reload) starts over at the first step: answers are not
+  // restored yet (per-step server saves arrive in Phase 3/4).
+  useEffect(() => {
+    if (!isEditMode && historyStep !== 0) {
+      navigate(location.pathname, { replace: true, state: null });
+    }
+    // Only on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // A new step starts at the top of the screen.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [stepIndex]);
 
   // Invalid/unknown :step (or 'welcome'/'review', which aren't data steps) —
   // bounce back to Profile rather than rendering a broken edit screen.
@@ -196,15 +257,21 @@ export function OnboardingPage() {
       return;
     }
 
-    setStepIndex((index) => index + 1);
+    goToStep(stepIndex + 1);
   }
 
+  function goToStep(index: number) {
+    const state: OnboardingHistoryState = { onboardingStep: index };
+    navigate(location.pathname, { state });
+  }
+
+  // Same as the system back gesture: pop this step's history entry.
   function handleBack() {
-    setStepIndex((index) => Math.max(0, index - 1));
+    navigate(-1);
   }
 
   function handleSkip() {
-    setStepIndex((index) => index + 1);
+    goToStep(stepIndex + 1);
   }
 
   function handleCancelEdit() {
@@ -258,54 +325,36 @@ export function OnboardingPage() {
 
     if (isLoadingProfile) {
       return (
-        <AppShell hideTabBar>
-          <Section>
-            <Container>
-              <div className="onboarding-edit-loading">
-                <Spinner size="lg" />
-              </div>
-            </Container>
-          </Section>
-        </AppShell>
+        <div className="onboarding-edit-loading">
+          <Spinner size="lg" />
+        </div>
       );
     }
 
     return (
-      <AppShell hideTabBar>
-        <Section>
-          <Container>
-            <GlassCard variant="flat" className="onboarding-card">
-              <StepVideoBackground videoSrc={videoSrc} />
-              <div className="onboarding-card-content">
-                <div className="onboarding-step-scroll">
-                  {profileLoadError ? (
-                    <p className="onboarding-error">{profileLoadError}</p>
-                  ) : (
-                    steps[stepIndex]
-                  )}
+      <OnboardingScreen
+        videoSrc={videoSrc}
+        footer={
+          <>
+            <Button variant="secondary" onClick={handleCancelEdit} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              className="onboarding-footer-primary"
+              onClick={handleSaveEdit}
+              loading={isSubmitting}
+              disabled={Boolean(profileLoadError) || !isStepValid(stepIndex, formState)}
+            >
+              Save changes
+            </Button>
+          </>
+        }
+      >
+        {profileLoadError ? <p className="onboarding-error">{profileLoadError}</p> : steps[stepIndex]}
 
-                  {submitError && <p className="onboarding-error">{submitError}</p>}
-                </div>
-
-                <div className="onboarding-nav">
-                  <Button variant="secondary" onClick={handleCancelEdit} disabled={isSubmitting}>
-                    Cancel
-                  </Button>
-                  <div className="onboarding-nav-spacer" />
-                  <Button
-                    variant="primary"
-                    onClick={handleSaveEdit}
-                    loading={isSubmitting}
-                    disabled={Boolean(profileLoadError) || !isStepValid(stepIndex, formState)}
-                  >
-                    Save changes
-                  </Button>
-                </div>
-              </div>
-            </GlassCard>
-          </Container>
-        </Section>
-      </AppShell>
+        {submitError && <p className="onboarding-error">{submitError}</p>}
+      </OnboardingScreen>
     );
   }
 
@@ -315,45 +364,39 @@ export function OnboardingPage() {
   const continueLabel = isFirstStep ? 'Start' : isLastStep ? 'Create my profile' : 'Continue';
 
   return (
-    <AppShell hideTabBar>
-      <Section>
-        <Container>
-          <GlassCard variant="flat" className="onboarding-card">
-            <StepVideoBackground videoSrc={videoSrc} />
-            <div className="onboarding-card-content">
-              <OnboardingProgress currentStep={stepIndex + 1} totalSteps={STEP_COUNT} />
+    <OnboardingScreen
+      videoSrc={videoSrc}
+      header={<OnboardingProgress currentStep={stepIndex + 1} totalSteps={STEP_COUNT} />}
+      footer={
+        <>
+          {!isFirstStep && (
+            <Button variant="secondary" onClick={handleBack} disabled={isSubmitting}>
+              Back
+            </Button>
+          )}
+          {showSkip && (
+            <Button variant="ghost" onClick={handleSkip} disabled={isSubmitting}>
+              Skip for now
+            </Button>
+          )}
+          <Button
+            variant="primary"
+            className="onboarding-footer-primary"
+            onClick={handleContinue}
+            loading={isSubmitting}
+            disabled={!isStepValid(stepIndex, formState)}
+          >
+            {continueLabel}
+          </Button>
+        </>
+      }
+    >
+      {/* Keyed by step so each step gets the light enter transition. */}
+      <div key={stepIndex} className="onboarding-step-enter">
+        {steps[stepIndex]}
+      </div>
 
-              <div className="onboarding-step-scroll">
-                {steps[stepIndex]}
-
-                {submitError && <p className="onboarding-error">{submitError}</p>}
-              </div>
-
-              <div className="onboarding-nav">
-                {!isFirstStep && (
-                  <Button variant="secondary" onClick={handleBack} disabled={isSubmitting}>
-                    Back
-                  </Button>
-                )}
-                <div className="onboarding-nav-spacer" />
-                {showSkip && (
-                  <Button variant="ghost" onClick={handleSkip} disabled={isSubmitting}>
-                    Skip for now
-                  </Button>
-                )}
-                <Button
-                  variant="primary"
-                  onClick={handleContinue}
-                  loading={isSubmitting}
-                  disabled={!isStepValid(stepIndex, formState)}
-                >
-                  {continueLabel}
-                </Button>
-              </div>
-            </div>
-          </GlassCard>
-        </Container>
-      </Section>
-    </AppShell>
+      {submitError && <p className="onboarding-error">{submitError}</p>}
+    </OnboardingScreen>
   );
 }

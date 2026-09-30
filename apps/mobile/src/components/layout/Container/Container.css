@@ -1,6 +1,7 @@
+/* The app shell already pads the screen edges; this only caps the reading width on
+   tablets / landscape. */
 .container {
   width: 100%;
-  max-width: var(--container-max-width);
+  max-width: 640px;
   margin-inline: auto;
-  padding-inline: var(--space-4);
 }

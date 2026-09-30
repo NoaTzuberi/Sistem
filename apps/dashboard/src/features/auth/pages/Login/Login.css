@@ -18,6 +18,10 @@
   clip-path: polygon(0 0, calc(100% - var(--cut-size)) 0, 100% var(--cut-size), 100% 100%, 0 100%);
 }
 
+.login-logo {
+  align-self: center;
+}
+
 .login-title {
   margin: 0 0 var(--space-2);
   font-family: var(--font-family-display);

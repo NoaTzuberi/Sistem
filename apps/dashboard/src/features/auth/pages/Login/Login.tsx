@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../../services/auth/AuthContext';
 import { ROUTES } from '../../../../app/config/routes';
+import { Logo } from '../../../../components/common/Logo/Logo';
 import './Login.css';
 
 // Placeholder copy and layout — the owner designs the real dashboard login.
@@ -42,6 +43,7 @@ export function Login() {
   return (
     <main className="login-page">
       <form className="login-form" onSubmit={handleSubmit} noValidate>
+        <Logo size="lg" className="login-logo" />
         <h1 className="login-title">Coach dashboard</h1>
 
         <label className="login-field">
