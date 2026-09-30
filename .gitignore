@@ -19,7 +19,7 @@ Thumbs.db
 *.log
 
 # Large onboarding stock footage — not committed yet; pending an LFS/CDN decision
-client/src/assets/onBoardingvid/
+apps/mobile/src/assets/onBoardingvid/
 
 # Local-only files (kept on disk, not in the repo)
 render.yaml

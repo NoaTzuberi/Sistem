@@ -1,0 +1,19 @@
+{
+  "name": "@sistem/api-client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "@sistem/types": "0.0.0"
+  },
+  "peerDependencies": {
+    "axios": "^1.19.0"
+  }
+}

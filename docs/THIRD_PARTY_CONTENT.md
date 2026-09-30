@@ -7,8 +7,8 @@ Kaggle "Gym Exercise Data" — facts only
 Source: https://www.kaggle.com/datasets/niharika41298/gym-exercise-data
 File: megaGymDataset.csv (columns: Title, Desc, Type, BodyPart, Equipment,
 Level, Rating, RatingDesc)
-Stored locally in server/data/raw/gym-exercise-data/ (gitignored, not committed).
-Imported via server/src/features/exercises/scripts/importExercises.ts.
+Stored locally in apps/server/data/raw/gym-exercise-data/ (gitignored, not committed).
+Imported via apps/server/src/features/exercises/scripts/importExercises.ts.
 
 Decision (owner, 2026-09-29): treated as NOT cleared for commercial use.
 
@@ -39,7 +39,7 @@ How it is enforced in code:
 - instructions.* is always empty for imported records.
 - source.raw stores only the five factual fields, not the whole CSV row.
 - source.license is set to "unconfirmed — facts only".
-- Covered by server/src/features/exercises/__tests__/normalize.test.ts.
+- Covered by apps/server/src/features/exercises/__tests__/normalize.test.ts.
 
 Until original exercise descriptions exist (Backlog: AI draft reviewed and
 approved by the coach), the coach's per-exercise notes in the plan are the
@@ -49,7 +49,7 @@ Existing databases: records imported before this change may still hold
 descriptions (instructions.execution) and the full CSV row (source.raw). Per
 the owner's decision the project starts on a fresh database; to clean a dev
 database, drop the `exercises` collection and run `npm run import:exercises`
-again from server/. (A plain re-import refreshes 'imported' records but skips
+again from the repo root. (A plain re-import refreshes 'imported' records but skips
 'reviewed'/'published' ones, so dropping the collection is the reliable way.)
 
 ⸻
@@ -76,12 +76,12 @@ What this covers
 
 The front-view (anterior) muscle-shaped SVG polygon coordinates used to draw
 the human silhouette on the workout builder's live muscle-coverage map
-(client/src/features/workouts/components/MuscleCoverageMap/MuscleCoverageMap.tsx).
+(apps/mobile/src/features/workouts/components/MuscleCoverageMap/MuscleCoverageMap.tsx).
 
 Only the polygon coordinate data was copied — the `anteriorData` shape
 definitions, in their original 0–100 × 0–200 coordinate space — remapped from
 that library's own muscle-slug taxonomy onto our own BodyRegion keys
-(client/src/features/workouts/data/bodyRegions.ts). The react-body-highlighter
+(apps/mobile/src/features/workouts/data/bodyRegions.ts). The react-body-highlighter
 package itself was not installed as a dependency: its <Model> component owns
 its own data/coloring API, which didn't fit the exercise-count intensity
 scaling and glow behavior built for this feature, so only the underlying

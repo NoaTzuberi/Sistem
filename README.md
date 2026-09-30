@@ -9,54 +9,55 @@ This repository is a fork of ATLAS that is being converted step by step.
 See [`docs/PRD.md`](./docs/PRD.md) for the product and
 [`docs/BUILD_PLAN.md`](./docs/BUILD_PLAN.md) for the phase plan.
 
-## Stack
+## Repository layout (npm workspaces)
 
-- **Client** (`client/`) — React 19, Vite, TypeScript, React Router, axios, GSAP, plain CSS.
-  To be wrapped with Capacitor.
-- **Server** (`server/`) — Node.js ≥ 20, Express 5, TypeScript, MongoDB (Mongoose), JWT auth.
-  Tests with Vitest + mongodb-memory-server.
+| Path | Package | What it is |
+|---|---|---|
+| `apps/mobile` | `@sistem/mobile` | Mobile app — React 19, Vite, TypeScript, React Router, axios, GSAP, plain CSS. Trainee and coach mode by role. To be wrapped with Capacitor. |
+| `apps/dashboard` | `@sistem/dashboard` | Coach web dashboard — React + Vite (desktop-first). |
+| `apps/server` | `@sistem/server` | API — Node.js, Express 5, TypeScript, MongoDB (Mongoose), JWT auth. Vitest + mongodb-memory-server. |
+| `packages/types` | `@sistem/types` | API contract types shared by all three. |
+| `packages/api-client` | `@sistem/api-client` | axios client factory + shared auth calls. |
+| `packages/tokens` | `@sistem/tokens` | Design tokens (`tokens.css`, PRD §12). |
 
 ## Running locally
 
-Prerequisites: Node.js ≥ 20 and a MongoDB connection string.
-
-### Server
-
-```bash
-cd server
-npm install
-cp .env.example .env   # then fill in the values
-npm run dev            # http://localhost:5002 (health: GET /api/health)
-```
-
-### Client
+Prerequisites: Node.js ≥ 20.19 and a MongoDB connection string. Everything runs from the
+repo root; there is one `npm install` and one lockfile.
 
 ```bash
-cd client
 npm install
-cp .env.example .env
-npm run dev            # http://localhost:5173
+cp apps/server/.env.example apps/server/.env         # then fill in the values
+cp apps/mobile/.env.example apps/mobile/.env
+cp apps/dashboard/.env.example apps/dashboard/.env
+npm run dev        # server (http://localhost:5002) + mobile app (http://localhost:5173)
+npm run dev:all    # + coach dashboard (http://localhost:5174)
 ```
 
-The onboarding videos (`client/src/assets/onBoardingvid/`) are not in the repo yet;
-the client only builds where they exist locally (moved to Cloudinary in Phase 2c).
+The onboarding videos (`apps/mobile/src/assets/onBoardingvid/`) are not in the repo yet;
+the mobile app only builds where they exist locally (moved to Cloudinary in Phase 2c).
 
-### Optional data (from `server/`)
+### Optional data
 
 ```bash
 npm run import:exercises          # exercise library from the Kaggle CSV (facts only)
 npm run seed:workout-templates    # ready-made workout templates
 npm run seed:knowledge            # knowledge base embeddings (needs VOYAGE_API_KEY)
+npm run promote:coach -- <email>  # DEV ONLY: make an existing user a coach
 ```
 
-### Other commands
+`promote:coach` refuses to run with `NODE_ENV=production` and refuses a non-local
+database unless `--allow-remote` is added (it prints which database it will touch).
 
-| Command | Where | What it does |
-|---|---|---|
-| `npm run build` | `client/`, `server/` | Production build |
-| `npm start` | `server/` | Run the compiled server |
-| `npm test` | `server/` | Run the test suite |
-| `npm run lint` | `client/` | Lint the client (oxlint) |
+### Other commands (from the root)
+
+| Command | What it does |
+|---|---|
+| `npm run build` | Build every app |
+| `npm run lint` | Lint mobile + dashboard (oxlint) |
+| `npm test` | Run the server test suite |
+| `npm run dev:server` / `dev:mobile` / `dev:dashboard` | Run one app |
+| `npm start -w @sistem/server` | Run the compiled server |
 
 ## Docs
 

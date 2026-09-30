@@ -1,0 +1,350 @@
+SISTEM — PHASE 2 REPORT: APP SHELL, DESIGN TOKENS, ROUTING GUARDS + MONOREPO
+Date: 2026-09-30
+Scope: docs/BUILD_PLAN.md Phase 2 (items 1–5), including the approved monorepo move,
+executed as approved by the owner (decisions 1–6 + concurrently + dev:all).
+Phase 2b (adapting the kept ATLAS screens) was NOT started.
+
+================================================================================
+1. SUMMARY
+================================================================================
+- Monorepo: client/ -> apps/mobile, server/ -> apps/server (plain mv, no git mv),
+  new apps/dashboard, and three shared packages: @sistem/types, @sistem/api-client
+  and @sistem/tokens. npm workspaces, one root lockfile. `npm run dev` runs the server
+  and the mobile app, and `npm run dev:all` also runs the dashboard.
+- Design tokens: packages/tokens/tokens.css holds the PRD §12 palette, #111111 text,
+  spacing, sharp-cut shape tokens, the mobile type scale, and safe-area/tab-bar tokens.
+  The old ATLAS variables stay in apps/mobile/src/styles/legacy-atlas.css, a clearly
+  marked LEGACY layer that is removed in Phase 2b.
+- Server: `role` (trainee|coach, default trainee) on User. Sign-up can never set it.
+  The server now computes `appState` (onboarding / waiting / home / coach) and returns
+  it from /auth/me, login, register and the onboarding save. Adds a `requireRole`
+  middleware and a dev-only `promote:coach` script with a database guard.
+- Mobile: AppStateGuard + landingPath follow the server's appState (PRD §4.2). A bottom
+  tab bar is chosen by role: trainee Home / Workouts / Profile, coach Inbox / Trainees /
+  Profile. The app container is mobile-first with safe areas. Sidebar removed; Log Out
+  moved to Profile.
+- Dashboard: Vite + React app on port 5174 with a coach-only login and a placeholder
+  home, using the shared auth client, types and tokens.
+- Final state: root build OK; lint 0 errors; server tests 56/56 (45 + 11 new).
+  `npm run dev` starts both processes from the root. Dependency versions are identical
+  to the previous lockfiles.
+
+================================================================================
+2. FOLDER MAP (before -> after)
+================================================================================
+client/                          -> apps/mobile/     (@sistem/mobile)
+server/                          -> apps/server/     (@sistem/server)
+(new)                               apps/dashboard/  (@sistem/dashboard)
+(new)                               packages/types/, packages/api-client/, packages/tokens/
+client|server/package-lock.json  -> replaced by root package-lock.json
+client/src/scripts_tmp/ (empty)  -> deleted
+.env files, the onboarding videos, server/data/raw (CSV) and server/data/processed
+moved with their folders and stay gitignored (verified in §6).
+
+================================================================================
+3. FILES CHANGED
+================================================================================
+MOVED (content unchanged): every other tracked file under client/ and server/ now
+lives under apps/mobile/ and apps/server/.
+
+MOVED + MODIFIED
+- .gitignore   onboarding video path -> apps/mobile/src/assets/onBoardingvid/
+               (changed BEFORE the move)
+- apps/mobile/package.json   name @sistem/mobile; deps on @sistem/api-client, tokens, types
+- apps/mobile/index.html     viewport-fit=cover (needed for safe-area insets)
+- apps/mobile/src/main.tsx   imports @sistem/tokens first, then the legacy layer
+- apps/mobile/src/styles/variables.css -> legacy-atlas.css (LEGACY header). Spacing,
+  font weights and line heights were removed from it (identical values now come from
+  tokens). --color-border renamed to --legacy-color-border so it can never override
+  the Sistem token.
+- apps/mobile/src/styles/globals.css, typography.css   comment only
+- --color-border -> --legacy-color-border (mechanical, 14 uses) in: Badge.css, Select.css,
+  Spinner.css, DashboardCalendar.css, MonthCalendar.css, ExerciseCard.css,
+  FilterChip.css, ExerciseDetailPage.css, ProfilePage.css, WorkoutTemplateDetailPage.css
+- apps/mobile/src/app/config/routes.ts   TRAINEE_HOME, COACH_INBOX, COACH_TRAINEES,
+  COACH_PROFILE
+- apps/mobile/src/app/router/AppRouter.tsx   guard-based route tree; "/" and unknown
+  paths go to RootRedirect
+- apps/mobile/src/components/layout/AppShell/AppShell.tsx, .css   bottom TabBar,
+  `hideTabBar` prop, mobile container with safe-area padding. The desktop sidebar
+  layout was removed; the legacy background is kept (marked for 2b)
+- apps/mobile/src/features/auth/components/ProtectedRoute/ProtectedRoute.tsx, .css
+  authentication only; unauthenticated -> /login (the "Log in required" card is gone)
+- apps/mobile/src/features/auth/pages/Login/Login.tsx   after login -> "/" (state decides)
+- apps/mobile/src/features/onboarding/pages/OnboardingPage/OnboardingPage.tsx
+  (protected flow; minimal change) passes the server's appState into updateUser, and
+  <AppShell hideTabBar>. Questions, copy, logic and steps are unchanged.
+- apps/mobile/src/services/onboarding/onboardingService.ts   response type + role/appState
+- apps/mobile/src/features/onboarding/data/activityVideoMap.ts   path in a comment
+- apps/mobile/src/features/exercises/data/filterOptions.ts       paths in comments
+- apps/mobile/src/features/profile/pages/ProfilePage/ProfilePage.tsx   + <LogoutButton/>
+- apps/mobile/src/services/api/apiClient.ts   built with createApiClient (same behavior)
+- apps/mobile/src/services/auth/authService.ts   wraps createAuthApi; re-exports types
+- apps/server/package.json   name @sistem/server, private, promote:coach script,
+  devDependency @sistem/types
+- apps/server/src/features/users/user.model.ts   role field
+- apps/server/src/features/users/users.constants.ts   USER_ROLES, DEFAULT_USER_ROLE;
+  path in a comment
+- apps/server/src/features/users/users.service.ts   onboarding save returns role + appState
+- apps/server/src/features/auth/auth.service.ts   public user includes role + appState
+- apps/server/src/middleware/auth.middleware.ts   requireRole(role)
+
+ADDED
+- package.json, package-lock.json (root)
+- packages/types/{package.json, src/index.ts}
+- packages/api-client/{package.json, src/index.ts, src/createApiClient.ts, src/authApi.ts}
+- packages/tokens/{package.json, tokens.css}
+- apps/server/src/features/users/appState.service.ts
+- apps/server/src/features/users/scripts/promoteCoach.ts
+- apps/server/src/features/auth/__tests__/roles.test.ts
+- apps/mobile/src/app/router/landingPath.ts
+- apps/mobile/src/features/auth/components/AppStateGuard/AppStateGuard.tsx
+- apps/mobile/src/features/auth/components/RootRedirect/RootRedirect.tsx
+- apps/mobile/src/components/layout/TabBar/TabBar.tsx, .css
+- apps/mobile/src/components/layout/PlaceholderPage/PlaceholderPage.tsx, .css
+- apps/mobile/src/components/common/LogoutButton/LogoutButton.tsx, .css
+- apps/mobile/src/features/home/pages/HomePage/HomePage.tsx
+- apps/mobile/src/features/coach/pages/{InboxPage,TraineesPage,CoachProfilePage}/*.tsx
+- apps/dashboard/ (26 files): package.json, index.html, vite.config.ts, tsconfig*.json,
+  .oxlintrc.json, .gitignore, .env.example, public/favicon.svg, src/main.tsx, App.tsx,
+  app/{config/routes.ts, providers/AppProviders.tsx, router/AppRouter.tsx},
+  services/{api/apiClient.ts, auth/AuthContext.tsx, auth/authService.ts,
+  auth/tokenStorage.ts}, features/auth/{pages/Login, components/RequireCoach},
+  features/home/pages/HomePage, styles/globals.css
+- docs/phase-reports/phase-02-app-shell-monorepo.txt
+
+DELETED
+- client/package-lock.json, server/package-lock.json (root lockfile replaces them)
+- client/src/components/layout/Sidebar/ (Sidebar.tsx, Sidebar.css, icons.tsx),
+  replaced by TabBar + LogoutButton
+- client/src/styles/variables.css (now legacy-atlas.css)
+
+DOCS
+- README.md   rewritten for the monorepo (layout, root commands, promote:coach)
+- docs/THIRD_PARTY_CONTENT.md   paths -> apps/...
+- CLAUDE.md (gitignored, NOT committed)   stack, folder structure, root commands, env
+  paths, token rule
+
+LOCAL ONLY (gitignored, not in any commit)
+- apps/dashboard/.env (copied from .env.example: VITE_API_URL=http://localhost:5002/api)
+- Removed: old client|server node_modules and dist; a stray client/.vite/ cache that
+  your old Vite process recreated after the move.
+
+================================================================================
+4. DEPENDENCIES
+================================================================================
+Added: concurrently ^9.2.1 (root devDependency, approved).
+Internal workspace packages: @sistem/types, @sistem/api-client (axios as a
+peerDependency), @sistem/tokens.
+Removed: none.
+Versions: the first root install resolved newer minor/patch versions within the
+existing ranges (e.g. oxlint 1.76 -> 1.86, which added 6 lint warnings;
+mongodb-memory-server 11.2 -> 11.3). I regenerated the lockfile so all 31 direct
+dependencies resolve to exactly the versions in the previous client/server lockfiles,
+with one hoisted copy each. All app package.json ranges are unchanged, except the
+package names and the new @sistem/* entries.
+The dashboard uses the same versions as the mobile app (React 19.2.8, Vite 8.2.0,
+TypeScript ~6.0).
+
+================================================================================
+5. HOW IT WORKS (for review)
+================================================================================
+App state (server, apps/server/src/features/users/appState.service.ts):
+  coach -> 'coach'; onboarding not complete -> 'onboarding';
+  published plan -> 'home', otherwise 'waiting'.
+  hasPublishedPlan() returns false until the Plan model exists (Phase 3), so every
+  onboarded trainee is 'waiting' for now.
+Mobile routing:
+  /                        -> RootRedirect: /login, or the landing path for appState
+  /onboarding              -> only in 'onboarding'
+  trainee area             -> 'waiting' + 'home' (dashboard, workouts, profile,
+                              /onboarding/:step edit, workout pages). Tabs stay visible
+                              while waiting (decision 2); Phase 4 locks this.
+  /home                    -> only in 'home' (placeholder)
+  /coach/inbox|trainees|profile -> only in 'coach' (placeholders)
+  Landing: onboarding -> /onboarding, waiting -> /dashboard, home -> /home,
+           coach -> /coach/inbox. The Home tab points to the landing path.
+Server enforcement: requireRole('coach') checks the role in the database on every call
+  (not from the JWT). No coach endpoints exist yet; Phase 3 and 6 mount it.
+promote:coach: refuses NODE_ENV=production. For a non-local database (any
+  mongodb+srv URL or non-localhost host) it refuses unless --allow-remote is given,
+  and it always prints the host/db (never credentials) before writing.
+
+================================================================================
+6. HOW TO TEST
+================================================================================
+Automated (all run and passing at the end of this phase, from the repo root):
+- npm install                     -> OK, 0 vulnerabilities
+- npm run build                   -> dashboard, mobile (tsc -b + vite build), server (tsc) OK
+- npm run lint                    -> exit 0, 0 errors. mobile: the same 3 pre-existing
+                                     warnings; dashboard: 1 warning (AuthContext exports
+                                     provider + hook, same pattern as mobile)
+- npm test                        -> 7 files, 56 tests passed (45 existing + 11 new:
+                                     sign-up ignores role, appState per PRD §4.2 table,
+                                     requireRole 401/401/403/pass, promote:coach DB guard)
+
+Root dev smoke test (run): `PORT=5012 VITE_API_URL=http://localhost:5012/api npm run dev`
+(alternate ports, because your old dev servers held 5002/5173 — see §7)
+  -> "MongoDB connected", "Sistem server running", GET /api/health 200,
+     GET /api/auth/me without a token 401, mobile index 200, tokens.css served and
+     @sistem/api-client resolved by Vite.
+  `npm run dev:dashboard` -> dashboard served on 5174 (index + Login module 200).
+
+git status check (requested):
+- Nothing is staged.
+- No video files, no data/raw CSV, no data/processed files, no .env files and no
+  CLAUDE.md appear as untracked or staged. git check-ignore confirms these are ignored:
+  apps/mobile/src/assets/onBoardingvid/* (30 files, still on disk),
+  apps/server/data/raw/.../megaGymDataset.csv, apps/server/data/processed/*,
+  apps/{server,mobile,dashboard}/.env, CLAUDE.md.
+- The only .csv in git status is the already-tracked 5-row test fixture
+  (server/src/features/exercises/__tests__/fixtures/sample.csv), moved as-is.
+
+Manual checks (please run; I did not drive a browser or write to your database):
+0. Stop the old dev servers first (§7), then run `npm run dev` from the root.
+1. http://localhost:5173/ -> /login. Unknown paths -> /login.
+2. Register a new user -> /onboarding (no tab bar). Try /dashboard or /workouts by URL
+   -> sent back to /onboarding.
+3. Finish onboarding -> /dashboard with the bottom tabs Home / Workouts / Profile.
+   Home is active on /dashboard. /home by URL -> back to /dashboard ('waiting').
+   /onboarding by URL -> /dashboard.
+4. Profile -> "Update Training Profile" edit flow still works (no tab bar) -> Save ->
+   Profile. Log Out (bottom of the profile card) -> /login.
+5. Coach: `npm run promote:coach -- <that email>` (add --allow-remote only if your
+   DATABASE_URL is a remote DEV database). Log in on mobile -> /coach/inbox with the
+   tabs Inbox / Trainees / Profile. Trainee URLs such as /dashboard -> /coach/inbox.
+   Profile -> Log Out.
+6. `npm run dev:all` -> http://localhost:5174: a trainee login shows "This dashboard is
+   for coach accounts only."; a coach login shows the placeholder home + Log out.
+7. Phone sizes (devtools, 375x667 and 430x932): the tab bar sits at the bottom, targets
+   >= 44px, and content is not hidden behind the tab bar.
+
+================================================================================
+7. KNOWN ISSUES / TODOs
+================================================================================
+- ACTION: your old dev servers. When the move happened, `client/` Vite and `server/`
+  nodemon were running from the old paths. Your old server (nodemon, port 5002, old
+  server/ path) is STILL RUNNING and serves pre-Phase-2 code: no role and no appState,
+  so the new mobile app's guard cannot work against it. Stop it (Ctrl+C in that
+  terminal), then use `npm run dev` from the root. Your old client Vite (PID 60363) was
+  stopped by me by mistake: my pkill for the dashboard test server also matched it. It
+  was already broken by the move (its node_modules were gone).
+- ACTION: deploy settings outside the repo. Vercel root directory client -> apps/mobile.
+  Your local render.yaml (gitignored) root server -> apps/server. Both need the install
+  to run at the repo root (workspaces), e.g. `npm ci` at the root, then
+  `npm run build -w @sistem/<app>`. vercel.json moved with apps/mobile.
+- ACTION (you said you'll do it): rotate the secret on the bare line in apps/server/.env.
+- Mixed look until Phase 2b: the new tab bar and placeholder pages use Sistem tokens
+  (light/pink), while the kept ATLAS screens still use the dark legacy layer. There
+  are ~298 hard-coded colors in 45 ATLAS files, left for 2b as agreed.
+- `hasPublishedPlan` is a stub (false) until Phase 3. Nobody reaches 'home' yet, so
+  /home is only reachable after Phase 3 publishes plans.
+- CORS: CLIENT_ORIGIN is unset in your .env, so it defaults to '*' and the dashboard
+  works in dev. Production needs an allow-list of the mobile + dashboard origins (the
+  env var takes one origin today). Handle when deploying the dashboard.
+- R3 (unchanged): a 401 still does a full reload to /login (now via onUnauthorized
+  injected into @sistem/api-client). Revisit for Capacitor in Phase 5.
+- If your old Vite (5173) is running, `dev:all` makes mobile fall back to 5174, and
+  the dashboard (strictPort 5174) then fails. This only happens with a stale server.
+- The dashboard has no Logo (the single Logo component lives in apps/mobile; moving it
+  to a shared package is the "packages/ui, later" item).
+- mongodb-memory-server re-downloaded its MongoDB binary to ~/.cache/mongodb-binaries.
+  A first parallel run left a corrupt archive; I deleted it and downloaded again.
+  If tests ever fail with "MD5 check failed", delete ~/.cache/mongodb-binaries.
+- Placeholder copy (approved): "Home", "Inbox", "Trainees", "Profile", "Coming soon.",
+  "Coach dashboard", "This dashboard is for coach accounts only.", "Signed in as …".
+- apps/mobile/README.md is still the Vite template readme (unchanged).
+- Intermediate commits: moved files already carry their Phase 2 edits (a file cannot be
+  split without interactive staging), so only the final state after commit 6 is
+  verified to build and test. Each commit is still one logical theme.
+
+================================================================================
+8. SUGGESTED COMMITS
+================================================================================
+(CLAUDE.md is gitignored and intentionally excluded. Coverage checked read-only with
+`git status -- <pathspecs>`: the six commits cover all 614 changed paths (+ this
+report), each exactly once.)
+
+1) refactor: move client and server into apps/ as npm workspaces
+   - .gitignore, package.json, package-lock.json
+   - client/ (deletions), server/ (deletions)
+   - apps/mobile/ and apps/server/, except the new files in commits 3 and 4
+2) feat: add shared packages for types, api client and design tokens
+   - packages/
+3) feat: add user role, server-side app state, requireRole and dev promote:coach
+   - apps/server/src/features/users/appState.service.ts
+   - apps/server/src/features/users/scripts/
+   - apps/server/src/features/auth/__tests__/
+4) feat: add state-based routing guard and role-based bottom tab shell
+   - apps/mobile/src/app/router/landingPath.ts
+   - apps/mobile/src/features/auth/components/AppStateGuard/, RootRedirect/
+   - apps/mobile/src/components/layout/TabBar/, PlaceholderPage/
+   - apps/mobile/src/components/common/LogoutButton/
+   - apps/mobile/src/features/home/, apps/mobile/src/features/coach/
+5) feat: scaffold coach dashboard with coach-only login
+   - apps/dashboard/
+6) docs: update README and docs paths for the monorepo, add phase 2 report
+   - README.md, docs/THIRD_PARTY_CONTENT.md, docs/phase-reports/phase-02-app-shell-monorepo.txt
+
+================================================================================
+9. READY-TO-PASTE GIT COMMANDS
+================================================================================
+Run from the repo root, in this order. Claude Code did not run them. `git add -A` also
+stages the deletions (git detects the moves as renames). The ':(exclude)' pathspecs
+are quoted, so this works in zsh and bash.
+
+# 1) refactor: monorepo move
+git add -A -- \
+  .gitignore \
+  package.json \
+  package-lock.json \
+  client \
+  server \
+  apps/mobile \
+  apps/server \
+  ':(exclude)apps/server/src/features/users/appState.service.ts' \
+  ':(exclude)apps/server/src/features/users/scripts' \
+  ':(exclude)apps/server/src/features/auth/__tests__' \
+  ':(exclude)apps/mobile/src/app/router/landingPath.ts' \
+  ':(exclude)apps/mobile/src/components/common/LogoutButton' \
+  ':(exclude)apps/mobile/src/components/layout/PlaceholderPage' \
+  ':(exclude)apps/mobile/src/components/layout/TabBar' \
+  ':(exclude)apps/mobile/src/features/auth/components/AppStateGuard' \
+  ':(exclude)apps/mobile/src/features/auth/components/RootRedirect' \
+  ':(exclude)apps/mobile/src/features/coach' \
+  ':(exclude)apps/mobile/src/features/home'
+git commit -m "refactor: move client and server into apps/ as npm workspaces"
+
+# 2) feat: shared packages
+git add -A -- packages
+git commit -m "feat: add shared packages for types, api client and design tokens"
+
+# 3) feat: server role + app state
+git add -A -- \
+  apps/server/src/features/users/appState.service.ts \
+  apps/server/src/features/users/scripts \
+  apps/server/src/features/auth/__tests__
+git commit -m "feat: add user role, server-side app state, requireRole and dev promote:coach"
+
+# 4) feat: mobile guard + tab shell
+git add -A -- \
+  apps/mobile/src/app/router/landingPath.ts \
+  apps/mobile/src/components/common/LogoutButton \
+  apps/mobile/src/components/layout/PlaceholderPage \
+  apps/mobile/src/components/layout/TabBar \
+  apps/mobile/src/features/auth/components/AppStateGuard \
+  apps/mobile/src/features/auth/components/RootRedirect \
+  apps/mobile/src/features/coach \
+  apps/mobile/src/features/home
+git commit -m "feat: add state-based routing guard and role-based bottom tab shell"
+
+# 5) feat: dashboard scaffold
+git add -A -- apps/dashboard
+git commit -m "feat: scaffold coach dashboard with coach-only login"
+
+# 6) docs
+git add -A -- \
+  README.md \
+  docs/THIRD_PARTY_CONTENT.md \
+  docs/phase-reports/phase-02-app-shell-monorepo.txt
+git commit -m "docs: update README and docs paths for the monorepo, add phase 2 report"

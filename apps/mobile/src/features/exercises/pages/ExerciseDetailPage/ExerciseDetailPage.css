@@ -1,0 +1,193 @@
+.exercise-detail-modal {
+  max-width: 640px;
+}
+
+.exercise-detail-modal-compact {
+  max-width: 420px;
+}
+
+.exercise-detail-loading {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-8) 0;
+}
+
+.exercise-detail-not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  text-align: center;
+  padding: var(--space-4) 0;
+}
+
+.exercise-detail-name {
+  position: relative;
+  display: inline-block;
+  font-family: var(--font-display);
+  margin-top: var(--space-4);
+  padding-bottom: var(--space-2);
+}
+
+.exercise-detail-name::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 1px;
+  width: 32px;
+  background: var(--color-orange-500, #ff7a1a);
+}
+
+.exercise-detail-execution {
+  white-space: pre-line;
+}
+
+.exercise-detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.exercise-detail-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  border-radius: 2px;
+  font-family: var(--font-mono, monospace);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.exercise-detail-tag-upper_body {
+  background-color: var(--color-blue-soft);
+  border: 1px solid rgba(79, 143, 224, 0.35);
+  color: var(--color-blue-hover);
+}
+.exercise-detail-tag-back {
+  background-color: var(--color-teal-soft);
+  border: 1px solid rgba(47, 191, 143, 0.35);
+  color: var(--color-teal-hover);
+}
+.exercise-detail-tag-core {
+  background-color: var(--color-plum-soft);
+  border: 1px solid rgba(165, 107, 138, 0.35);
+  color: var(--color-plum-hover);
+}
+.exercise-detail-tag-lower_body {
+  background-color: var(--color-olive-soft);
+  border: 1px solid rgba(138, 140, 79, 0.35);
+  color: var(--color-olive-hover);
+}
+
+.exercise-detail-tag-equipment {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  border-radius: 2px;
+  background-color: var(--surface-glass-bg);
+  border: 1px solid var(--legacy-color-border);
+  color: var(--color-neutral-300);
+  font-family: var(--font-mono, monospace);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.exercise-detail-difficulty {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.exercise-detail-difficulty-label {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-neutral-500);
+}
+
+.exercise-detail-difficulty-bars {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.exercise-detail-difficulty-bar {
+  width: 12px;
+  height: 3px;
+  border-radius: 1px;
+  background-color: rgba(245, 246, 248, 0.15);
+}
+
+.exercise-detail-difficulty-bar.is-filled {
+  background-color: var(--color-orange-500, #ff7a1a);
+}
+.exercise-detail-scroll-hint {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  padding: var(--space-3) 0;
+  margin-top: var(--space-4);
+  margin-bottom: calc(-1 * var(--space-5));
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    var(--background-secondary) 40%
+  );
+  color: rgba(255, 122, 26, 0.7);
+  animation: exercise-detail-scroll-hint-bounce 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.exercise-detail-scroll-hint svg {
+  width: 16px;
+  height: 16px;
+}
+
+@keyframes exercise-detail-scroll-hint-bounce {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(4px);
+    opacity: 0.9;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exercise-detail-scroll-hint {
+    animation: none;
+  }
+}
+
+.exercise-detail-section {
+  margin-top: var(--space-6);
+}
+
+.exercise-detail-section h2 {
+  margin-bottom: var(--space-3);
+  font-family: var(--font-mono, monospace);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-neutral-500);
+}
+
+.exercise-detail-sparse-note {
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--legacy-color-border);
+  color: var(--color-neutral-500);
+}
