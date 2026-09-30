@@ -20,20 +20,6 @@
   padding: 0 var(--space-2);
 }
 
-.app-sidebar-logo {
-  width: 32px;
-  height: 32px;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-
-.app-sidebar-wordmark {
-  font-family: var(--font-logo);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-neutral-100);
-}
-
 .app-sidebar-nav {
   display: flex;
   flex-direction: column;

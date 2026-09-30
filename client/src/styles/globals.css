@@ -63,10 +63,6 @@ button {
   cursor: pointer;
 }
 
-.logo {
-  font-family: var(--font-logo);
-}
-
 ul,
 ol {
   list-style: none;

@@ -1,0 +1,15 @@
+.logo {
+  display: inline-block;
+  font-family: var(--font-logo);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  color: var(--color-neutral-100);
+}
+
+.logo-md {
+  font-size: var(--font-size-lg);
+}
+
+.logo-lg {
+  font-size: var(--font-size-xl);
+}

@@ -1,6 +1,5 @@
 export const ROUTES = {
   HOME: '/',
-  SHOWCASE: '/showcase',
   LOGIN: '/login',
   REGISTER: '/register',
   FORGOT_PASSWORD: '/forgot-password',
@@ -14,6 +13,9 @@ export const ROUTES = {
   EXERCISES: '/exercises',
 } as const;
 
+// The exercise library pages are not routed in the mobile app (no trainee library
+// screen). The paths stay for the kept page code, which moves into the coach
+// dashboard plan builder in Phase 6.
 export const EXERCISE_DETAIL_PATH = '/exercises/:slug';
 
 export function exercisePath(slug: string): string {

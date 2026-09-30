@@ -1,14 +1,13 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../../app/config/routes';
 import { useAuth } from '../../../services/auth/AuthContext';
-import atlasLogo from '../../../assets/Logo/ATLASlogo3.png';
-import { GridIcon, DumbbellIcon, PulseIcon, ProfileIcon, LogOutIcon } from './icons';
+import { Logo } from '../../common/Logo/Logo';
+import { GridIcon, DumbbellIcon, ProfileIcon, LogOutIcon } from './icons';
 import './Sidebar.css';
 
 const NAV_ITEMS = [
   { to: ROUTES.DASHBOARD, label: 'Dashboard', icon: <GridIcon /> },
   { to: ROUTES.WORKOUTS, label: 'Workouts', icon: <DumbbellIcon /> },
-  { to: ROUTES.EXERCISES, label: 'Exercises', icon: <PulseIcon /> },
   { to: ROUTES.PROFILE, label: 'Profile', icon: <ProfileIcon /> },
 ];
 
@@ -18,16 +17,15 @@ export function Sidebar() {
 
   function handleLogout() {
     logout();
-    navigate(ROUTES.HOME);
+    navigate(ROUTES.LOGIN);
   }
 
   const initial = user?.name?.trim().charAt(0).toUpperCase() ?? '?';
 
   return (
     <aside className="app-sidebar">
-      <Link to={ROUTES.HOME} className="app-sidebar-brand">
-        <img className="app-sidebar-logo" src={atlasLogo} alt="ATLAS" />
-        <span className="app-sidebar-wordmark">ATLAS</span>
+      <Link to={ROUTES.DASHBOARD} className="app-sidebar-brand">
+        <Logo className="app-sidebar-wordmark" />
       </Link>
 
       <nav className="app-sidebar-nav">

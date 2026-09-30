@@ -1,16 +1,13 @@
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import type { Location } from 'react-router-dom';
 import {
   ROUTES,
-  EXERCISE_DETAIL_PATH,
   WORKOUT_DETAIL_PATH,
   WORKOUT_EDIT_PATH,
   WORKOUT_SESSION_PATH,
   WORKOUT_SESSION_SUMMARY_PATH,
   ONBOARDING_EDIT_PATH,
 } from '../config/routes';
-import { Landing } from '../../pages/Landing/Landing';
-import { Showcase } from '../../pages/Showcase/Showcase';
 import { Login } from '../../features/auth/pages/Login/Login';
 import { Register } from '../../features/auth/pages/Register/Register';
 import { ForgotPassword } from '../../features/auth/pages/ForgotPassword/ForgotPassword';
@@ -20,13 +17,10 @@ import { DashboardPage } from '../../features/dashboard/pages/DashboardPage/Dash
 import { ProfilePage } from '../../features/profile/pages/ProfilePage/ProfilePage';
 import { WorkoutsPage } from '../../features/workouts/pages/WorkoutsPage/WorkoutsPage';
 import { OnboardingPage } from '../../features/onboarding/pages/OnboardingPage/OnboardingPage';
-import { ExerciseLibraryPage } from '../../features/exercises/pages/ExerciseLibraryPage/ExerciseLibraryPage';
-import { ExerciseDetailPage } from '../../features/exercises/pages/ExerciseDetailPage/ExerciseDetailPage';
 import { WorkoutBuilderPage } from '../../features/workouts/pages/WorkoutBuilderPage/WorkoutBuilderPage';
 import { WorkoutTemplateDetailPage } from '../../features/workouts/pages/WorkoutTemplateDetailPage/WorkoutTemplateDetailPage';
 import { ActiveWorkoutPage } from '../../features/workouts/pages/ActiveWorkoutPage/ActiveWorkoutPage';
 import { WorkoutSummaryPage } from '../../features/workouts/pages/WorkoutSummaryPage/WorkoutSummaryPage';
-import { CoachWidget } from '../../features/coach/components/CoachWidget/CoachWidget';
 
 export function AppRouter() {
   const location = useLocation();
@@ -36,8 +30,8 @@ export function AppRouter() {
   return (
     <>
       <Routes location={backgroundLocation ?? location}>
-        <Route path={ROUTES.HOME} element={<Landing />} />
-        <Route path={ROUTES.SHOWCASE} element={<Showcase />} />
+        {/* No homepage: "/" goes to login until the Phase 2 routing guard decides. */}
+        <Route path={ROUTES.HOME} element={<Navigate to={ROUTES.LOGIN} replace />} />
         <Route path={ROUTES.LOGIN} element={<Login />} />
         <Route path={ROUTES.REGISTER} element={<Register />} />
         <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPassword />} />
@@ -53,12 +47,8 @@ export function AppRouter() {
           <Route path={WORKOUT_SESSION_SUMMARY_PATH} element={<WorkoutSummaryPage />} />
           <Route path={ROUTES.ONBOARDING} element={<OnboardingPage />} />
           <Route path={ONBOARDING_EDIT_PATH} element={<OnboardingPage />} />
-          <Route path={ROUTES.EXERCISES} element={<ExerciseLibraryPage />} />
           {!backgroundLocation && (
-            <>
-              <Route path={EXERCISE_DETAIL_PATH} element={<ExerciseDetailPage />} />
-              <Route path={WORKOUT_DETAIL_PATH} element={<WorkoutTemplateDetailPage />} />
-            </>
+            <Route path={WORKOUT_DETAIL_PATH} element={<WorkoutTemplateDetailPage />} />
           )}
         </Route>
       </Routes>
@@ -66,13 +56,10 @@ export function AppRouter() {
       {backgroundLocation && (
         <Routes>
           <Route element={<ProtectedRoute />}>
-            <Route path={EXERCISE_DETAIL_PATH} element={<ExerciseDetailPage />} />
             <Route path={WORKOUT_DETAIL_PATH} element={<WorkoutTemplateDetailPage />} />
           </Route>
         </Routes>
       )}
-
-      <CoachWidget />
     </>
   );
 }

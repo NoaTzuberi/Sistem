@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { GlassCard } from '../../../../components/common/GlassCard/GlassCard';
-import atlasLogo from '../../../../assets/Logo/ATLASlogo3.png';
+import { Logo } from '../../../../components/common/Logo/Logo';
 import './AuthCard.css';
 
 interface AuthCardProps {
@@ -11,7 +11,7 @@ interface AuthCardProps {
 export function AuthCard({ title, children }: AuthCardProps) {
   return (
     <GlassCard className="auth-card">
-      <img className="auth-card-logo" src={atlasLogo} alt="ATLAS" />
+      <Logo size="lg" className="auth-card-logo" />
       <h1 className="auth-card-title">{title}</h1>
       {children}
     </GlassCard>
