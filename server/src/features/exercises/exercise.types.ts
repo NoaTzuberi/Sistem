@@ -76,7 +76,7 @@ export interface ExerciseDocument {
 
   /** Quality tier — lets any query prefer curated/enhanced records. Default 'standard'. */
   contentTier: ContentTier;
-  /** Populated only for the RepDB enhanced subset. */
+  /** Optional curated metadata; empty for Kaggle (facts-only) records. */
   goals?: ExerciseGoal[];
   mechanic?: Mechanic;
   forceType?: ForceType;
@@ -87,16 +87,19 @@ export interface ExerciseDocument {
 }
 
 /** Raw CSV row shape for the Kaggle megaGymDataset.csv (leading column is an unnamed pandas index). */
+/**
+ * The Kaggle CSV columns we are allowed to read. The file also has Desc, Rating
+ * and RatingDesc — copied text and ratings that are deliberately NOT typed here so
+ * no code can read them (dataset not cleared for commercial use; facts only —
+ * see docs/THIRD_PARTY_CONTENT.md).
+ */
 export interface RawExerciseRow {
   '': string;
   Title: string;
-  Desc: string;
   Type: string;
   BodyPart: string;
   Equipment: string;
   Level: string;
-  Rating: string;
-  RatingDesc: string;
 }
 
 export interface NormalizedExercise {
@@ -129,52 +132,4 @@ export interface NormalizeResult {
   records: NormalizedExercise[];
   skippedRows: RowIssue[];
   unmappedValues: RowIssue[];
-}
-
-/** Shape of a single exercise entry in server/data/repdb-preview/preview.en.json. */
-export interface RawRepDbExercise {
-  id: string;
-  name: string;
-  description?: string;
-  instructions?: string[];
-  tips?: string[];
-  category?: string;
-  force_type?: string;
-  mechanic?: string;
-  difficulty?: string;
-  equipment?: string | null;
-  body_part?: string;
-  primary_muscles?: string[];
-  secondary_muscles?: string[];
-  goals?: string[];
-  tags?: string[];
-  synonyms?: string[];
-  is_unilateral?: boolean;
-  is_bodyweight?: boolean;
-  relations?: { to: string; type: string }[];
-  images?: { classic?: string[]; flat?: string[] };
-  animation?: boolean;
-  met?: number;
-}
-
-export interface NormalizedRepDbExercise {
-  slug: string;
-  name: string;
-  aliases: string[];
-  category: Category[];
-  primaryMuscles: Muscle[];
-  secondaryMuscles: Muscle[];
-  equipment: Equipment[];
-  difficulty: Difficulty;
-  movementType: MovementType;
-  instructions: ExerciseInstructions;
-  tips: string[];
-  goals: ExerciseGoal[];
-  mechanic?: Mechanic;
-  forceType?: ForceType;
-  isUnilateral: boolean;
-  media: ExerciseMedia;
-  source: ExerciseSource;
-  /** Raw {to, type} pairs, resolved to ObjectIds in a second pass once all RepDB docs exist. */
-  pendingRelations: { to: string; type: string }[];
 }

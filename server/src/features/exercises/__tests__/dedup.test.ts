@@ -40,14 +40,11 @@ describe('dedupeWithinBatch', () => {
     expect(duplicateDetails[0].skippedRowIndexes).toEqual([1]);
   });
 
-  it('prefers the variant that has instructions content', () => {
-    const rows = [
-      record({ instructions: { setup: '', execution: '', breathing: '' } }),
-      record({ instructions: { setup: '', execution: 'Do the thing.', breathing: '' } }),
-    ];
+  it('keeps the first record of a duplicate group', () => {
+    const rows = [record({ name: 'First' }), record({ name: 'Second' })];
     const { unique } = dedupeWithinBatch(rows);
 
-    expect(unique[0].instructions.execution).toBe('Do the thing.');
+    expect(unique[0].name).toBe('First');
   });
 
   it('keeps distinct dedupKeys as separate records', () => {

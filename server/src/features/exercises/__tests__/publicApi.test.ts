@@ -70,6 +70,7 @@ describe('public exercise API', () => {
     expect(exercise.source).toBeUndefined();
     expect(exercise.reviewStatus).toBeUndefined();
     expect(exercise.isActive).toBeUndefined();
+    expect(exercise.attribution).toBeUndefined();
   });
 
   it('getPublicExerciseBySlug returns a published exercise', async () => {
@@ -123,5 +124,30 @@ describe('public exercise API', () => {
 
     const result = await listPublicExercises({ search: 'squat' });
     expect(result.items.map((e) => e.slug)).toEqual(['barbell-back-squat']);
+  });
+
+  // RepDB (the only 'enhanced' source) is gone, so every record is 'standard':
+  // the contentTier sort must fall through to a plain name order.
+  it('sorts the list by name when every exercise is standard tier', async () => {
+    for (const name of ['Squat', 'Bench Press', 'Deadlift']) {
+      await Exercise.create(
+        baseExerciseDoc({ slug: name.toLowerCase().replace(' ', '-'), name, reviewStatus: 'published' }),
+      );
+    }
+
+    const result = await listPublicExercises({});
+    expect(result.items.map((e) => e.name)).toEqual(['Bench Press', 'Deadlift', 'Squat']);
+    expect(result.items.every((e) => e.contentTier === 'standard')).toBe(true);
+  });
+
+  it('breaks equal search scores by name when every exercise is standard tier', async () => {
+    for (const name of ['Squat Press', 'Squat Jump']) {
+      await Exercise.create(
+        baseExerciseDoc({ slug: name.toLowerCase().replace(' ', '-'), name, reviewStatus: 'published' }),
+      );
+    }
+
+    const result = await listPublicExercises({ search: 'squat' });
+    expect(result.items.map((e) => e.name)).toEqual(['Squat Jump', 'Squat Press']);
   });
 });

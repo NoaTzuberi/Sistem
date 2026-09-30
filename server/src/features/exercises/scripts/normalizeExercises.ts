@@ -10,6 +10,9 @@ import type { RawExerciseRow, NormalizedExercise, RowIssue, NormalizeResult } fr
 
 const KAGGLE_DATASET_ID = 'niharika41298/gym-exercise-data';
 const KAGGLE_DATASET_URL = 'https://www.kaggle.com/datasets/niharika41298/gym-exercise-data';
+// License could not be confirmed, so only plain facts are imported — never
+// descriptions, tips, instructions or ratings (docs/THIRD_PARTY_CONTENT.md).
+export const KAGGLE_LICENSE = 'unconfirmed — facts only';
 
 /** Deterministic, ASCII-safe, URL-friendly slug from an exercise name. */
 export function slugify(input: string): string {
@@ -110,7 +113,6 @@ export function normalizeRow(
     }
   }
 
-  const desc = (row.Desc ?? '').trim();
   const normalizedTitle = normalizeTitleForDedupKey(title);
   const slug = slugify(title);
   const dedupKey = buildDedupKey(normalizedTitle, equipment, primaryMuscles[0]);
@@ -125,15 +127,16 @@ export function normalizeRow(
     equipment,
     difficulty,
     movementType,
-    instructions: { setup: '', execution: desc, breathing: '' },
+    instructions: { setup: '', execution: '', breathing: '' },
     source: {
       provider: 'Kaggle',
       dataset: KAGGLE_DATASET_ID,
       originalTitle: title,
       importedAt,
-      license: null,
+      license: KAGGLE_LICENSE,
       sourceUrl: KAGGLE_DATASET_URL,
-      raw: { ...row },
+      // Only the factual columns, never the whole row (which carries Desc/Rating text).
+      raw: { Title: title, Type: type, BodyPart: bodyPartRaw, Equipment: equipmentRaw, Level: level },
     },
     reviewStatus: 'imported',
     isActive: true,

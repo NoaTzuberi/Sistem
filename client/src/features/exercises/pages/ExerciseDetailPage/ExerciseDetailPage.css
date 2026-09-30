@@ -39,15 +39,6 @@
   background: var(--color-orange-500, #ff7a1a);
 }
 
-.exercise-detail-attribution {
-  margin-top: var(--space-2);
-  color: var(--color-neutral-500);
-}
-
-.exercise-detail-attribution a {
-  color: var(--color-orange-500);
-}
-
 .exercise-detail-execution {
   white-space: pre-line;
 }

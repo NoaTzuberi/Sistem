@@ -38,11 +38,6 @@ export interface ListExercisesParams {
   search?: string;
 }
 
-export interface PublicExerciseAttribution {
-  label: string;
-  url: string;
-}
-
 export interface PublicExercise {
   id: string;
   slug: string;
@@ -63,8 +58,6 @@ export interface PublicExercise {
   mechanic?: Mechanic;
   forceType?: ForceType;
   isUnilateral?: boolean;
-  /** Present only for contentTier: 'enhanced' — required CC BY-NC 4.0 credit. */
-  attribution?: PublicExerciseAttribution;
 }
 
 export interface PaginatedExercises {
@@ -102,13 +95,10 @@ interface ExerciseLeanDoc {
 /**
  * Strips internal workflow/source fields (reviewStatus, isActive, source —
  * including source.raw — and the progressions/regressions/variations/
- * alternatives ObjectId refs) from the public API response. contentTier and
- * an attribution block ARE exposed: they're product-facing (the "Enhanced"
- * badge and required RepDB credit), not internal metadata.
+ * alternatives ObjectId refs) from the public API response. contentTier IS
+ * exposed: it's product-facing (a curated-content badge), not internal metadata.
  */
 function toPublicExercise(doc: ExerciseLeanDoc): PublicExercise {
-  const isEnhanced = doc.contentTier === 'enhanced';
-
   return {
     id: String(doc._id),
     slug: doc.slug,
@@ -129,7 +119,6 @@ function toPublicExercise(doc: ExerciseLeanDoc): PublicExercise {
     mechanic: doc.mechanic,
     forceType: doc.forceType,
     isUnilateral: doc.isUnilateral,
-    attribution: isEnhanced ? { label: 'RepDB (CC BY-NC 4.0)', url: 'https://repdb.co' } : undefined,
   };
 }
 
@@ -154,7 +143,7 @@ function buildPublicFilter(params: ListExercisesParams): Record<string, unknown>
 
 /**
  * Sorted so that, within whatever the filter already deems relevant,
- * 'enhanced' (RepDB) exercises surface first ('enhanced' < 'standard'
+ * 'enhanced' (curated) exercises surface first ('enhanced' < 'standard'
  * lexicographically, so ascending sort naturally puts them first — no
  * aggregation needed). This is the entire "prioritization" mechanism: the
  * filter decides relevance, the sort just orders within it. An exercise

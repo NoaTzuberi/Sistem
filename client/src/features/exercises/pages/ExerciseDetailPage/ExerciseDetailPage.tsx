@@ -107,15 +107,6 @@ export function ExerciseDetailPage() {
 
         <h1 className="exercise-detail-name">{exercise.name}</h1>
 
-        {exercise.attribution && (
-          <p className="exercise-detail-attribution text-caption">
-            Enhanced exercise — data &amp; images:{' '}
-            <a href={exercise.attribution.url} target="_blank" rel="noreferrer">
-              {exercise.attribution.label}
-            </a>
-          </p>
-        )}
-
         <div className="exercise-detail-tags">
           {exercise.primaryMuscles.map((muscle) => (
             <span key={muscle} className={`exercise-detail-tag exercise-detail-tag-${muscleTagHue(muscle)}`}>

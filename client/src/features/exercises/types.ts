@@ -26,11 +26,6 @@ export interface ExerciseMediaFields {
   animationUrl?: string | null;
 }
 
-export interface ExerciseAttribution {
-  label: string;
-  url: string;
-}
-
 export interface PublicExercise {
   id: string;
   slug: string;
@@ -51,8 +46,6 @@ export interface PublicExercise {
   mechanic?: Mechanic;
   forceType?: ForceType;
   isUnilateral?: boolean;
-  /** Present only when contentTier is 'enhanced' — required CC BY-NC 4.0 credit. */
-  attribution?: ExerciseAttribution;
 }
 
 export interface PaginatedExercises {

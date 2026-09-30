@@ -26,7 +26,7 @@ interface ImportReport {
   recordsAwaitingReview: number;
   missingFieldCounts: {
     title: number;
-    description: number;
+    bodyPart: number;
     equipment: number;
     level: number;
   };
@@ -50,10 +50,6 @@ export function dedupeWithinBatch(records: NormalizedExercise[]) {
       return;
     }
 
-    // Prefer the version that actually has instructions content, if one does.
-    if (!existing.instructions.execution && record.instructions.execution) {
-      kept.set(record.dedupKey, record);
-    }
     dedupIndex.get(record.dedupKey)!.push(index);
   });
 
@@ -171,7 +167,7 @@ export async function runImport(
 
   const missingFieldCounts = {
     title: rows.filter((r) => !(r.Title ?? '').trim()).length,
-    description: rows.filter((r) => !(r.Desc ?? '').trim()).length,
+    bodyPart: rows.filter((r) => !(r.BodyPart ?? '').trim()).length,
     equipment: rows.filter((r) => !(r.Equipment ?? '').trim()).length,
     level: rows.filter((r) => !(r.Level ?? '').trim()).length,
   };
