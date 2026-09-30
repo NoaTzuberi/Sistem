@@ -1,0 +1,182 @@
+{
+  "gym_strength_training": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803277/sistem/onboarding/videos/gym_strength_training.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803279/sistem/onboarding/posters/gym_strength_training.jpg",
+    "videoMd5": "9976fc362bbf294d80d7b16ac3d9fc3d",
+    "posterMd5": "8390f86a9b0609075e164b21d0a1b1c8"
+  },
+  "calisthenics": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803283/sistem/onboarding/videos/calisthenics.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803284/sistem/onboarding/posters/calisthenics.jpg",
+    "videoMd5": "d270a54a4a252cd809290837748c4509",
+    "posterMd5": "1d8133cd4532f01cc4522666bcd24bbd"
+  },
+  "functional_training": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803286/sistem/onboarding/videos/functional_training.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803287/sistem/onboarding/posters/functional_training.jpg",
+    "videoMd5": "bfdbe23e9135466074e5b7f60c50c5dc",
+    "posterMd5": "9d84c8f77e44ce1d8708d0f751cfa48f"
+  },
+  "crossfit": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803289/sistem/onboarding/videos/crossfit.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803290/sistem/onboarding/posters/crossfit.jpg",
+    "videoMd5": "dacec97d4c3c75b99bb91d08074b90bf",
+    "posterMd5": "ff09c48397bd25d4e8f985363dacdbe4"
+  },
+  "running": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803294/sistem/onboarding/videos/running.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803295/sistem/onboarding/posters/running.jpg",
+    "videoMd5": "1423e4138d249f7368884e0abd9a522d",
+    "posterMd5": "ec8d92f0306727d8f95abd097fbe9e53"
+  },
+  "cycling": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803302/sistem/onboarding/videos/cycling.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803303/sistem/onboarding/posters/cycling.jpg",
+    "videoMd5": "35763bf6d8778f3ac9a05dab1ac02df3",
+    "posterMd5": "dade373c3c4f4921b17732c4231720d7"
+  },
+  "swimming": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803310/sistem/onboarding/videos/swimming.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803311/sistem/onboarding/posters/swimming.jpg",
+    "videoMd5": "eaf8f668e513827247d1b35789e09dfa",
+    "posterMd5": "c5e337948d87ce46e567a45a8eb23055"
+  },
+  "rowing": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803315/sistem/onboarding/videos/rowing.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803316/sistem/onboarding/posters/rowing.jpg",
+    "videoMd5": "6f982be86da56fa185c398ea63bc0458",
+    "posterMd5": "9390f0e1b90f178253aa8c9a91805c03"
+  },
+  "hiking": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803318/sistem/onboarding/videos/hiking.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803321/sistem/onboarding/posters/hiking.jpg",
+    "videoMd5": "f83f8f7eccd07e6bdc53fb29f4d15ace",
+    "posterMd5": "afaca6c428eb05b8f64ab542e71b44c9"
+  },
+  "jump_rope": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803323/sistem/onboarding/videos/jump_rope.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803325/sistem/onboarding/posters/jump_rope.jpg",
+    "videoMd5": "3d0210775ad075fa8a7e7967f9746261",
+    "posterMd5": "47103049b540da0d765a03ece1798414"
+  },
+  "yoga": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803328/sistem/onboarding/videos/yoga.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803330/sistem/onboarding/posters/yoga.jpg",
+    "videoMd5": "3489e876deff8671d4f7097dcaf0597c",
+    "posterMd5": "37fd8dc388371d678f45563487fb69a0"
+  },
+  "pilates": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803332/sistem/onboarding/videos/pilates.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803333/sistem/onboarding/posters/pilates.jpg",
+    "videoMd5": "5e1f7606165bb296729ef5bf629e3fa4",
+    "posterMd5": "45a7e9800140103f36c2b62eed06cd00"
+  },
+  "mobility": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803336/sistem/onboarding/videos/mobility.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803337/sistem/onboarding/posters/mobility.jpg",
+    "videoMd5": "1188442c70f2a2b49acd4d02d8221f02",
+    "posterMd5": "940d6df929e45e9ab07df5fce210b597"
+  },
+  "dance": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803340/sistem/onboarding/videos/dance.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803342/sistem/onboarding/posters/dance.jpg",
+    "videoMd5": "31503971dd38e3e1f083b89e46dba86d",
+    "posterMd5": "38793cdbc2949400dea5017fec6dd3b1"
+  },
+  "boxing": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803344/sistem/onboarding/videos/boxing.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803345/sistem/onboarding/posters/boxing.jpg",
+    "videoMd5": "fa4444b44bec9653ecffc5f28e21c284",
+    "posterMd5": "436ca461be1b4ecd5f955cb336420968"
+  },
+  "martial_arts": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803349/sistem/onboarding/videos/martial_arts.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803350/sistem/onboarding/posters/martial_arts.jpg",
+    "videoMd5": "3d2758ec4f696b421307e039dcb70ccc",
+    "posterMd5": "b96ef58b7804d3bdcea0dc134ea28d77"
+  },
+  "brazilian_jiu_jitsu": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803353/sistem/onboarding/videos/brazilian_jiu_jitsu.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803355/sistem/onboarding/posters/brazilian_jiu_jitsu.jpg",
+    "videoMd5": "3e6feabb92511eea6b38ca31a07c6b72",
+    "posterMd5": "075e01ba3dec8c6e71becefe9abcf71e"
+  },
+  "muay_thai": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803357/sistem/onboarding/videos/muay_thai.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803358/sistem/onboarding/posters/muay_thai.jpg",
+    "videoMd5": "4d8b4ef77239d194155cf215242baf5c",
+    "posterMd5": "da11daa1dc82045501180483eefd9043"
+  },
+  "surfing": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803363/sistem/onboarding/videos/surfing.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803365/sistem/onboarding/posters/surfing.jpg",
+    "videoMd5": "dc2c8c4d3e430a838edba7f61a2630b4",
+    "posterMd5": "c99d8ee9a397882232e426d5d2ff77cb"
+  },
+  "skateboarding": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803373/sistem/onboarding/videos/skateboarding.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803375/sistem/onboarding/posters/skateboarding.jpg",
+    "videoMd5": "dc7f576ed015be73028ce2223b441852",
+    "posterMd5": "ba2d747e1d60c40bcef7a4177593ed1d"
+  },
+  "climbing": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803378/sistem/onboarding/videos/climbing.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803379/sistem/onboarding/posters/climbing.jpg",
+    "videoMd5": "035ca15d1d599271c82a9ecf9ed84346",
+    "posterMd5": "d213289b421a9987407efabfbaebc1c8"
+  },
+  "skiing": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803265/sistem/onboarding/videos/skiing.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803267/sistem/onboarding/posters/skiing.jpg",
+    "videoMd5": "97ea8b13d7de7541a28c38500537888f",
+    "posterMd5": "758f00bddc9e337f3c9106aa1a7f082e"
+  },
+  "snowboarding": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803393/sistem/onboarding/videos/snowboarding.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803395/sistem/onboarding/posters/snowboarding.jpg",
+    "videoMd5": "0af44ee1dae9af01a8b98cdf50b6df94",
+    "posterMd5": "d946f67ffd94590320b4eb17671af187"
+  },
+  "football_soccer": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803401/sistem/onboarding/videos/football_soccer.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803403/sistem/onboarding/posters/football_soccer.jpg",
+    "videoMd5": "9f75f6de1cb7986ac908b5a4bbc24517",
+    "posterMd5": "6c3e31d33bda80996b538527b395ed2a"
+  },
+  "basketball": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803407/sistem/onboarding/videos/basketball.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803408/sistem/onboarding/posters/basketball.jpg",
+    "videoMd5": "239c5fd28afe13ed9dd74df327ad91dd",
+    "posterMd5": "0406ecb5e5bde78f4d3555c562e22409"
+  },
+  "tennis": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803411/sistem/onboarding/videos/tennis.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803412/sistem/onboarding/posters/tennis.jpg",
+    "videoMd5": "37a2901e26ea67e218b45b49714cdca7",
+    "posterMd5": "73f80bff4544f63c421add7be486993c"
+  },
+  "volleyball": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803433/sistem/onboarding/videos/volleyball.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803435/sistem/onboarding/posters/volleyball.jpg",
+    "videoMd5": "864988f17a35d013378bfa86d43e526d",
+    "posterMd5": "65e93e7028a41e5cb354973aebafef67"
+  },
+  "table_tennis": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803441/sistem/onboarding/videos/table_tennis.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803442/sistem/onboarding/posters/table_tennis.jpg",
+    "videoMd5": "560ae8c788bf2c69b0d46f83a383159e",
+    "posterMd5": "5ac72e71e62c4044c3a9e00cb88b9075"
+  },
+  "badminton": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803443/sistem/onboarding/videos/badminton.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803445/sistem/onboarding/posters/badminton.jpg",
+    "videoMd5": "0e0e1adc9db6071fd0e668aafb47bb28",
+    "posterMd5": "b57d1e3aa7051bcc84f93d2965c96bb1"
+  },
+  "rugby": {
+    "video": "https://res.cloudinary.com/teoyvpzr/video/upload/v1790803451/sistem/onboarding/videos/rugby.mp4",
+    "poster": "https://res.cloudinary.com/teoyvpzr/image/upload/v1790803452/sistem/onboarding/posters/rugby.jpg",
+    "videoMd5": "2f2e3fc70a6ce5ee97e685486bdeeac5",
+    "posterMd5": "f2c3bb32346a088a6a20e57365340b55"
+  }
+}

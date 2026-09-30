@@ -15,7 +15,7 @@ import { RecoveryStep } from '../../steps/RecoveryStep/RecoveryStep';
 import { EquipmentStep } from '../../steps/EquipmentStep/EquipmentStep';
 import { ReviewStep } from '../../steps/ReviewStep/ReviewStep';
 import { INITIAL_ONBOARDING_STATE } from '../../types';
-import type { OnboardingFormState } from '../../types';
+import type { OnboardingFormState, OnboardingMedia } from '../../types';
 import { saveOnboardingProfile } from '../../../../services/onboarding/onboardingService';
 import { getMyProfile } from '../../../../services/users/usersService';
 import type { MyProfileResponse } from '../../../../services/users/usersService';
@@ -93,7 +93,7 @@ function clampToFirstInvalidStep(requestedIndex: number, state: OnboardingFormSt
 }
 
 interface OnboardingScreenProps {
-  videoSrc: string | undefined;
+  media: OnboardingMedia | undefined;
   header?: ReactNode;
   footer: ReactNode;
   children: ReactNode;
@@ -101,16 +101,16 @@ interface OnboardingScreenProps {
 
 // Full-screen phone layout: progress on top, the step scrolls in the middle, and the
 // actions stay in a sticky bottom bar above the keyboard.
-function OnboardingScreen({ videoSrc, header, footer, children }: OnboardingScreenProps) {
+function OnboardingScreen({ media, header, footer, children }: OnboardingScreenProps) {
   const screenRef = usePageEnter<HTMLDivElement>();
   useKeyboardInset();
 
   return (
     <div
       ref={screenRef}
-      className={'onboarding-screen' + (videoSrc ? ' onboarding-screen-has-video' : '')}
+      className={'onboarding-screen' + (media ? ' onboarding-screen-has-video' : '')}
     >
-      <StepVideoBackground videoSrc={videoSrc} />
+      <StepVideoBackground media={media} />
       {header && <header className="onboarding-header">{header}</header>}
       <main className="onboarding-body">{children}</main>
       <footer className="onboarding-footer">{footer}</footer>
@@ -225,11 +225,11 @@ export function OnboardingPage() {
   }, [editStepId]);
 
   const currentStepId = STEP_IDS[stepIndex];
-  const activityVideo =
+  const activityMedia =
     stepIndex === ACTIVITIES_STEP_INDEX && previewActivityId
       ? ACTIVITY_VIDEO_MAP[previewActivityId]
       : undefined;
-  const videoSrc = activityVideo ?? STEP_VIDEO_MAP[currentStepId];
+  const media = activityMedia ?? STEP_VIDEO_MAP[currentStepId];
 
   function updateFormState(patch: Partial<OnboardingFormState>) {
     setFormState((prev) => ({ ...prev, ...patch }));
@@ -333,7 +333,7 @@ export function OnboardingPage() {
 
     return (
       <OnboardingScreen
-        videoSrc={videoSrc}
+        media={media}
         footer={
           <>
             <Button variant="secondary" onClick={handleCancelEdit} disabled={isSubmitting}>
@@ -365,7 +365,7 @@ export function OnboardingPage() {
 
   return (
     <OnboardingScreen
-      videoSrc={videoSrc}
+      media={media}
       header={<OnboardingProgress currentStep={stepIndex + 1} totalSteps={STEP_COUNT} />}
       footer={
         <>

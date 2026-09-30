@@ -13,7 +13,9 @@
     "import:exercises": "tsx src/features/exercises/scripts/importExercises.ts",
     "seed:workout-templates": "tsx src/features/workoutTemplates/scripts/seedWorkoutTemplates.ts",
     "seed:knowledge": "tsx src/features/knowledge/scripts/seedKnowledge.ts",
-    "promote:coach": "tsx src/features/users/scripts/promoteCoach.ts"
+    "promote:coach": "tsx src/features/users/scripts/promoteCoach.ts",
+    "media:compress": "tsx src/features/onboardingMedia/scripts/compressOnboardingVideos.ts",
+    "media:upload": "tsx src/features/onboardingMedia/scripts/uploadOnboardingMedia.ts"
   },
   "keywords": [],
   "author": "",
@@ -21,6 +23,7 @@
   "description": "",
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "cloudinary": "^2.11.0",
     "cors": "^2.8.6",
     "csv-parse": "^7.0.2",
     "dotenv": "^17.4.2",

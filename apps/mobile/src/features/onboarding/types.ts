@@ -55,3 +55,9 @@ export const INITIAL_ONBOARDING_STATE: OnboardingFormState = {
     notes: '',
   },
 };
+
+/** A background clip for the onboarding screen, hosted on Cloudinary (Phase 2c). */
+export interface OnboardingMedia {
+  video: string;
+  poster: string;
+}

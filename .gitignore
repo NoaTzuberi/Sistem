@@ -18,7 +18,8 @@ Thumbs.db
 # Logs
 *.log
 
-# Large onboarding stock footage — not committed yet; pending an LFS/CDN decision
+# Original onboarding stock footage (~1 GB) — never committed. The app plays the compressed
+# copies from Cloudinary (Phase 2c: npm run media:compress / media:upload -w @sistem/server)
 apps/mobile/src/assets/onBoardingvid/
 
 # Local-only files (kept on disk, not in the repo)

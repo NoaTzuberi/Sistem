@@ -9,12 +9,29 @@
   background-color: var(--color-text);
 }
 
+/* Poster and video are stacked; the video fades in over the poster once it plays. */
 .step-video-background-media {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.step-video-background-video {
+  opacity: 0;
+  transition: opacity 250ms ease-out;
+}
+
+.step-video-background-video-playing {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step-video-background-video {
+    transition: none;
+  }
 }
 
 .step-video-background::after {
