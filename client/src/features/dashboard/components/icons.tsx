@@ -91,20 +91,6 @@ export function RepeatIcon() {
   );
 }
 
-export function CompassIcon() {
-  return (
-    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="16" cy="16" r="12" stroke="currentColor" strokeWidth="1.5" />
-      <path
-        d="M20 12L17 17L12 20L15 15L20 12Z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 export function DumbbellIcon() {
   return (
     <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">

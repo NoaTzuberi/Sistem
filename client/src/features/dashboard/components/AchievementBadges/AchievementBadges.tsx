@@ -5,7 +5,6 @@ import {
   StarIcon,
   TrophyIcon,
   ScaleIcon,
-  CompassIcon,
   CalendarIcon,
   RepeatIcon,
   LockIcon,
@@ -13,7 +12,6 @@ import {
   ChevronRightIcon,
 } from '../icons';
 import { useStaggerReveal } from '../../../../hooks/useStaggerReveal';
-import { listActivities } from '../../../../services/activities/activityService';
 import { listPersonalRecords } from '../../../../services/personalRecords/personalRecordsService';
 import { listProgressEntries } from '../../../../services/progress/progressService';
 import { listWorkouts } from '../../../../services/workouts/workoutSessionService';
@@ -35,7 +33,6 @@ interface BadgeProgress {
 
 interface BadgeContext {
   summary: DashboardSummary;
-  activityTypeCount: number;
   personalRecordCount: number;
   weighInCount: number;
   weeklyTargetDays: number;
@@ -144,17 +141,6 @@ const BADGES: BadgeDefinition[] = [
     }),
   },
   {
-    id: 'multi-sport',
-    name: 'Multi-Sport',
-    description: 'Log 3 different activity types',
-    icon: <CompassIcon />,
-    getProgress: ({ activityTypeCount }) => ({
-      current: Math.min(activityTypeCount, 3),
-      target: 3,
-      unitLabel: 'activity types',
-    }),
-  },
-  {
     id: 'three-day-streak',
     name: '3-Day Streak',
     description: 'Train 3 days in a row',
@@ -241,17 +227,6 @@ const BADGES: BadgeDefinition[] = [
       unitLabel: 'entries',
     }),
   },
-  {
-    id: 'all-rounder',
-    name: 'All-Rounder',
-    description: 'Log 5 different activity types',
-    icon: <CompassIcon />,
-    getProgress: ({ activityTypeCount }) => ({
-      current: Math.min(activityTypeCount, 5),
-      target: 5,
-      unitLabel: 'activity types',
-    }),
-  },
 ];
 
 interface AchievementBadgesProps {
@@ -264,28 +239,12 @@ interface AchievementBadgesProps {
 
 export function AchievementBadges({ summary, limit }: AchievementBadgesProps) {
   const gridRef = useStaggerReveal<HTMLDivElement>([summary]);
-  const [activityTypeCount, setActivityTypeCount] = useState(0);
   const [personalRecordCount, setPersonalRecordCount] = useState(0);
   const [weighInCount, setWeighInCount] = useState(0);
   const [weeklyTargetDays, setWeeklyTargetDays] = useState(DEFAULT_WEEKLY_TARGET_DAYS);
   const [consecutiveWeeksHittingGoal, setConsecutiveWeeksHittingGoal] = useState(0);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    listActivities({ limit: 200 })
-      .then((activities) => {
-        if (cancelled) return;
-        setActivityTypeCount(new Set(activities.map((activity) => activity.type)).size);
-      })
-      .catch(() => {
-        // Multi-Sport/All-Rounder progress just stays at 0 if activities can't be loaded.
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -376,7 +335,6 @@ export function AchievementBadges({ summary, limit }: AchievementBadgesProps) {
 
   const ctx: BadgeContext = {
     summary,
-    activityTypeCount,
     personalRecordCount,
     weighInCount,
     weeklyTargetDays,

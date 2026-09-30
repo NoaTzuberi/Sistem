@@ -1,7 +1,5 @@
 import { getCategoryIcon } from '../../../workouts/data/categoryVisuals';
-import { activityTypeIcon } from '../../../activities/data/activityOptions';
 import type { WorkoutCategory } from '../../../workouts/types';
-import type { ActivityType } from '../../../activities/types';
 import './MonthCalendar.css';
 
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -17,13 +15,11 @@ export function toDateKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+/** Only days with a logged workout have an entry. */
 export interface DayLogInfo {
-  hasWorkout: boolean;
-  hasActivity: boolean;
-  /** 1 = workout logged, 2 = workout volume in the top tier for the month. Only meaningful when hasWorkout. */
-  volumeTier?: 1 | 2;
+  /** 1 = workout logged, 2 = workout volume in the top tier for the month. */
+  volumeTier: 1 | 2;
   workoutCategory?: WorkoutCategory;
-  activityType?: ActivityType;
 }
 
 interface MonthCalendarProps {
@@ -90,8 +86,7 @@ export function MonthCalendar({
 
           const classNames = [
             'month-calendar-cell',
-            log?.hasWorkout ? `month-calendar-cell-tier-${log.volumeTier ?? 1}` : '',
-            !log?.hasWorkout && log?.hasActivity ? 'month-calendar-cell-activity' : '',
+            log ? `month-calendar-cell-tier-${log.volumeTier}` : '',
             isToday ? 'month-calendar-cell-today' : '',
             isSelected ? 'month-calendar-cell-selected' : '',
           ]
@@ -108,15 +103,11 @@ export function MonthCalendar({
               onClick={() => onSelectDate(cell.dateKey)}
             >
               <span className="month-calendar-day">{cell.day}</span>
-              {CategoryIcon ? (
+              {CategoryIcon && (
                 <span className="month-calendar-icon" aria-hidden="true">
                   <CategoryIcon />
                 </span>
-              ) : log?.hasActivity ? (
-                <span className="month-calendar-icon month-calendar-icon-emoji" aria-hidden="true">
-                  {activityTypeIcon(log.activityType ?? '')}
-                </span>
-              ) : null}
+              )}
             </button>
           );
         })}
