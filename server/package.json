@@ -1,5 +1,5 @@
 {
-  "name": "server",
+  "name": "sistem-server",
   "version": "1.0.0",
   "main": "dist/server.js",
   "engines": {
@@ -11,7 +11,6 @@
     "start": "node dist/server.js",
     "test": "vitest run",
     "import:exercises": "tsx src/features/exercises/scripts/importExercises.ts",
-    "import:repdb": "tsx src/features/exercises/scripts/importRepDbPreview.ts",
     "seed:workout-templates": "tsx src/features/workoutTemplates/scripts/seedWorkoutTemplates.ts",
     "seed:knowledge": "tsx src/features/knowledge/scripts/seedKnowledge.ts"
   },
@@ -20,7 +19,6 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@google/genai": "^2.18.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
     "csv-parse": "^7.0.2",
