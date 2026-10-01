@@ -1,0 +1,131 @@
+.trainees-title {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-family-display);
+  font-size: var(--text-2xl);
+  line-height: var(--line-height-tight);
+}
+
+.trainees-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.trainees-search {
+  flex: 1 1 240px;
+  max-width: 400px;
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-2);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-none);
+}
+
+.trainees-search:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 0;
+}
+
+/* The one filter the coach works from every week — kept apart and louder. */
+.needs-plan-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-3);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary-deep);
+  background-color: var(--color-primary-soft);
+  border: 2px solid var(--color-primary);
+  clip-path: polygon(0 0, calc(100% - var(--cut-size)) 0, 100% var(--cut-size), 100% 100%, 0 100%);
+}
+
+.needs-plan-filter[aria-pressed='true'] {
+  color: var(--color-on-primary);
+  background-color: var(--color-primary);
+}
+
+.needs-plan-filter:active {
+  background-color: var(--color-primary-deep);
+  color: var(--color-on-primary);
+}
+
+.needs-plan-count {
+  min-width: var(--space-4);
+  padding: 0 var(--space-1);
+  line-height: var(--space-4);
+  color: var(--color-primary-deep);
+  text-align: center;
+  background-color: var(--color-bg);
+}
+
+.trainees-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.trainees-filter {
+  min-height: var(--space-5);
+  padding: 0 var(--space-2);
+  font-size: var(--text-sm);
+  border: 1px solid var(--color-border);
+}
+
+.trainees-filter[aria-pressed='true'] {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-deep);
+  background-color: var(--color-primary-soft);
+  border-color: var(--color-primary-deep);
+}
+
+.trainees-filter:active {
+  background-color: var(--color-surface);
+}
+
+.trainees-filter-count {
+  color: var(--color-text-muted);
+}
+
+.trainees-filter:focus-visible,
+.needs-plan-filter:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.trainees-message {
+  color: var(--color-text-muted);
+}
+
+.trainees-table-scroll {
+  overflow-x: auto;
+}
+
+.trainees-table {
+  width: 100%;
+  font-size: var(--text-sm);
+  border-collapse: collapse;
+}
+
+.trainees-table th,
+.trainees-table td {
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.trainees-table th {
+  font-size: var(--text-xs);
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.trainees-name {
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+}

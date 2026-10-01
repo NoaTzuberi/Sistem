@@ -169,9 +169,24 @@ export interface ResolvedPlanSet extends PlanSetTarget {
   setIndex: number;
 }
 
+/**
+ * The factual library fields of an exercise — all the coach and the trainee ever see
+ * from the imported dataset (no descriptions, tips or ratings: not cleared for use).
+ */
+export interface ExerciseFacts {
+  id: string;
+  name: string;
+  primaryMuscles: string[];
+  equipment: string[];
+  difficulty: string;
+  movementType: string;
+}
+
 export interface PlanExercise {
   id: string;
   exerciseId: string;
+  /** Filled in by the coach endpoints; missing if the exercise left the library. */
+  exercise?: ExerciseFacts;
   sets: number;
   reps?: number;
   repsMax?: number;
@@ -207,6 +222,87 @@ export interface Plan {
   workouts: PlanWorkout[];
   createdAt: string;
   updatedAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Plan builder (coach, /api/coach) — Phase 6
+// ---------------------------------------------------------------------------
+
+/** A plan as the coach sees it. */
+export interface CoachPlan extends Plan {
+  /**
+   * True once the trainee has a workout log for this plan: it can still be edited,
+   * but no longer unpublished or deleted.
+   */
+  locked: boolean;
+}
+
+export interface PlanExerciseInput {
+  /** Send the id of an existing plan exercise to keep it (workout logs point at it). */
+  id?: string;
+  exerciseId: string;
+  /** Ignored when setTargets is sent (the set count is its length). */
+  sets?: number;
+  reps?: number;
+  repsMax?: number;
+  durationSec?: number;
+  targetWeight?: number;
+  restSec?: number;
+  notes?: string;
+  supersetGroup?: string;
+  setTargets?: PlanSetTarget[];
+}
+
+export interface PlanWorkoutInput {
+  /** Send the id of an existing workout to keep it (workout logs point at it). */
+  id?: string;
+  title: string;
+  dayOfWeek?: number;
+  notes?: string;
+  exercises: PlanExerciseInput[];
+}
+
+/** Body of PUT …/plans/:planId — the whole plan; order is the array order. */
+export interface SavePlanPayload {
+  notes?: string;
+  workouts: PlanWorkoutInput[];
+}
+
+/** Body of POST …/plans. */
+export interface CreatePlanPayload {
+  /** 'YYYY-MM-DD' Sunday, this week or later in the trainee's time zone. */
+  weekStartDate: string;
+  /** Start from a copy of the trainee's most recent earlier plan instead of empty. */
+  duplicatePrevious?: boolean;
+}
+
+/** One problem in a plan, pointing at the workout / exercise it belongs to (0-based). */
+export interface PlanIssue {
+  message: string;
+  workoutIndex?: number;
+  exerciseIndex?: number;
+}
+
+/** 400 body of the plan save / publish endpoints. */
+export interface PlanIssuesBody extends ApiErrorBody {
+  issues: PlanIssue[];
+}
+
+export interface ExerciseSearchParams {
+  search?: string;
+  muscle?: string;
+  equipment?: string;
+  difficulty?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface ExerciseSearchResult {
+  items: ExerciseFacts[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -281,6 +377,12 @@ export interface Achievement {
 // Coach views
 // ---------------------------------------------------------------------------
 
+/**
+ * new: onboarding not finished · waiting: onboarding finished, no published plan yet ·
+ * active: a published plan for this week or later · inactive: only older published plans.
+ */
+export type TraineeStatus = 'new' | 'waiting' | 'active' | 'inactive';
+
 export interface CoachTraineeSummary {
   id: string;
   name: string;
@@ -289,8 +391,66 @@ export interface CoachTraineeSummary {
   onboardingCompletedAt: string | null;
   timezone: string;
   createdAt: string;
+  status: TraineeStatus;
+  /** End of the 48h window; set only while the trainee is waiting for her first plan. */
+  planDueAt: string | null;
+  /** Active, with no plan (draft or published) for next week yet. */
+  needsNextWeekPlan: boolean;
+  /** Start of her latest workout log. */
+  lastActivityAt: string | null;
+  /** 'YYYY-MM-DD' Sunday of the current week in the trainee's time zone. */
+  currentWeekStart: string;
 }
 
 export interface CoachTraineeDetail extends CoachTraineeSummary {
   onboarding: MyOnboarding | null;
+}
+
+/** GET /coach/trainees. serverTime is the clock the 48h countdowns count against. */
+export interface CoachTraineeList {
+  items: CoachTraineeSummary[];
+  serverTime: string;
+}
+
+/** GET /coach/trainees/:traineeId */
+export interface CoachTraineeResponse {
+  trainee: CoachTraineeDetail;
+  serverTime: string;
+}
+
+// ---------------------------------------------------------------------------
+// Notifications (PRD §9). In-app since Phase 5a; push is added on top in Phase 5b.
+// No wording is stored: screens build the text and the tap target from type + data.
+// ---------------------------------------------------------------------------
+
+export type NotificationType = 'trainee_onboarded' | 'plan_published';
+
+interface NotificationBase {
+  id: string;
+  createdAt: string;
+  /** null = unread */
+  readAt: string | null;
+}
+
+export type AppNotification =
+  /** To the coach. traineeName is a snapshot from when the trainee finished onboarding. */
+  | (NotificationBase & { type: 'trainee_onboarded'; data: { traineeId: string; traineeName: string } })
+  /** To the trainee. */
+  | (NotificationBase & { type: 'plan_published'; data: { planId: string; weekStartDate: string } });
+
+/** GET /notifications — newest first. */
+export interface NotificationList {
+  items: AppNotification[];
+  /** All of the user's unread notifications, not only this page. */
+  unreadCount: number;
+  /** Pass as `before` to get the next page; null when there is no more. */
+  nextCursor: string | null;
+}
+
+export interface NotificationListParams {
+  /** 1–50, default 20 */
+  limit?: number;
+  before?: string;
+  /** true = unread only */
+  unread?: boolean;
 }

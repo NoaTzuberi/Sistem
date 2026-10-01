@@ -1,0 +1,251 @@
+import { Types } from 'mongoose';
+import type { CoachPlan, PlanIssue } from '@sistem/types';
+import { emitAppEvent } from '../../events/appEvents';
+import { User } from '../users/user.model';
+import { WorkoutLog } from '../workoutLogs/workoutLog.model';
+import { getExerciseFactsByIds, findCoachLibraryIds } from '../exercises/exercise.service';
+import { Plan } from './plan.model';
+import { PlanNotFoundError, toPublicPlan } from './plan.service';
+import type { LeanPlan } from './plan.service';
+import { currentWeekStart } from './planWeek';
+import { findPublishIssues } from './plan.validation';
+import type { CreatePlanInput, SavePlanInput } from './plan.validation';
+
+// The coach's side of plans (PRD §6 plan builder). Every function takes the trainee
+// id that loadCoachTrainee already checked, and scopes its queries by it — a plan id
+// from another trainee is simply not found.
+
+/** The plan (or the request) breaks a plan rule; `issues` say where. */
+export class PlanValidationError extends Error {
+  constructor(public readonly issues: PlanIssue[]) {
+    super(issues[0]?.message ?? 'The plan is not valid.');
+  }
+}
+
+/** The action does not fit the plan's current state (week taken, plan locked, …). */
+export class PlanConflictError extends Error {}
+
+const DUPLICATE_KEY_ERROR = 11000;
+
+function isDuplicateKeyError(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && (error as { code?: unknown }).code === DUPLICATE_KEY_ERROR;
+}
+
+async function toCoachPlans(plans: LeanPlan[]): Promise<CoachPlan[]> {
+  const exerciseIds = new Set<string>();
+  for (const plan of plans) {
+    for (const workout of plan.workouts) {
+      for (const exercise of workout.exercises) exerciseIds.add(String(exercise.exerciseId));
+    }
+  }
+
+  const [startedPlanIds, facts] = await Promise.all([
+    WorkoutLog.distinct('planId', { planId: { $in: plans.map((plan) => plan._id) } }),
+    getExerciseFactsByIds([...exerciseIds]),
+  ]);
+  const locked = new Set(startedPlanIds.map(String));
+
+  return plans.map((plan) => {
+    const publicPlan = toPublicPlan(plan);
+    for (const workout of publicPlan.workouts) {
+      for (const exercise of workout.exercises) exercise.exercise = facts.get(exercise.exerciseId);
+    }
+    return { ...publicPlan, locked: locked.has(publicPlan.id) };
+  });
+}
+
+async function findPlan(traineeId: string, planId: string): Promise<LeanPlan> {
+  const plan = await Plan.findOne({ _id: planId, traineeId }).lean<LeanPlan>();
+  if (!plan) {
+    throw new PlanNotFoundError('Plan not found.');
+  }
+  return plan;
+}
+
+async function isLocked(planId: string): Promise<boolean> {
+  return (await WorkoutLog.exists({ planId })) !== null;
+}
+
+export async function listCoachPlans(traineeId: string): Promise<CoachPlan[]> {
+  const plans = await Plan.find({ traineeId }).sort({ weekStartDate: -1 }).lean<LeanPlan[]>();
+  return toCoachPlans(plans);
+}
+
+export async function getCoachPlan(traineeId: string, planId: string): Promise<CoachPlan> {
+  const [plan] = await toCoachPlans([await findPlan(traineeId, planId)]);
+  return plan;
+}
+
+/**
+ * A new draft for one week: empty, or a copy of the trainee's most recent earlier
+ * plan ("duplicate last week"). The copy gets fresh workout / exercise ids, so its
+ * workout logs never mix with the original's.
+ */
+export async function createCoachPlan(traineeId: string, coachId: string, input: CreatePlanInput): Promise<CoachPlan> {
+  const trainee = await User.findById(traineeId).select('timezone').lean();
+  if (!trainee) {
+    throw new Error('Trainee disappeared after the ownership check.');
+  }
+  if (input.weekStartDate < currentWeekStart(trainee.timezone)) {
+    throw new PlanConflictError('A new plan must be for this week or a later one.');
+  }
+  if (await Plan.exists({ traineeId, weekStartDate: input.weekStartDate })) {
+    throw new PlanConflictError('This trainee already has a plan for that week.');
+  }
+
+  let notes: string | undefined;
+  let workouts: unknown[] = [];
+  if (input.duplicatePrevious) {
+    const previous = await Plan.findOne({ traineeId, weekStartDate: { $lt: input.weekStartDate } })
+      .sort({ weekStartDate: -1 })
+      .lean<LeanPlan>();
+    if (!previous) {
+      throw new PlanConflictError('There is no earlier plan to duplicate.');
+    }
+    notes = previous.notes;
+    workouts = previous.workouts.map(({ _id: _workoutId, exercises, ...workout }) => ({
+      ...workout,
+      exercises: exercises.map(({ _id: _exerciseId, ...exercise }) => exercise),
+    }));
+  }
+
+  try {
+    const created = new Plan({ traineeId, coachId, weekStartDate: input.weekStartDate, notes });
+    created.set('workouts', workouts);
+    await created.save();
+    return getCoachPlan(traineeId, String(created._id));
+  } catch (error) {
+    // Two creates for the same week at once: the unique index decides.
+    if (isDuplicateKeyError(error)) {
+      throw new PlanConflictError('This trainee already has a plan for that week.');
+    }
+    throw error;
+  }
+}
+
+/**
+ * Replaces the plan's content. Workouts and exercises sent with the id they already
+ * have keep it (workout logs point at those ids); everything else gets a new id.
+ * A published plan is live for the trainee, so it must stay publishable.
+ */
+export async function saveCoachPlan(traineeId: string, planId: string, input: SavePlanInput): Promise<CoachPlan> {
+  const plan = await Plan.findOne({ _id: planId, traineeId });
+  if (!plan) {
+    throw new PlanNotFoundError('Plan not found.');
+  }
+
+  const issues: PlanIssue[] = plan.status === 'published' ? findPublishIssues(input.workouts) : [];
+
+  const existingExerciseIds = new Set<string>();
+  for (const workout of plan.workouts) {
+    for (const exercise of workout.exercises) existingExerciseIds.add(String(exercise.exerciseId));
+  }
+  // Only newly added exercises must be in the library; ones already in the plan stay.
+  const newExerciseIds = new Set<string>();
+  for (const workout of input.workouts) {
+    for (const exercise of workout.exercises) {
+      if (!existingExerciseIds.has(exercise.exerciseId)) newExerciseIds.add(exercise.exerciseId);
+    }
+  }
+  const allowed = await findCoachLibraryIds([...newExerciseIds]);
+  input.workouts.forEach((workout, workoutIndex) => {
+    workout.exercises.forEach((exercise, exerciseIndex) => {
+      if (newExerciseIds.has(exercise.exerciseId) && !allowed.has(exercise.exerciseId)) {
+        issues.push({ message: 'This exercise is not in the library.', workoutIndex, exerciseIndex });
+      }
+    });
+  });
+  if (issues.length > 0) {
+    throw new PlanValidationError(issues);
+  }
+
+  const workoutIds = new Set(plan.workouts.map((workout) => String(workout._id)));
+  const planExerciseIds = new Set(plan.workouts.flatMap((workout) => workout.exercises.map((exercise) => String(exercise._id))));
+  const used = new Set<string>();
+  const keepOrCreateId = (id: string | undefined, existing: Set<string>): Types.ObjectId => {
+    if (id && existing.has(id) && !used.has(id)) {
+      used.add(id);
+      return new Types.ObjectId(id);
+    }
+    return new Types.ObjectId();
+  };
+
+  plan.set(
+    'workouts',
+    input.workouts.map(({ id: workoutId, exercises, ...workout }, order) => ({
+      ...workout,
+      _id: keepOrCreateId(workoutId, workoutIds),
+      order,
+      exercises: exercises.map(({ id: exerciseId, ...exercise }) => ({
+        ...exercise,
+        _id: keepOrCreateId(exerciseId, planExerciseIds),
+      })),
+    })),
+  );
+  plan.set('notes', input.notes);
+  await plan.save();
+
+  return getCoachPlan(traineeId, planId);
+}
+
+/**
+ * Makes a draft visible to the trainee and announces it ('plan.published' → her
+ * notification). Publishing an already published plan changes nothing and
+ * announces nothing.
+ */
+export async function publishCoachPlan(traineeId: string, planId: string): Promise<CoachPlan> {
+  const plan = await findPlan(traineeId, planId);
+  if (plan.status === 'published') {
+    return getCoachPlan(traineeId, planId);
+  }
+
+  const issues = findPublishIssues(plan.workouts);
+  if (issues.length > 0) {
+    throw new PlanValidationError(issues);
+  }
+
+  // The status in the filter makes two publishes at once emit a single event.
+  const publishedAt = new Date();
+  const published = await Plan.findOneAndUpdate(
+    { _id: planId, traineeId, status: 'draft' },
+    { $set: { status: 'published', publishedAt } },
+    { returnDocument: 'after' },
+  ).lean<LeanPlan>();
+
+  if (published) {
+    emitAppEvent('plan.published', {
+      planId,
+      traineeId,
+      coachId: String(published.coachId),
+      weekStartDate: published.weekStartDate,
+      publishedAt,
+    });
+  }
+  return getCoachPlan(traineeId, planId);
+}
+
+const LOCKED_MESSAGE = 'The trainee already started a workout from this plan, so it can only be edited.';
+
+/**
+ * Back to a draft — only while the trainee has not started any workout from it.
+ * Her app state follows on its own: it is computed from her published plans.
+ */
+export async function unpublishCoachPlan(traineeId: string, planId: string): Promise<CoachPlan> {
+  const plan = await findPlan(traineeId, planId);
+  if (plan.status === 'published') {
+    if (await isLocked(planId)) {
+      throw new PlanConflictError(LOCKED_MESSAGE);
+    }
+    await Plan.updateOne({ _id: planId, traineeId }, { $set: { status: 'draft', publishedAt: null } });
+  }
+  return getCoachPlan(traineeId, planId);
+}
+
+/** Drafts, and published plans the trainee has not started yet. */
+export async function deleteCoachPlan(traineeId: string, planId: string): Promise<void> {
+  await findPlan(traineeId, planId);
+  if (await isLocked(planId)) {
+    throw new PlanConflictError(LOCKED_MESSAGE);
+  }
+  await Plan.deleteOne({ _id: planId, traineeId });
+}

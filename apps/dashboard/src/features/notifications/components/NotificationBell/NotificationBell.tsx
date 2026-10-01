@@ -1,0 +1,153 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import type { AppNotification } from '@sistem/types';
+import { listNotifications, getUnreadCount, markRead, markAllRead } from '../../../../services/notifications/notificationsService';
+import { traineePath } from '../../../../app/config/routes';
+import { formatDateTime } from '../../../../utils/format';
+import './NotificationBell.css';
+
+const POLL_MS = 60_000;
+const PANEL_LIMIT = 20;
+
+/** Notifications store no wording (type + data only): the text is built here. */
+function describe(notification: AppNotification): { text: string; path: string } | null {
+  if (notification.type === 'trainee_onboarded') {
+    return {
+      text: `New trainee: ${notification.data.traineeName}`,
+      path: traineePath(notification.data.traineeId),
+    };
+  }
+  // The coach is never the recipient of the other types.
+  return null;
+}
+
+export function NotificationBell() {
+  const navigate = useNavigate();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [items, setItems] = useState<AppNotification[]>();
+  const [error, setError] = useState<string>();
+
+  const refreshCount = useCallback(async () => {
+    try {
+      setUnreadCount(await getUnreadCount());
+    } catch {
+      // A failed poll just keeps the last known count.
+    }
+  }, []);
+
+  // No push on the web (PRD §11): poll, and catch up when the tab is looked at again.
+  useEffect(() => {
+    void refreshCount();
+    const timer = window.setInterval(refreshCount, POLL_MS);
+    window.addEventListener('focus', refreshCount);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', refreshCount);
+    };
+  }, [refreshCount]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    listNotifications({ limit: PANEL_LIMIT })
+      .then((list) => {
+        setItems(list.items);
+        setUnreadCount(list.unreadCount);
+        setError(undefined);
+      })
+      .catch(() => setError("Couldn't load notifications."));
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!containerRef.current?.contains(event.target as Node)) setIsOpen(false);
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setIsOpen(false);
+    }
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
+  async function handleOpenItem(notification: AppNotification, path: string) {
+    setIsOpen(false);
+    navigate(path);
+    if (notification.readAt) return;
+    try {
+      await markRead(notification.id);
+    } finally {
+      void refreshCount();
+    }
+  }
+
+  async function handleMarkAllRead() {
+    try {
+      await markAllRead();
+      setUnreadCount(0);
+      setItems((current) => current?.map((item) => ({ ...item, readAt: item.readAt ?? new Date().toISOString() })));
+    } catch {
+      setError("Couldn't mark notifications as read.");
+    }
+  }
+
+  const visible = (items ?? []).flatMap((notification) => {
+    const described = describe(notification);
+    return described ? [{ notification, ...described }] : [];
+  });
+
+  return (
+    <div className="notification-bell" ref={containerRef}>
+      <button
+        className="bell-button"
+        type="button"
+        aria-haspopup="true"
+        aria-expanded={isOpen}
+        aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+        onClick={() => setIsOpen((open) => !open)}
+      >
+        <svg className="bell-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 3a6 6 0 0 0-6 6v4l-2 3v1h16v-1l-2-3V9a6 6 0 0 0-6-6Zm-2 16a2 2 0 0 0 4 0Z" />
+        </svg>
+        {unreadCount > 0 && <span className="bell-count">{unreadCount > 99 ? '99+' : unreadCount}</span>}
+      </button>
+
+      {isOpen && (
+        <div className="bell-panel" role="region" aria-label="Notifications">
+          <div className="bell-panel-header">
+            <h2 className="bell-panel-title">Notifications</h2>
+            <button className="bell-read-all" type="button" disabled={unreadCount === 0} onClick={handleMarkAllRead}>
+              Mark all read
+            </button>
+          </div>
+
+          {error && (
+            <p className="bell-message" role="alert">
+              {error}
+            </p>
+          )}
+          {!error && !items && <p className="bell-message">Loading…</p>}
+          {!error && items && visible.length === 0 && <p className="bell-message">No notifications yet.</p>}
+
+          <ul className="bell-list">
+            {visible.map(({ notification, text, path }) => (
+              <li key={notification.id}>
+                <button
+                  className={notification.readAt ? 'bell-item' : 'bell-item bell-item-unread'}
+                  type="button"
+                  onClick={() => handleOpenItem(notification, path)}
+                >
+                  <span className="bell-item-text">{text}</span>
+                  <span className="bell-item-time">{formatDateTime(notification.createdAt)}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}

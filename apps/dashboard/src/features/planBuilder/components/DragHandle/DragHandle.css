@@ -1,0 +1,25 @@
+.drag-handle {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-5);
+  height: var(--space-5);
+  cursor: grab;
+  touch-action: none;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+  background-color: var(--color-primary-soft);
+}
+
+.drag-handle:focus-visible {
+  outline: 2px solid var(--color-primary);
+}
+
+.drag-handle-icon {
+  width: var(--space-3);
+  height: var(--space-3);
+  fill: var(--color-text-muted);
+}

@@ -1,0 +1,232 @@
+SISTEM — PHASE 6 REPORT: COACH WEB DASHBOARD
+Date: 2026-10-01
+Scope: docs/BUILD_PLAN.md Phase 6 (PRD §6, MVP parts): trainees list, trainee detail,
+plan builder, publish. Server + shared packages + apps/dashboard. The mobile app was not
+touched. Phase 6b was NOT started.
+
+================================================================================
+1. SUMMARY
+================================================================================
+- Dashboard: Trainees list (search, status filters, the prominent "Needs next week's plan"
+  filter, 48h window, last activity), Trainee detail (Onboarding / Plans / Workout logs /
+  Body metrics tabs), Plan builder, and a notifications bell in the top bar.
+- Plan builder: workouts and exercises with drag and drop (@dnd-kit) plus ↑ ↓ buttons,
+  exercise library search, simple targets (sets, reps or range, or seconds, kg, rest),
+  per-set targets (warm-up / working / drop rows), supersets, notes, duplicate workout.
+- Draft plans autosave 2.5 s after the last change ("Saving… / Saved"); published plans
+  keep an explicit "Save changes" button because edits go live.
+- Server: create / duplicate last week / save / publish / unpublish / delete under
+  /api/coach, coach-only and scoped to the coach's own trainees. Publishing emits
+  'plan.published' once (the Phase 5a listener notifies the trainee).
+- A plan the trainee has started (any workout log) is locked: editable, but it cannot be
+  unpublished or deleted.
+
+================================================================================
+2. DECISIONS (owner answers) AND HOW THEY WERE BUILT
+================================================================================
+1. Statuses — new: onboarding not finished · waiting: finished, no published plan ·
+   active: a published plan for this week or later · inactive: only older published plans.
+   "Needs next week's plan" = active AND no plan at all (draft or published) for next week.
+   Computed on the server in the trainee's time zone (coach.service resolveTraineeStatus).
+2. Exercise search = every imported exercise that is active and not rejected, through the
+   new coach-only GET /api/coach/exercises. Facts only (name, muscle, equipment, level,
+   type). The public /api/exercises is unchanged.
+3. Edits to a published plan are live, with no notification. Unpublish / delete are allowed
+   only while the trainee has no workout log for the plan (409 afterwards). After an
+   unpublish the trainee's app state is 'waiting' again if she has no other published plan
+   (it is computed from her published plans on /auth/me and the waiting poll).
+4. A newly added exercise starts at 3 sets × 10 reps, no weight, no rest.
+5. Autosave for drafts only; explicit save for published plans.
+6. @dnd-kit added for reordering; ↑ ↓ buttons kept; handles also work from the keyboard
+   (Space to pick up, arrows, Space to drop).
+
+Things I decided inside those answers (say if you want any changed):
+- Plan rules live only on the server. A refused save / publish returns `issues` with the
+  workout and exercise position, and the builder shows each one next to its row.
+- Publish needs: at least one workout, every workout with at least one exercise, and every
+  superset label used by 2+ exercises that are next to each other. A published plan must
+  keep meeting these rules when it is edited. Drafts only need valid rows.
+- A new workout gets the placeholder title "Workout N" (a workout cannot be saved without
+  a title).
+- New plans can only be created for this week or later; the dashboard offers this week and
+  the next three.
+- "Duplicate last week" copies the most recent EARLIER plan (draft or published) into the
+  chosen week as a draft, with new workout / exercise ids.
+- Publishing the same plan again after an unpublish does not notify the trainee a second
+  time (Phase 5a rule: one notification per plan).
+- Exercise names in plans: the coach endpoints add the exercise facts to each plan
+  exercise. The trainee endpoints (/api/plans) do not yet — Phase 7 / 8 need the same.
+
+================================================================================
+3. API (all need role=coach; :traineeId must be the coach's own trainee, else 404)
+================================================================================
+  GET    /api/coach/exercises?search&muscle&equipment&difficulty&page&limit
+  GET    /api/coach/trainees                      -> { items, serverTime }
+         items now carry status, planDueAt, needsNextWeekPlan, lastActivityAt,
+         currentWeekStart
+  GET    /api/coach/trainees/:traineeId           -> { trainee, serverTime }
+  GET    /api/coach/trainees/:traineeId/plans     -> plans with `locked` + exercise facts
+  POST   /api/coach/trainees/:traineeId/plans     { weekStartDate, duplicatePrevious? }
+         201 · 400 not a Sunday · 409 past week / week taken / nothing to duplicate
+  GET    /api/coach/trainees/:traineeId/plans/:planId
+  PUT    /api/coach/trainees/:traineeId/plans/:planId   { notes?, workouts[] } (whole plan)
+         400 { message, issues[] } · existing workout / exercise ids are kept
+  POST   /api/coach/trainees/:traineeId/plans/:planId/publish     400 { issues } if not ready
+  POST   /api/coach/trainees/:traineeId/plans/:planId/unpublish   409 if locked
+  DELETE /api/coach/trainees/:traineeId/plans/:planId             204 · 409 if locked
+
+================================================================================
+4. FILES CHANGED
+================================================================================
+Added — server
+  apps/server/src/features/plans/planBuilder.service.ts
+  apps/server/src/features/plans/__tests__/planBuilder.test.ts        (24 tests)
+Added — shared
+  packages/api-client/src/coachApi.ts                 createCoachApi, PlanRequestError
+Added — dashboard (apps/dashboard/src)
+  components/common/Button/, Badge/, NumberField/     (.tsx + .css each)
+  components/layout/DashboardShell/
+  hooks/useLoad.ts, hooks/useServerNow.ts
+  utils/format.ts
+  services/coach/coachService.ts, services/notifications/notificationsService.ts
+  features/notifications/components/NotificationBell/
+  features/trainees/data/traineeStatus.ts
+  features/trainees/pages/TraineesPage/, TraineeDetailPage/
+  features/trainees/components/TraineeStatusBadges/, OnboardingAnswers/, TraineePlans/,
+    WorkoutLogList/, BodyMetricsTable/
+  features/planBuilder/types.ts, planDraft.ts
+  features/planBuilder/data/planDefaults.ts, exerciseFilters.ts
+  features/planBuilder/hooks/usePlanEditor.ts, useSortSensors.ts
+  features/planBuilder/pages/PlanBuilderPage/
+  features/planBuilder/components/PlanEditor/, WorkoutCard/, ExerciseRow/,
+    SetTargetsTable/, ExerciseLibrary/, SaveIndicator/, DragHandle/
+Added — docs
+  docs/phase-reports/phase-06-coach-dashboard.txt
+
+Modified
+  apps/server/src/features/coach/coach.routes.ts       plan builder + exercises routes
+  apps/server/src/features/coach/coach.controller.ts
+  apps/server/src/features/coach/coach.service.ts      trainee status, 48h deadline, activity
+  apps/server/src/features/exercises/exercise.service.ts   coach library search + facts
+  apps/server/src/features/plans/plan.validation.ts    save / create payloads, publish rules
+  apps/server/src/features/plans/plan.constants.ts     builder limits
+  apps/server/src/features/plans/plan.service.ts       exports LeanPlan
+  apps/server/src/features/plans/plan.routes.ts        comment only
+  apps/server/src/features/notifications/__tests__/notifications.test.ts
+                                                       fixed a timing race (see §7)
+  packages/types/src/index.ts                          Phase 6 contract types
+  packages/api-client/src/index.ts                     exports createCoachApi
+  apps/dashboard/package.json, package-lock.json       @dnd-kit
+  apps/dashboard/src/app/config/routes.ts, app/router/AppRouter.tsx
+  apps/dashboard/src/styles/globals.css
+  docs/PRD.md                                          §14: two backlog items
+  CLAUDE.md (gitignored — not in any commit)
+
+Deleted
+  apps/dashboard/src/features/home/pages/HomePage/HomePage.tsx, HomePage.css
+  (the Phase 2 placeholder page; "/" now opens the trainees list)
+
+================================================================================
+5. DEPENDENCIES
+================================================================================
+Added (apps/dashboard, approved): @dnd-kit/core ^6.3.1, @dnd-kit/sortable ^10.0.0,
+@dnd-kit/utilities ^3.2.2.   Removed: none.
+
+================================================================================
+6. HOW TO TEST
+================================================================================
+Commands (repo root):
+  npm run build      -> passes (dashboard, mobile, server)
+  npm run lint       -> passes (0 errors; the same 4 older warnings as before)
+  npm test           -> 15 files, 182 tests pass (was 14 / 158)
+  npm run dev:all    -> server 5002, mobile 5173, dashboard 5174
+
+Manual — http://localhost:5174, coach@sistem.dev / sistem-dev-1234:
+  1. Trainees: waiting trainees on top with the 48h countdown; "Needs next week's plan"
+     shows Dev Trainee Two; the status filters and the search narrow the list.
+  2. Bell: unread count; open it -> "New trainee: {name}"; click -> that trainee, and the
+     notification becomes read. "Mark all read" clears the count.
+  3. Trainee -> Plans: pick a week -> "New plan" (empty draft) or "Duplicate last week".
+  4. Builder: "+ Add workout"; search the library and "Add" (3 × 10 appears); change sets /
+     reps / kg / rest; switch Reps <-> Time; "Per-set targets" then "+ Warm-up set" and
+     "+ Drop set"; set Superset A on two neighbouring exercises (drawn as one block), and on
+     only one (inline warning); reorder by dragging the handle and with ↑ ↓.
+     The header shows "Unsaved changes" -> "Saving…" -> "Saved" by itself. Reload: all kept.
+  5. Publish with an empty workout -> refused, message on that workout. Fix -> Publish.
+     Log in to the mobile app (5173) as that trainee: Home instead of the waiting screen,
+     and GET /api/notifications with her token has one 'plan_published'.
+  6. Published plan: edit -> nothing is sent until "Save changes". "Unpublish" -> the
+     trainee is back on the waiting screen (if it was her only published plan).
+  7. Locked plan: needs a workout log, which the app cannot create before Phase 8 —
+     covered by the automated test only.
+
+================================================================================
+7. KNOWN ISSUES / TODOs
+================================================================================
+- What I checked myself: build, lint, tests; against your running dev:all (I did not
+  start or stop any process) I opened the trainees list, the bell, a trainee and its Plans
+  tab, duplicated last week for Dev Trainee Two into a draft, added an exercise, reordered
+  by drag, and confirmed on the server that the autosave stored it. I then deleted that
+  test draft, so your dev database is as it was.
+- A Phase 5a test ("'plan.published' notifies the trainee, once per plan") failed about
+  1 run in 3 when the machine was busy: it published two plans at the same instant and
+  then expected a fixed order. The test now waits for the first notification before the
+  second publish. 8 runs under load pass since. It belongs to the uncommitted Phase 5a
+  files, so it goes into the Phase 5a commit.
+- NOT checked in the browser: Publish, Unpublish, Delete, "Back to simple" and removing a
+  workout with exercises. They open a browser confirm dialog, which blocks my browser
+  tool, and publishing would have left a real notification for a dev trainee. Publish /
+  unpublish / delete / locking are covered by the server tests; the buttons themselves
+  need your click-through (steps 5–6).
+- The responsive layout below 1024px (library under the workouts) was not looked at.
+- Confirmations use the browser's own confirm dialog (publish, unpublish, delete, remove
+  workout, back to simple). A designed dialog is a design decision for later.
+- dnd-kit positions the dragged item with an inline style (transform). It is the one
+  exception to "no inline styles"; there is no other way to follow the pointer.
+- Wording everywhere is a functional placeholder (labels, messages, "Workout N").
+  Onboarding answers are shown as humanized ids ("Build muscle"), not the app's wording.
+- Exercises can only be reordered inside their workout, not dragged to another workout.
+- Workout logs show a text slot instead of the Daily Pump photo, and body metrics show
+  photo poses only — signed photo URLs arrive in Phases 9 / 10.
+- An in-app link away from a PUBLISHED plan with unsaved changes drops them without a
+  question (closing / reloading the tab does ask). Drafts are saved on leaving.
+- If two browser tabs edit the same plan, the last save wins.
+- The coach library search scores all ~2,900 exercises in memory per request. Fine at this
+  size; the stale "~100 published" comment in exerciseSearch.ts was left as it is.
+- Backlog added to PRD §14: last logged performance in the plan builder; coach private
+  notes per trainee.
+
+================================================================================
+8. SUGGESTED COMMITS (ready to paste — in order)
+================================================================================
+Phase 5a is still uncommitted, and three files hold changes of both phases
+(packages/types/src/index.ts, packages/api-client/src/index.ts, docs/PRD.md).
+Run the Phase 5a commands from docs/phase-reports/phase-05a-in-app-notifications.txt
+FIRST; those three files will then already be committed, including their Phase 6 parts,
+and git simply skips them below.
+
+# 1) server + shared types: plan builder API
+git add -A -- \
+  apps/server/src/features/plans \
+  apps/server/src/features/coach \
+  apps/server/src/features/exercises/exercise.service.ts \
+  packages/types/src/index.ts
+git commit -m "feat: coach plan builder API — create, save, publish, unpublish, delete, exercise search, trainee status"
+
+# 2) api-client: coach calls
+git add -A -- \
+  packages/api-client/src/coachApi.ts \
+  packages/api-client/src/index.ts
+git commit -m "feat: coach calls in @sistem/api-client"
+
+# 3) dashboard: trainees, trainee detail, plan builder, notifications bell
+git add -A -- \
+  apps/dashboard \
+  package-lock.json
+git commit -m "feat: coach dashboard — trainees list, trainee detail, plan builder with autosave and drag and drop, notifications bell"
+
+# 4) docs
+git add -A -- \
+  docs/PRD.md \
+  docs/phase-reports/phase-06-coach-dashboard.txt
+git commit -m "docs: plan builder backlog items and phase 6 report"

@@ -219,3 +219,7 @@ Design system notes:
 
 - **Original exercise descriptions** — AI draft, reviewed and approved by the coach, because the imported exercise dataset is not cleared for commercial use (facts only). Until then, the coach's per-exercise notes are the instructions trainees see.
 - **Coach custom exercises with her own demo video** — the coach can add her own exercises with a demo video she records (hosted on Cloudinary), since the imported library is text-only (facts only, no media).
+- **"plan.updated" notification** — when the coach edits an already-published plan, the trainee should be told her plan changed. (Today only the first publish of a plan notifies.)
+- **Notification retention / cleanup** — notifications are kept forever for now; decide how long to keep old ones and add a cleanup.
+- **Plan builder: last logged performance** — next to each exercise row, show the trainee's last logged performance for that exercise (weight × reps), to support progressive overload. Needs the workout logs from Phase 8.
+- **Coach private notes per trainee** — free notes about a trainee (injuries, preferences), visible only to the coach, never to the trainee.

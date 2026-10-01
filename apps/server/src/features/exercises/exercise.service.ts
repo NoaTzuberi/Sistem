@@ -1,3 +1,4 @@
+import type { ExerciseFacts, ExerciseSearchResult } from '@sistem/types';
 import { Exercise } from './exercise.model';
 import { scoreExercise } from './exerciseSearch';
 import type {
@@ -232,4 +233,92 @@ export async function getPublicExerciseBySlug(slug: string): Promise<PublicExerc
  */
 export async function listRagEligibleExercises() {
   return Exercise.find({ reviewStatus: 'published', isActive: true }).lean();
+}
+
+// ---------------------------------------------------------------------------
+// Coach library (plan builder, Phase 6)
+// ---------------------------------------------------------------------------
+
+const FACT_FIELDS = 'name aliases primaryMuscles equipment difficulty movementType';
+
+interface ExerciseFactsLeanDoc {
+  _id: unknown;
+  name: string;
+  aliases: string[];
+  primaryMuscles: Muscle[];
+  equipment: Equipment[];
+  difficulty: Difficulty;
+  movementType: MovementType;
+}
+
+// Facts only: the imported dataset's text is not cleared for use, so the coach
+// library never returns instructions, tips or ratings.
+function toExerciseFacts(doc: ExerciseFactsLeanDoc): ExerciseFacts {
+  return {
+    id: String(doc._id),
+    name: doc.name,
+    primaryMuscles: doc.primaryMuscles,
+    equipment: doc.equipment,
+    difficulty: doc.difficulty,
+    movementType: doc.movementType,
+  };
+}
+
+// The coach picks from everything imported except rejected records — there is no
+// curation step yet, so "published" would leave her with an almost empty library.
+const COACH_LIBRARY_FILTER: Record<string, unknown> = { isActive: true, reviewStatus: { $ne: 'rejected' } };
+
+export type ListCoachExercisesParams = Pick<
+  ListExercisesParams,
+  'page' | 'limit' | 'muscle' | 'equipment' | 'difficulty' | 'search'
+>;
+
+/** Same search scoring as the public list, over the whole coach library. */
+export async function listCoachExercises(params: ListCoachExercisesParams): Promise<ExerciseSearchResult> {
+  const page = params.page ?? DEFAULT_PAGE;
+  const limit = params.limit ?? DEFAULT_LIMIT;
+  const filter: Record<string, unknown> = { ...COACH_LIBRARY_FILTER };
+  if (params.muscle) filter.primaryMuscles = params.muscle;
+  if (params.equipment) filter.equipment = params.equipment;
+  if (params.difficulty) filter.difficulty = params.difficulty;
+
+  const search = params.search?.trim();
+  let docs: ExerciseFactsLeanDoc[];
+  let total: number;
+
+  if (search) {
+    const candidates = await Exercise.find(filter).select(FACT_FIELDS).lean<ExerciseFactsLeanDoc[]>();
+    const scored = candidates
+      .map((doc) => ({ doc, score: scoreExercise(search, doc.name, doc.aliases) }))
+      .filter((entry) => entry.score > 0)
+      .sort((a, b) => b.score - a.score || a.doc.name.localeCompare(b.doc.name));
+    total = scored.length;
+    docs = scored.slice((page - 1) * limit, page * limit).map((entry) => entry.doc);
+  } else {
+    [docs, total] = await Promise.all([
+      Exercise.find(filter)
+        .select(FACT_FIELDS)
+        .sort({ name: 1, _id: 1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean<ExerciseFactsLeanDoc[]>(),
+      Exercise.countDocuments(filter),
+    ]);
+  }
+
+  return { items: docs.map(toExerciseFacts), page, limit, total, totalPages: Math.ceil(total / limit) };
+}
+
+/** Facts for exercises already inside a plan — also ones that left the library since. */
+export async function getExerciseFactsByIds(ids: string[]): Promise<Map<string, ExerciseFacts>> {
+  if (ids.length === 0) return new Map();
+  const docs = await Exercise.find({ _id: { $in: ids } }).select(FACT_FIELDS).lean<ExerciseFactsLeanDoc[]>();
+  return new Map(docs.map((doc) => [String(doc._id), toExerciseFacts(doc)]));
+}
+
+/** The ids (out of `ids`) the coach may add to a plan. */
+export async function findCoachLibraryIds(ids: string[]): Promise<Set<string>> {
+  if (ids.length === 0) return new Set();
+  const docs = await Exercise.find({ ...COACH_LIBRARY_FILTER, _id: { $in: ids } }).select('_id').lean();
+  return new Set(docs.map((doc) => String(doc._id)));
 }

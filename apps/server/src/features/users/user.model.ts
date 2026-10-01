@@ -91,7 +91,7 @@ const userSchema = new Schema<UserDocument>(
 );
 
 userSchema.index({ coachId: 1, role: 1, createdAt: -1 });
-// Phase 5 removes invalid/expired tokens by value.
+// Phase 5b removes invalid/expired tokens by value.
 userSchema.index({ 'pushTokens.token': 1 }, { sparse: true });
 
 export const User = model<UserDocument>('User', userSchema);

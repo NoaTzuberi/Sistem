@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
 
 // Internal domain events. Features announce what happened here; other features
-// (push notifications in Phase 5, the AI recommendation in Phase 12) subscribe
+// (notifications since Phase 5a, the AI recommendation in Phase 12) subscribe
 // without the emitter knowing about them.
 
 export interface TraineeOnboardedEvent {
@@ -10,8 +10,19 @@ export interface TraineeOnboardedEvent {
   completedAt: Date;
 }
 
+/** Emitted by the publish service (Phase 6) when a plan becomes visible to the trainee. */
+export interface PlanPublishedEvent {
+  planId: string;
+  traineeId: string;
+  coachId: string;
+  /** 'YYYY-MM-DD' Sunday in the trainee's time zone */
+  weekStartDate: string;
+  publishedAt: Date;
+}
+
 interface AppEventMap {
   'trainee.onboarded': [TraineeOnboardedEvent];
+  'plan.published': [PlanPublishedEvent];
 }
 
 export type AppEventName = keyof AppEventMap;

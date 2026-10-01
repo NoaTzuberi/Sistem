@@ -2,3 +2,7 @@ export { createApiClient, extractErrorMessage } from './createApiClient';
 export type { ApiClientOptions } from './createApiClient';
 export { createAuthApi } from './authApi';
 export type { AuthApi } from './authApi';
+export { createNotificationsApi } from './notificationsApi';
+export type { NotificationsApi } from './notificationsApi';
+export { createCoachApi, PlanRequestError } from './coachApi';
+export type { CoachApi } from './coachApi';

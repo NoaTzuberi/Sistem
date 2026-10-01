@@ -1,0 +1,14 @@
+.save-indicator {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+  color: var(--color-text-muted);
+}
+
+.save-indicator-saved {
+  color: var(--color-primary-deep);
+}
+
+.save-indicator-error {
+  color: var(--color-error);
+}

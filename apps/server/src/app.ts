@@ -16,6 +16,8 @@ import { workoutLogsRouter } from './features/workoutLogs/workoutLog.routes';
 import { bodyMetricsRouter } from './features/bodyMetrics/bodyMetric.routes';
 import { achievementsRouter } from './features/achievements/achievement.routes';
 import { coachRouter } from './features/coach/coach.routes';
+import { notificationsRouter } from './features/notifications/notification.routes';
+import { registerNotificationListeners } from './features/notifications/notification.listeners';
 
 const app = express();
 
@@ -37,5 +39,8 @@ app.use('/api/workout-logs', workoutLogsRouter);
 app.use('/api/body-metrics', bodyMetricsRouter);
 app.use('/api/achievements', achievementsRouter);
 app.use('/api/coach', coachRouter);
+app.use('/api/notifications', notificationsRouter);
+
+registerNotificationListeners();
 
 export default app;

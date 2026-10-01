@@ -1,0 +1,146 @@
+SISTEM — PHASE 5a REPORT: IN-APP NOTIFICATIONS
+Date: 2026-10-01
+Scope: docs/BUILD_PLAN.md Phase 5a (PRD §9). Server + shared packages only.
+No push, no Capacitor, no mobile screen. Phase 5b and Phase 6 were NOT started.
+
+================================================================================
+1. SUMMARY
+================================================================================
+- Plan change: Phase 5 is split in docs/BUILD_PLAN.md into 5a (in-app notifications, this
+  phase) and 5b (Capacitor, FCM push, device tokens, app icons — later, needs Apple / Google
+  developer accounts and Firebase). The Phase 4, 6 and 6b prompts now point at 5a.
+- New Notification collection and one service function, notify(userId, payload), which stores
+  the notification. Phase 5b adds push inside the same function; callers do not change.
+- Hooks: 'trainee.onboarded' -> notification to the trainee's coach; 'plan.published' ->
+  notification to the trainee. The same event never creates two notifications.
+- API (both roles, always the caller's own): list (paged, unread filter), unread count,
+  mark one read, mark all read. Same calls added to @sistem/api-client.
+- PRD §14 backlog: "plan.updated" notification and notification retention / cleanup.
+
+================================================================================
+2. DECISIONS (owner answers)
+================================================================================
+1. 'plan.published' has NO emitter yet — plan publishing is Phase 6. The event type, its
+   listener and tests exist; Phase 6's publish service only has to call
+   emitAppEvent('plan.published', {...}). Until then only "new trainee" appears in real use.
+2. No wording is stored: only `type` + `data`. Screens build the text and the tap target.
+   Phase 5b will need a server-side copy file for the push title / body.
+3. `traineeName` is a snapshot taken when the notification is created.
+4. One notification per plan (re-publishing the same plan does not notify again).
+5. List / unread-count / mark-read / read-all added to @sistem/api-client now.
+
+One change from the schema you approved: the list is sorted and paged by the notification
+id (index { userId, _id }) instead of createdAt (index { userId, createdAt }). Same order,
+newest first, but two notifications created in the same millisecond can never be skipped
+or repeated between pages. The other fields and indexes are as shown.
+
+================================================================================
+3. FILES CHANGED
+================================================================================
+Added
+  apps/server/src/features/notifications/notification.constants.ts
+  apps/server/src/features/notifications/notification.types.ts       NotificationPayload
+  apps/server/src/features/notifications/notification.model.ts
+  apps/server/src/features/notifications/notification.service.ts     notify, list, mark read
+  apps/server/src/features/notifications/notification.listeners.ts   events -> notify
+  apps/server/src/features/notifications/notification.validation.ts
+  apps/server/src/features/notifications/notification.controller.ts
+  apps/server/src/features/notifications/notification.routes.ts
+  apps/server/src/features/notifications/__tests__/notifications.test.ts
+  packages/api-client/src/notificationsApi.ts                        createNotificationsApi
+  docs/phase-reports/phase-05a-in-app-notifications.txt
+
+Modified
+  docs/BUILD_PLAN.md                         Phase 5 -> 5a / 5b; Phase 4, 6, 6b wording
+                                             (already included in your Phase 4 commit)
+  docs/PRD.md                                §14 backlog: two items
+  apps/server/src/events/appEvents.ts        'plan.published' event + PlanPublishedEvent
+  apps/server/src/app.ts                     /api/notifications, listeners registered
+  apps/server/src/features/users/user.model.ts   comment only (Phase 5 -> 5b)
+  packages/types/src/index.ts                NotificationType, AppNotification,
+                                             NotificationList, NotificationListParams
+  packages/api-client/src/index.ts           exports createNotificationsApi
+  CLAUDE.md (gitignored — not in any commit)
+
+Deleted
+  none
+
+================================================================================
+4. DEPENDENCIES
+================================================================================
+Added: none.  Removed: none.
+
+================================================================================
+5. API
+================================================================================
+All need a session (401 without). Every call only touches the caller's notifications.
+  GET   /api/notifications?limit=1..50 (default 20)&before=<id>&unread=true|false
+        -> { items, unreadCount, nextCursor }      newest first
+  GET   /api/notifications/unread-count  -> { unreadCount }
+  PATCH /api/notifications/:id/read      -> { notification }   404 if not hers / missing
+  POST  /api/notifications/read-all      -> { unreadCount: 0 }
+Notifications are never created or deleted through the API.
+
+================================================================================
+6. HOW TO TEST
+================================================================================
+Commands (repo root):
+  npm run build      -> passes (dashboard, mobile, server)
+  npm run lint       -> passes (0 errors; the same 4 older warnings as before)
+  npm test           -> 14 files, 158 tests pass (was 13 / 144)
+  npm run dev        -> server on 5002, mobile starts
+
+Manual (npm run seed:dev first if the dev database is empty; password sistem-dev-1234):
+  1. Sign up a NEW trainee in the app and finish onboarding.
+  2. Log in as the coach through the API and list her notifications:
+       curl -s -X POST localhost:5002/api/auth/login -H 'Content-Type: application/json' \
+         -d '{"email":"coach@sistem.dev","password":"sistem-dev-1234"}'
+       curl -s localhost:5002/api/notifications -H "Authorization: Bearer <token>"
+     -> one 'trainee_onboarded' item with the trainee's id and name, readAt null,
+        unreadCount 1.
+  3. PATCH /api/notifications/<id>/read -> readAt is set; unread-count returns 0.
+  4. The same list with the trainee's token -> empty (she never sees the coach's).
+  There is no screen for this yet (coach Inbox = Phase 6b).
+
+================================================================================
+7. KNOWN ISSUES / TODOs
+================================================================================
+- Checked by me: build, lint, tests, and `npm run dev` + real calls to the new endpoints as
+  coach@sistem.dev (401 without a token, empty list and unread count 0 with one). I did NOT
+  run a full sign-up -> onboarding -> notification pass against the dev database; that path
+  is covered by the automated test only.
+- While checking `npm run dev` I stopped a Vite dev server that was already running on
+  port 5173 (my cleanup command matched it). Start `npm run dev` again.
+- 'plan.published' is never emitted until Phase 6 (decision 1).
+- A trainee who finishes onboarding while she has no coach (coachId null) creates no
+  notification, and none is created later when a coach is assigned (promote:coach). With
+  DEFAULT_COACH_EMAIL set and the coach existing before trainees sign up this does not happen.
+- seed:dev trainees are created already onboarded, so the seed produces no notifications.
+- Already-existing dev trainees who onboarded before this phase have no notification.
+- No retention / cleanup and no "plan.updated" notification — both now in PRD §14.
+- Mobile and dashboard do not call the notifications API yet (Inbox: Phase 6b).
+
+================================================================================
+8. SUGGESTED COMMITS (ready to paste — in order)
+================================================================================
+
+# 1) server + shared types: notifications
+git add -A -- \
+  apps/server/src/features/notifications \
+  apps/server/src/events/appEvents.ts \
+  apps/server/src/app.ts \
+  apps/server/src/features/users/user.model.ts \
+  packages/types/src/index.ts
+git commit -m "feat: in-app notifications — Notification collection, notify() service, event hooks and API"
+
+# 2) api-client: notification calls
+git add -A -- \
+  packages/api-client/src/notificationsApi.ts \
+  packages/api-client/src/index.ts
+git commit -m "feat: notifications calls in @sistem/api-client"
+
+# 3) docs
+git add -A -- \
+  docs/PRD.md \
+  docs/phase-reports/phase-05a-in-app-notifications.txt
+git commit -m "docs: notification backlog items and phase 5a report"

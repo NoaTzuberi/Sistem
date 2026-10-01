@@ -6,7 +6,7 @@ import type { PlanDocument, PlanExerciseFields, PlanWorkoutFields } from './plan
 
 export class PlanNotFoundError extends Error {}
 
-type LeanPlan = PlanDocument & { _id: Types.ObjectId };
+export type LeanPlan = PlanDocument & { _id: Types.ObjectId };
 
 function toPublicExercise(exercise: PlanExerciseFields & { _id: Types.ObjectId }): PlanExercise {
   return {

@@ -1,0 +1,155 @@
+.exercise-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-left: var(--space-1) solid var(--color-border);
+}
+
+/* A superset is drawn as one block: pink edge, no gap between its exercises. */
+.exercise-row-superset {
+  border-left-color: var(--color-primary);
+}
+
+.exercise-row-joins-previous {
+  margin-top: calc(-1 * var(--space-2));
+  border-top-style: dashed;
+}
+
+.exercise-row-joins-next {
+  border-bottom: none;
+}
+
+.exercise-row-dragging {
+  position: relative;
+  z-index: 1;
+  border-color: var(--color-primary);
+}
+
+.exercise-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.exercise-superset-label {
+  flex: none;
+  min-width: var(--space-4);
+  margin-left: var(--space-1);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--space-4);
+  color: var(--color-on-primary);
+  text-align: center;
+  background-color: var(--color-primary-deep);
+}
+
+.exercise-title {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  margin-left: var(--space-2);
+}
+
+.exercise-name {
+  font-weight: var(--font-weight-semibold);
+}
+
+.exercise-facts {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.exercise-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2) var(--space-3);
+}
+
+.exercise-mode {
+  display: flex;
+}
+
+.exercise-mode-option {
+  min-height: var(--space-5);
+  padding: 0 var(--space-2);
+  font-size: var(--text-sm);
+  border: 1px solid var(--color-border);
+}
+
+.exercise-mode-option + .exercise-mode-option {
+  border-left: none;
+}
+
+.exercise-mode-option[aria-pressed='true'] {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-deep);
+  background-color: var(--color-primary-soft);
+}
+
+.exercise-mode-option:active {
+  background-color: var(--color-surface);
+}
+
+.exercise-mode-option:focus-visible {
+  outline: 2px solid var(--color-primary);
+}
+
+.exercise-superset,
+.exercise-notes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.exercise-field-label {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.exercise-superset-select {
+  min-height: var(--space-5);
+  padding: 0 var(--space-1);
+  font-size: var(--text-sm);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-none);
+}
+
+.exercise-toggle {
+  margin-left: auto;
+}
+
+.exercise-notes-input {
+  width: 100%;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
+  resize: vertical;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-none);
+}
+
+.exercise-notes-input:focus-visible,
+.exercise-superset-select:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 0;
+}
+
+.exercise-problems {
+  margin: 0;
+  padding: 0;
+  font-size: var(--text-sm);
+  list-style: none;
+}
+
+.exercise-issue {
+  color: var(--color-error);
+}
+
+.exercise-warning {
+  color: var(--color-primary-deep);
+}

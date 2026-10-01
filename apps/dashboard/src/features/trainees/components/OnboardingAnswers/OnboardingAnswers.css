@@ -1,0 +1,40 @@
+.onboarding-answers {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-3);
+}
+
+.onboarding-status,
+.onboarding-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.onboarding-section {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+}
+
+.onboarding-section-title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-base);
+}
+
+.onboarding-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.onboarding-row dt {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.onboarding-row dd {
+  margin: 0;
+  white-space: pre-wrap;
+}
