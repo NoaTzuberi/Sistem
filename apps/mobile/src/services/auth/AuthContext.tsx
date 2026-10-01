@@ -29,6 +29,16 @@ interface AuthContextValue {
   updateUser: (patch: Partial<AuthUser>) => void;
 }
 
+// Sent on sign-up so weeks are computed in the trainee's zone; the server falls back
+// to its default (Asia/Jerusalem) if this is missing or unknown.
+function getDeviceTimezone(): string | undefined {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -63,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function register(payload: RegisterPayload) {
-    const { token, user: registeredUser } = await registerRequest(payload);
+    const { token, user: registeredUser } = await registerRequest({ ...payload, timezone: getDeviceTimezone() });
     setToken(token);
     setUser(registeredUser);
   }

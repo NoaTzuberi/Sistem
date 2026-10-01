@@ -2,6 +2,7 @@ interface RegisterInput {
   name?: string;
   email?: string;
   password?: string;
+  timezone?: unknown;
 }
 
 interface LoginInput {
@@ -32,6 +33,9 @@ export function validateRegisterInput(input: RegisterInput): string | null {
   }
   if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
     return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+  }
+  if (input.timezone !== undefined && typeof input.timezone !== 'string') {
+    return 'Time zone must be a string.';
   }
 
   return null;

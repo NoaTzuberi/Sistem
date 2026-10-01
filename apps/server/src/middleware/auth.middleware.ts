@@ -7,6 +7,8 @@ import { User } from '../features/users/user.model';
 export interface AuthenticatedRequest extends Request {
   userId?: string;
   userRole?: UserRole;
+  /** Set by loadCoachTrainee: a trainee the calling coach is allowed to see. */
+  traineeId?: string;
 }
 
 export function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {

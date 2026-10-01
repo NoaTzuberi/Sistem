@@ -16,7 +16,7 @@ import { EquipmentStep } from '../../steps/EquipmentStep/EquipmentStep';
 import { ReviewStep } from '../../steps/ReviewStep/ReviewStep';
 import { INITIAL_ONBOARDING_STATE } from '../../types';
 import type { OnboardingFormState, OnboardingMedia } from '../../types';
-import { saveOnboardingProfile } from '../../../../services/onboarding/onboardingService';
+import { completeOnboarding, saveOnboardingStep } from '../../../../services/onboarding/onboardingService';
 import { getMyProfile } from '../../../../services/users/usersService';
 import type { MyProfileResponse } from '../../../../services/users/usersService';
 import { useAuth } from '../../../../services/auth/AuthContext';
@@ -119,8 +119,7 @@ function OnboardingScreen({ media, header, footer, children }: OnboardingScreenP
 }
 
 /** Builds edit-mode's starting formState from the user's already-saved profile
- * (fetched via getMyProfile) — same shape saveOnboardingProfile's payload
- * expects, so fields the user isn't editing round-trip unchanged on save. */
+ * (fetched via getMyProfile), so the step being edited starts from real answers. */
 function mapProfileToFormState(profile: MyProfileResponse, fallbackName: string): OnboardingFormState {
   const p = profile.profile;
   return {
@@ -174,7 +173,7 @@ export function OnboardingPage() {
     : clampToFirstInvalidStep(Math.min(historyStep, STEP_COUNT - 1), formState);
 
   // A fresh mount (e.g. a reload) starts over at the first step: answers are not
-  // restored yet (per-step server saves arrive in Phase 3/4).
+  // restored yet (the server saves per step since Phase 3; resume is wired in Phase 4).
   useEffect(() => {
     if (!isEditMode && historyStep !== 0) {
       navigate(location.pathname, { replace: true, state: null });
@@ -196,9 +195,8 @@ export function OnboardingPage() {
     }
   }, [isEditMode, isValidEditStep, navigate]);
 
-  // Edit mode starts from the user's real saved profile, not blank defaults,
-  // so untouched fields round-trip unchanged when saveOnboardingProfile
-  // PUTs the whole payload back.
+  // Edit mode starts from the user's real saved profile, not blank defaults
+  // (only the edited step's answers are saved back).
   useEffect(() => {
     if (!editStepId) return;
     let cancelled = false;
@@ -240,12 +238,8 @@ export function OnboardingPage() {
       setSubmitError(undefined);
       setIsSubmitting(true);
       try {
-        const { user: savedUser } = await saveOnboardingProfile(formState);
-        updateUser({
-          name: savedUser.name,
-          onboardingCompleted: savedUser.onboardingCompleted,
-          appState: savedUser.appState,
-        });
+        const { user: savedUser } = await completeOnboarding(formState);
+        updateUser(savedUser);
         navigate(ROUTES.DASHBOARD);
       } catch (error) {
         setSubmitError(
@@ -279,15 +273,12 @@ export function OnboardingPage() {
   }
 
   async function handleSaveEdit() {
+    if (!editStepId) return;
     setSubmitError(undefined);
     setIsSubmitting(true);
     try {
-      const { user: savedUser } = await saveOnboardingProfile(formState);
-      updateUser({
-        name: savedUser.name,
-        onboardingCompleted: savedUser.onboardingCompleted,
-        appState: savedUser.appState,
-      });
+      const { user: savedUser } = await saveOnboardingStep(editStepId, formState);
+      updateUser(savedUser);
       navigate(ROUTES.PROFILE);
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Could not save your profile. Please try again.');

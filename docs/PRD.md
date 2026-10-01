@@ -218,3 +218,4 @@ Design system notes:
 ## 14. Backlog
 
 - **Original exercise descriptions** — AI draft, reviewed and approved by the coach, because the imported exercise dataset is not cleared for commercial use (facts only). Until then, the coach's per-exercise notes are the instructions trainees see.
+- **Coach custom exercises with her own demo video** — the coach can add her own exercises with a demo video she records (hosted on Cloudinary), since the imported library is text-only (facts only, no media).

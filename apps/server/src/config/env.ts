@@ -15,6 +15,8 @@ export const config = {
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
   resendApiKey: process.env.RESEND_API_KEY || '',
   emailFrom: process.env.EMAIL_FROM || 'Sistem <onboarding@resend.dev>',
+  // The coach new trainees are assigned to on sign-up (one coach for now).
+  defaultCoachEmail: (process.env.DEFAULT_COACH_EMAIL || '').trim().toLowerCase(),
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME || '',
     apiKey: process.env.CLOUDINARY_API_KEY || '',

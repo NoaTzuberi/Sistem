@@ -1,53 +1,31 @@
-import type { AppState, UserRole } from '@sistem/types';
+import type {
+  MyOnboarding,
+  OnboardingAnswersPayload,
+  OnboardingSaveResponse,
+  OnboardingStepId,
+  SaveOnboardingStepPayload,
+} from '@sistem/types';
 import { apiClient } from '../api/apiClient';
 import type { OnboardingFormState } from '../../features/onboarding/types';
 
-interface OnboardingProfilePayload {
-  name?: string;
-  birthDate: string;
-  height: number;
-  weight: number;
-  gender?: string;
-  units: {
-    weight: 'kg' | 'lb';
-    distance: 'km' | 'miles';
-  };
-  goals: string[];
-  trainingFrequency: {
-    minDays: number;
-    maxDays: number;
-    flexibleSchedule: boolean;
-  };
-  preferredActivities: string[];
-  exercisePreferences: {
-    favoriteExerciseNotes?: string;
-    improvementExerciseNotes?: string;
-    muscleFocus: string[];
-  };
-  equipment: string[];
-  recovery: {
-    flags: string[];
-    notes?: string;
-  };
-}
+// Answers live in the server's OnboardingResponse collection (Phase 3). `name` and
+// `units` are saved on the user; the server handles that split.
 
-interface OnboardingProfileResponse {
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    role: UserRole;
-    appState: AppState;
-    onboardingCompleted: boolean;
-    profile: unknown;
-    preferences: unknown;
-  };
-}
+// Which answers each step saves — mirrors ONBOARDING_STEP_FIELDS on the server.
+const STEP_FIELDS: Record<OnboardingStepId, (keyof OnboardingAnswersPayload)[]> = {
+  welcome: [],
+  basic_profile: ['name', 'birthDate', 'height', 'weight', 'gender', 'units'],
+  goals: ['goals'],
+  frequency: ['trainingFrequency'],
+  activities: ['preferredActivities'],
+  exercise_preferences: ['exercisePreferences'],
+  recovery: ['recovery'],
+  equipment: ['equipment'],
+  review: [],
+};
 
-export async function saveOnboardingProfile(
-  formState: OnboardingFormState,
-): Promise<OnboardingProfileResponse> {
-  const payload: OnboardingProfilePayload = {
+function toAnswersPayload(formState: OnboardingFormState): OnboardingAnswersPayload {
+  return {
     name: formState.name.trim() || undefined,
     birthDate: formState.birthDate,
     height: Number(formState.height),
@@ -69,7 +47,35 @@ export async function saveOnboardingProfile(
       notes: formState.recovery.notes.trim() || undefined,
     },
   };
+}
 
-  const { data } = await apiClient.put<OnboardingProfileResponse>('/users/profile', payload);
+function pickStepAnswers(step: OnboardingStepId, formState: OnboardingFormState): OnboardingAnswersPayload {
+  const all = toAnswersPayload(formState);
+  const answers: OnboardingAnswersPayload = {};
+  for (const field of STEP_FIELDS[step]) {
+    // Assigning through a widened record: each field keeps its own type from `all`.
+    (answers as Record<string, unknown>)[field] = all[field];
+  }
+  return answers;
+}
+
+export async function getMyOnboarding(): Promise<MyOnboarding> {
+  const { data } = await apiClient.get<{ onboarding: MyOnboarding }>('/onboarding');
+  return data.onboarding;
+}
+
+/** Saves one step's answers (also used by the Profile page's "edit this step"). */
+export async function saveOnboardingStep(
+  step: OnboardingStepId,
+  formState: OnboardingFormState,
+): Promise<OnboardingSaveResponse> {
+  const payload: SaveOnboardingStepPayload = { step, answers: pickStepAnswers(step, formState) };
+  const { data } = await apiClient.patch<OnboardingSaveResponse>('/onboarding', payload);
+  return data;
+}
+
+/** Final submit: every answer; the server stamps the completion time. */
+export async function completeOnboarding(formState: OnboardingFormState): Promise<OnboardingSaveResponse> {
+  const { data } = await apiClient.post<OnboardingSaveResponse>('/onboarding/complete', toAnswersPayload(formState));
   return data;
 }

@@ -43,11 +43,18 @@ the mobile app only builds where they exist locally (moved to Cloudinary in Phas
 npm run import:exercises          # exercise library from the Kaggle CSV (facts only)
 npm run seed:workout-templates    # ready-made workout templates
 npm run seed:knowledge            # knowledge base embeddings (needs VOYAGE_API_KEY)
+npm run seed:dev                  # DEV ONLY: 1 coach + 2 onboarded trainees (one with a plan)
 npm run promote:coach -- <email>  # DEV ONLY: make an existing user a coach
 ```
 
-`promote:coach` refuses to run with `NODE_ENV=production` and refuses a non-local
-database unless `--allow-remote` is added (it prints which database it will touch).
+`seed:dev` and `promote:coach` refuse to run with `NODE_ENV=production` and refuse a
+non-local database unless `--allow-remote` is added (they print which database they
+will touch). Seed accounts: `coach@sistem.dev`, `trainee1@sistem.dev`,
+`trainee2@sistem.dev`, password `sistem-dev-1234`.
+
+New trainees are assigned to the coach in `DEFAULT_COACH_EMAIL` (apps/server/.env), or to
+the only coach if there is exactly one; otherwise they stay unassigned until a coach is
+promoted or seeded.
 
 ### Other commands (from the root)
 

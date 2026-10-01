@@ -1,15 +1,8 @@
+import type { OnboardingStepId } from '@sistem/types';
 import type { OnboardingMedia } from '../types';
 
-export type OnboardingStepId =
-  | 'welcome'
-  | 'basic_profile'
-  | 'goals'
-  | 'frequency'
-  | 'activities'
-  | 'exercise_preferences'
-  | 'recovery'
-  | 'equipment'
-  | 'review';
+// The step ids are part of the API contract (the server saves answers per step).
+export type { OnboardingStepId };
 
 /**
  * Maps an onboarding step to its background clip + poster.

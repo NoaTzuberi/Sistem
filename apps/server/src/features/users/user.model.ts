@@ -1,36 +1,14 @@
-import { Schema, model } from 'mongoose';
-import type { UserRole } from '@sistem/types';
-import { USER_ROLES, DEFAULT_USER_ROLE } from './users.constants';
-
-interface TrainingFrequency {
-  minDays: number;
-  maxDays: number;
-  flexibleSchedule: boolean;
-}
-
-interface ExercisePreferences {
-  favoriteExerciseNotes?: string;
-  improvementExerciseNotes?: string;
-  muscleFocus: string[];
-}
-
-interface Recovery {
-  flags: string[];
-  notes?: string;
-}
-
-interface UserProfile {
-  birthDate?: Date;
-  height?: number;
-  weight?: number;
-  gender?: string;
-  goals: string[];
-  trainingFrequency?: TrainingFrequency;
-  preferredActivities: string[];
-  exercisePreferences?: ExercisePreferences;
-  equipment: string[];
-  recovery?: Recovery;
-}
+import { Schema, Types, model } from 'mongoose';
+import type { OnboardingStatus, UserRole } from '@sistem/types';
+import {
+  USER_ROLES,
+  DEFAULT_USER_ROLE,
+  ONBOARDING_STATUS_IDS,
+  DEFAULT_ONBOARDING_STATUS,
+  DEFAULT_TIMEZONE,
+  PUSH_PLATFORM_IDS,
+} from './users.constants';
+import { isValidTimezone } from './timezone';
 
 interface UserPreferences {
   units?: {
@@ -39,6 +17,13 @@ interface UserPreferences {
   };
 }
 
+export interface PushToken {
+  token: string;
+  platform: (typeof PUSH_PLATFORM_IDS)[number];
+  updatedAt: Date;
+}
+
+// Onboarding answers live in the OnboardingResponse collection (PRD §10), not here.
 export interface UserDocument {
   name: string;
   email: string;
@@ -46,54 +31,16 @@ export interface UserDocument {
   role: UserRole;
   passwordResetTokenHash?: string;
   passwordResetExpires?: Date;
-  profile?: UserProfile;
   preferences?: UserPreferences;
-  onboardingCompleted: boolean;
+  onboardingStatus: OnboardingStatus;
+  onboardingCompletedAt?: Date | null;
+  /** Trainees only; null until a coach exists. Never assume a single coach in queries. */
+  coachId?: Types.ObjectId | null;
+  pushTokens: PushToken[];
+  timezone: string;
   createdAt: Date;
   updatedAt: Date;
 }
-
-const trainingFrequencySchema = new Schema<TrainingFrequency>(
-  {
-    minDays: { type: Number, min: 1, max: 7 },
-    maxDays: { type: Number, min: 1, max: 7 },
-    flexibleSchedule: { type: Boolean, default: false },
-  },
-  { _id: false },
-);
-
-const exercisePreferencesSchema = new Schema<ExercisePreferences>(
-  {
-    favoriteExerciseNotes: { type: String, trim: true },
-    improvementExerciseNotes: { type: String, trim: true },
-    muscleFocus: { type: [String], default: [] },
-  },
-  { _id: false },
-);
-
-const recoverySchema = new Schema<Recovery>(
-  {
-    flags: { type: [String], default: [] },
-    notes: { type: String, trim: true },
-  },
-  { _id: false },
-);
-
-const profileSchema = new Schema<UserProfile>(
-  {
-    birthDate: { type: Date },
-    height: { type: Number },
-    weight: { type: Number },
-    gender: { type: String, trim: true },
-    goals: { type: [String], default: [] },
-    trainingFrequency: { type: trainingFrequencySchema },
-    preferredActivities: { type: [String], default: [] },
-    exercisePreferences: { type: exercisePreferencesSchema },
-    equipment: { type: [String], default: [] },
-    recovery: { type: recoverySchema },
-  },
-  { _id: false },
-);
 
 const preferencesSchema = new Schema<UserPreferences>(
   {
@@ -101,6 +48,15 @@ const preferencesSchema = new Schema<UserPreferences>(
       weight: { type: String, enum: ['kg', 'lb'] },
       distance: { type: String, enum: ['km', 'miles'] },
     },
+  },
+  { _id: false },
+);
+
+const pushTokenSchema = new Schema<PushToken>(
+  {
+    token: { type: String, required: true },
+    platform: { type: String, enum: PUSH_PLATFORM_IDS, required: true },
+    updatedAt: { type: Date, required: true, default: () => new Date() },
   },
   { _id: false },
 );
@@ -113,11 +69,33 @@ const userSchema = new Schema<UserDocument>(
     role: { type: String, enum: USER_ROLES, default: DEFAULT_USER_ROLE, required: true },
     passwordResetTokenHash: { type: String, select: false },
     passwordResetExpires: { type: Date, select: false },
-    profile: { type: profileSchema },
     preferences: { type: preferencesSchema },
-    onboardingCompleted: { type: Boolean, default: false },
+    onboardingStatus: {
+      type: String,
+      enum: ONBOARDING_STATUS_IDS,
+      default: DEFAULT_ONBOARDING_STATUS,
+      required: true,
+    },
+    onboardingCompletedAt: { type: Date, default: null },
+    coachId: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    // Device tokens are never sent to clients.
+    pushTokens: { type: [pushTokenSchema], default: [], select: false },
+    timezone: {
+      type: String,
+      required: true,
+      default: DEFAULT_TIMEZONE,
+      validate: { validator: isValidTimezone, message: 'Invalid time zone.' },
+    },
   },
   { timestamps: true },
 );
 
+userSchema.index({ coachId: 1, role: 1, createdAt: -1 });
+// Phase 5 removes invalid/expired tokens by value.
+userSchema.index({ 'pushTokens.token': 1 }, { sparse: true });
+
 export const User = model<UserDocument>('User', userSchema);
+
+export function isOnboardingCompleted(user: Pick<UserDocument, 'onboardingStatus'>): boolean {
+  return user.onboardingStatus === 'completed';
+}

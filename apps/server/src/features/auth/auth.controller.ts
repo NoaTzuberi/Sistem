@@ -25,10 +25,10 @@ export async function register(req: Request, res: Response) {
     return;
   }
 
-  const { name, email, password } = req.body;
+  const { name, email, password, timezone } = req.body;
 
   try {
-    const result = await registerUser(name, email, password);
+    const result = await registerUser(name, email, password, timezone);
     res.status(201).json(result);
   } catch (error) {
     if (error instanceof EmailAlreadyInUseError) {

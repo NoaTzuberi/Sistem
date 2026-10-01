@@ -84,3 +84,11 @@ export const GENDER_IDS = ['male', 'female', 'other'] as const;
 // Coach accounts are never created by public sign-up (PRD §3) — only promoted/seeded.
 export const USER_ROLES = ['trainee', 'coach'] as const;
 export const DEFAULT_USER_ROLE = 'trainee';
+
+export const ONBOARDING_STATUS_IDS = ['not_started', 'in_progress', 'completed'] as const;
+export const DEFAULT_ONBOARDING_STATUS = 'not_started';
+
+// Owner decision: default zone for new users; the device zone is sent on sign-up.
+export const DEFAULT_TIMEZONE = 'Asia/Jerusalem';
+
+export const PUSH_PLATFORM_IDS = ['ios', 'android'] as const;

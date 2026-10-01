@@ -7,7 +7,7 @@ import { getCurrentUser, loginUser } from '../auth.service';
 import { resolveAppState } from '../../users/appState.service';
 import { requireRole } from '../../../middleware/auth.middleware';
 import type { AuthenticatedRequest } from '../../../middleware/auth.middleware';
-import { describeDatabaseUrl } from '../../users/scripts/promoteCoach';
+import { describeDatabaseUrl } from '../../users/scripts/devDatabaseGuard';
 
 const PASSWORD = 'password123';
 
@@ -69,14 +69,15 @@ describe('roles and app state', () => {
 
   it('a new trainee resolves to the onboarding state', async () => {
     const res = await registerViaController({ name: 'New', email: 'new@example.com', password: PASSWORD });
-    const { user } = res.body as { user: { appState: string; onboardingCompleted: boolean } };
+    const { user } = res.body as { user: { appState: string; onboardingStatus: string; onboardingCompleted: boolean } };
+    expect(user.onboardingStatus).toBe('not_started');
     expect(user.onboardingCompleted).toBe(false);
     expect(user.appState).toBe('onboarding');
   });
 
   it('an onboarded trainee without a published plan resolves to waiting', async () => {
     await registerViaController({ name: 'Done', email: 'done@example.com', password: PASSWORD });
-    const stored = await User.findOneAndUpdate({ email: 'done@example.com' }, { onboardingCompleted: true }, { new: true });
+    const stored = await User.findOneAndUpdate({ email: 'done@example.com' }, { onboardingStatus: 'completed' }, { new: true });
 
     const user = await getCurrentUser(String(stored!._id));
     expect(user.appState).toBe('waiting');
@@ -92,11 +93,11 @@ describe('roles and app state', () => {
   });
 
   it('resolveAppState follows the PRD §4.2 table', () => {
-    expect(resolveAppState({ role: 'trainee', onboardingCompleted: false }, false)).toBe('onboarding');
-    expect(resolveAppState({ role: 'trainee', onboardingCompleted: false }, true)).toBe('onboarding');
-    expect(resolveAppState({ role: 'trainee', onboardingCompleted: true }, false)).toBe('waiting');
-    expect(resolveAppState({ role: 'trainee', onboardingCompleted: true }, true)).toBe('home');
-    expect(resolveAppState({ role: 'coach', onboardingCompleted: false }, false)).toBe('coach');
+    expect(resolveAppState({ role: 'trainee', onboardingStatus: 'not_started' }, false)).toBe('onboarding');
+    expect(resolveAppState({ role: 'trainee', onboardingStatus: 'in_progress' }, true)).toBe('onboarding');
+    expect(resolveAppState({ role: 'trainee', onboardingStatus: 'completed' }, false)).toBe('waiting');
+    expect(resolveAppState({ role: 'trainee', onboardingStatus: 'completed' }, true)).toBe('home');
+    expect(resolveAppState({ role: 'coach', onboardingStatus: 'not_started' }, false)).toBe('coach');
   });
 
   describe('requireRole', () => {

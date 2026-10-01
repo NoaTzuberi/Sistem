@@ -1,0 +1,31 @@
+import { Schema, model } from 'mongoose';
+import { PLAN_STATUS_IDS, DEFAULT_PLAN_STATUS } from './plan.constants';
+import { planWorkoutSchema } from './planWorkout.schema';
+import { isSunday } from './planWeek';
+import type { PlanDocument } from './plan.types';
+
+const planSchema = new Schema<PlanDocument>(
+  {
+    traineeId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    // Copied from the trainee when the plan is created.
+    coachId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    // 'YYYY-MM-DD' of the Sunday that starts the week, in the trainee's time zone.
+    weekStartDate: {
+      type: String,
+      required: true,
+      validate: { validator: isSunday, message: 'weekStartDate must be a Sunday (YYYY-MM-DD).' },
+    },
+    status: { type: String, enum: PLAN_STATUS_IDS, required: true, default: DEFAULT_PLAN_STATUS },
+    publishedAt: { type: Date, default: null },
+    notes: { type: String, trim: true },
+    workouts: { type: [planWorkoutSchema], default: [] },
+  },
+  { timestamps: true },
+);
+
+// One plan per trainee per week: a draft becomes published in place.
+planSchema.index({ traineeId: 1, weekStartDate: 1 }, { unique: true });
+planSchema.index({ traineeId: 1, status: 1, weekStartDate: -1 });
+planSchema.index({ coachId: 1, status: 1, weekStartDate: -1 });
+
+export const Plan = model<PlanDocument>('Plan', planSchema);

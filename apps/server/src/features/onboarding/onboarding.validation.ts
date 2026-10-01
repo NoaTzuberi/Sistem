@@ -1,0 +1,194 @@
+import type { OnboardingStepId } from '@sistem/types';
+import {
+  GOAL_IDS,
+  ACTIVITY_IDS,
+  EQUIPMENT_IDS,
+  MUSCLE_FOCUS_IDS,
+  RECOVERY_FLAG_IDS,
+  GENDER_IDS,
+} from '../users/users.constants';
+import {
+  ONBOARDING_FIELDS,
+  ONBOARDING_STEP_FIELDS,
+  ONBOARDING_STEP_IDS,
+  REQUIRED_ON_COMPLETE,
+} from './onboarding.constants';
+import type { OnboardingField } from './onboarding.constants';
+
+// Moved from users.validation.ts (Phase 3) and split per field, so a single step and
+// the final submit share the same rules and messages.
+
+const MIN_AGE = 5;
+const MAX_AGE = 120;
+const MIN_HEIGHT_CM = 50;
+const MAX_HEIGHT_CM = 300;
+const MIN_WEIGHT = 20;
+const MAX_WEIGHT = 400;
+
+type FieldValidator = (value: unknown) => string | null;
+
+function isStringArrayWithinSet(value: unknown, allowed: readonly string[]): boolean {
+  return (
+    Array.isArray(value) &&
+    value.every((item) => typeof item === 'string' && allowed.includes(item))
+  );
+}
+
+function isNumberInRange(value: unknown, min: number, max: number): boolean {
+  return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max;
+}
+
+function isValidBirthDate(value: unknown): boolean {
+  if (typeof value !== 'string') return false;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+
+  const ageMs = Date.now() - date.getTime();
+  const ageYears = ageMs / (1000 * 60 * 60 * 24 * 365.25);
+  return ageYears >= MIN_AGE && ageYears <= MAX_AGE;
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+const FIELD_VALIDATORS: Record<OnboardingField, FieldValidator> = {
+  name(value) {
+    if (typeof value !== 'string' || value.trim().length === 0) {
+      return 'Name must be a non-empty string.';
+    }
+    return null;
+  },
+
+  birthDate(value) {
+    return isValidBirthDate(value) ? null : `Birth date must indicate an age between ${MIN_AGE} and ${MAX_AGE}.`;
+  },
+
+  height(value) {
+    return isNumberInRange(value, MIN_HEIGHT_CM, MAX_HEIGHT_CM)
+      ? null
+      : `Height must be a number between ${MIN_HEIGHT_CM} and ${MAX_HEIGHT_CM}.`;
+  },
+
+  weight(value) {
+    return isNumberInRange(value, MIN_WEIGHT, MAX_WEIGHT)
+      ? null
+      : `Weight must be a number between ${MIN_WEIGHT} and ${MAX_WEIGHT}.`;
+  },
+
+  gender(value) {
+    if (value !== '' && !(GENDER_IDS as readonly string[]).includes(value as string)) {
+      return 'Gender must be one of the valid options.';
+    }
+    return null;
+  },
+
+  units(value) {
+    if (!isObject(value)) return 'Units preference is required.';
+    if (value.weight !== 'kg' && value.weight !== 'lb') return "Weight unit must be 'kg' or 'lb'.";
+    if (value.distance !== 'km' && value.distance !== 'miles') return "Distance unit must be 'km' or 'miles'.";
+    return null;
+  },
+
+  goals(value) {
+    if (!isStringArrayWithinSet(value, GOAL_IDS) || (value as unknown[]).length === 0) {
+      return 'Goals must include at least one valid goal.';
+    }
+    return null;
+  },
+
+  trainingFrequency(value) {
+    if (!isObject(value)) return 'Training frequency is required.';
+    if (!isNumberInRange(value.minDays, 1, 7)) return 'Minimum training days must be between 1 and 7.';
+    if (!isNumberInRange(value.maxDays, 1, 7)) return 'Maximum training days must be between 1 and 7.';
+    if ((value.minDays as number) > (value.maxDays as number)) {
+      return 'Minimum training days cannot exceed maximum training days.';
+    }
+    if (typeof value.flexibleSchedule !== 'boolean') return 'Flexible schedule must be true or false.';
+    return null;
+  },
+
+  preferredActivities(value) {
+    if (!isStringArrayWithinSet(value, ACTIVITY_IDS) || (value as unknown[]).length === 0) {
+      return 'Preferred activities must include at least one valid activity.';
+    }
+    return null;
+  },
+
+  exercisePreferences(value) {
+    if (!isObject(value)) return 'Exercise preferences must be an object.';
+    if (value.favoriteExerciseNotes !== undefined && typeof value.favoriteExerciseNotes !== 'string') {
+      return 'Favorite exercise notes must be a string.';
+    }
+    if (value.improvementExerciseNotes !== undefined && typeof value.improvementExerciseNotes !== 'string') {
+      return 'Improvement exercise notes must be a string.';
+    }
+    if (value.muscleFocus !== undefined && !isStringArrayWithinSet(value.muscleFocus, MUSCLE_FOCUS_IDS)) {
+      return 'Muscle focus contains an invalid value.';
+    }
+    return null;
+  },
+
+  equipment(value) {
+    if (!isStringArrayWithinSet(value, EQUIPMENT_IDS) || (value as unknown[]).length === 0) {
+      return 'Equipment must include at least one valid option.';
+    }
+    return null;
+  },
+
+  recovery(value) {
+    if (!isObject(value)) return 'Recovery must be an object.';
+    if (value.flags !== undefined && !isStringArrayWithinSet(value.flags, RECOVERY_FLAG_IDS)) {
+      return 'Recovery flags contain an invalid value.';
+    }
+    if (value.notes !== undefined && typeof value.notes !== 'string') {
+      return 'Recovery notes must be a string.';
+    }
+    return null;
+  },
+};
+
+/** POST /onboarding/complete — every required answer, same rules as the ATLAS submit. */
+export function validateCompleteOnboardingPayload(body: unknown): string | null {
+  if (!isObject(body)) {
+    return 'Invalid request body.';
+  }
+
+  for (const field of ONBOARDING_FIELDS) {
+    const value = body[field];
+    if (value === undefined && !REQUIRED_ON_COMPLETE.includes(field)) continue;
+    const error = FIELD_VALIDATORS[field](value);
+    if (error) return error;
+  }
+  return null;
+}
+
+function isStepId(value: unknown): value is OnboardingStepId {
+  return typeof value === 'string' && (ONBOARDING_STEP_IDS as readonly string[]).includes(value);
+}
+
+/** PATCH /onboarding — `{ step, answers }` with only that step's fields. */
+export function validateOnboardingStepPayload(body: unknown): string | null {
+  if (!isObject(body)) {
+    return 'Invalid request body.';
+  }
+  if (!isStepId(body.step)) {
+    return 'Step must be one of the onboarding steps.';
+  }
+  const answers = body.answers ?? {};
+  if (!isObject(answers)) {
+    return 'Answers must be an object.';
+  }
+
+  const allowed = ONBOARDING_STEP_FIELDS[body.step];
+  for (const [field, value] of Object.entries(answers)) {
+    if (!(allowed as readonly string[]).includes(field)) {
+      return `'${field}' is not part of the ${body.step} step.`;
+    }
+    if (value === undefined) continue;
+    const error = FIELD_VALIDATORS[field as OnboardingField](value);
+    if (error) return error;
+  }
+  return null;
+}

@@ -1,0 +1,344 @@
+SISTEM — PHASE 3 REPORT: DATA MODEL & ROLES
+Date: 2026-10-01
+Scope: docs/BUILD_PLAN.md Phase 3 (items 1–5). Schemas were shown first and approved in chat
+with decisions A–E and three additions (time-based exercises, supersets, per-set targets).
+Built on Phase 2's role / appState / requireRole — not redone.
+Phase 4 was NOT started.
+
+================================================================================
+1. SUMMARY
+================================================================================
+- User model: onboardingStatus (replaces the stored boolean), onboardingCompletedAt (server
+  time), coachId, pushTokens (never sent to clients), timezone (default Asia/Jerusalem, device
+  zone sent on sign-up). Sign-up assigns the default coach (never fails without one).
+- New models: OnboardingResponse, Plan (embedded workouts -> exercises), WorkoutLog,
+  BodyMetric, Achievement, Template. Units everywhere: kg, cm, seconds.
+- Onboarding moved from User.profile to OnboardingResponse: GET/PATCH /api/onboarding
+  (one step at a time) + POST /api/onboarding/complete. PUT /api/users/profile is gone;
+  GET /api/users/profile keeps its old shape so the Profile page is unchanged.
+- One set resolver (plans/planSets.ts) turns a PlanExercise into concrete sets; the API
+  returns it as `resolvedSets`, so no screen re-implements it.
+- Ownership: trainee routes filter by the caller; coach routes (/api/coach/...) use
+  requireRole('coach') + loadCoachTrainee (trainee.coachId === coach). seed:dev script.
+- Build, lint and tests pass (138 tests, was 56); `npm run dev` works; the real onboarding
+  flow was clicked through in Chrome.
+
+================================================================================
+2. DECISIONS (approved in chat)
+================================================================================
+A. Coach on sign-up: DEFAULT_COACH_EMAIL -> else the only coach -> else coachId null.
+   promote:coach and seed:dev assign unassigned trainees when the coach is the default one.
+B. Targets: reps + optional repsMax (a range), plain numbers.
+C. One plan per trainee per week (unique index); a draft becomes published in place.
+D. Weights stored in kg, body measurements in cm (stated in the schemas); apps convert.
+E. ATLAS Workout / Progress / WorkoutTemplate stay side by side until Phases 8 / 10 / 6.
+Additions:
+1. Time-based exercises: PlanExercise.durationSec; every exercise (and every set target) needs
+   reps OR durationSec. WorkoutLog sets have durationSec.
+2. Supersets: PlanExercise.supersetGroup (1–3 chars, A–Z/0–9, stored uppercase).
+3. Per-set targets: PlanExercise.setTargets [{ type warmup|working|drop (default working),
+   reps?, repsMax?, durationSec?, targetWeight?, restSec? }]. When present it defines every
+   set: `sets` is derived from its length (set on validate), each entry needs reps or
+   durationSec, and there is NO fallback to the uniform fields (e.g. restSec must be set per
+   entry). Without it the uniform fields apply to each of `sets` working sets.
+   WorkoutLog sets carry `type` copied from the target.
+Also added to PRD §14 Backlog: coach custom exercises with her own demo video (Cloudinary).
+
+Implementation choices worth knowing:
+- Plan.weekStartDate and BodyMetric.date are 'YYYY-MM-DD' strings (date-only, no UTC
+  day-shift). weekStartDate must be a Sunday; weeks are computed in the trainee's zone
+  with Node's built-in Intl (plans/planWeek.ts) — no date library added.
+- `resolvedSets` is computed on the server in every plan response (trainee and coach).
+  The helper can't live in a shared package because @sistem/types is types-only and the
+  server can't import TS source at runtime; serving the resolved list is what keeps the
+  logic in one place.
+- Photos (WorkoutLog.pumpPhoto, BodyMetric.photos) store a Cloudinary public id, not a URL
+  (PRD §10 says pumpPhotoUrl): private photos get a fresh signed URL on read (Phases 9/10).
+  The id is never sent to clients.
+- Template stores typed `workouts` (the Plan workout subschema) instead of PRD's untyped
+  `content`; type 'workout' holds exactly 1 workout, 'plan' at least 1.
+- AuthUser keeps `onboardingCompleted` (computed from onboardingStatus) so existing screens
+  work, and gains onboardingStatus, onboardingCompletedAt (for the Phase 4 timer), timezone.
+- An unknown device time zone on sign-up falls back to Asia/Jerusalem (sign-up never fails
+  for it); a non-string value is a 400.
+- Onboarding routes are trainee-only (requireRole('trainee')). Completing twice, or editing a
+  step afterwards, never moves onboardingCompletedAt (the 48h start).
+- Resource ownership is enforced inside the query (e.g. findOne({ _id, traineeId })), and a
+  resource that isn't yours is 404, same as a missing one, so ids can't be probed.
+
+================================================================================
+3. SCHEMAS (as built)
+================================================================================
+User (changed)        + onboardingStatus not_started|in_progress|completed, onboardingCompletedAt,
+                        coachId (ref User, null for coaches), pushTokens [{token, platform
+                        ios|android, updatedAt}] select:false, timezone (IANA-validated).
+                        - profile, - onboardingCompleted (stored). Indexes: {coachId, role,
+                        createdAt:-1}, {'pushTokens.token'} sparse.
+OnboardingResponse    userId (unique), answers (ATLAS profile shape, all optional until
+                        completion), lastStep (step id), completedAt.
+Plan                  traineeId, coachId, weekStartDate (Sunday, 'YYYY-MM-DD'), status
+                        draft|published, publishedAt, notes, workouts[{_id, title, dayOfWeek
+                        0–6, order, notes, exercises[{_id, exerciseId, sets, reps?, repsMax?,
+                        durationSec?, targetWeight?, restSec?, notes?, supersetGroup?,
+                        setTargets?}]}]. Indexes: {traineeId, weekStartDate} unique,
+                        {traineeId, status, weekStartDate:-1}, {coachId, status, weekStartDate:-1}.
+WorkoutLog            traineeId, planId, workoutId (PlanWorkout _id), workoutTitle (copy),
+                        status in_progress|completed|abandoned, startedAt, finishedAt,
+                        sets[{exerciseId, planExerciseId?, setIndex, type?, reps?, weight? kg,
+                        durationSec?, completed, completedAt?}], stats?{durationSec,
+                        totalVolume, setsCompleted, prCount}, rating 1–5, notes,
+                        pumpPhoto?{publicId, uploadedAt}. Indexes: {traineeId, startedAt:-1},
+                        {traineeId, planId, workoutId}, one in_progress log per trainee
+                        (partial unique).
+BodyMetric            traineeId, date 'YYYY-MM-DD', weight? kg, measurements? Map cm (keys
+                        from BODY_MEASUREMENT_IDS: chest, waist, hips, arms, thighs), photos
+                        [{publicId, pose front|side|back, uploadedAt}], notes. Index
+                        {traineeId, date:-1}.
+Achievement           traineeId, type, key, value?, unlockedAt, sourceLogId?,
+                        sourceBodyMetricId?. Indexes: {traineeId, key} unique (never twice),
+                        {traineeId, unlockedAt:-1}.
+Template              coachId, type workout|plan, name, description?, workouts (Plan
+                        subschema). Index {coachId, type, updatedAt:-1}. No routes yet (Phase 6).
+
+================================================================================
+4. API (new / changed)
+================================================================================
+Trainee (requireAuth; always the caller's own data):
+  GET    /api/onboarding                  own answers, lastStep, status, name, units
+  PATCH  /api/onboarding                  { step, answers } — only that step's fields
+  POST   /api/onboarding/complete         every answer (same validation + messages as ATLAS)
+  GET    /api/users/profile               unchanged shape, now read from OnboardingResponse
+  PUT    /api/users/profile               REMOVED
+  GET    /api/plans, /api/plans/:id       published plans only, with resolvedSets
+  GET    /api/workout-logs, /:id          (writes: Phase 8)
+  GET    /api/body-metrics                (writes: Phase 10)
+  GET    /api/achievements                (awarded by the server: Phase 11)
+  POST   /api/auth/register               + optional `timezone`
+Coach (requireAuth + requireRole('coach'); :traineeId must be her trainee, else 404):
+  GET    /api/coach/trainees
+  GET    /api/coach/trainees/:traineeId               + onboarding answers
+  GET    /api/coach/trainees/:traineeId/plans         includes drafts
+  GET    /api/coach/trainees/:traineeId/workout-logs
+  GET    /api/coach/trainees/:traineeId/body-metrics
+
+================================================================================
+5. FILES CHANGED
+================================================================================
+ADDED
+- packages/types: (modified, see below)
+- apps/server/src/features/onboarding/ onboarding.constants.ts, onboardingResponse.model.ts,
+  onboarding.validation.ts (moved from users.validation.ts, split per field),
+  onboarding.service.ts, onboarding.controller.ts, onboarding.routes.ts,
+  __tests__/onboarding.test.ts
+- apps/server/src/features/plans/ plan.constants.ts, plan.types.ts, plan.model.ts,
+  planWorkout.schema.ts (shared with Template), planSets.ts (resolver + rules),
+  planWeek.ts, plan.validation.ts, plan.service.ts, plan.controller.ts, plan.routes.ts,
+  __tests__/planSets.test.ts, planWeek.test.ts, modelRules.test.ts
+- apps/server/src/features/workoutLogs/ workoutLog.{constants,types,model,validation,service,
+  controller,routes}.ts
+- apps/server/src/features/bodyMetrics/ bodyMetric.{constants,types,model,service,controller,
+  routes}.ts
+- apps/server/src/features/achievements/ achievement.{types,model,service,controller,routes}.ts
+- apps/server/src/features/templates/ template.{constants,types,model}.ts
+- apps/server/src/features/coach/ coach.{service,controller,routes}.ts
+- apps/server/src/middleware/coachTrainee.middleware.ts (loadCoachTrainee)
+- apps/server/src/features/users/coachAssignment.service.ts, timezone.ts,
+  scripts/devDatabaseGuard.ts (extracted from promoteCoach), scripts/seedDev.ts,
+  __tests__/coachAssignment.test.ts
+- apps/server/src/features/auth/__tests__/authorization.test.ts
+- apps/server/src/testing/apiTestClient.ts (runs the real app + built-in fetch in tests)
+- docs/phase-reports/phase-03-data-model.txt
+
+MODIFIED
+- packages/types/src/index.ts   OnboardingStatus, AuthUser fields, RegisterPayload.timezone,
+  onboarding / plan / log / metric / achievement / coach contract types
+- apps/server/src/features/users/user.model.ts, users.constants.ts, users.service.ts,
+  users.controller.ts, users.routes.ts, appState.service.ts (real Plan lookup),
+  scripts/promoteCoach.ts (shared guard; assigns unassigned trainees)
+- apps/server/src/features/auth/auth.service.ts (exported toPublicUser, coach + zone on
+  sign-up), auth.validation.ts, auth.controller.ts, __tests__/roles.test.ts
+- apps/server/src/middleware/auth.middleware.ts (req.traineeId)
+- apps/server/src/app.ts (6 routers), apps/server/src/config/env.ts (defaultCoachEmail)
+- apps/server/.env.example (DEFAULT_COACH_EMAIL), apps/server/package.json + package.json
+  (seed:dev)
+- apps/mobile/src/services/onboarding/onboardingService.ts   getMyOnboarding,
+  saveOnboardingStep, completeOnboarding
+- apps/mobile/src/features/onboarding/pages/OnboardingPage/OnboardingPage.tsx   final submit
+  -> completeOnboarding, "edit one step" -> saveOnboardingStep (questions, copy, steps and
+  navigation unchanged)
+- apps/mobile/src/features/onboarding/data/stepVideoMap.ts   OnboardingStepId re-exported
+  from @sistem/types (same 9 ids)
+- apps/mobile/src/services/auth/AuthContext.tsx   sends the device time zone on sign-up
+- docs/PRD.md (§14 backlog item), README.md (seed:dev, DEFAULT_COACH_EMAIL)
+- CLAUDE.md (gitignored, NOT committed): data model notes, seed:dev, DEFAULT_COACH_EMAIL
+
+DELETED
+- apps/server/src/features/users/users.validation.ts (moved to onboarding.validation.ts)
+
+================================================================================
+6. DEPENDENCIES
+================================================================================
+Added: none. Removed: none. (Time zones via Node's Intl; HTTP tests via Node's fetch.)
+
+================================================================================
+7. HOW TO TEST
+================================================================================
+Automated (run and passing at the end of this phase, from the repo root):
+- npm run build   -> dashboard, mobile, server OK
+- npm run lint    -> exit 0, 0 errors; warnings unchanged (mobile 3, dashboard 1)
+- npm test        -> 13 files, 138 tests passed (56 before)
+  Authorization: trainee A -> B's plan / log = 404; own draft = 404; lists only own items;
+  photo id never in responses; no token = 401 on every new route; trainee on every
+  /api/coach route = 403; coach X -> coach Y's trainee (detail, plans, logs, metrics) = 404;
+  coach sees drafts; coach on /api/onboarding = 403; appState waiting -> home on publish.
+  Plus: set resolver + rules, week math across time zones, one plan per week, one active log,
+  achievement idempotency, measurement keys, onboarding step/complete/48h-not-reset,
+  coach assignment A, time zone fallback.
+- npm run dev + seed:dev: run against a throwaway in-memory MongoDB with PORT=5022 (your dev
+  servers held 5002/5173; your Atlas dev database was not touched). import:exercises, then
+  seed:dev twice (second run: everything "left unchanged"). Checked over HTTP: t1 waiting,
+  t2 home, coach coach; t2's plan resolvedSets (warm-up/pyramid/drop, superset A, 3 x 45 s);
+  a new sign-up got the coach + its time zone.
+- Chrome (same throwaway setup): sign-up -> 9 onboarding steps -> "Create my profile" ->
+  DashboardPage; server shows status completed + answers. /onboarding/goals edit -> Save ->
+  Profile shows "2 goals"; lastStep 'goals', completion time unchanged.
+
+Manual checks for you:
+1. Fresh dev database (owner decision): the old ATLAS users in your Atlas dev DB have no
+   onboardingStatus, so they would now land on onboarding again. Drop the users collection
+   (or the whole dev DB), then:
+     npm run import:exercises
+     npm run seed:dev
+   Log in as trainee2@sistem.dev / sistem-dev-1234 -> Home; trainee1 -> waiting (still the
+   DashboardPage until Phase 4); coach@sistem.dev -> coach tabs.
+2. Optional: set DEFAULT_COACH_EMAIL=coach@sistem.dev in apps/server/.env (with one coach it
+   isn't needed). Register a new user -> in Mongo, users.coachId = the coach's _id and
+   timezone = your device zone.
+3. Onboarding end to end with a new account; then Profile -> edit a step -> Save.
+4. API with a trainee token: GET /api/coach/trainees -> 403; with the coach token -> list.
+
+================================================================================
+8. KNOWN ISSUES / TODOs
+================================================================================
+- Your running dev server (port 5002, nodemon) reloaded this code against your Atlas dev DB
+  while I worked; nothing was written to it by me. See manual check 1 (fresh DB).
+- Onboarding still restarts from step 1 after a reload: saving after every step and resuming
+  from lastStep are Phase 4 (the endpoint and saveOnboardingStep already exist).
+- The client keeps a copy of the step -> fields map (onboardingService STEP_FIELDS) that
+  mirrors the server's ONBOARDING_STEP_FIELDS; a mismatch returns a 400 naming the field.
+- No write routes yet for plans, logs, metrics, templates (Phases 6, 8, 10, 11 as planned).
+  Plan request validation must call validatePlanExerciseTargets and keep workout/exercise
+  _ids on edits (logs point at them).
+- setTargets has no per-field fallback to the uniform values (by the approved rule). If the
+  plan builder wants "same rest for all sets", it should fill each entry.
+- Plan responses carry exerciseId only (no exercise name yet); Phases 6–8 add what screens need.
+- Coach trainee list has no status filter / 48h remaining yet (Phase 6).
+- ATLAS Workout / Progress / WorkoutTemplate / PersonalRecord still exist next to the new
+  models (decision E). Their routes are owner-scoped already.
+- README still says the onboarding videos must exist locally (outdated since Phase 2c;
+  not touched here).
+- Pre-existing: Mongoose "new option is deprecated" warning from roles.test.ts; items from
+  the Phase 2b/2c reports unchanged.
+
+================================================================================
+9. SUGGESTED COMMITS
+================================================================================
+(CLAUDE.md is gitignored and intentionally excluded. Coverage checked read-only with
+`git status`: commits 1–5 cover every changed/added/deleted path exactly once. Only the
+final state was built and tested — commit 1 alone does not compile the server tests.)
+
+1) feat: add Sistem data model — user fields, plans, logs, body metrics, achievements, templates
+   - packages/types/src/index.ts, apps/server/src/features/users/user.model.ts,
+     users.constants.ts, timezone.ts, apps/server/src/features/plans/ (non-test files),
+     apps/server/src/features/workoutLogs/, bodyMetrics/, achievements/, templates/
+2) feat: move onboarding answers to OnboardingResponse with per-step saves
+   - apps/server/src/features/onboarding/ (non-test), users.service.ts, users.controller.ts,
+     users.routes.ts, users.validation.ts (deleted), appState.service.ts,
+     apps/mobile/src/services/onboarding/onboardingService.ts, OnboardingPage.tsx,
+     stepVideoMap.ts
+3) feat: coach assignment, time zone on sign-up and coach-scoped trainee routes
+   - apps/server/src/features/auth/ (auth.service/validation/controller),
+     users/coachAssignment.service.ts, coach/, middleware/, app.ts, config/env.ts,
+     apps/server/.env.example, apps/mobile/src/services/auth/AuthContext.tsx
+4) test: authorization, onboarding, plan set and week rules; dev seed script
+   - all new __tests__ files + roles.test.ts, apps/server/src/testing/,
+     users/scripts/ (devDatabaseGuard, seedDev, promoteCoach), apps/server/package.json,
+     package.json, README.md
+5) docs: add coach custom exercises to backlog and phase 3 report
+   - docs/PRD.md, docs/phase-reports/phase-03-data-model.txt
+
+================================================================================
+10. READY-TO-PASTE GIT COMMANDS
+================================================================================
+Run from the repo root, in this order. Claude Code did not run them.
+
+# 1) data model
+git add -A -- \
+  packages/types/src/index.ts \
+  apps/server/src/features/users/user.model.ts \
+  apps/server/src/features/users/users.constants.ts \
+  apps/server/src/features/users/timezone.ts \
+  apps/server/src/features/plans/plan.constants.ts \
+  apps/server/src/features/plans/plan.types.ts \
+  apps/server/src/features/plans/plan.model.ts \
+  apps/server/src/features/plans/planWorkout.schema.ts \
+  apps/server/src/features/plans/planSets.ts \
+  apps/server/src/features/plans/planWeek.ts \
+  apps/server/src/features/plans/plan.validation.ts \
+  apps/server/src/features/plans/plan.service.ts \
+  apps/server/src/features/plans/plan.controller.ts \
+  apps/server/src/features/plans/plan.routes.ts \
+  apps/server/src/features/workoutLogs \
+  apps/server/src/features/bodyMetrics \
+  apps/server/src/features/achievements \
+  apps/server/src/features/templates
+git commit -m "feat: add Sistem data model — user fields, plans, logs, body metrics, achievements, templates"
+
+# 2) onboarding -> OnboardingResponse
+git add -A -- \
+  apps/server/src/features/onboarding/onboarding.constants.ts \
+  apps/server/src/features/onboarding/onboardingResponse.model.ts \
+  apps/server/src/features/onboarding/onboarding.validation.ts \
+  apps/server/src/features/onboarding/onboarding.service.ts \
+  apps/server/src/features/onboarding/onboarding.controller.ts \
+  apps/server/src/features/onboarding/onboarding.routes.ts \
+  apps/server/src/features/users/users.service.ts \
+  apps/server/src/features/users/users.controller.ts \
+  apps/server/src/features/users/users.routes.ts \
+  apps/server/src/features/users/users.validation.ts \
+  apps/server/src/features/users/appState.service.ts \
+  apps/mobile/src/services/onboarding/onboardingService.ts \
+  apps/mobile/src/features/onboarding/pages/OnboardingPage/OnboardingPage.tsx \
+  apps/mobile/src/features/onboarding/data/stepVideoMap.ts
+git commit -m "feat: move onboarding answers to OnboardingResponse with per-step saves"
+
+# 3) coach assignment, time zone, coach routes
+git add -A -- \
+  apps/server/src/features/auth/auth.service.ts \
+  apps/server/src/features/auth/auth.validation.ts \
+  apps/server/src/features/auth/auth.controller.ts \
+  apps/server/src/features/users/coachAssignment.service.ts \
+  apps/server/src/features/coach \
+  apps/server/src/middleware \
+  apps/server/src/app.ts \
+  apps/server/src/config/env.ts \
+  apps/server/.env.example \
+  apps/mobile/src/services/auth/AuthContext.tsx
+git commit -m "feat: coach assignment, time zone on sign-up and coach-scoped trainee routes"
+
+# 4) tests + dev seed
+git add -A -- \
+  apps/server/src/features/auth/__tests__ \
+  apps/server/src/features/onboarding/__tests__ \
+  apps/server/src/features/plans/__tests__ \
+  apps/server/src/features/users/__tests__ \
+  apps/server/src/testing \
+  apps/server/src/features/users/scripts \
+  apps/server/package.json \
+  package.json \
+  README.md
+git commit -m "test: authorization, onboarding, plan set and week rules; dev seed script"
+
+# 5) docs
+git add -A -- docs/PRD.md docs/phase-reports/phase-03-data-model.txt
+git commit -m "docs: add coach custom exercises to backlog and phase 3 report"

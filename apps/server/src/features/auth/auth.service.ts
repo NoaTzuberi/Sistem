@@ -1,10 +1,14 @@
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { User, UserDocument } from '../users/user.model';
+import type { AuthUser } from '@sistem/types';
+import { User, UserDocument, isOnboardingCompleted } from '../users/user.model';
 import { config } from '../../config/env';
 import { sendPasswordResetEmail } from './email.service';
 import { getAppState } from '../users/appState.service';
+import { resolveDefaultCoachId } from '../users/coachAssignment.service';
+import { isValidTimezone } from '../users/timezone';
+import { DEFAULT_TIMEZONE } from '../users/users.constants';
 
 const SALT_ROUNDS = 12;
 const TOKEN_EXPIRY = '7d';
@@ -23,7 +27,7 @@ function hashResetToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
-async function toPublicUser(user: UserDocument & { _id: unknown }) {
+export async function toPublicUser(user: UserDocument & { _id: unknown }): Promise<AuthUser> {
   const id = String(user._id);
   return {
     id,
@@ -31,12 +35,15 @@ async function toPublicUser(user: UserDocument & { _id: unknown }) {
     email: user.email,
     role: user.role,
     appState: await getAppState(id, user),
-    onboardingCompleted: user.onboardingCompleted,
-    createdAt: user.createdAt,
+    onboardingStatus: user.onboardingStatus,
+    onboardingCompleted: isOnboardingCompleted(user),
+    onboardingCompletedAt: user.onboardingCompletedAt ? user.onboardingCompletedAt.toISOString() : null,
+    timezone: user.timezone,
+    createdAt: user.createdAt.toISOString(),
   };
 }
 
-export async function registerUser(name: string, email: string, password: string) {
+export async function registerUser(name: string, email: string, password: string, timezone?: string) {
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     throw new EmailAlreadyInUseError('Email is already registered.');
@@ -44,7 +51,14 @@ export async function registerUser(name: string, email: string, password: string
 
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
   // Only these fields — a role from the request body must never reach the model.
-  const user = await User.create({ name, email, passwordHash });
+  const user = await User.create({
+    name,
+    email,
+    passwordHash,
+    coachId: await resolveDefaultCoachId(),
+    // The device zone is a hint: an unknown value must not block sign-up.
+    timezone: isValidTimezone(timezone) ? timezone : DEFAULT_TIMEZONE,
+  });
 
   return { token: signToken(String(user._id)), user: await toPublicUser(user) };
 }
