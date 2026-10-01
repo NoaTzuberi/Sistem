@@ -1,0 +1,49 @@
+.body-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.body-metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background-color: var(--color-surface);
+  clip-path: polygon(0 0, calc(100% - var(--cut-size)) 0, 100% var(--cut-size), 100% 100%, 0 100%);
+}
+
+.body-metric-date {
+  font-weight: var(--font-weight-bold);
+}
+
+.body-metric-values {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.body-metric-values dt {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.body-metric-values dd {
+  margin: 0;
+  font-weight: var(--font-weight-semibold);
+}
+
+.body-metric-photo-slot {
+  margin: 0;
+  padding: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  border: 1px dashed var(--color-text-muted);
+}
+
+.body-metric-notes {
+  margin: 0;
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}

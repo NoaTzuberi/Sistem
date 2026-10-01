@@ -1,8 +1,7 @@
 import { useCallback } from 'react';
 import type { WorkoutLog, WorkoutLogStatus } from '@sistem/types';
 import { listPlans, listTraineeWorkoutLogs } from '../../../../services/coach/coachService';
-import { useLoad } from '../../../../hooks/useLoad';
-import { formatDateTime, formatDuration } from '../../../../utils/format';
+import { useLoad, formatDateTime, formatDuration } from '@sistem/shared';
 import { Badge } from '../../../../components/common/Badge/Badge';
 import { Button } from '../../../../components/common/Button/Button';
 import './WorkoutLogList.css';

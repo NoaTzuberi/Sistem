@@ -265,6 +265,7 @@ Implement PRD §5.2.
 - Optional rest timer between sets.
 - Persist in-progress state locally and sync to the server so a session survives app close / offline, then resumes.
 - "Finish workout" creates/finalizes the WorkoutLog and navigates to the summary.
+- "Workout completed" notification (owner decision, Phase 6b): when a trainee finishes a workout, notify her coach — a new notification type through the existing event → listener → `notify()` path (Phase 5a), pointing to that trainee. Show it in both Inboxes (the dashboard bell and the mobile coach Inbox): the wording and tap target go in `describeCoachNotification` in `@sistem/shared`, which both already use.
 ```
 
 ---

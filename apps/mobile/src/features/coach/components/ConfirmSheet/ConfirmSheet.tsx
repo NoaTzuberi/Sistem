@@ -1,0 +1,31 @@
+import { Modal } from '../../../../components/common/Modal/Modal';
+import { Button } from '../../../../components/common/Button/Button';
+import './ConfirmSheet.css';
+
+interface ConfirmSheetProps {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  confirmLabel: string;
+  /** The action is running: the sheet stays open and cannot be dismissed. */
+  isWorking: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+/** "Are you sure?" as a bottom sheet — for actions the trainee sees right away. */
+export function ConfirmSheet({ isOpen, title, message, confirmLabel, isWorking, onConfirm, onCancel }: ConfirmSheetProps) {
+  return (
+    <Modal isOpen={isOpen} title={title} onClose={isWorking ? () => undefined : onCancel}>
+      <p className="confirm-sheet-message">{message}</p>
+      <div className="confirm-sheet-actions">
+        <Button loading={isWorking} onClick={onConfirm}>
+          {confirmLabel}
+        </Button>
+        <Button variant="secondary" disabled={isWorking} onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
+    </Modal>
+  );
+}

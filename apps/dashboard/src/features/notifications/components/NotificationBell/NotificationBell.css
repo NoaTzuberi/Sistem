@@ -40,17 +40,37 @@
   border-radius: var(--radius-round);
 }
 
+/* Hangs from the bell's right edge and opens leftwards. It is never wider than the
+   window minus a margin, and a long list scrolls inside it — the page itself never
+   scrolls sideways because of it. */
 .bell-panel {
   position: absolute;
   top: 100%;
   right: 0;
   z-index: var(--z-modal);
-  width: 360px;
-  max-width: calc(100vw - var(--space-5));
-  max-height: 70vh;
+  width: min(360px, calc(100vw - var(--space-5)));
+  max-height: min(70vh, calc(100vh - var(--space-8)));
+  overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
   background-color: var(--color-bg);
   border: 1px solid var(--color-border);
+}
+
+/* Narrow windows: the bell sits too close to the left edge for a 360px panel to open
+   leftwards from it. The panel is placed against the top bar instead (the sticky
+   .shell-bar is the positioned ancestor once the bell is not): full width, with the
+   bar's side margin. */
+@media (max-width: 768px) {
+  .notification-bell {
+    position: static;
+  }
+
+  .bell-panel {
+    right: var(--space-3);
+    left: var(--space-3);
+    width: auto;
+  }
 }
 
 .bell-panel-header {
@@ -107,6 +127,10 @@
 .bell-item-unread {
   font-weight: var(--font-weight-semibold);
   background-color: var(--color-primary-soft);
+}
+
+.bell-item-text {
+  overflow-wrap: anywhere;
 }
 
 .bell-item-time {

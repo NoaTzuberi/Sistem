@@ -3,12 +3,15 @@ import type { ReactNode } from 'react';
 import { IconBarbell, IconHome, IconInbox, IconUser, IconUsers } from '@tabler/icons-react';
 import { useAuth } from '../../../services/auth/AuthContext';
 import { ROUTES } from '../../../app/config/routes';
+import { UnreadBadge } from '../../../features/notifications/components/UnreadBadge/UnreadBadge';
 import './TabBar.css';
 
 interface TabItem {
   to: string;
   label: string;
   icon: ReactNode;
+  /** Drawn on the icon's corner (the Inbox unread count). */
+  badge?: ReactNode;
 }
 
 const ICON_SIZE = 24;
@@ -17,7 +20,7 @@ const ICON_SIZE = 24;
 function tabsFor(role: 'trainee' | 'coach'): TabItem[] {
   if (role === 'coach') {
     return [
-      { to: ROUTES.COACH_INBOX, label: 'Inbox', icon: <IconInbox size={ICON_SIZE} /> },
+      { to: ROUTES.COACH_INBOX, label: 'Inbox', icon: <IconInbox size={ICON_SIZE} />, badge: <UnreadBadge /> },
       { to: ROUTES.COACH_TRAINEES, label: 'Trainees', icon: <IconUsers size={ICON_SIZE} /> },
       { to: ROUTES.COACH_PROFILE, label: 'Profile', icon: <IconUser size={ICON_SIZE} /> },
     ];
@@ -47,6 +50,7 @@ export function TabBar() {
           <span className="tab-bar-icon" aria-hidden="true">
             {tab.icon}
           </span>
+          {tab.badge}
           <span className="tab-bar-label">{tab.label}</span>
         </NavLink>
       ))}

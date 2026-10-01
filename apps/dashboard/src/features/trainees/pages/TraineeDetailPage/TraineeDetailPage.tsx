@@ -1,8 +1,7 @@
 import { useCallback } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { getTrainee } from '../../../../services/coach/coachService';
-import { useLoad } from '../../../../hooks/useLoad';
-import { useServerNow } from '../../../../hooks/useServerNow';
+import { useLoad, useServerNow } from '@sistem/shared';
 import { DEFAULT_TRAINEE_TAB, ROUTES, TRAINEE_TABS, TRAINEE_TAB_PARAM } from '../../../../app/config/routes';
 import type { TraineeTab } from '../../../../app/config/routes';
 import { Button } from '../../../../components/common/Button/Button';

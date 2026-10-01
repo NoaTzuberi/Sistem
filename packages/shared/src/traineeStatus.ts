@@ -1,5 +1,4 @@
 import type { CoachTraineeSummary, TraineeStatus } from '@sistem/types';
-import type { BadgeTone } from '../../../components/common/Badge/Badge';
 
 // Placeholder labels — the owner decides the final wording.
 export const TRAINEE_STATUS_LABELS: Record<TraineeStatus, string> = {
@@ -9,7 +8,10 @@ export const TRAINEE_STATUS_LABELS: Record<TraineeStatus, string> = {
   inactive: 'Inactive',
 };
 
-export const TRAINEE_STATUS_TONES: Record<TraineeStatus, BadgeTone> = {
+/** How loud a status is. Each app's Badge decides what a tone looks like. */
+export type TraineeStatusTone = 'neutral' | 'accent' | 'solid';
+
+export const TRAINEE_STATUS_TONES: Record<TraineeStatus, TraineeStatusTone> = {
   new: 'neutral',
   waiting: 'solid',
   active: 'accent',
@@ -32,6 +34,12 @@ export function matchesFilter(trainee: CoachTraineeSummary, filter: TraineeFilte
   if (filter === 'all') return true;
   if (filter === 'needs_next_week') return trainee.needsNextWeekPlan;
   return trainee.status === filter;
+}
+
+/** The search box of both trainees lists: name or email, case-insensitive. */
+export function matchesSearch(trainee: CoachTraineeSummary, search: string): boolean {
+  const query = search.trim().toLowerCase();
+  return !query || trainee.name.toLowerCase().includes(query) || trainee.email.toLowerCase().includes(query);
 }
 
 function urgency(trainee: CoachTraineeSummary): number {

@@ -1,7 +1,6 @@
 import type { CoachTraineeSummary } from '@sistem/types';
 import { Badge } from '../../../../components/common/Badge/Badge';
-import { formatTimeLeft } from '../../../../utils/format';
-import { NEEDS_NEXT_WEEK_LABEL, TRAINEE_STATUS_LABELS, TRAINEE_STATUS_TONES } from '../../data/traineeStatus';
+import { formatTimeLeft, NEEDS_NEXT_WEEK_LABEL, TRAINEE_STATUS_LABELS, TRAINEE_STATUS_TONES } from '@sistem/shared';
 import './TraineeStatusBadges.css';
 
 interface TraineeStatusBadgesProps {

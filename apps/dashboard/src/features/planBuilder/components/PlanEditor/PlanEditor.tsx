@@ -7,7 +7,7 @@ import type { CoachPlan, ExerciseFacts } from '@sistem/types';
 import { traineePath } from '../../../../app/config/routes';
 import { Badge } from '../../../../components/common/Badge/Badge';
 import { Button } from '../../../../components/common/Button/Button';
-import { formatDateOnly } from '../../../../utils/format';
+import { formatDateOnly } from '@sistem/shared';
 import { usePlanEditor } from '../../hooks/usePlanEditor';
 import { useSortSensors } from '../../hooks/useSortSensors';
 import { duplicateWorkout, moveItem, newExercise, newWorkout } from '../../planDraft';

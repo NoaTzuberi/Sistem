@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { getPlan, getTrainee } from '../../../../services/coach/coachService';
-import { useLoad } from '../../../../hooks/useLoad';
+import { useLoad } from '@sistem/shared';
 import { traineePath } from '../../../../app/config/routes';
 import { Button } from '../../../../components/common/Button/Button';
 import { PlanEditor } from '../../components/PlanEditor/PlanEditor';

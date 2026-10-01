@@ -35,6 +35,14 @@ export function formatDateOnly(dateString: string): string {
   return dateOnlyFormat.format(parseDateOnly(dateString));
 }
 
+const dayMonthFormat = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'short' });
+
+/** A plan week from its Sunday: '27 Sept – 3 Oct'. */
+export function formatWeekRange(weekStartDate: string): string {
+  const lastDay = parseDateOnly(addDaysToDate(weekStartDate, 6));
+  return `${dayMonthFormat.format(parseDateOnly(weekStartDate))} – ${dayMonthFormat.format(lastDay)}`;
+}
+
 const dateTimeFormat = new Intl.DateTimeFormat('en-GB', {
   day: 'numeric',
   month: 'short',

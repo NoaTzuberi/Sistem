@@ -1,0 +1,118 @@
+.workout-logs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.workout-log {
+  background-color: var(--color-surface);
+  clip-path: polygon(0 0, calc(100% - var(--cut-size)) 0, 100% var(--cut-size), 100% 100%, 0 100%);
+}
+
+.workout-log-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: var(--touch-target-min);
+  padding: var(--space-2) var(--space-3);
+  list-style: none;
+  cursor: pointer;
+}
+
+.workout-log-summary::-webkit-details-marker {
+  display: none;
+}
+
+.workout-log-summary:active {
+  background-color: var(--color-border);
+}
+
+.workout-log-heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.workout-log-title {
+  font-weight: var(--font-weight-bold);
+  overflow-wrap: anywhere;
+}
+
+.workout-log-date {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.workout-log-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.workout-log-badges .badge {
+  text-transform: none;
+}
+
+.workout-log-chevron {
+  flex-shrink: 0;
+  transition: transform var(--transition-fast) var(--ease-standard);
+}
+
+.workout-log[open] .workout-log-chevron {
+  transform: rotate(180deg);
+}
+
+.workout-log-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 0 var(--space-3) var(--space-3);
+}
+
+.workout-log-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.workout-log-stats dt {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.workout-log-stats dd {
+  margin: 0;
+  font-weight: var(--font-weight-bold);
+}
+
+.workout-log-notes {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Where the Daily Pump photo goes once signed URLs exist (Phase 9). */
+.workout-log-photo-slot {
+  margin: 0;
+  padding: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  border: 1px dashed var(--color-text-muted);
+}
+
+.workout-log-exercise {
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.workout-log-exercise-name {
+  font-weight: var(--font-weight-semibold);
+}
+
+.workout-log-set {
+  font-size: var(--text-sm);
+}

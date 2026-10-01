@@ -1,0 +1,135 @@
+.coach-trainees {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.coach-trainees-title {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--text-2xl);
+  line-height: var(--line-height-tight);
+}
+
+/* 16px text: no page zoom on focus. */
+.coach-trainees-search {
+  width: 100%;
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-3);
+  font-size: var(--text-base);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-none);
+  appearance: none;
+}
+
+.coach-trainees-search:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 0;
+}
+
+/* One row that scrolls sideways, bleeding to the screen edges. */
+.coach-trainees-filters {
+  display: flex;
+  gap: var(--space-2);
+  margin: 0 calc(-1 * var(--space-3));
+  padding: 0 var(--space-3);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.coach-trainees-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.coach-trainees-filter {
+  flex-shrink: 0;
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+  border: 1px solid var(--color-border);
+}
+
+.coach-trainees-filter[aria-pressed='true'] {
+  color: var(--color-primary-deep);
+  background-color: var(--color-primary-soft);
+  border-color: var(--color-primary);
+}
+
+.coach-trainees-filter:active {
+  background-color: var(--color-surface);
+}
+
+.coach-trainees-filter-count {
+  color: var(--color-text-muted);
+}
+
+/* The one filter the coach works from every week — kept apart and louder. */
+.coach-trainees-needs-plan {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-3);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary-deep);
+  background-color: var(--color-primary-soft);
+  border: 2px solid var(--color-primary);
+  clip-path: polygon(0 0, calc(100% - var(--cut-size)) 0, 100% var(--cut-size), 100% 100%, 0 100%);
+}
+
+.coach-trainees-needs-plan[aria-pressed='true'] {
+  color: var(--color-on-primary);
+  background-color: var(--color-primary-deep);
+  border-color: var(--color-primary-deep);
+}
+
+.coach-trainees-needs-plan:active {
+  background-color: var(--color-primary-deep);
+  border-color: var(--color-primary-deep);
+  color: var(--color-on-primary);
+}
+
+.coach-trainees-list {
+  border-top: 1px solid var(--color-border);
+}
+
+.coach-trainee-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target-min);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.coach-trainee-row:active {
+  background-color: var(--color-surface);
+}
+
+.coach-trainee-row-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.coach-trainee-row-name {
+  font-weight: var(--font-weight-bold);
+  overflow-wrap: anywhere;
+}
+
+.coach-trainee-row-activity {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.coach-trainee-row-chevron {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}

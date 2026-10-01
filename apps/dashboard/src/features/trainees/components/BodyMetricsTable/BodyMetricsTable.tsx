@@ -1,7 +1,6 @@
 import { useCallback } from 'react';
 import { listTraineeBodyMetrics } from '../../../../services/coach/coachService';
-import { useLoad } from '../../../../hooks/useLoad';
-import { formatDateOnly, humanizeId } from '../../../../utils/format';
+import { useLoad, formatDateOnly, humanizeId } from '@sistem/shared';
 import { Button } from '../../../../components/common/Button/Button';
 import './BodyMetricsTable.css';
 

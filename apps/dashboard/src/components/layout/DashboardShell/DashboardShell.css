@@ -36,9 +36,14 @@
   border-bottom-color: var(--color-primary);
 }
 
+/* A long name is cut, so it cannot push the bell (and its panel) off to the left. */
 .shell-user {
+  max-width: 200px;
+  overflow: hidden;
   font-size: var(--text-sm);
   color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .shell-main {

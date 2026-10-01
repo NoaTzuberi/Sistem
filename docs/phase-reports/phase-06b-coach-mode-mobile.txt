@@ -1,0 +1,237 @@
+SISTEM — PHASE 6b REPORT: COACH MODE IN THE MOBILE APP
+Date: 2026-10-01
+Scope: docs/BUILD_PLAN.md Phase 6b (PRD §6, coach mode). Mobile app + a new shared
+package + the dashboard's imports. No server change. Phase 7 was NOT started.
+
+================================================================================
+1. SUMMARY
+================================================================================
+- Coach mode in the mobile app: Inbox (in-app notifications, read / unread, tap opens
+  the trainee, unread count on the Inbox tab), Trainees (search, status filters,
+  "Needs next week's plan", 48h countdown on the server's clock), Trainee detail
+  (Onboarding / Plan / Logs / Body).
+- The Plan tab is read-only and shows this week and next week only. Two light actions:
+  "Publish plan" on a draft, and "Duplicate last week and publish". Both ask first in a
+  bottom sheet. A hint says plans are edited on the dashboard.
+- New package @sistem/shared: the coach-side logic the dashboard and the app both use.
+  The dashboard now imports it instead of its own copies.
+- No server code and no new API: the app uses createCoachApi and createNotificationsApi
+  from @sistem/api-client, as the dashboard does.
+- "Workout completed" notification: written into Phase 8 of docs/BUILD_PLAN.md, not built.
+
+================================================================================
+2. DECISIONS (owner answers) AND HOW THEY WERE BUILT
+================================================================================
+1. Past plans stay on the dashboard. The app shows this week + next week only.
+2. Status file shared, not copied -> new packages/shared (@sistem/shared).
+   Why a new package and not an existing one:
+   - @sistem/types is types only (the server imports it with `import type`); runtime
+     code there would break that rule.
+   - @sistem/api-client is the HTTP layer (axios); labels and sorting are not API calls.
+   - @sistem/tokens is CSS.
+   What is in it (all moved out of apps/dashboard, nothing rewritten):
+   - traineeStatus.ts   status labels, tones, filters, urgency sort (+ matchesSearch)
+   - format.ts          date / time-left / duration helpers (+ formatWeekRange, new)
+   - onboardingSections.ts   the onboarding answers as sections of label / value rows
+   - coachNotifications.ts   describeCoachNotification: text + trainee for the bell and
+                             the Inbox
+   - hooks/useLoad.ts, hooks/useServerNow.ts
+   You asked for the status file. I moved the other five too, because the app needed
+   each of them and the only alternative was a second copy — the thing you ruled out.
+   Say if you want any of them back inside the dashboard.
+   Like the other packages it has no build step; it has React as a peer dependency
+   (for the two hooks). The server must never import it.
+3. "Workout completed" -> one bullet added to Phase 8 in docs/BUILD_PLAN.md.
+
+Things I decided inside those answers (say if you want any changed):
+- "Duplicate last week and publish" targets this week if it has no plan, otherwise next
+  week, and is offered only when an earlier plan exists. It runs the two existing calls
+  (create with duplicatePrevious, then publish). If the publish is refused, the copy
+  stays as a draft and the screen says so, with the server's reasons.
+- A refused publish lists the server's `issues` ("Workout 2, exercise 1: ...") and says
+  to fix it on the dashboard. The app checks no plan rule itself.
+- The tone type in the shared file is 'neutral' | 'accent' | 'solid'. The mobile Badge
+  got a 'solid' variant (white on Cherry Rose) so both apps draw the same three tones.
+- The trainee section is kept in the URL (?tab=plan), so reload and back keep it.
+- The unread count is one small store (features/notifications/unreadCount.ts): polled
+  every 60 s and on window focus, and updated by the Inbox when something is read.
+- Notification types the coach view does not know are skipped, so the Phase 8 type can
+  be added in one place.
+
+================================================================================
+2b. FIX AFTER REVIEW — DASHBOARD NOTIFICATIONS PANEL OFF-SCREEN
+================================================================================
+Reported: the bell's dropdown panel opened off the side of the screen, partly cut off.
+Cause: the panel is 360px wide and hangs leftwards from the bell's right edge. The bell
+is not at the window's right edge (the name and "Log out" sit after it), so in a narrow
+window its right edge is less than 360px from the left and the panel ran off the LEFT
+side. Measured before the fix: at 375px wide the panel started at -69px. At 768, 1024
+and 1440 it was already inside, so I could only reproduce the bug below about 470px;
+if you saw it in a wider window, tell me the width.
+Fix (CSS only):
+- Width is min(360px, 100vw - 32px); a long list scrolls inside the panel (max height
+  is the smaller of 70% of the window and the window minus the bar).
+- At 768px and below the panel is placed against the top bar instead of the bell: full
+  width with a 16px margin on each side.
+- The coach's name in the top bar is cut at 200px, so a long name cannot push the bell
+  (and the panel) to the left.
+Measured after the fix (panel left–right edge / window width), bell opened, then with
+40 extra rows to force a long list: 1440: 885–1245 · 1024: 469–829 · 768: 16–752 ·
+480: 16–464 · 375: 16–359. Always inside, list scrolls inside the panel, page width
+never grows.
+Mobile app: nothing opens a dropdown panel. The Inbox is a full screen, and the confirm
+sheet is a full-width bottom sheet (0–373 of 373 at the 375 frame, measured during the
+Phase 6b check — not measured again for this fix, no mobile file changed).
+
+================================================================================
+3. FILES CHANGED
+================================================================================
+Added — shared
+  packages/shared/package.json
+  packages/shared/src/index.ts, traineeStatus.ts, format.ts, onboardingSections.ts,
+    coachNotifications.ts, hooks/useLoad.ts, hooks/useServerNow.ts
+
+Added — mobile (apps/mobile/src)
+  services/coach/coachService.ts
+  services/notifications/notificationsService.ts
+  features/notifications/unreadCount.ts
+  features/notifications/components/UnreadBadge/        (.tsx + .css)
+  features/coach/data/traineeTabs.ts, planDisplay.ts
+  features/coach/components/CoachMessage/, TraineeStatusBadges/, OnboardingAnswers/,
+    TraineePlan/, PlanCard/, ConfirmSheet/, WorkoutLogList/, BodyMetricsList/
+    (.tsx + .css each)
+  features/coach/pages/TraineeDetailPage/               (.tsx + .css)
+  features/coach/pages/InboxPage/InboxPage.css
+  features/coach/pages/TraineesPage/TraineesPage.css
+
+Added — docs
+  docs/phase-reports/phase-06b-coach-mode-mobile.txt
+
+Modified — mobile
+  apps/mobile/package.json                              @sistem/shared
+  apps/mobile/src/app/config/routes.ts                  COACH_TRAINEE_PATH, coachTraineePath
+  apps/mobile/src/app/router/AppRouter.tsx              trainee detail route (coach only)
+  apps/mobile/src/components/common/Badge/Badge.tsx, Badge.css      'solid' variant
+  apps/mobile/src/components/layout/TabBar/TabBar.tsx, TabBar.css   unread count on Inbox
+  apps/mobile/src/features/coach/pages/InboxPage/InboxPage.tsx      was a placeholder
+  apps/mobile/src/features/coach/pages/TraineesPage/TraineesPage.tsx  was a placeholder
+
+Modified — dashboard (imports only, plus three small uses of the shared functions)
+  apps/dashboard/package.json                           @sistem/shared
+  features/notifications/components/NotificationBell/NotificationBell.tsx
+  features/trainees/pages/TraineesPage/TraineesPage.tsx, TraineeDetailPage/TraineeDetailPage.tsx
+  features/trainees/components/TraineeStatusBadges/, OnboardingAnswers/, TraineePlans/,
+    WorkoutLogList/, BodyMetricsTable/                  (.tsx)
+  features/planBuilder/components/ExerciseLibrary/, ExerciseRow/, PlanEditor/ (.tsx)
+  features/planBuilder/pages/PlanBuilderPage/PlanBuilderPage.tsx
+
+Modified — dashboard (bell panel fix, §2b)
+  features/notifications/components/NotificationBell/NotificationBell.css
+  components/layout/DashboardShell/DashboardShell.css   name cut at 200px
+
+Modified — other
+  package-lock.json                                     links the new workspace
+  docs/BUILD_PLAN.md                                    Phase 8: workout-completed bullet
+  CLAUDE.md (gitignored — not in any commit)
+
+Deleted — dashboard (moved to packages/shared)
+  apps/dashboard/src/features/trainees/data/traineeStatus.ts
+  apps/dashboard/src/utils/format.ts
+  apps/dashboard/src/hooks/useLoad.ts, useServerNow.ts
+
+================================================================================
+4. DEPENDENCIES
+================================================================================
+Added: none from npm. @sistem/shared is a new workspace package, added to
+apps/mobile and apps/dashboard (npm install was run to link it).   Removed: none.
+
+================================================================================
+5. HOW TO TEST
+================================================================================
+Commands (repo root):
+  npm install        -> needed once, links @sistem/shared
+  npm run build      -> passes (dashboard, mobile, server)
+  npm run lint       -> passes (0 errors; the same 4 older warnings)
+  npm test           -> 15 files, 182 tests pass (unchanged — no server change)
+  npm run dev        -> server 5002 + mobile 5173
+
+Manual — http://localhost:5173 at 375×667, coach@sistem.dev / sistem-dev-1234:
+  1. You land on Inbox. Unread rows have a pink dot and bold text; the Inbox tab shows
+     the count. Tap a row -> that trainee opens, the row becomes read, the count drops.
+     "Mark all read" clears the count.
+  2. Trainees: waiting trainees on top with "…h …m left on the 48h window"; the status
+     chips scroll sideways; "Needs next week's plan" shows Dev Trainee Two; search works.
+  3. Open Dev Trainee Two -> Plan: this week's published seed plan (open a workout: sets,
+     superset bar, coach notes), next week empty with "Duplicate last week and publish".
+  4. Tap it -> bottom sheet -> "Duplicate and publish". Next week now shows a published
+     plan, the "Needs next week's plan" badge goes, and the trainee has a
+     'plan_published' notification.
+  5. On the dashboard (5174) create a draft for a trainee, then in the app open that
+     trainee -> Plan -> "Publish plan". With an empty workout in the draft the publish is
+     refused and the reasons are listed.
+  6. Onboarding / Logs / Body tabs: answers as on the dashboard; logs and body metrics
+     are empty until Phases 8 and 10.
+  7. Dashboard (5174): trainees list, trainee detail, bell and plan builder behave as
+     before (they now read the shared package).
+
+================================================================================
+6. KNOWN ISSUES / TODOs
+================================================================================
+- What I checked myself, against your running dev servers (I did not start or stop
+  them), signed in as the dev coach, in a 375×667 frame and again at 430×932:
+  Trainees list, Trainee detail with all four tabs, the plan view with an open workout,
+  the confirm sheet (opened and cancelled), the Inbox and the tab count. No sideways
+  scroll, no touch target under 44px, no console errors.
+- NOT clicked through in the browser:
+  - Confirming "Publish" / "Duplicate and publish": it would have left a real plan and
+    a real notification in your dev database. The server side is covered by the
+    Phase 6 tests; the buttons need your steps 4–5.
+  - Tapping an Inbox row and "Mark all read": the only notification in the dev database
+    is unread, and I did not want to change that. Step 1 is yours.
+  - The refused-publish message and the Logs / Body lists with real data (no such data
+    exists yet).
+  - The dashboard after the move to @sistem/shared: it builds and type-checks, but I
+    did not open it in the browser (step 7).
+- The Chrome window could not be resized, so the phone sizes were checked in a frame of
+  that size inside the page, not with device emulation. Not checked on a real phone.
+- The mobile bundle is now just over Vite's 500 kB warning line (507 kB, 159 kB
+  gzipped). It is a warning only; splitting the app by route would clear it.
+- oxlint does not run on packages/ (no lint script there, same as the other packages).
+  The shared code is type-checked by both app builds.
+- Wording everywhere is a functional placeholder (labels, messages, the confirm sheets).
+- "Workout completed" notifications do not exist until Phase 8; the Inbox shows
+  "New trainee" only.
+- Daily Pump and progress photos are text slots until Phases 9 / 10.
+- The trainee tab bar has no notifications screen yet; the unread count is fetched for
+  the coach only.
+- Coach Profile tab is still the placeholder with the logout button.
+
+================================================================================
+7. SUGGESTED COMMITS (ready to paste — in order)
+================================================================================
+# 1) shared package + dashboard moved onto it
+# (the two CSS files of the panel fix are excluded here and go into commit 2)
+git add -A -- \
+  packages/shared \
+  apps/dashboard \
+  package-lock.json \
+  ':(exclude)apps/dashboard/src/features/notifications/components/NotificationBell/NotificationBell.css' \
+  ':(exclude)apps/dashboard/src/components/layout/DashboardShell/DashboardShell.css'
+git commit -m "refactor: move coach-side status, format and load helpers into @sistem/shared"
+
+# 2) dashboard: notifications panel stays inside the window
+git add -A -- \
+  apps/dashboard/src/features/notifications/components/NotificationBell/NotificationBell.css \
+  apps/dashboard/src/components/layout/DashboardShell/DashboardShell.css
+git commit -m "fix: dashboard notifications panel stays inside the viewport on narrow windows"
+
+# 3) mobile: coach mode
+git add -A -- \
+  apps/mobile
+git commit -m "feat: coach mode in the mobile app — inbox, trainees list, trainee detail, publish and duplicate-and-publish"
+
+# 4) docs
+git add -A -- \
+  docs/BUILD_PLAN.md \
+  docs/phase-reports/phase-06b-coach-mode-mobile.txt
+git commit -m "docs: phase 6b report, workout-completed notification added to phase 8"

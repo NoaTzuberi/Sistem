@@ -3,23 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import type { AppNotification } from '@sistem/types';
 import { listNotifications, getUnreadCount, markRead, markAllRead } from '../../../../services/notifications/notificationsService';
 import { traineePath } from '../../../../app/config/routes';
-import { formatDateTime } from '../../../../utils/format';
+import { describeCoachNotification, formatDateTime } from '@sistem/shared';
 import './NotificationBell.css';
 
 const POLL_MS = 60_000;
 const PANEL_LIMIT = 20;
-
-/** Notifications store no wording (type + data only): the text is built here. */
-function describe(notification: AppNotification): { text: string; path: string } | null {
-  if (notification.type === 'trainee_onboarded') {
-    return {
-      text: `New trainee: ${notification.data.traineeName}`,
-      path: traineePath(notification.data.traineeId),
-    };
-  }
-  // The coach is never the recipient of the other types.
-  return null;
-}
 
 export function NotificationBell() {
   const navigate = useNavigate();
@@ -95,8 +83,9 @@ export function NotificationBell() {
   }
 
   const visible = (items ?? []).flatMap((notification) => {
-    const described = describe(notification);
-    return described ? [{ notification, ...described }] : [];
+    // The wording and the target are shared with the mobile Inbox.
+    const described = describeCoachNotification(notification);
+    return described ? [{ notification, text: described.text, path: traineePath(described.traineeId) }] : [];
   });
 
   return (

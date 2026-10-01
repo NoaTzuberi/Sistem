@@ -2,6 +2,7 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import type { Location } from 'react-router-dom';
 import {
   ROUTES,
+  COACH_TRAINEE_PATH,
   WORKOUT_DETAIL_PATH,
   WORKOUT_EDIT_PATH,
   WORKOUT_SESSION_PATH,
@@ -26,6 +27,7 @@ import { ActiveWorkoutPage } from '../../features/workouts/pages/ActiveWorkoutPa
 import { WorkoutSummaryPage } from '../../features/workouts/pages/WorkoutSummaryPage/WorkoutSummaryPage';
 import { InboxPage } from '../../features/coach/pages/InboxPage/InboxPage';
 import { TraineesPage } from '../../features/coach/pages/TraineesPage/TraineesPage';
+import { TraineeDetailPage } from '../../features/coach/pages/TraineeDetailPage/TraineeDetailPage';
 import { CoachProfilePage } from '../../features/coach/pages/CoachProfilePage/CoachProfilePage';
 
 export function AppRouter() {
@@ -70,6 +72,7 @@ export function AppRouter() {
           <Route element={<AppStateGuard allow={['coach']} />}>
             <Route path={ROUTES.COACH_INBOX} element={<InboxPage />} />
             <Route path={ROUTES.COACH_TRAINEES} element={<TraineesPage />} />
+            <Route path={COACH_TRAINEE_PATH} element={<TraineeDetailPage />} />
             <Route path={ROUTES.COACH_PROFILE} element={<CoachProfilePage />} />
           </Route>
         </Route>

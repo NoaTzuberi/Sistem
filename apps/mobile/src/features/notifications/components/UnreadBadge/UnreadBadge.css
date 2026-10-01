@@ -1,0 +1,25 @@
+/* Sits on the top-right corner of the tab's icon (the tab link is the anchor). */
+.unread-badge {
+  position: absolute;
+  top: var(--space-1);
+  left: calc(50% + var(--space-1));
+  min-width: 18px;
+  padding: 0 var(--space-1);
+  background-color: var(--color-primary-deep);
+  border-radius: var(--radius-round);
+  color: var(--color-on-primary);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-bold);
+  line-height: 18px;
+  text-align: center;
+}
+
+/* Read by screen readers only. */
+.unread-badge-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

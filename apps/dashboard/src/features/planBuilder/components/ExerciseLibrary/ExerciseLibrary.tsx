@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ExerciseFacts } from '@sistem/types';
 import { searchExercises } from '../../../../services/coach/coachService';
 import { Button } from '../../../../components/common/Button/Button';
-import { humanizeId } from '../../../../utils/format';
+import { humanizeId } from '@sistem/shared';
 import { DIFFICULTY_FILTERS, EQUIPMENT_FILTERS, MUSCLE_FILTERS } from '../../data/exerciseFilters';
 import './ExerciseLibrary.css';
 

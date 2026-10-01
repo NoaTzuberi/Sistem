@@ -28,6 +28,13 @@ export function exercisePath(slug: string): string {
   return `/exercises/${slug}`;
 }
 
+// Coach mode: one trainee (PRD §6). A "new trainee" notification opens this screen.
+export const COACH_TRAINEE_PATH = '/coach/trainees/:traineeId';
+
+export function coachTraineePath(traineeId: string): string {
+  return `/coach/trainees/${traineeId}`;
+}
+
 export const WORKOUT_DETAIL_PATH = '/workouts/:id';
 export const WORKOUT_EDIT_PATH = '/workouts/:id/edit';
 export const WORKOUT_SESSION_PATH = '/workouts/session/:id';

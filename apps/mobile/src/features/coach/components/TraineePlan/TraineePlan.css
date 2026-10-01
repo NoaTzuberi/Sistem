@@ -1,0 +1,68 @@
+.trainee-plan {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.trainee-plan-week {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.trainee-plan-week-title {
+  margin: 0;
+  font-size: var(--text-lg);
+  line-height: var(--line-height-tight);
+}
+
+.trainee-plan-week-dates {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-muted);
+}
+
+.trainee-plan-none {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.trainee-plan-action {
+  width: 100%;
+  margin-top: var(--space-1);
+}
+
+.trainee-plan-failure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-error);
+  background-color: var(--color-error-soft);
+  border-left: 3px solid var(--color-error);
+}
+
+.trainee-plan-failure-message {
+  margin: 0;
+}
+
+.trainee-plan-issues {
+  padding-left: var(--space-3);
+  list-style: disc;
+}
+
+.trainee-plan-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary-deep);
+}
+
+.trainee-plan-hint-icon {
+  flex-shrink: 0;
+}

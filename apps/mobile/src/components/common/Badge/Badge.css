@@ -35,3 +35,10 @@
   border-color: var(--color-border);
   color: var(--color-text);
 }
+
+/* The loudest badge: white on Cherry Rose (small text needs its contrast, PRD §12). */
+.badge-solid {
+  background-color: var(--color-primary-deep);
+  border-color: var(--color-primary-deep);
+  color: var(--color-on-primary);
+}

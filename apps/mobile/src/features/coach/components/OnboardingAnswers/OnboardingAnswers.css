@@ -1,0 +1,41 @@
+.onboarding-answers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.onboarding-answers-status {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.onboarding-answers-title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-primary-deep);
+}
+
+.onboarding-answers-rows {
+  margin: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Question above its answer: long free-text answers need the full width of a phone. */
+.onboarding-answers-row {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.onboarding-answers-row dt {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.onboarding-answers-row dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}

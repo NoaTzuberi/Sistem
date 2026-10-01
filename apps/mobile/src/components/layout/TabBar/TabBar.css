@@ -20,6 +20,7 @@
   gap: var(--space-1);
   min-width: var(--touch-target-min);
   min-height: var(--touch-target-min);
+  position: relative;
   color: var(--color-text);
   font-family: var(--font-family-body);
   font-size: var(--text-xs);

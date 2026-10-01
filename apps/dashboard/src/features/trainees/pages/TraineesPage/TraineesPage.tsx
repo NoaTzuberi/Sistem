@@ -1,14 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { listTrainees } from '../../../../services/coach/coachService';
-import { useLoad } from '../../../../hooks/useLoad';
-import { useServerNow } from '../../../../hooks/useServerNow';
+import { useLoad, useServerNow, formatTimeAgo, NEEDS_NEXT_WEEK_LABEL, STATUS_FILTERS, matchesFilter, matchesSearch, sortByUrgency } from '@sistem/shared';
+import type { TraineeFilter } from '@sistem/shared';
 import { traineePath } from '../../../../app/config/routes';
-import { formatTimeAgo } from '../../../../utils/format';
 import { Button } from '../../../../components/common/Button/Button';
 import { TraineeStatusBadges, PlanWindow } from '../../components/TraineeStatusBadges/TraineeStatusBadges';
-import { NEEDS_NEXT_WEEK_LABEL, STATUS_FILTERS, matchesFilter, sortByUrgency } from '../../data/traineeStatus';
-import type { TraineeFilter } from '../../data/traineeStatus';
 import './TraineesPage.css';
 
 export function TraineesPage() {
@@ -20,12 +17,7 @@ export function TraineesPage() {
   const trainees = useMemo(() => sortByUrgency(data?.items ?? []), [data]);
   const countFor = (id: TraineeFilter) => trainees.filter((trainee) => matchesFilter(trainee, id)).length;
 
-  const query = search.trim().toLowerCase();
-  const visible = trainees.filter(
-    (trainee) =>
-      matchesFilter(trainee, filter) &&
-      (!query || trainee.name.toLowerCase().includes(query) || trainee.email.toLowerCase().includes(query)),
-  );
+  const visible = trainees.filter((trainee) => matchesFilter(trainee, filter) && matchesSearch(trainee, search));
 
   return (
     <div className="trainees-page">

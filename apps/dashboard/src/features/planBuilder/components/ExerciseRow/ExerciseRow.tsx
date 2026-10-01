@@ -2,7 +2,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from '../../../../components/common/Button/Button';
 import { NumberField } from '../../../../components/common/NumberField/NumberField';
-import { humanizeId } from '../../../../utils/format';
+import { humanizeId } from '@sistem/shared';
 import { SUPERSET_LABELS } from '../../data/planDefaults';
 import { toPerSetTargets, toSimpleTargets } from '../../planDraft';
 import type { DraftExercise } from '../../types';
