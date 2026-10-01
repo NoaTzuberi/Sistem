@@ -53,3 +53,6 @@ export const REQUIRED_ON_COMPLETE: readonly OnboardingField[] = [
   'preferredActivities',
   'equipment',
 ];
+
+// The coach's window to publish the first plan, counted from onboardingCompletedAt (PRD §4.1).
+export const PLAN_WAIT_MS = 48 * 60 * 60 * 1000;

@@ -1,0 +1,52 @@
+/* Fills the shell (which already handles the safe areas): logo on top, the
+   message centered, log out at the bottom. */
+.waiting-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 2 * var(--space-3));
+  color: var(--color-text);
+  text-align: center;
+}
+
+.waiting-logo {
+  margin-top: var(--space-3);
+}
+
+.waiting-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.waiting-icons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 360px;
+}
+
+.waiting-title {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--text-2xl);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.waiting-message {
+  margin: 0;
+  max-width: 320px;
+  font-size: var(--text-base);
+  line-height: var(--line-height-base);
+}
+
+.waiting-page .logout-button {
+  width: 100%;
+}

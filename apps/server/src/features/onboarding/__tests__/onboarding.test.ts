@@ -1,9 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { connectTestDatabase, disconnectTestDatabase, clearTestDatabase } from '../../exercises/__tests__/testDb';
 import { startApiTestClient, createTestUser } from '../../../testing/apiTestClient';
 import type { ApiTestClient } from '../../../testing/apiTestClient';
 import { User } from '../../users/user.model';
 import { OnboardingResponse } from '../onboardingResponse.model';
+import { Plan } from '../../plans/plan.model';
+import { appEvents } from '../../../events/appEvents';
+import type { TraineeOnboardedEvent } from '../../../events/appEvents';
 
 const FULL_PAYLOAD = {
   name: 'Maya',
@@ -119,6 +122,85 @@ describe('onboarding (OnboardingResponse)', () => {
     const user = (await User.findById(trainee.id).lean())!;
     expect(user.onboardingStatus).toBe('completed');
     expect(user.onboardingCompletedAt!.getTime()).toBe(first);
+  });
+
+  it("fires 'trainee.onboarded' once, on the first completion only", async () => {
+    const listener = vi.fn<(event: TraineeOnboardedEvent) => void>();
+    appEvents.on('trainee.onboarded', listener);
+    try {
+      await api.request('POST', '/onboarding/complete', { token: trainee.token, body: FULL_PAYLOAD });
+      await api.request('POST', '/onboarding/complete', { token: trainee.token, body: FULL_PAYLOAD });
+    } finally {
+      appEvents.off('trainee.onboarded', listener);
+    }
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    const user = (await User.findById(trainee.id).lean())!;
+    expect(listener.mock.calls[0][0]).toEqual({
+      traineeId: trainee.id,
+      coachId: user.coachId ? String(user.coachId) : null,
+      completedAt: user.onboardingCompletedAt,
+    });
+  });
+
+  it('a failing listener never fails the completion', async () => {
+    const failing = () => {
+      throw new Error('boom');
+    };
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    appEvents.on('trainee.onboarded', failing);
+    try {
+      const res = await api.request('POST', '/onboarding/complete', { token: trainee.token, body: FULL_PAYLOAD });
+      expect(res.status).toBe(200);
+      expect(errorSpy).toHaveBeenCalled();
+    } finally {
+      appEvents.off('trainee.onboarded', failing);
+      errorSpy.mockRestore();
+    }
+  });
+
+  describe('GET /onboarding/waiting', () => {
+    it('has no deadline before onboarding is finished', async () => {
+      const res = await api.request('GET', '/onboarding/waiting', { token: trainee.token });
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({ appState: 'onboarding', planDueAt: null });
+    });
+
+    it('returns server time and a deadline 48h after the completion time', async () => {
+      await api.request('POST', '/onboarding/complete', { token: trainee.token, body: FULL_PAYLOAD });
+      const before = Date.now();
+      const res = await api.request('GET', '/onboarding/waiting', { token: trainee.token });
+      const after = Date.now();
+
+      const user = (await User.findById(trainee.id).lean())!;
+      expect(res.body.appState).toBe('waiting');
+      expect(new Date(res.body.planDueAt).getTime()).toBe(user.onboardingCompletedAt!.getTime() + 48 * 60 * 60 * 1000);
+      const serverTime = new Date(res.body.serverTime).getTime();
+      expect(serverTime).toBeGreaterThanOrEqual(before);
+      expect(serverTime).toBeLessThanOrEqual(after);
+    });
+
+    it('moves to home once a plan is published', async () => {
+      await api.request('POST', '/onboarding/complete', { token: trainee.token, body: FULL_PAYLOAD });
+      const coach = await createTestUser('coach@example.com', { role: 'coach' });
+      await Plan.create({
+        traineeId: trainee.id,
+        coachId: coach.id,
+        weekStartDate: '2026-09-27',
+        status: 'published',
+        publishedAt: new Date(),
+        workouts: [],
+      });
+
+      const res = await api.request('GET', '/onboarding/waiting', { token: trainee.token });
+      expect(res.body.appState).toBe('home');
+    });
+
+    it('is trainee-only and needs a session', async () => {
+      const coach = await createTestUser('coach@example.com', { role: 'coach' });
+      expect((await api.request('GET', '/onboarding/waiting', { token: coach.token })).status).toBe(403);
+      expect((await api.request('GET', '/onboarding/waiting')).status).toBe(401);
+    });
   });
 
   it('GET /users/profile keeps the ATLAS response shape for the Profile page', async () => {

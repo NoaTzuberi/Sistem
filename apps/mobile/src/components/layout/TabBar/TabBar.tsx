@@ -3,7 +3,6 @@ import type { ReactNode } from 'react';
 import { IconBarbell, IconHome, IconInbox, IconUser, IconUsers } from '@tabler/icons-react';
 import { useAuth } from '../../../services/auth/AuthContext';
 import { ROUTES } from '../../../app/config/routes';
-import { landingPath } from '../../../app/router/landingPath';
 import './TabBar.css';
 
 interface TabItem {
@@ -15,7 +14,7 @@ interface TabItem {
 const ICON_SIZE = 24;
 
 // Tabs are chosen by role (PRD §5 trainee tabs, §6 coach mode).
-function tabsFor(role: 'trainee' | 'coach', homePath: string): TabItem[] {
+function tabsFor(role: 'trainee' | 'coach'): TabItem[] {
   if (role === 'coach') {
     return [
       { to: ROUTES.COACH_INBOX, label: 'Inbox', icon: <IconInbox size={ICON_SIZE} /> },
@@ -25,7 +24,7 @@ function tabsFor(role: 'trainee' | 'coach', homePath: string): TabItem[] {
   }
 
   return [
-    { to: homePath, label: 'Home', icon: <IconHome size={ICON_SIZE} /> },
+    { to: ROUTES.TRAINEE_HOME, label: 'Home', icon: <IconHome size={ICON_SIZE} /> },
     { to: ROUTES.WORKOUTS, label: 'Workouts', icon: <IconBarbell size={ICON_SIZE} /> },
     { to: ROUTES.PROFILE, label: 'Profile', icon: <IconUser size={ICON_SIZE} /> },
   ];
@@ -35,8 +34,7 @@ export function TabBar() {
   const { user } = useAuth();
   if (!user) return null;
 
-  // Until a plan is published, "Home" is the waiting screen (DashboardPage for now).
-  const tabs = tabsFor(user.role, landingPath(user.appState));
+  const tabs = tabsFor(user.role);
 
   return (
     <nav className="tab-bar" aria-label="Main">

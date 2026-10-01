@@ -412,12 +412,6 @@
   margin-top: var(--space-4);
 }
 
-.profile-dashboard-link {
-  width: 100%;
-  justify-content: center;
-  margin-top: var(--space-4);
-}
-
 .profile-error {
   color: var(--color-error);
   font-size: var(--text-sm);

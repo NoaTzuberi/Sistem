@@ -174,21 +174,42 @@ Implement PRD §4.1 steps 1–3.
 2. On completion, the server sets onboardingCompletedAt and onboardingStatus=complete.
 3. Build the "Your plan is being built" screen: a 48h countdown computed from the server timestamp, the message from the PRD, and placeholder slots for 3D gym/sport icons (I will provide the assets — create an obvious, easy-to-swap icon slot component).
 4. Poll or subscribe so that when a plan is published, the user is moved to Home automatically.
-5. Fire an internal "trainee.onboarded" event on the server (Phase 5 will hook notifications into it).
+5. Fire an internal "trainee.onboarded" event on the server (Phase 5a will hook notifications into it).
 ```
 
 ---
 
-## Phase 5 — Mobile packaging & push notifications
+## Phase 5 — Notifications (split into 5a and 5b — owner decision, 2026-10-01)
+
+Phase 5 is split because native push needs Apple / Google developer accounts and a Firebase
+project, which are not available yet. In-app notifications come first; push is added later on
+top of the same `notify()` service, so nothing built in 5a is thrown away.
+
+### Phase 5a — In-app notifications (now)
+
+```
+Read PRD §9. In-app notifications only — no push, no Capacitor, no new dependencies.
+
+1. A Notification collection: every notification is stored per recipient, with read/unread.
+2. Server notification service with a single `notify(userId, payload)` function that stores the notification. Phase 5b adds push delivery inside this same function — callers never change.
+3. Hook it up: "trainee.onboarded" → notification to the coach (points to that trainee); "plan.published" → notification to the trainee (points to Home).
+4. API: list my notifications, mark one / all as read. A user can only ever read or change her own notifications.
+5. Tests for the hooks and the authorization rules.
+
+Show me the Notification schema and the payload types before writing the routes.
+```
+
+### Phase 5b — Mobile packaging & native push (later, before launch)
+
+Needs Apple + Google developer accounts and a Firebase project — not available yet.
 
 ```
 Read PRD §9 and §11 (App packaging).
 
-1. Set up Capacitor for the trainee app (iOS + Android). Decision already made — do not propose alternatives.
-2. Register device push tokens after login and store them on the user. Handle denied permission gracefully.
-2b. The coach uses the same mobile app (coach mode), so her push goes through the same native flow. Also store every notification in a Notification collection so the coach app can show an in-app Inbox (read/unread).
-3. Server notification service with a single `notify(userId, payload)` function, backed by FCM (or the chosen provider). Handle invalid/expired tokens.
-4. Hook it up: "trainee.onboarded" → push to the coach, tapping it opens that trainee in the app's coach mode; "plan.published" → push to the trainee, and tapping it opens Home. If the plan is published before the 48h timer ends, the waiting screen must switch to Home immediately when the app is open (listen for the event / poll) and on next launch otherwise.
+1. Set up Capacitor for the mobile app (iOS + Android). Decision already made — do not propose alternatives. Includes the app icons (logo files in packages/tokens/brand/).
+2. Register device push tokens after login and store them on the user (User.pushTokens). Handle denied permission gracefully. The coach uses the same mobile app (coach mode), so her push goes through the same native flow.
+3. Add push delivery via FCM inside the existing `notify(userId, payload)` service from Phase 5a: every notification is still stored, and is also pushed to the user's devices. Handle invalid/expired tokens.
+4. Tapping a push follows the notification's target: "trainee.onboarded" opens that trainee in the app's coach mode; "plan.published" opens Home. If the plan is published before the 48h timer ends, the waiting screen must switch to Home immediately when the app is open (listen for the event / poll) and on next launch otherwise.
 5. Document the required env vars and platform setup steps in docs/SETUP.md.
 ```
 
@@ -202,7 +223,7 @@ Implement PRD §6 (MVP parts only: trainees list, trainee detail, plan builder, 
 1. Trainees list with status filter (new / waiting for plan / active / inactive) and remaining time on the 48h window.
 2. Trainee detail: onboarding answers, plans, workout logs (with summaries & pump photos), body metrics.
 3. Plan builder: create a weekly plan → add workouts → add exercises from the exercise library (search) → set sets, reps, target weight, rest, notes. Reorder exercises. Save draft / publish. Duplicate previous week.
-4. Publishing triggers "plan.published".
+4. Publishing triggers "plan.published" (the event and its notification listener exist since Phase 5a — the publish service only has to emit it).
 5. Dashboard routes require role=coach, enforced on the server as well as the client.
 ```
 
@@ -213,7 +234,7 @@ Implement PRD §6 (MVP parts only: trainees list, trainee detail, plan builder, 
 ```
 Implement the coach mode described in PRD §6 inside the mobile app. Reuse the API and, where sensible, components from the dashboard via the shared packages.
 
-- Inbox: notifications list (new trainee, workout completed), read/unread, tap → relevant trainee.
+- Inbox: notifications list (new trainee, workout completed), read/unread, tap → relevant trainee. Uses the Phase 5a in-app notifications API (no push needed).
 - Trainees: list with status filter and 48h time remaining.
 - Trainee detail: onboarding answers, current plan (read-only), workout logs with summaries and Daily Pump photos, body metrics.
 - Light actions only: publish an existing draft plan; duplicate last week's plan and publish. Full plan editing stays on the web dashboard — show an "Edit on dashboard" hint.

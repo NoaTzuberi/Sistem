@@ -3,6 +3,7 @@ import { AuthenticatedRequest } from '../../middleware/auth.middleware';
 import { validateCompleteOnboardingPayload, validateOnboardingStepPayload } from './onboarding.validation';
 import {
   getMyOnboarding,
+  getWaitingStatus,
   saveOnboardingStep,
   completeOnboarding,
   OnboardingUserNotFoundError,
@@ -20,6 +21,14 @@ export async function getOnboarding(req: AuthenticatedRequest, res: Response) {
   try {
     const onboarding = await getMyOnboarding(req.userId!);
     res.status(200).json({ onboarding });
+  } catch (error) {
+    if (!handleUserNotFound(error, res)) throw error;
+  }
+}
+
+export async function getWaiting(req: AuthenticatedRequest, res: Response) {
+  try {
+    res.status(200).json(await getWaitingStatus(req.userId!));
   } catch (error) {
     if (!handleUserNotFound(error, res)) throw error;
   }

@@ -4,12 +4,13 @@ export const ROUTES = {
   REGISTER: '/register',
   FORGOT_PASSWORD: '/forgot-password',
   RESET_PASSWORD: '/reset-password',
-  DASHBOARD: '/dashboard',
   PROFILE: '/profile',
   SETTINGS: '/settings',
   WORKOUTS: '/workouts',
   WORKOUT_BUILDER: '/workouts/new',
   ONBOARDING: '/onboarding',
+  // "Your plan is being built" — onboarding done, no published plan yet (PRD §4.1).
+  WAITING: '/waiting',
   EXERCISES: '/exercises',
   // Trainee Home — only reachable once a plan is published (PRD §4.2).
   TRAINEE_HOME: '/home',

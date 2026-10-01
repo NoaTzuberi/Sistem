@@ -130,6 +130,19 @@ export interface OnboardingSaveResponse {
   onboarding: MyOnboarding;
 }
 
+/**
+ * GET /onboarding/waiting — what the "plan is being built" screen polls.
+ * Both times come from the server clock; the client never uses device time for
+ * the countdown (PRD §4.1, §11).
+ */
+export interface WaitingStatus {
+  /** Changes to 'home' once a plan is published. */
+  appState: AppState;
+  serverTime: string;
+  /** onboardingCompletedAt + the 48h window; null if onboarding is not finished. */
+  planDueAt: string | null;
+}
+
 // ---------------------------------------------------------------------------
 // Plans (PRD §10). All weights are kg, all body measurements cm, durations seconds.
 // ---------------------------------------------------------------------------

@@ -1,11 +1,10 @@
 import type { AppState } from '@sistem/types';
 import { ROUTES } from '../config/routes';
 
-// Where each server-decided app state lands (PRD §4.2). 'waiting' uses the kept
-// DashboardPage until the Phase 4 waiting screen replaces it (owner decision).
+// Where each server-decided app state lands (PRD §4.2).
 const LANDING_PATHS: Record<AppState, string> = {
   onboarding: ROUTES.ONBOARDING,
-  waiting: ROUTES.DASHBOARD,
+  waiting: ROUTES.WAITING,
   home: ROUTES.TRAINEE_HOME,
   coach: ROUTES.COACH_INBOX,
 };

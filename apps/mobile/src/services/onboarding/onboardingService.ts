@@ -5,6 +5,7 @@ import type {
   OnboardingStepId,
   SaveOnboardingStepPayload,
 } from '@sistem/types';
+import { extractErrorMessage } from '@sistem/api-client';
 import { apiClient } from '../api/apiClient';
 import type { OnboardingFormState } from '../../features/onboarding/types';
 
@@ -60,22 +61,34 @@ function pickStepAnswers(step: OnboardingStepId, formState: OnboardingFormState)
 }
 
 export async function getMyOnboarding(): Promise<MyOnboarding> {
-  const { data } = await apiClient.get<{ onboarding: MyOnboarding }>('/onboarding');
-  return data.onboarding;
+  try {
+    const { data } = await apiClient.get<{ onboarding: MyOnboarding }>('/onboarding');
+    return data.onboarding;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, "Couldn't load your answers. Please try again."));
+  }
 }
 
-/** Saves one step's answers (also used by the Profile page's "edit this step"). */
+/** Saves one step's answers (after every onboarding step, and the Profile page's "edit this step"). */
 export async function saveOnboardingStep(
   step: OnboardingStepId,
   formState: OnboardingFormState,
 ): Promise<OnboardingSaveResponse> {
   const payload: SaveOnboardingStepPayload = { step, answers: pickStepAnswers(step, formState) };
-  const { data } = await apiClient.patch<OnboardingSaveResponse>('/onboarding', payload);
-  return data;
+  try {
+    const { data } = await apiClient.patch<OnboardingSaveResponse>('/onboarding', payload);
+    return data;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Could not save your answers. Please try again.'));
+  }
 }
 
 /** Final submit: every answer; the server stamps the completion time. */
 export async function completeOnboarding(formState: OnboardingFormState): Promise<OnboardingSaveResponse> {
-  const { data } = await apiClient.post<OnboardingSaveResponse>('/onboarding/complete', toAnswersPayload(formState));
-  return data;
+  try {
+    const { data } = await apiClient.post<OnboardingSaveResponse>('/onboarding/complete', toAnswersPayload(formState));
+    return data;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Could not save your profile. Please try again.'));
+  }
 }

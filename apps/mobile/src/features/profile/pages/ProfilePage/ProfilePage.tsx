@@ -332,10 +332,6 @@ export function ProfilePage() {
                   </>
                 )}
 
-                <Link to={ROUTES.DASHBOARD} className="btn btn-secondary profile-dashboard-link">
-                  <span className="btn-label">View full dashboard</span>
-                </Link>
-
                 <LogoutButton />
               </GlassCard>
             </div>

@@ -1,0 +1,160 @@
+SISTEM — PHASE 4 REPORT: FIRST-LAUNCH ONBOARDING & 48H WAITING SCREEN
+Date: 2026-10-01
+Scope: docs/BUILD_PLAN.md Phase 4 (items 1–5), PRD §4.1 steps 1–3 and §4.2.
+Built with the owner's four answers (full screen + logout, /dashboard removed, overdue
+message, 4 icon slots). Phase 5 was NOT started.
+
+================================================================================
+1. SUMMARY
+================================================================================
+- Onboarding resumes: every step is saved to the server before moving on (Continue and
+  Skip), and a fresh mount (reload, another device) restores the answers and opens the step
+  after the last saved one. Finishing lands wherever the server says (the waiting screen).
+- New waiting screen (/waiting): full screen, no tab bar, logo, 4 icon slots, title,
+  48h countdown, message, Log Out. While waiting it is the ONLY trainee screen; Profile /
+  Workouts now need a published plan.
+- Countdown uses server time only: GET /api/onboarding/waiting returns serverTime +
+  planDueAt (onboardingCompletedAt + 48h, the 48h lives on the server). The app adds elapsed
+  time from the device's monotonic clock, so changing the phone's clock does not move it.
+- The same call is polled every 30s and when the app returns to the foreground; when a plan
+  is published the trainee is moved to Home automatically.
+- After 48h with no plan: the countdown is hidden and the temporary overdue message is shown.
+- Server fires the internal 'trainee.onboarded' event once, on the first completion only
+  (apps/server/src/events/appEvents.ts). Nothing listens yet — Phase 5 hooks push into it.
+- /dashboard route removed; DashboardPage and its widgets are untouched in the repo.
+
+================================================================================
+2. DECISIONS (owner answers)
+================================================================================
+1. Waiting screen is full screen, no tab bar, with a Log Out button.
+2. /dashboard route and ROUTES.DASHBOARD removed; the Profile "View full dashboard" link
+   removed (it was the only link). DashboardPage + StreakRing / badges / calendar code stay
+   for Phases 7 / 11. Profile still uses the widgets and GET /dashboard/summary (an API
+   call, not the route) — unchanged.
+3. Overdue: no frozen 00:00:00 — countdown hidden, temporary message shown instead.
+   All wording is in ONE file: apps/mobile/src/features/waiting/data/waitingCopy.ts
+4. 4 icon slots. To add an icon: put the file in apps/mobile/src/features/waiting/assets/,
+   import it in features/waiting/data/waitingIcons.ts and set it as the slot's `src`.
+   Empty slots show a dashed, numbered box.
+
+================================================================================
+3. FILES CHANGED
+================================================================================
+Added
+  apps/server/src/events/appEvents.ts
+  apps/mobile/src/services/waiting/waitingService.ts
+  apps/mobile/src/features/waiting/data/waitingCopy.ts
+  apps/mobile/src/features/waiting/data/waitingIcons.ts
+  apps/mobile/src/features/waiting/components/Countdown/Countdown.tsx + .css
+  apps/mobile/src/features/waiting/components/IconSlot/IconSlot.tsx + .css
+  apps/mobile/src/features/waiting/pages/WaitingPage/WaitingPage.tsx + .css
+  docs/phase-reports/phase-04-onboarding-waiting.txt
+
+Modified
+  packages/types/src/index.ts                         WaitingStatus type
+  apps/server/src/features/onboarding/onboarding.constants.ts   PLAN_WAIT_MS (48h)
+  apps/server/src/features/onboarding/onboarding.service.ts     getWaitingStatus, event emit
+  apps/server/src/features/onboarding/onboarding.controller.ts  getWaiting
+  apps/server/src/features/onboarding/onboarding.routes.ts      GET /onboarding/waiting
+  apps/server/src/features/onboarding/__tests__/onboarding.test.ts
+  apps/mobile/src/services/onboarding/onboardingService.ts      server error messages
+  apps/mobile/src/features/onboarding/pages/OnboardingPage/OnboardingPage.tsx + .css
+                                                      resume, save per step, retry on load error
+  apps/mobile/src/app/config/routes.ts                DASHBOARD removed, WAITING added
+  apps/mobile/src/app/router/landingPath.ts           waiting -> /waiting
+  apps/mobile/src/app/router/AppRouter.tsx            waiting route; trainee area = 'home' only
+  apps/mobile/src/components/layout/TabBar/TabBar.tsx Home tab always /home
+  apps/mobile/src/features/profile/pages/ProfilePage/ProfilePage.tsx + .css  dashboard link removed
+  CLAUDE.md (gitignored — not in any commit)
+
+Deleted
+  none
+
+================================================================================
+4. DEPENDENCIES
+================================================================================
+Added: none.  Removed: none.
+
+================================================================================
+5. HOW TO TEST
+================================================================================
+Commands (repo root):
+  npm run build      -> passes (dashboard, mobile, server)
+  npm run lint       -> passes (0 errors; the same 4 older warnings as before)
+  npm test           -> 13 files, 144 tests pass (was 138)
+  npm run dev        -> server on 5002, mobile on 5173
+
+Manual (npm run seed:dev first if the dev database is empty; password sistem-dev-1234):
+  1. Log in as trainee1@sistem.dev -> lands on /waiting: logo, 4 numbered slots, title,
+     countdown ticking, message, Log Out. No tab bar. Try /profile, /workouts, /dashboard
+     in the address bar -> all go back to /waiting.
+  2. Change the computer's clock -> the countdown does not jump.
+  3. Publish a plan for trainee1 while the screen is open (coach API, or set a plan's
+     status to 'published' in the database) -> within 30s (or at once when the tab is
+     re-focused) the app moves to /home.
+  4. Overdue: set trainee1's onboardingCompletedAt to 3 days ago in the database -> the
+     countdown is gone and the overdue message shows.
+  5. Resume: sign up a new user, answer 3 steps, reload (or log in elsewhere) -> opens on
+     step 4 with the answers filled in. Back works from a resumed step. Finish -> /waiting.
+  6. Log in as trainee2@sistem.dev (has a plan) -> /home with tabs; Profile has no
+     "View full dashboard" button.
+  7. Check at iPhone SE (375x667) and Pro Max (430x932) sizes.
+
+================================================================================
+6. KNOWN ISSUES / TODOs
+================================================================================
+- NOT checked in a browser by me this time: the waiting screen and the resume flow were
+  verified by build, tests and API calls against the running dev server (login as trainee1
+  -> appState 'waiting', GET /onboarding/waiting returns the right times). Please do the
+  manual checks above, especially the layout on a small screen.
+- Copy: `title` ("Your plan is being built") and `message` ("Your personalized workouts
+  will be ready within 48 hours.") are taken from the PRD wording; `overdueMessage` is the
+  owner's temporary text; `countdownLabel` ("Time remaining") is screen-reader only.
+  All four are in waitingCopy.ts for the owner to replace.
+- If the very first status call fails (offline), the screen shows a spinner where the
+  countdown goes and retries every 30s / on re-focus. No error text — needs owner copy.
+- Trainees in 'waiting' can no longer open Profile (owner decision 1: full screen). If she
+  should be able to edit her answers while waiting, that needs a decision.
+- No motion on the waiting screen beyond the shell's page-enter (design is the owner's).
+- 'trainee.onboarded' has no listener yet; plan publishing has no event yet (Phase 5:
+  'plan.published' + push; the poll stays as the fallback).
+- DashboardPage is now unrouted, kept code (Phases 7 / 11). Server /api/dashboard stays
+  (Profile uses it).
+
+================================================================================
+7. SUGGESTED COMMITS (ready to paste — in order)
+================================================================================
+
+# 1) server: onboarded event + waiting status
+git add -A -- \
+  apps/server/src/events \
+  apps/server/src/features/onboarding/onboarding.constants.ts \
+  apps/server/src/features/onboarding/onboarding.service.ts \
+  apps/server/src/features/onboarding/onboarding.controller.ts \
+  apps/server/src/features/onboarding/onboarding.routes.ts \
+  apps/server/src/features/onboarding/__tests__/onboarding.test.ts \
+  packages/types/src/index.ts
+git commit -m "feat: trainee.onboarded event and waiting status endpoint with server time"
+
+# 2) mobile: onboarding saves every step and resumes
+git add -A -- \
+  apps/mobile/src/services/onboarding/onboardingService.ts \
+  apps/mobile/src/features/onboarding/pages/OnboardingPage/OnboardingPage.tsx \
+  apps/mobile/src/features/onboarding/pages/OnboardingPage/OnboardingPage.css
+git commit -m "feat: save onboarding after every step and resume where it left off"
+
+# 3) mobile: waiting screen, /dashboard route removed
+git add -A -- \
+  apps/mobile/src/features/waiting \
+  apps/mobile/src/services/waiting \
+  apps/mobile/src/app/config/routes.ts \
+  apps/mobile/src/app/router/landingPath.ts \
+  apps/mobile/src/app/router/AppRouter.tsx \
+  apps/mobile/src/components/layout/TabBar/TabBar.tsx \
+  apps/mobile/src/features/profile/pages/ProfilePage/ProfilePage.tsx \
+  apps/mobile/src/features/profile/pages/ProfilePage/ProfilePage.css
+git commit -m "feat: 48h waiting screen with server-time countdown, replace /dashboard route"
+
+# 4) docs
+git add -A -- docs/phase-reports/phase-04-onboarding-waiting.txt
+git commit -m "docs: phase 4 report"

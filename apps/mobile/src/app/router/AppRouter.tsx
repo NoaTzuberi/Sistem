@@ -15,7 +15,7 @@ import { ResetPassword } from '../../features/auth/pages/ResetPassword/ResetPass
 import { ProtectedRoute } from '../../features/auth/components/ProtectedRoute/ProtectedRoute';
 import { AppStateGuard } from '../../features/auth/components/AppStateGuard/AppStateGuard';
 import { RootRedirect } from '../../features/auth/components/RootRedirect/RootRedirect';
-import { DashboardPage } from '../../features/dashboard/pages/DashboardPage/DashboardPage';
+import { WaitingPage } from '../../features/waiting/pages/WaitingPage/WaitingPage';
 import { HomePage } from '../../features/home/pages/HomePage/HomePage';
 import { ProfilePage } from '../../features/profile/pages/ProfilePage/ProfilePage';
 import { WorkoutsPage } from '../../features/workouts/pages/WorkoutsPage/WorkoutsPage';
@@ -48,9 +48,12 @@ export function AppRouter() {
             <Route path={ROUTES.ONBOARDING} element={<OnboardingPage />} />
           </Route>
 
-          {/* Trainee area. 'waiting' keeps the tabs usable until Phase 4 locks it. */}
-          <Route element={<AppStateGuard allow={['waiting', 'home']} />}>
-            <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
+          {/* Until a plan is published, the waiting screen is the only trainee screen. */}
+          <Route element={<AppStateGuard allow={['waiting']} />}>
+            <Route path={ROUTES.WAITING} element={<WaitingPage />} />
+          </Route>
+
+          <Route element={<AppStateGuard allow={['home']} />}>
             <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
             <Route path={ROUTES.WORKOUTS} element={<WorkoutsPage />} />
             <Route path={ROUTES.WORKOUT_BUILDER} element={<WorkoutBuilderPage />} />
@@ -61,9 +64,6 @@ export function AppRouter() {
             {!backgroundLocation && (
               <Route path={WORKOUT_DETAIL_PATH} element={<WorkoutTemplateDetailPage />} />
             )}
-          </Route>
-
-          <Route element={<AppStateGuard allow={['home']} />}>
             <Route path={ROUTES.TRAINEE_HOME} element={<HomePage />} />
           </Route>
 
@@ -80,7 +80,7 @@ export function AppRouter() {
       {backgroundLocation && (
         <Routes>
           <Route element={<ProtectedRoute />}>
-            <Route element={<AppStateGuard allow={['waiting', 'home']} />}>
+            <Route element={<AppStateGuard allow={['home']} />}>
               <Route path={WORKOUT_DETAIL_PATH} element={<WorkoutTemplateDetailPage />} />
             </Route>
           </Route>

@@ -1,0 +1,19 @@
+.countdown {
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary-deep);
+  font-family: var(--font-family-display);
+  font-size: var(--text-3xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  /* Fixed-width digits so the timer does not jitter every second. */
+  font-variant-numeric: tabular-nums;
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--cut-size)) 0,
+    100% var(--cut-size),
+    100% 100%,
+    var(--cut-size) 100%,
+    0 calc(100% - var(--cut-size))
+  );
+}

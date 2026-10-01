@@ -5,10 +5,14 @@ import type {
   OnboardingAnswersPayload,
   OnboardingSaveResponse,
   OnboardingStepId,
+  WaitingStatus,
 } from '@sistem/types';
 import { User } from '../users/user.model';
 import type { UserDocument } from '../users/user.model';
 import { toPublicUser } from '../auth/auth.service';
+import { getAppState } from '../users/appState.service';
+import { emitAppEvent } from '../../events/appEvents';
+import { PLAN_WAIT_MS } from './onboarding.constants';
 import { OnboardingResponse } from './onboardingResponse.model';
 import type { OnboardingAnswersFields, OnboardingResponseDocument } from './onboardingResponse.model';
 
@@ -99,6 +103,20 @@ export async function getMyOnboarding(userId: string): Promise<MyOnboarding> {
 }
 
 /**
+ * Polled by the waiting screen: the countdown's two server timestamps, plus the
+ * app state so the screen can move to Home as soon as a plan is published.
+ */
+export async function getWaitingStatus(userId: string): Promise<WaitingStatus> {
+  const user = await findTrainee(userId);
+  const completedAt = user.onboardingCompletedAt;
+  return {
+    appState: await getAppState(userId, user),
+    serverTime: new Date().toISOString(),
+    planDueAt: completedAt ? new Date(completedAt.getTime() + PLAN_WAIT_MS).toISOString() : null,
+  };
+}
+
+/**
  * Saves one step's answers (validated by the caller) and records it as the last
  * step. Also used by the Profile page's "edit one step", which never changes the
  * onboarding status or the 48h timer of a finished onboarding.
@@ -129,6 +147,7 @@ export async function completeOnboarding(userId: string, payload: OnboardingAnsw
   const user = await findTrainee(userId);
   const response = await saveAnswers(user, payload, 'review');
   const now = new Date();
+  const isFirstCompletion = !user.onboardingCompletedAt;
 
   response.completedAt ??= now;
   user.onboardingStatus = 'completed';
@@ -136,5 +155,15 @@ export async function completeOnboarding(userId: string, payload: OnboardingAnsw
 
   await response.save();
   await user.save();
+
+  // Only the first completion: a re-submit must not notify the coach again.
+  if (isFirstCompletion) {
+    emitAppEvent('trainee.onboarded', {
+      traineeId: user.id,
+      coachId: user.coachId ? String(user.coachId) : null,
+      completedAt: now,
+    });
+  }
+
   return { user: await toPublicUser(user), onboarding: toMyOnboarding(user, response) };
 }

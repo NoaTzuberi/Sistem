@@ -16,11 +16,15 @@ import { EquipmentStep } from '../../steps/EquipmentStep/EquipmentStep';
 import { ReviewStep } from '../../steps/ReviewStep/ReviewStep';
 import { INITIAL_ONBOARDING_STATE } from '../../types';
 import type { OnboardingFormState, OnboardingMedia } from '../../types';
-import { completeOnboarding, saveOnboardingStep } from '../../../../services/onboarding/onboardingService';
-import { getMyProfile } from '../../../../services/users/usersService';
-import type { MyProfileResponse } from '../../../../services/users/usersService';
+import type { MyOnboarding } from '@sistem/types';
+import {
+  completeOnboarding,
+  getMyOnboarding,
+  saveOnboardingStep,
+} from '../../../../services/onboarding/onboardingService';
 import { useAuth } from '../../../../services/auth/AuthContext';
 import { ROUTES } from '../../../../app/config/routes';
+import { landingPath } from '../../../../app/router/landingPath';
 import { STEP_VIDEO_MAP } from '../../data/stepVideoMap';
 import type { OnboardingStepId } from '../../data/stepVideoMap';
 import { ACTIVITY_VIDEO_MAP } from '../../data/activityVideoMap';
@@ -34,8 +38,11 @@ const ACTIVITIES_STEP_INDEX = 4;
 
 // Each step is its own browser-history entry, so the system back gesture / Android
 // back button goes to the previous step instead of leaving onboarding.
+// `resumed` marks the entry created when resuming mid-way: there is no earlier
+// step entry to pop, so Back replaces it with the previous step instead.
 interface OnboardingHistoryState {
   onboardingStep?: number;
+  resumed?: boolean;
 }
 
 const STEP_IDS: OnboardingStepId[] = [
@@ -82,9 +89,8 @@ function isEditableStepId(value: string | undefined): value is OnboardingStepId 
   );
 }
 
-// Answers live in memory until they are submitted, so history can point at a step
-// whose earlier required answers are gone (e.g. after a reload). Never show a step
-// past the first one that still needs an answer.
+// Saved answers can be incomplete (e.g. an older save, or a step that was skipped),
+// so never show a step past the first one that still needs an answer.
 function clampToFirstInvalidStep(requestedIndex: number, state: OnboardingFormState): number {
   for (let index = 0; index < requestedIndex; index += 1) {
     if (!isStepValid(index, state)) return index;
@@ -118,19 +124,19 @@ function OnboardingScreen({ media, header, footer, children }: OnboardingScreenP
   );
 }
 
-/** Builds edit-mode's starting formState from the user's already-saved profile
- * (fetched via getMyProfile), so the step being edited starts from real answers. */
-function mapProfileToFormState(profile: MyProfileResponse, fallbackName: string): OnboardingFormState {
-  const p = profile.profile;
+/** Builds formState from the answers saved on the server, so resuming onboarding
+ * and editing one step both start from real answers. */
+function mapOnboardingToFormState(onboarding: MyOnboarding, fallbackName: string): OnboardingFormState {
+  const p = onboarding.answers;
   return {
-    name: profile.name || fallbackName,
+    name: onboarding.name || fallbackName,
     birthDate: p?.birthDate ? p.birthDate.slice(0, 10) : '',
     height: p?.height !== undefined ? String(p.height) : '',
     weight: p?.weight !== undefined ? String(p.weight) : '',
     gender: p?.gender ?? '',
     units: {
-      weight: profile.preferences?.units?.weight ?? INITIAL_ONBOARDING_STATE.units.weight,
-      distance: profile.preferences?.units?.distance ?? INITIAL_ONBOARDING_STATE.units.distance,
+      weight: onboarding.units?.weight ?? INITIAL_ONBOARDING_STATE.units.weight,
+      distance: onboarding.units?.distance ?? INITIAL_ONBOARDING_STATE.units.distance,
     },
     goals: p?.goals ?? [],
     trainingFrequency: p?.trainingFrequency ?? INITIAL_ONBOARDING_STATE.trainingFrequency,
@@ -157,7 +163,8 @@ export function OnboardingPage() {
   const isEditMode = params.step !== undefined;
   const isValidEditStep = editStepId !== undefined;
 
-  const historyStep = (location.state as OnboardingHistoryState | null)?.onboardingStep ?? 0;
+  const historyState = location.state as OnboardingHistoryState | null;
+  const historyStep = historyState?.onboardingStep ?? 0;
   const [formState, setFormState] = useState<OnboardingFormState>(() => ({
     ...INITIAL_ONBOARDING_STATE,
     name: user?.name ?? '',
@@ -165,22 +172,51 @@ export function OnboardingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>();
   const [previewActivityId, setPreviewActivityId] = useState<string | null>(null);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(isEditMode);
-  const [profileLoadError, setProfileLoadError] = useState<string>();
+  // Both modes start from the answers saved on the server.
+  const [isLoadingAnswers, setIsLoadingAnswers] = useState(true);
+  const [answersLoadError, setAnswersLoadError] = useState<string>();
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   const stepIndex = editStepId
     ? STEP_IDS.indexOf(editStepId)
     : clampToFirstInvalidStep(Math.min(historyStep, STEP_COUNT - 1), formState);
 
-  // A fresh mount (e.g. a reload) starts over at the first step: answers are not
-  // restored yet (the server saves per step since Phase 3; resume is wired in Phase 4).
+  // Answers are saved after every step, so a fresh mount (a reload, another device)
+  // restores them and resumes after the last saved step. Edit mode only needs the
+  // answers. Re-runs when the user retries a failed load.
   useEffect(() => {
-    if (!isEditMode && historyStep !== 0) {
-      navigate(location.pathname, { replace: true, state: null });
-    }
-    // Only on mount.
+    if (isEditMode && !isValidEditStep) return;
+    let cancelled = false;
+    setIsLoadingAnswers(true);
+    setAnswersLoadError(undefined);
+
+    getMyOnboarding()
+      .then((onboarding) => {
+        if (cancelled) return;
+        setFormState(mapOnboardingToFormState(onboarding, user?.name ?? ''));
+        if (!isEditMode) {
+          const resumeStep = onboarding.lastStep
+            ? Math.min(STEP_IDS.indexOf(onboarding.lastStep) + 1, STEP_COUNT - 1)
+            : 0;
+          const state: OnboardingHistoryState = { onboardingStep: resumeStep, resumed: resumeStep > 0 };
+          navigate(location.pathname, { replace: true, state });
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setAnswersLoadError(error instanceof Error ? error.message : "Couldn't load your answers.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingAnswers(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // Mount, a different edit step, or a retry.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [editStepId, loadAttempt]);
 
   // A new step starts at the top of the screen.
   useEffect(() => {
@@ -195,33 +231,6 @@ export function OnboardingPage() {
     }
   }, [isEditMode, isValidEditStep, navigate]);
 
-  // Edit mode starts from the user's real saved profile, not blank defaults
-  // (only the edited step's answers are saved back).
-  useEffect(() => {
-    if (!editStepId) return;
-    let cancelled = false;
-
-    getMyProfile()
-      .then((profile) => {
-        if (cancelled) return;
-        setFormState(mapProfileToFormState(profile, user?.name ?? ''));
-      })
-      .catch((error) => {
-        if (!cancelled) {
-          setProfileLoadError(error instanceof Error ? error.message : "Couldn't load your profile.");
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoadingProfile(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-    // Only re-run if the target step itself changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editStepId]);
-
   const currentStepId = STEP_IDS[stepIndex];
   const activityMedia =
     stepIndex === ACTIVITIES_STEP_INDEX && previewActivityId
@@ -234,24 +243,26 @@ export function OnboardingPage() {
   }
 
   async function handleContinue() {
-    if (stepIndex === STEP_COUNT - 1) {
-      setSubmitError(undefined);
-      setIsSubmitting(true);
-      try {
+    setSubmitError(undefined);
+    setIsSubmitting(true);
+    try {
+      if (stepIndex === STEP_COUNT - 1) {
         const { user: savedUser } = await completeOnboarding(formState);
         updateUser(savedUser);
-        navigate(ROUTES.DASHBOARD);
-      } catch (error) {
-        setSubmitError(
-          error instanceof Error ? error.message : 'Could not save your profile. Please try again.',
-        );
-      } finally {
-        setIsSubmitting(false);
+        // The server decides where a finished onboarding lands (the waiting screen).
+        navigate(landingPath(savedUser.appState), { replace: true });
+        return;
       }
-      return;
-    }
 
-    goToStep(stepIndex + 1);
+      // Saved before moving on, so onboarding resumes here on any device.
+      const { user: savedUser } = await saveOnboardingStep(currentStepId, formState);
+      updateUser(savedUser);
+      goToStep(stepIndex + 1);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Could not save your answers. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   function goToStep(index: number) {
@@ -259,13 +270,21 @@ export function OnboardingPage() {
     navigate(location.pathname, { state });
   }
 
-  // Same as the system back gesture: pop this step's history entry.
+  // Same as the system back gesture: pop this step's history entry. A resumed step
+  // has no earlier entry, so it is swapped for the previous step in place.
   function handleBack() {
+    setSubmitError(undefined);
+    if (historyState?.resumed) {
+      const state: OnboardingHistoryState = { onboardingStep: stepIndex - 1, resumed: stepIndex - 1 > 0 };
+      navigate(location.pathname, { replace: true, state });
+      return;
+    }
     navigate(-1);
   }
 
+  // Skipping still saves the step (with whatever is filled in), so resume moves past it.
   function handleSkip() {
-    goToStep(stepIndex + 1);
+    void handleContinue();
   }
 
   function handleCancelEdit() {
@@ -308,20 +327,20 @@ export function OnboardingPage() {
     <ReviewStep key="review" />,
   ];
 
+  if (isEditMode && !isValidEditStep) {
+    // Redirecting via the effect above — render nothing in the meantime.
+    return null;
+  }
+
+  if (isLoadingAnswers) {
+    return (
+      <div className="onboarding-loading">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
   if (isEditMode) {
-    if (!isValidEditStep) {
-      // Redirecting via the effect above — render nothing in the meantime.
-      return null;
-    }
-
-    if (isLoadingProfile) {
-      return (
-        <div className="onboarding-edit-loading">
-          <Spinner size="lg" />
-        </div>
-      );
-    }
-
     return (
       <OnboardingScreen
         media={media}
@@ -335,16 +354,35 @@ export function OnboardingPage() {
               className="onboarding-footer-primary"
               onClick={handleSaveEdit}
               loading={isSubmitting}
-              disabled={Boolean(profileLoadError) || !isStepValid(stepIndex, formState)}
+              disabled={Boolean(answersLoadError) || !isStepValid(stepIndex, formState)}
             >
               Save changes
             </Button>
           </>
         }
       >
-        {profileLoadError ? <p className="onboarding-error">{profileLoadError}</p> : steps[stepIndex]}
+        {answersLoadError ? <p className="onboarding-error">{answersLoadError}</p> : steps[stepIndex]}
 
         {submitError && <p className="onboarding-error">{submitError}</p>}
+      </OnboardingScreen>
+    );
+  }
+
+  if (answersLoadError) {
+    return (
+      <OnboardingScreen
+        media={undefined}
+        footer={
+          <Button
+            variant="primary"
+            className="onboarding-footer-primary"
+            onClick={() => setLoadAttempt((attempt) => attempt + 1)}
+          >
+            Try again
+          </Button>
+        }
+      >
+        <p className="onboarding-error">{answersLoadError}</p>
       </OnboardingScreen>
     );
   }
