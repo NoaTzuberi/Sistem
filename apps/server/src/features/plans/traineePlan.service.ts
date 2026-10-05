@@ -13,7 +13,7 @@ import { addDays, localDateString, weekStartOf } from './planWeek';
 // workout with its status. Every query is scoped by the caller's id.
 
 /** Today's calendar date where the trainee lives — never the server's or the device's. */
-async function todayFor(traineeId: string, now: Date): Promise<string> {
+export async function todayFor(traineeId: string, now: Date): Promise<string> {
   const user = await User.findById(traineeId).select('timezone').lean();
   return localDateString(now, user?.timezone ?? DEFAULT_TIMEZONE);
 }
@@ -67,7 +67,10 @@ export async function getTraineePlan(planId: string, traineeId: string, now: Dat
 export async function getTraineeWeek(traineeId: string, now: Date = new Date()): Promise<TraineeWeek> {
   const today = await todayFor(traineeId, now);
   const weekStartDate = weekStartOf(today);
-  const plan = await Plan.findOne({ traineeId, weekStartDate, status: 'published' }).lean<LeanPlan>();
+  const [plan, active] = await Promise.all([
+    Plan.findOne({ traineeId, weekStartDate, status: 'published' }).lean<LeanPlan>(),
+    WorkoutLog.findOne({ traineeId, status: 'in_progress' }).select('planId workoutId workoutTitle startedAt').lean(),
+  ]);
   const [traineePlan = null] = plan ? await toTraineePlans(traineeId, [plan], today) : [];
 
   return {
@@ -76,5 +79,14 @@ export async function getTraineeWeek(traineeId: string, now: Date = new Date()):
     serverTime: now.toISOString(),
     plan: traineePlan,
     nextWorkoutId: traineePlan ? pickNextWorkoutId(traineePlan) : null,
+    activeLog: active
+      ? {
+          logId: String(active._id),
+          planId: String(active.planId),
+          workoutId: String(active.workoutId),
+          workoutTitle: active.workoutTitle,
+          startedAt: active.startedAt.toISOString(),
+        }
+      : null,
   };
 }

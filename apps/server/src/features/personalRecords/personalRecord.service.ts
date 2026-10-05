@@ -1,5 +1,5 @@
 import { PersonalRecord } from './personalRecord.model';
-import type { PersonalRecordType } from '../workouts/workout.constants';
+import type { PersonalRecordType } from './personalRecord.constants';
 
 export interface PublicPersonalRecord {
   id: string;

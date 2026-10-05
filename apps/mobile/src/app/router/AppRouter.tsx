@@ -4,6 +4,7 @@ import {
   COACH_TRAINEE_PATH,
   WORKOUT_DETAIL_PATH,
   WORKOUT_LOG_PATH,
+  WORKOUT_SESSION_PATH,
   ONBOARDING_EDIT_PATH,
 } from '../config/routes';
 import { Login } from '../../features/auth/pages/Login/Login';
@@ -20,6 +21,8 @@ import { WorkoutsPage } from '../../features/workouts/pages/WorkoutsPage/Workout
 import { OnboardingPage } from '../../features/onboarding/pages/OnboardingPage/OnboardingPage';
 import { WorkoutDetailPage } from '../../features/workouts/pages/WorkoutDetailPage/WorkoutDetailPage';
 import { WorkoutLogPage } from '../../features/workouts/pages/WorkoutLogPage/WorkoutLogPage';
+import { WorkoutSessionPage } from '../../features/workouts/pages/WorkoutSessionPage/WorkoutSessionPage';
+import { IntervalTimerPage } from '../../features/workouts/pages/IntervalTimerPage/IntervalTimerPage';
 import { InboxPage } from '../../features/coach/pages/InboxPage/InboxPage';
 import { TraineesPage } from '../../features/coach/pages/TraineesPage/TraineesPage';
 import { TraineeDetailPage } from '../../features/coach/pages/TraineeDetailPage/TraineeDetailPage';
@@ -50,6 +53,8 @@ export function AppRouter() {
           <Route path={ROUTES.WORKOUTS} element={<WorkoutsPage />} />
           <Route path={WORKOUT_DETAIL_PATH} element={<WorkoutDetailPage />} />
           <Route path={WORKOUT_LOG_PATH} element={<WorkoutLogPage />} />
+          <Route path={WORKOUT_SESSION_PATH} element={<WorkoutSessionPage />} />
+          <Route path={ROUTES.INTERVAL_TIMER} element={<IntervalTimerPage />} />
           <Route path={ONBOARDING_EDIT_PATH} element={<OnboardingPage />} />
           <Route path={ROUTES.TRAINEE_HOME} element={<HomePage />} />
         </Route>

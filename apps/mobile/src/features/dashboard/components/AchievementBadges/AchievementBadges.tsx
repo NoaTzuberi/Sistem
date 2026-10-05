@@ -14,7 +14,7 @@ import {
 import { useStaggerReveal } from '../../../../hooks/useStaggerReveal';
 import { listPersonalRecords } from '../../../../services/personalRecords/personalRecordsService';
 import { listProgressEntries } from '../../../../services/progress/progressService';
-import { listWorkouts } from '../../../../services/workouts/workoutSessionService';
+import { listWorkoutLogs } from '../../../../services/workoutLogs/workoutLogsService';
 import { getMyProfile } from '../../../../services/users/usersService';
 import type { DashboardSummary } from '../../types';
 import './AchievementBadges.css';
@@ -292,11 +292,15 @@ export function AchievementBadges({ summary, limit }: AchievementBadgesProps) {
 
   useEffect(() => {
     let cancelled = false;
-    const from = new Date(Date.now() - CONSISTENCY_WEEKS_TO_CHECK * 7 * DAY_MS).toISOString();
-    listWorkouts({ from, status: 'completed' })
-      .then((workouts) => {
+    const from = Date.now() - CONSISTENCY_WEEKS_TO_CHECK * 7 * DAY_MS;
+    // Completed workout logs since Phase 8 (the ATLAS session API is gone); reworked in Phase 11.
+    listWorkoutLogs()
+      .then((logs) => {
         if (cancelled) return;
-        const timestamps = workouts.map((w) => new Date(w.date).getTime());
+        const timestamps = logs
+          .filter((log) => log.status === 'completed' && log.finishedAt)
+          .map((log) => new Date(log.finishedAt!).getTime())
+          .filter((time) => time >= from);
         setConsecutiveWeeksHittingGoal(
           countConsecutiveWeeksHittingGoal(timestamps, weeklyTargetDays, CONSISTENCY_WEEKS_TO_CHECK),
         );

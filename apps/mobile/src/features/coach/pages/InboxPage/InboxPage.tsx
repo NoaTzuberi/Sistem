@@ -8,6 +8,7 @@ import { Button } from '../../../../components/common/Button/Button';
 import { listNotifications, markAllRead, markRead } from '../../../../services/notifications/notificationsService';
 import { refreshUnreadCount, setUnreadCount, useUnreadCount } from '../../../notifications/unreadCount';
 import { coachTraineePath } from '../../../../app/config/routes';
+import { TRAINEE_TAB_PARAM } from '../../data/traineeTabs';
 import { StateMessage } from '../../../../components/common/StateMessage/StateMessage';
 import './InboxPage.css';
 
@@ -57,8 +58,9 @@ export function InboxPage() {
     }
   }
 
-  function handleOpen(notification: AppNotification, traineeId: string) {
-    navigate(coachTraineePath(traineeId));
+  function handleOpen(notification: AppNotification, traineeId: string, section: 'logs' | null) {
+    const path = coachTraineePath(traineeId);
+    navigate(section ? `${path}?${TRAINEE_TAB_PARAM}=${section}` : path);
     if (notification.readAt) return;
     markRead(notification.id)
       .catch(() => undefined)
@@ -95,12 +97,12 @@ export function InboxPage() {
         {!error && items && visible.length === 0 && <StateMessage>No notifications yet.</StateMessage>}
 
         <ul className="coach-inbox-list">
-          {visible.map(({ notification, text, traineeId }) => (
+          {visible.map(({ notification, text, traineeId, section }) => (
             <li key={notification.id}>
               <button
                 className={notification.readAt ? 'coach-inbox-item' : 'coach-inbox-item coach-inbox-item-unread'}
                 type="button"
-                onClick={() => handleOpen(notification, traineeId)}
+                onClick={() => handleOpen(notification, traineeId, section)}
               >
                 <span className="coach-inbox-dot" aria-hidden="true" />
                 <span className="coach-inbox-item-main">

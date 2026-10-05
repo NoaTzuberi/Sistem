@@ -1,0 +1,160 @@
+/* Room for the fixed footer (rest bar + Finish) under the last exercise. */
+.workout-session {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-bottom: 160px;
+}
+
+/* Stays on top while scrolling: time and progress are always visible. */
+.workout-session-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: grid;
+  /* ✕ · title · sound · ⋯ */
+  grid-template-columns: var(--touch-target-min) minmax(0, 1fr) var(--touch-target-min) var(--touch-target-min);
+  align-items: center;
+  gap: var(--space-1);
+  margin: calc(-1 * var(--space-3)) calc(-1 * var(--space-3)) 0;
+  padding: var(--space-2) var(--space-2) 0;
+  background-color: var(--color-bg);
+}
+
+.workout-session-icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.workout-session-icon-button:active {
+  background-color: var(--color-surface);
+}
+
+.workout-session-icon-button svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.workout-session-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  text-align: center;
+}
+
+.workout-session-title {
+  max-width: 100%;
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--text-lg);
+  line-height: var(--line-height-tight);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workout-session-meta {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.workout-session-progress {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 4px;
+  margin-top: var(--space-1);
+  border: none;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.workout-session-progress::-webkit-progress-bar {
+  background-color: var(--color-surface);
+}
+
+.workout-session-progress::-webkit-progress-value {
+  background-color: var(--color-primary);
+}
+
+.workout-session-progress::-moz-progress-bar {
+  background-color: var(--color-primary);
+}
+
+.workout-session-status,
+.workout-session-error {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  background-color: var(--color-surface);
+}
+
+.workout-session-error {
+  color: var(--color-error);
+  background-color: var(--color-error-soft);
+}
+
+.workout-session-notes {
+  margin: 0;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.workout-session-blocks {
+  display: flex;
+  flex-direction: column;
+}
+
+.workout-session-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-tab-bar);
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg);
+  border-top: 1px solid var(--color-border);
+}
+
+.workout-session-rest-over {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.workout-session-finish {
+  display: flex;
+  padding:
+    var(--space-2)
+    calc(var(--space-3) + var(--safe-right))
+    calc(var(--space-2) + var(--safe-bottom))
+    calc(var(--space-3) + var(--safe-left));
+}
+
+.workout-session-finish-button {
+  flex: 1;
+}
+
+.workout-session-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.workout-session-dialog-text {
+  margin: 0 0 var(--space-2);
+}

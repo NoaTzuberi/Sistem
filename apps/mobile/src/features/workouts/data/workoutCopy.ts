@@ -1,4 +1,5 @@
-import type { TraineePlanWorkout } from '@sistem/types';
+import type { LastPerformance, SetType, TraineePlanWorkout } from '@sistem/types';
+import { formatDuration } from '@sistem/shared';
 import type { BadgeVariant } from '../../../components/common/Badge/Badge';
 
 // Wording of the trainee's Workouts screens. PLACEHOLDER copy — the owner sends the
@@ -28,8 +29,10 @@ export const WORKOUTS_COPY = {
   workoutLoadError: "Couldn't load this workout.",
   workoutNotFound: 'This workout is no longer in your plan.',
   logLoadError: "Couldn't load this workout log.",
-  // Phase 8 replaces this line with the button that starts the session.
-  sessionComingSoon: 'Logging this workout in the app is coming soon.',
+  startWorkout: 'Start workout',
+  resumeWorkout: 'Resume workout',
+  // Next week's workouts open when their week starts (the server refuses them before).
+  notStartableYet: 'You can start this workout when its week begins.',
   viewLog: 'View what you logged',
   noPumpPhoto: 'No Daily Pump photo.',
   pumpPhotoUploaded: 'Daily Pump photo uploaded',
@@ -53,3 +56,131 @@ export function workoutStatusBadge(workout: TraineePlanWorkout): { label: string
   if (workout.isToday) return { label: WORKOUT_STATUS_LABELS.today, variant: 'solid' };
   return { label: WORKOUT_STATUS_LABELS.upcoming, variant: 'neutral' };
 }
+
+// The active workout session (Phase 8). PLACEHOLDER copy as well.
+export const SESSION_COPY = {
+  leave: 'Leave — the workout stays open',
+  menu: 'More',
+  soundOff: 'Sound off',
+  soundOn: 'Sound on',
+  setsProgress: (done: number, total: number) => `${done} / ${total} sets`,
+  now: 'Now',
+  supersetLabel: (group: string) => `Superset ${group}`,
+  lastTime: 'Last time:',
+  columnSet: 'Set',
+  columnKg: 'kg',
+  columnReps: 'Reps',
+  columnSec: 'Sec',
+  columnDone: 'Done',
+  markDone: (setLabel: string) => `Mark set ${setLabel} done`,
+  markNotDone: (setLabel: string) => `Mark set ${setLabel} not done`,
+  startHold: (seconds: string) => `Start ${seconds}`,
+  stopHold: 'Stop',
+  decrease: 'Decrease',
+  increase: 'Increase',
+  rest: 'Rest',
+  restLess: (sec: number) => `−${sec}s`,
+  restMore: (sec: number) => `+${sec}s`,
+  restSkip: 'Skip',
+  restOver: 'Rest over',
+  restOverNext: (next: string) => `Rest over — next: ${next}`,
+  finish: 'Finish workout',
+  finishing: 'Finishing…',
+  offline: 'Offline — saved on this phone',
+  saving: 'Saving…',
+  finishQueued: "No connection. Your sets are saved on this phone — the workout finishes as soon as you're back online.",
+  confirmFinishTitle: 'Finish workout?',
+  notDoneCount: (count: number) => `${count} ${count === 1 ? 'set is' : 'sets are'} not done.`,
+  finishAnyway: 'Finish anyway',
+  keepGoing: 'Keep going',
+  nothingDoneTitle: 'Nothing logged yet',
+  nothingDone: 'Mark at least one set done, or discard the workout.',
+  ok: 'OK',
+  menuTitle: 'Workout',
+  discard: 'Discard workout',
+  confirmDiscardTitle: 'Discard this workout?',
+  confirmDiscard: "Your logged sets won't count. You can start this workout again later.",
+  discardConfirm: 'Discard',
+  cancel: 'Cancel',
+  discardOffline: 'Discarding needs a connection. Try again when you are back online.',
+  discardError: "Couldn't discard the workout.",
+  finishError: "Couldn't finish the workout.",
+  notActive: 'This workout was already finished or discarded.',
+  loading: 'Loading your workout…',
+  loadError: "Couldn't load this workout.",
+  notFound: 'This workout session no longer exists.',
+  startError: "Couldn't start the workout.",
+  startOffline: 'Starting a workout needs a connection.',
+  conflictTitle: 'Another workout is open',
+  conflictText: (title: string) => `"${title}" is still in progress. Resume it, or discard it and start this one.`,
+  conflictResume: (title: string) => `Resume ${title}`,
+  conflictDiscardAndStart: 'Discard it and start this one',
+} as const;
+
+const SET_TAGS: Record<SetType, string> = { warmup: 'W', working: '', drop: 'D' };
+
+/** 'W' warm-up, 'D' drop, or the working set's number (counted among working sets only). */
+export function setTag(type: SetType, workingNumber: number): string {
+  return SET_TAGS[type] || String(workingNumber);
+}
+
+/** "40 kg × 10", "45s · 5 kg", "12 reps". */
+export function lastTimeLabel(last: LastPerformance): string {
+  const parts: string[] = [];
+  if (last.durationSec !== undefined) parts.push(formatDuration(last.durationSec));
+  if (last.weight !== undefined && last.reps !== undefined) parts.push(`${last.weight} kg × ${last.reps}`);
+  else if (last.reps !== undefined) parts.push(`${last.reps} reps`);
+  else if (last.weight !== undefined) parts.push(`${last.weight} kg`);
+  return parts.join(' · ');
+}
+
+/** 1:05 — a running clock (rest, a hold, time since start). */
+export function formatClock(totalSec: number): string {
+  const sec = Math.max(0, Math.round(totalSec));
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = String(sec % 60).padStart(2, '0');
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`;
+}
+
+// The interval timer (Phase 8). PLACEHOLDER copy as well.
+export const INTERVAL_COPY = {
+  phase: { ready: 'Get ready', work: 'Work', rest: 'Rest' },
+  round: (round: number, rounds: number) => `Round ${round} of ${rounds}`,
+  first: (label: string) => `First: ${label}`,
+  next: 'Next:',
+  nextRestThen: (rest: string, label: string) => `Rest ${rest}${label ? ` → ${label}` : ''}`,
+  nextWork: 'Work',
+  lastOne: 'Last one',
+  pause: 'Pause',
+  resume: 'Resume',
+  paused: 'Paused',
+  skip: 'Skip',
+  stop: 'Stop interval',
+  mute: 'Sound off',
+  unmute: 'Sound on',
+  confirmStopTitle: 'Stop the interval?',
+  confirmStop: 'Sets already logged stay done.',
+  confirmStopFree: 'The timer stops here.',
+  stopConfirm: 'Stop',
+  keepGoing: 'Keep going',
+  catchUpTitle: 'Welcome back',
+  catchUp: (count: number) =>
+    `While you were away, ${count} work ${count === 1 ? 'period' : 'periods'} ended. Mark them as done?`,
+  catchUpYes: 'Yes, I did them',
+  catchUpNo: 'No',
+  doneTitle: 'Interval done',
+  roundsDone: (done: number, rounds: number) => `${done} / ${rounds} rounds`,
+  backToWorkout: 'Back to workout',
+  close: 'Done',
+  again: 'Again',
+  startInterval: 'Start interval',
+  // The free timer.
+  timerTitle: 'Interval timer',
+  timerWork: 'Work',
+  timerRest: 'Rest',
+  timerRounds: 'Rounds',
+  timerTotal: (total: string) => `Total ${total}`,
+  timerStart: 'Start',
+  back: 'Back',
+} as const;

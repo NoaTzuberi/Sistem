@@ -1,0 +1,158 @@
+/* Full screen above the app, below sheets (the stop / catch-up questions). */
+.interval-timer {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-modal) - 1);
+  display: flex;
+  flex-direction: column;
+  padding:
+    calc(var(--space-2) + var(--safe-top))
+    calc(var(--space-3) + var(--safe-right))
+    calc(var(--space-4) + var(--safe-bottom))
+    calc(var(--space-3) + var(--safe-left));
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  overscroll-behavior: contain;
+}
+
+.interval-timer-work {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.interval-timer-rest {
+  background-color: var(--color-surface);
+}
+
+.interval-timer-top {
+  display: flex;
+  justify-content: space-between;
+}
+
+.interval-timer-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.interval-timer-icon:active {
+  background-color: color-mix(in srgb, currentColor 15%, transparent);
+}
+
+.interval-timer-icon svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.interval-timer-mute {
+  margin-left: auto;
+}
+
+.interval-timer-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 0;
+  text-align: center;
+}
+
+.interval-timer-phase {
+  font-family: var(--font-family-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+/* As big as the phone allows: read from across the room. */
+.interval-timer-clock {
+  font-family: var(--font-family-display);
+  font-size: min(34vw, 30dvh);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.interval-timer-paused {
+  padding: 2px var(--space-2);
+  border: 2px solid currentColor;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+.interval-timer-subtitle {
+  max-width: 100%;
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.interval-timer-round {
+  font-size: var(--text-lg);
+}
+
+.interval-timer-progress {
+  width: 100%;
+  height: 6px;
+  background-color: color-mix(in srgb, currentColor 20%, transparent);
+}
+
+.interval-timer-next {
+  font-size: var(--text-base);
+  overflow-wrap: anywhere;
+}
+
+.interval-timer-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.interval-timer-control {
+  min-height: 64px;
+  border: 2px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font-family: var(--font-family-body);
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.interval-timer-control:active {
+  background-color: color-mix(in srgb, currentColor 18%, transparent);
+}
+
+.interval-timer-done-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  margin-top: var(--space-4);
+}
+
+.interval-timer-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.interval-timer-dialog-text {
+  margin: 0 0 var(--space-2);
+}

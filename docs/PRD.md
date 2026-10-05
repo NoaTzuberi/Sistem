@@ -223,4 +223,6 @@ Design system notes:
 - **Notification retention / cleanup** — notifications are kept forever for now; decide how long to keep old ones and add a cleanup.
 - **Plan builder: last logged performance** — next to each exercise row, show the trainee's last logged performance for that exercise (weight × reps), to support progressive overload. Needs the workout logs from Phase 8.
 - **Coach private notes per trainee** — free notes about a trainee (injuries, preferences), visible only to the coach, never to the trainee.
+- **Swap an exercise mid-workout** — the trainee can replace an exercise during a session (e.g. the machine is busy) and note the substitution, so the coach sees what was done instead.
+- **"+ Add set"** — extra sets beyond the plan during a session (not in Phase 8: the trainee logs what the coach planned).
 - **Split the mobile bundle by role** — lazy-load the coach screens (and other role-only code) so a trainee never downloads coach mode, and the other way round. The mobile bundle was 507 kB after Phase 6b, over Vite's 500 kB warning line.

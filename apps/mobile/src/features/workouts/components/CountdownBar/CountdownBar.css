@@ -1,0 +1,16 @@
+/* The track; the parent sets its size, position and colors (color = the fill). */
+.countdown-bar {
+  display: block;
+  overflow: hidden;
+}
+
+/* Moved only with transform (GPU, no layout) and never transitioned: linear, no easing. */
+.countdown-bar-fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-color: currentColor;
+  transform: scaleX(0);
+  transform-origin: left center;
+  will-change: transform;
+}

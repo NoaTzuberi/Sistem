@@ -85,7 +85,7 @@ export function NotificationBell() {
   const visible = (items ?? []).flatMap((notification) => {
     // The wording and the target are shared with the mobile Inbox.
     const described = describeCoachNotification(notification);
-    return described ? [{ notification, text: described.text, path: traineePath(described.traineeId) }] : [];
+    return described ? [{ notification, text: described.text, path: traineePath(described.traineeId, described.section ?? undefined) }] : [];
   });
 
   return (

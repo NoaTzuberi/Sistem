@@ -1,5 +1,5 @@
 import type { PlanExercise } from '@sistem/types';
-import { describeTargets } from '@sistem/shared';
+import { describeInterval, describeTargets } from '@sistem/shared';
 import './PlanExerciseList.css';
 
 interface PlanExerciseListProps {
@@ -18,6 +18,7 @@ export function PlanExerciseList({ exercises }: PlanExerciseListProps) {
               <span className="plan-exercise-superset-label"> · Superset {exercise.supersetGroup}</span>
             )}
           </span>
+          {exercise.interval && <span className="plan-exercise-interval">{describeInterval(exercise)}</span>}
           {describeTargets(exercise.resolvedSets).map((line) => (
             <span key={line} className="plan-exercise-target">
               {line}

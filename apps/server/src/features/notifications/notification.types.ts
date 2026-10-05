@@ -8,7 +8,8 @@ import type { NotificationType } from '@sistem/types';
 export type NotificationPayload =
   // traineeName is a snapshot taken when the notification is created.
   | { type: 'trainee_onboarded'; data: { traineeId: string; traineeName: string } }
-  | { type: 'plan_published'; data: { planId: string; weekStartDate: string } };
+  | { type: 'plan_published'; data: { planId: string; weekStartDate: string } }
+  | { type: 'workout_completed'; data: { traineeId: string; traineeName: string; logId: string; workoutTitle: string } };
 
 export interface NotificationDocument {
   userId: Types.ObjectId;

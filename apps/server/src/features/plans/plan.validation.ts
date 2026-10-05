@@ -46,6 +46,7 @@ export interface PlanExerciseInputFields {
   notes?: string;
   supersetGroup?: string;
   setTargets?: SetTargetInput[];
+  interval?: boolean;
 }
 
 export interface PlanWorkoutInputFields {
@@ -180,12 +181,18 @@ function parseExercise(raw: unknown, problems: string[]): PlanExerciseInputField
     else problems.push('Superset must be a short label such as A or B2.');
   }
 
+  let interval: boolean | undefined;
+  if (!isMissing(raw.interval)) {
+    if (typeof raw.interval === 'boolean') interval = raw.interval || undefined;
+    else problems.push('Interval must be true or false.');
+  }
+
   if (sets !== undefined && sets > MAX_EXERCISE_SETS) {
     problems.push(`An exercise can have at most ${MAX_EXERCISE_SETS} sets.`);
   }
   if (problems.length > before) return null;
 
-  const exercise = { exerciseId: raw.exerciseId, sets, ...targets, setTargets };
+  const exercise = { exerciseId: raw.exerciseId, sets, ...targets, setTargets, interval };
   const targetError = validatePlanExerciseTargets(exercise);
   if (targetError || sets === undefined) {
     problems.push(targetError ?? 'An exercise needs at least one set.');
@@ -253,7 +260,7 @@ export function parseSavePlanPayload(body: unknown): ParseResult<SavePlanInput> 
 }
 
 interface PublishableWorkout {
-  exercises: { supersetGroup?: string | null }[];
+  exercises: { supersetGroup?: string | null; interval?: boolean | null }[];
 }
 
 /**
@@ -289,6 +296,15 @@ export function findPublishIssues(workouts: PublishableWorkout[]): PlanIssue[] {
           message: `Superset ${group} exercises must be next to each other.`,
           workoutIndex,
           exerciseIndex: indexes[firstGap],
+        });
+      }
+      // A circuit runs as one interval timer: all of its exercises are Interval, or none.
+      const intervalFlags = indexes.map((index) => Boolean(workout.exercises[index].interval));
+      if (intervalFlags.some(Boolean) && !intervalFlags.every(Boolean)) {
+        issues.push({
+          message: `Superset ${group}: mark every exercise as Interval, or none.`,
+          workoutIndex,
+          exerciseIndex: indexes[intervalFlags.indexOf(false)],
         });
       }
     }

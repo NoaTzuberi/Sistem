@@ -7,7 +7,7 @@ import type { PlanIssue } from '@sistem/types';
 import { Button } from '../../../../components/common/Button/Button';
 import { DAY_LABELS } from '../../data/planDefaults';
 import { useSortSensors } from '../../hooks/useSortSensors';
-import { moveItem, supersetWarnings } from '../../planDraft';
+import { moveItem, setIntervalFlag, supersetWarnings } from '../../planDraft';
 import type { DraftExercise, DraftWorkout } from '../../types';
 import { DragHandle } from '../DragHandle/DragHandle';
 import { ExerciseRow } from '../ExerciseRow/ExerciseRow';
@@ -156,6 +156,7 @@ export function WorkoutCard({
                       issues={issues.filter((issue) => issue.exerciseIndex === exerciseIndex).map((issue) => issue.message)}
                       warning={warnings.get(exercise.key)}
                       onChange={(next) => setExercises(exercises.map((other) => (other.key === next.key ? next : other)))}
+                      onIntervalChange={(interval) => setExercises(setIntervalFlag(exercises, exercise.key, interval))}
                       onMove={(direction) => setExercises(moveItem(exercises, exerciseIndex, exerciseIndex + direction))}
                       onRemove={() => setExercises(exercises.filter((other) => other.key !== exercise.key))}
                     />

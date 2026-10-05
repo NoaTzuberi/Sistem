@@ -4,6 +4,8 @@ export interface CoachNotificationView {
   text: string;
   /** The trainee the notification opens; each app builds its own path to her. */
   traineeId: string;
+  /** The trainee section to open; null = her default section. Both apps call it 'logs'. */
+  section: 'logs' | null;
 }
 
 /**
@@ -16,6 +18,15 @@ export function describeCoachNotification(notification: AppNotification): CoachN
     return {
       text: `New trainee: ${notification.data.traineeName}`,
       traineeId: notification.data.traineeId,
+      section: null,
+    };
+  }
+  if (notification.type === 'workout_completed') {
+    // Placeholder wording — the owner decides the final text.
+    return {
+      text: `${notification.data.traineeName} finished ${notification.data.workoutTitle}`,
+      traineeId: notification.data.traineeId,
+      section: 'logs',
     };
   }
   return null;

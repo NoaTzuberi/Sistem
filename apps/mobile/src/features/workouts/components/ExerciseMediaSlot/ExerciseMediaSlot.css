@@ -1,0 +1,7 @@
+/* Reserved for the media / description slot — used once there is content to show. */
+.exercise-media-slot {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-color: var(--color-surface);
+}

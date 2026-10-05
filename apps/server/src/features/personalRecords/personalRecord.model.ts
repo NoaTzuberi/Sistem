@@ -1,5 +1,5 @@
 import { Schema, model } from 'mongoose';
-import { PERSONAL_RECORD_TYPE_IDS } from '../workouts/workout.constants';
+import { PERSONAL_RECORD_TYPE_IDS } from './personalRecord.constants';
 import type { PersonalRecordDocument } from './personalRecord.types';
 
 const personalRecordSchema = new Schema<PersonalRecordDocument>({

@@ -1,4 +1,4 @@
-import { Workout } from '../workouts/workout.model';
+import { WorkoutLog } from '../workoutLogs/workoutLog.model';
 import { listPersonalRecords } from '../personalRecords/personalRecord.service';
 import type { PublicPersonalRecord } from '../personalRecords/personalRecord.service';
 import { listProgressEntries } from '../progress/progress.service';
@@ -58,14 +58,15 @@ export async function getDashboardSummary(userId: string): Promise<DashboardSumm
 
   const [completedWorkoutDates, totalWorkouts, workoutsLast7Days, recentPersonalRecords, progressEntries] =
     await Promise.all([
-      Workout.find({ userId, status: 'completed' }).select('date').lean(),
-      Workout.countDocuments({ userId, status: 'completed' }),
-      Workout.countDocuments({ userId, status: 'completed', date: { $gte: sevenDaysAgo } }),
+      // Completed workout logs since Phase 8 (the ATLAS Workout collection is gone).
+      WorkoutLog.find({ traineeId: userId, status: 'completed' }).select('finishedAt').lean(),
+      WorkoutLog.countDocuments({ traineeId: userId, status: 'completed' }),
+      WorkoutLog.countDocuments({ traineeId: userId, status: 'completed', finishedAt: { $gte: sevenDaysAgo } }),
       listPersonalRecords(userId, RECENT_PR_LIMIT),
       listProgressEntries(userId, WEIGHT_TREND_LIMIT),
     ]);
 
-  const streak = computeStreak(completedWorkoutDates.map((d) => d.date));
+  const streak = computeStreak(completedWorkoutDates.flatMap((log) => (log.finishedAt ? [log.finishedAt] : [])));
 
   const weightTrend = progressEntries
     .filter((entry) => entry.weight !== undefined)

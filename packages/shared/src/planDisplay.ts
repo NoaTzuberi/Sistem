@@ -1,4 +1,4 @@
-import type { PlanSetTarget, ResolvedPlanSet, SetType } from '@sistem/types';
+import type { PlanExercise, PlanSetTarget, ResolvedPlanSet, SetType } from '@sistem/types';
 import { addDaysToDate, formatDuration } from './format';
 
 // Read-only wording for a plan, shared by the coach's and the trainee's screens. Placeholder formats — the owner decides the final ones.
@@ -61,4 +61,19 @@ export function describeTargets(sets: ResolvedPlanSet[]): string[] {
   return sets.map((set) =>
     [`${set.setIndex + 1}`, SET_TYPE_LABELS[set.type], formatAmount(set), ...formatExtras(set)].join(' · '),
   );
+}
+
+/**
+ * 'Interval · 8 rounds · 20s work / 10s rest' for an interval exercise (from its first
+ * set — the usual case is the same work and rest every round); null otherwise.
+ */
+export function describeInterval(exercise: Pick<PlanExercise, 'interval' | 'resolvedSets'>): string | null {
+  const first = exercise.resolvedSets[0];
+  if (!exercise.interval || !first) return null;
+  const rounds = exercise.resolvedSets.length;
+  return [
+    'Interval',
+    `${rounds} ${rounds === 1 ? 'round' : 'rounds'}`,
+    `${formatDuration(first.durationSec ?? 0)} work / ${formatDuration(first.restSec ?? 0)} rest`,
+  ].join(' · ');
 }

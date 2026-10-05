@@ -197,6 +197,11 @@ export interface PlanExercise {
   /** Exercises sharing a group inside a workout are done back to back. */
   supersetGroup?: string;
   setTargets?: PlanSetTarget[];
+  /**
+   * Interval mode (HIIT / Tabata): every set is timed — durationSec = work, restSec =
+   * rest, one set = one round. A superset is interval as a whole (a circuit) or not at all.
+   */
+  interval?: boolean;
   resolvedSets: ResolvedPlanSet[];
 }
 
@@ -278,6 +283,8 @@ export interface TraineeWeek {
    * one, else the earliest missed one (still doable until the week ends), else null.
    */
   nextWorkoutId: string | null;
+  /** Her open workout session, if any — also one left open in an earlier week. */
+  activeLog: ActiveWorkoutRef | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -307,6 +314,8 @@ export interface PlanExerciseInput {
   notes?: string;
   supersetGroup?: string;
   setTargets?: PlanSetTarget[];
+  /** Timed sets only; a superset must be all interval or none to publish. */
+  interval?: boolean;
 }
 
 export interface PlanWorkoutInput {
@@ -430,6 +439,69 @@ export interface WorkoutLog {
   exercises?: ExerciseFacts[];
 }
 
+// ---------------------------------------------------------------------------
+// Active workout session (/api/workout-logs) — Phase 8, PRD §5.2
+// ---------------------------------------------------------------------------
+
+/** Enough to point at an open session (Home's "Resume", the start conflict). */
+export interface ActiveWorkoutRef {
+  logId: string;
+  planId: string;
+  workoutId: string;
+  workoutTitle: string;
+  startedAt: string;
+}
+
+/** Her most recent completed performance of one exercise ("Last time: 40 kg × 10"). */
+export interface LastPerformance {
+  reps?: number;
+  /** kg */
+  weight?: number;
+  durationSec?: number;
+  finishedAt: string;
+}
+
+/**
+ * Everything the session screen needs. The log's sets were pre-filled by the server
+ * from resolvedSets when the workout started; `workout` is the planned workout (facts,
+ * targets, coach notes) the sets are matched to by planExerciseId + setIndex.
+ */
+export interface WorkoutSession {
+  log: WorkoutLog;
+  workout: PlanWorkout;
+  /** Keyed by exerciseId; only exercises she has done before. */
+  lastPerformance: Record<string, LastPerformance>;
+  serverTime: string;
+}
+
+/** Body of POST /workout-logs — start, or resume the same workout. */
+export interface StartWorkoutPayload {
+  planId: string;
+  workoutId: string;
+}
+
+/** 409 body when another workout is still open: resume it or discard it first. */
+export interface ActiveWorkoutConflictBody extends ApiErrorBody {
+  code: 'other_workout_active';
+  activeLog: ActiveWorkoutRef;
+}
+
+/** One set as the trainee logged it. null clears a value (e.g. no weight). */
+export interface WorkoutLogSetUpdate {
+  planExerciseId: string;
+  setIndex: number;
+  reps?: number | null;
+  /** kg */
+  weight?: number | null;
+  durationSec?: number | null;
+  completed: boolean;
+}
+
+/** Body of PATCH /workout-logs/:id/sets, and the optional body of …/finish. */
+export interface UpdateWorkoutSetsPayload {
+  sets: WorkoutLogSetUpdate[];
+}
+
 export type ProgressPhotoPose = 'front' | 'side' | 'back';
 
 export interface BodyMetric {
@@ -505,7 +577,7 @@ export interface CoachTraineeResponse {
 // No wording is stored: screens build the text and the tap target from type + data.
 // ---------------------------------------------------------------------------
 
-export type NotificationType = 'trainee_onboarded' | 'plan_published';
+export type NotificationType = 'trainee_onboarded' | 'plan_published' | 'workout_completed';
 
 interface NotificationBase {
   id: string;
@@ -518,7 +590,12 @@ export type AppNotification =
   /** To the coach. traineeName is a snapshot from when the trainee finished onboarding. */
   | (NotificationBase & { type: 'trainee_onboarded'; data: { traineeId: string; traineeName: string } })
   /** To the trainee. */
-  | (NotificationBase & { type: 'plan_published'; data: { planId: string; weekStartDate: string } });
+  | (NotificationBase & { type: 'plan_published'; data: { planId: string; weekStartDate: string } })
+  /** To the coach (Phase 8). Names are snapshots from when the workout was finished. */
+  | (NotificationBase & {
+      type: 'workout_completed';
+      data: { traineeId: string; traineeName: string; logId: string; workoutTitle: string };
+    });
 
 /** GET /notifications — newest first. */
 export interface NotificationList {

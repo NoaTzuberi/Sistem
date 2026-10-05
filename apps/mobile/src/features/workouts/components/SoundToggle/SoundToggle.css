@@ -1,0 +1,28 @@
+.sound-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.sound-toggle:active {
+  background-color: color-mix(in srgb, currentColor 15%, transparent);
+}
+
+.sound-toggle svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.sound-toggle-speaker {
+  fill: currentColor;
+}

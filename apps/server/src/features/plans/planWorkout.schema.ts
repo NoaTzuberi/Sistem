@@ -35,6 +35,9 @@ const planExerciseSchema = new Schema<PlanExerciseFields>({
   supersetGroup: { type: String, trim: true, uppercase: true, match: SUPERSET_GROUP_PATTERN },
   // When present it defines every set (pyramids, drop sets, warm-ups).
   setTargets: { type: [setTargetSchema], default: undefined },
+  // Interval mode (HIIT / Tabata): durationSec = work, restSec = rest, sets = rounds.
+  // Only for timed sets; a superset is interval as a whole or not at all (publish rule).
+  interval: { type: Boolean },
 });
 
 planExerciseSchema.pre('validate', function derivePlanExerciseSets() {

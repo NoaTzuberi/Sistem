@@ -13,6 +13,8 @@ export const ROUTES = {
   EXERCISES: '/exercises',
   // Trainee Home — only reachable once a plan is published (PRD §4.2).
   TRAINEE_HOME: '/home',
+  // The free interval timer (Phase 8): logs nothing.
+  INTERVAL_TIMER: '/timer',
   COACH_INBOX: '/coach/inbox',
   COACH_TRAINEES: '/coach/trainees',
   COACH_PROFILE: '/coach/profile',
@@ -34,10 +36,15 @@ export function coachTraineePath(traineeId: string): string {
   return `/coach/trainees/${traineeId}`;
 }
 
-// Trainee Workouts (PRD §5.4): one planned workout (read-only until Phase 8 adds the
-// session) and one completed workout log.
+// Trainee Workouts (PRD §5.4): one planned workout, one workout log, and the active
+// session (PRD §5.2, full screen), keyed by its workout log.
 export const WORKOUT_DETAIL_PATH = '/workouts/plan/:planId/:workoutId';
 export const WORKOUT_LOG_PATH = '/workouts/logs/:logId';
+export const WORKOUT_SESSION_PATH = '/workouts/session/:logId';
+
+export function workoutSessionPath(logId: string): string {
+  return `/workouts/session/${logId}`;
+}
 
 export function workoutPath(planId: string, workoutId: string): string {
   return `/workouts/plan/${planId}/${workoutId}`;
@@ -54,9 +61,4 @@ export const ONBOARDING_EDIT_PATH = '/onboarding/:step';
 
 export function onboardingEditPath(step: string): string {
   return `/onboarding/${step}`;
-}
-
-// Not routed: only the kept ATLAS ActiveWorkoutPage (reference for Phase 8) uses it.
-export function workoutSessionSummaryPath(id: string): string {
-  return `/workouts/session/${id}/summary`;
 }

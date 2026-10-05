@@ -22,6 +22,8 @@ export interface PlanExerciseFields {
   notes?: string;
   supersetGroup?: string;
   setTargets?: PlanSetTargetFields[];
+  /** Run hands-free as work / rest intervals (timed sets only). */
+  interval?: boolean;
 }
 
 export interface PlanWorkoutFields {

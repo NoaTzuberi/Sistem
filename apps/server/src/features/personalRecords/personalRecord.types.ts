@@ -1,5 +1,5 @@
 import type { Types } from 'mongoose';
-import type { PersonalRecordType } from '../workouts/workout.constants';
+import type { PersonalRecordType } from './personalRecord.constants';
 
 export interface PersonalRecordDocument {
   userId: Types.ObjectId;

@@ -22,6 +22,7 @@ function toPublicExercise(exercise: PlanExerciseFields & { _id: Types.ObjectId }
     notes: exercise.notes,
     supersetGroup: exercise.supersetGroup,
     setTargets: exercise.setTargets?.length ? exercise.setTargets : undefined,
+    interval: exercise.interval || undefined,
     resolvedSets: resolvePlanExerciseSets(exercise),
   };
 }

@@ -14,6 +14,7 @@ interface SetTargetInput {
 export interface PlanExerciseTargetsInput extends SetTargetInput {
   sets?: number | null;
   setTargets?: SetTargetInput[] | null;
+  interval?: boolean | null;
 }
 
 function isSet(value: number | null | undefined): value is number {
@@ -74,6 +75,19 @@ function validateTarget(target: SetTargetInput, label: string): string | null {
  * in the plan builder). Returns the first problem, or null.
  */
 export function validatePlanExerciseTargets(exercise: PlanExerciseTargetsInput): string | null {
+  const error = validateSetTargets(exercise);
+  if (error) return error;
+  // Interval mode runs on time alone: every set is a hold, none counts reps.
+  // Fields are read directly: the schema hook passes a Mongoose subdocument, which
+  // can't be spread like the plain objects the builder sends.
+  const sets: SetTargetInput[] = hasSetTargets(exercise) ? exercise.setTargets : [exercise];
+  if (exercise.interval && sets.some((set) => !isSet(set.durationSec) || isSet(set.reps))) {
+    return 'An interval exercise needs a duration on every set, and no reps.';
+  }
+  return null;
+}
+
+function validateSetTargets(exercise: PlanExerciseTargetsInput): string | null {
   if (hasSetTargets(exercise)) {
     if (isSet(exercise.sets) && exercise.sets !== exercise.setTargets.length) {
       return 'sets must equal the number of set targets.';

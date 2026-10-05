@@ -31,6 +31,8 @@ export interface DraftExercise extends DraftTargets {
   supersetGroup: string;
   /** null = simple mode; a list = one row per set (pyramids, warm-ups, drop sets). */
   setTargets: DraftSetTarget[] | null;
+  /** Interval mode (HIIT / Tabata) — timed sets only; a superset is all interval or none. */
+  interval: boolean;
 }
 
 export interface DraftWorkout {

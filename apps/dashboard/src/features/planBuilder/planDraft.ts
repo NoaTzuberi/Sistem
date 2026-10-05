@@ -33,6 +33,7 @@ export function draftFromPlan(plan: CoachPlan): PlanDraft {
         notes: exercise.notes ?? '',
         supersetGroup: exercise.supersetGroup ?? '',
         setTargets: exercise.setTargets?.map((target) => ({ key: newKey(), ...target })) ?? null,
+        interval: exercise.interval ?? false,
       })),
     })),
   };
@@ -44,6 +45,7 @@ function exerciseToInput(exercise: DraftExercise): PlanExerciseInput {
     exerciseId: exercise.exerciseId,
     notes: exercise.notes.trim() || undefined,
     supersetGroup: exercise.supersetGroup || undefined,
+    interval: exercise.interval || undefined,
   };
 
   if (exercise.setTargets) {
@@ -132,6 +134,7 @@ export function newExercise(facts: ExerciseFacts): DraftExercise {
     notes: '',
     supersetGroup: '',
     setTargets: null,
+    interval: false,
   };
 }
 
@@ -188,6 +191,25 @@ export function toSimpleTargets(exercise: DraftExercise): DraftExercise {
   };
 }
 
+/** Every set counts seconds, none counts reps — what Interval mode needs. */
+export function isTimedExercise(exercise: DraftExercise): boolean {
+  if (exercise.setTargets) {
+    return exercise.setTargets.length > 0 && exercise.setTargets.every((t) => t.durationSec !== undefined && t.reps === undefined);
+  }
+  return exercise.mode === 'time';
+}
+
+/**
+ * Turns Interval on / off for one exercise — and for the rest of its superset, since a
+ * circuit runs as one interval timer (all or none).
+ */
+export function setIntervalFlag(exercises: DraftExercise[], key: string, interval: boolean): DraftExercise[] {
+  const group = exercises.find((exercise) => exercise.key === key)?.supersetGroup ?? '';
+  return exercises.map((exercise) =>
+    exercise.key === key || (group !== '' && exercise.supersetGroup === group) ? { ...exercise, interval } : exercise,
+  );
+}
+
 export function moveItem<T>(items: T[], from: number, to: number): T[] {
   if (to < 0 || to >= items.length || from === to) return items;
   const next = [...items];
@@ -198,7 +220,8 @@ export function moveItem<T>(items: T[], from: number, to: number): T[] {
 
 /**
  * A hint while editing (the server enforces this on publish): a superset label used
- * by one exercise only, or by exercises that are not next to each other.
+ * by one exercise only, by exercises that are not next to each other, or a circuit
+ * where only some exercises are Interval.
  */
 export function supersetWarnings(exercises: DraftExercise[]): Map<string, string> {
   const positions = new Map<string, number[]>();
@@ -218,6 +241,10 @@ export function supersetWarnings(exercises: DraftExercise[]): Map<string, string
         warnings.set(exercises[position].key, `Superset ${group} exercises must be next to each other.`);
       }
     });
+    const mixed = indexes.find((position) => !exercises[position].interval);
+    if (mixed !== undefined && indexes.some((position) => exercises[position].interval)) {
+      warnings.set(exercises[mixed].key, `Superset ${group}: mark every exercise as Interval, or none.`);
+    }
   }
   return warnings;
 }

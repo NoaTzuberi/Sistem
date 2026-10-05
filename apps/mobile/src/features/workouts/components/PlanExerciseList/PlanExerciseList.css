@@ -31,3 +31,9 @@
   color: var(--color-text-muted);
   overflow-wrap: anywhere;
 }
+
+.plan-exercise-interval {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-deep);
+}

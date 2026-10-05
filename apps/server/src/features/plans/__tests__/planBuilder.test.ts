@@ -363,6 +363,68 @@ describe('plan builder (coach)', () => {
     });
   });
 
+  describe('interval exercises (Phase 8)', () => {
+    const circuit = (secondInterval: boolean) => [
+      {
+        title: 'HIIT',
+        exercises: [
+          { exerciseId: plank, sets: 8, durationSec: 20, restSec: 10, supersetGroup: 'A', interval: true },
+          { exerciseId: curl, sets: 8, durationSec: 20, restSec: 10, supersetGroup: 'A', interval: secondInterval },
+        ],
+      },
+    ];
+
+    it('stores the flag on a timed exercise and keeps it when the plan is duplicated', async () => {
+      const draft = await createDraft();
+      const res = await savePlan(draft.id, [
+        { title: 'Tabata', exercises: [{ exerciseId: plank, sets: 8, durationSec: 20, restSec: 10, interval: true }] },
+      ]);
+      expect(res.status).toBe(200);
+      expect(res.body.plan.workouts[0].exercises[0]).toMatchObject({ interval: true, sets: 8, durationSec: 20, restSec: 10 });
+
+      const copy = await api.request('POST', plansPath(), {
+        token: coach.token,
+        body: { weekStartDate: NEXT_WEEK, duplicatePrevious: true },
+      });
+      expect(copy.body.plan.workouts[0].exercises[0].interval).toBe(true);
+    });
+
+    it('refuses Interval on an exercise with reps, next to that exercise', async () => {
+      const draft = await createDraft();
+      const res = await savePlan(draft.id, [
+        { title: 'Mixed', exercises: [{ exerciseId: squat, sets: 3, reps: 10, durationSec: 30, interval: true }] },
+      ]);
+      expect(res.status).toBe(400);
+      expect(res.body.issues[0]).toMatchObject({ workoutIndex: 0, exerciseIndex: 0 });
+      expect(res.body.issues[0].message).toContain('interval');
+
+      const notBoolean = await savePlan(draft.id, [
+        { title: 'Bad', exercises: [{ exerciseId: plank, sets: 3, durationSec: 30, interval: 'yes' }] },
+      ]);
+      expect(notBoolean.status).toBe(400);
+    });
+
+    it('a superset is interval as a whole or not at all (publish rule)', async () => {
+      expect(findPublishIssues([{ exercises: [{ supersetGroup: 'A', interval: true }, { supersetGroup: 'A' }] }])[0]).toMatchObject({
+        workoutIndex: 0,
+        exerciseIndex: 1,
+      });
+
+      const draft = await createDraft();
+      // A draft may be mid-edit; publishing is where the rule applies.
+      expect((await savePlan(draft.id, circuit(false))).status).toBe(200);
+      const refused = await api.request('POST', `${plansPath()}/${draft.id}/publish`, { token: coach.token });
+      expect(refused.status).toBe(400);
+
+      expect((await savePlan(draft.id, circuit(true))).status).toBe(200);
+      const published = await api.request('POST', `${plansPath()}/${draft.id}/publish`, { token: coach.token });
+      expect(published.status).toBe(200);
+
+      const mine = await api.request('GET', `/plans/${draft.id}`, { token: trainee.token });
+      expect(mine.body.plan.workouts[0].exercises.map((e: { interval?: boolean }) => e.interval)).toEqual([true, true]);
+    });
+  });
+
   describe('unpublish / delete', () => {
     it("unpublishing returns the trainee to 'waiting' when it was her only published plan", async () => {
       const plan = await createPublishedPlan();
@@ -487,6 +549,7 @@ interface PlanExerciseBody {
   restSec?: number;
   notes?: string;
   supersetGroup?: string;
+  interval?: boolean;
 }
 
 interface PlanWorkoutBody {
@@ -497,8 +560,8 @@ interface PlanWorkoutBody {
 }
 
 /** A plan exercise from a response, as the builder sends it back. */
-function toInput({ id, exerciseId, sets, reps, repsMax, durationSec, targetWeight, restSec, notes, supersetGroup }: PlanExerciseBody) {
-  return { id, exerciseId, sets, reps, repsMax, durationSec, targetWeight, restSec, notes, supersetGroup };
+function toInput({ id, exerciseId, sets, reps, repsMax, durationSec, targetWeight, restSec, notes, supersetGroup, interval }: PlanExerciseBody) {
+  return { id, exerciseId, sets, reps, repsMax, durationSec, targetWeight, restSec, notes, supersetGroup, interval };
 }
 
 function toWorkoutInput(workout: PlanWorkoutBody) {

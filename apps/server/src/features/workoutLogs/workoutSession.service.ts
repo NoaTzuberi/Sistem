@@ -1,0 +1,315 @@
+import type { Types } from 'mongoose';
+import type {
+  ActiveWorkoutRef,
+  LastPerformance,
+  PlanWorkout,
+  WorkoutLog as PublicWorkoutLog,
+  WorkoutLogSetUpdate,
+  WorkoutSession,
+} from '@sistem/types';
+import { emitAppEvent } from '../../events/appEvents';
+import { Plan } from '../plans/plan.model';
+import { PlanNotFoundError, attachExerciseFacts, toPublicPlan } from '../plans/plan.service';
+import type { LeanPlan } from '../plans/plan.service';
+import { weekStartOf } from '../plans/planWeek';
+import { todayFor } from '../plans/traineePlan.service';
+import { WorkoutLog } from './workoutLog.model';
+import { WorkoutLogNotFoundError, attachLogExerciseFacts, toPublicWorkoutLog } from './workoutLog.service';
+import type { WorkoutLogDocument, WorkoutLogSetFields } from './workoutLog.types';
+import { LAST_PERFORMANCE_LOG_SCAN } from './workoutLog.constants';
+
+// The active workout session (PRD §5.2). The log is created the moment a workout
+// starts and every set change is saved as it happens, so a closed app, a lost
+// connection or a second device never loses logged sets. All times are server times.
+
+export class WorkoutNotStartableError extends Error {}
+export class WorkoutLogNotActiveError extends Error {}
+export class NothingCompletedError extends Error {}
+export class UnknownLogSetError extends Error {}
+export class OtherWorkoutActiveError extends Error {
+  constructor(readonly activeLog: ActiveWorkoutRef) {
+    super('Another workout is still open. Resume it or discard it first.');
+  }
+}
+
+type LeanWorkoutLog = WorkoutLogDocument & { _id: Types.ObjectId };
+
+const DUPLICATE_KEY_ERROR = 11000;
+
+function toActiveRef(log: LeanWorkoutLog): ActiveWorkoutRef {
+  return {
+    logId: String(log._id),
+    planId: String(log.planId),
+    workoutId: String(log.workoutId),
+    workoutTitle: log.workoutTitle,
+    startedAt: log.startedAt.toISOString(),
+  };
+}
+
+/** The planned workout with exercise facts and resolvedSets, or null if it left the plan. */
+async function loadPlannedWorkout(plan: LeanPlan, workoutId: string): Promise<PlanWorkout | null> {
+  const publicPlan = toPublicPlan(plan);
+  await attachExerciseFacts([publicPlan]);
+  return publicPlan.workouts.find((workout) => workout.id === workoutId) ?? null;
+}
+
+/**
+ * The set that best stands for a past performance: a working set when there is one
+ * (a warm-up or a drop set would understate it), then the heaviest, then the most
+ * reps or the longest hold.
+ */
+function pickRepresentativeSet(sets: WorkoutLogSetFields[]): WorkoutLogSetFields {
+  const working = sets.filter((set) => set.type === undefined || set.type === 'working');
+  const candidates = working.length > 0 ? working : sets;
+  return [...candidates].sort(
+    (a, b) =>
+      (b.weight ?? 0) - (a.weight ?? 0) ||
+      (b.reps ?? 0) - (a.reps ?? 0) ||
+      (b.durationSec ?? 0) - (a.durationSec ?? 0),
+  )[0];
+}
+
+/** Her most recent completed performance of each exercise — "Last time" and the weight pre-fill. */
+export async function findLastPerformance(
+  traineeId: string,
+  exerciseIds: string[],
+  excludeLogId?: Types.ObjectId,
+): Promise<Record<string, LastPerformance>> {
+  const result: Record<string, LastPerformance> = {};
+  if (exerciseIds.length === 0) return result;
+
+  const filter: Record<string, unknown> = { traineeId, status: 'completed', 'sets.exerciseId': { $in: exerciseIds } };
+  if (excludeLogId) filter._id = { $ne: excludeLogId };
+  const logs = await WorkoutLog.find(filter)
+    .sort({ finishedAt: -1 })
+    .limit(LAST_PERFORMANCE_LOG_SCAN)
+    .select('sets finishedAt')
+    .lean<Pick<LeanWorkoutLog, 'sets' | 'finishedAt'>[]>();
+
+  for (const exerciseId of exerciseIds) {
+    for (const log of logs) {
+      const done = log.sets.filter((set) => set.completed && String(set.exerciseId) === exerciseId);
+      if (done.length === 0 || !log.finishedAt) continue;
+      const best = pickRepresentativeSet(done);
+      result[exerciseId] = {
+        ...(best.reps !== undefined && { reps: best.reps }),
+        ...(best.weight !== undefined && { weight: best.weight }),
+        ...(best.durationSec !== undefined && { durationSec: best.durationSec }),
+        finishedAt: log.finishedAt.toISOString(),
+      };
+      break;
+    }
+  }
+  return result;
+}
+
+async function toSession(log: LeanWorkoutLog, now: Date): Promise<WorkoutSession> {
+  const plan = await Plan.findOne({ _id: log.planId, traineeId: log.traineeId }).lean<LeanPlan>();
+  const planned = plan ? await loadPlannedWorkout(plan, String(log.workoutId)) : null;
+  // A plan with a log can't be deleted (Phase 6), so this fallback is only a safety net.
+  const workout: PlanWorkout = planned ?? { id: String(log.workoutId), title: log.workoutTitle, order: 0, exercises: [] };
+
+  const publicLog = toPublicWorkoutLog(log);
+  const exerciseIds = [...new Set(log.sets.map((set) => String(set.exerciseId)))];
+  const [lastPerformance] = await Promise.all([
+    findLastPerformance(String(log.traineeId), exerciseIds, log._id),
+    attachLogExerciseFacts([publicLog]),
+  ]);
+
+  return { log: publicLog, workout, lastPerformance, serverTime: now.toISOString() };
+}
+
+async function findOwnLog(logId: string, traineeId: string): Promise<LeanWorkoutLog> {
+  const log = await WorkoutLog.findOne({ _id: logId, traineeId }).lean<LeanWorkoutLog>();
+  if (!log) throw new WorkoutLogNotFoundError('Workout log not found.');
+  return log;
+}
+
+export async function getActiveSession(traineeId: string, now: Date = new Date()): Promise<WorkoutSession | null> {
+  const log = await WorkoutLog.findOne({ traineeId, status: 'in_progress' }).lean<LeanWorkoutLog>();
+  return log ? toSession(log, now) : null;
+}
+
+/** Any of her logs — the screen sends her to the log page when it is no longer open. */
+export async function getSession(logId: string, traineeId: string, now: Date = new Date()): Promise<WorkoutSession> {
+  return toSession(await findOwnLog(logId, traineeId), now);
+}
+
+/**
+ * Starts a workout of this week's published plan, or resumes it if it is already open.
+ * Sets are pre-filled from the server's resolvedSets: reps from the target (the low end
+ * of a range), weight from the target — or, when the coach set none, the weight she
+ * lifted last time.
+ */
+export async function startWorkout(
+  traineeId: string,
+  planId: string,
+  workoutId: string,
+  now: Date = new Date(),
+): Promise<{ session: WorkoutSession; resumed: boolean }> {
+  const active = await WorkoutLog.findOne({ traineeId, status: 'in_progress' }).lean<LeanWorkoutLog>();
+  if (active) {
+    if (String(active.planId) === planId && String(active.workoutId) === workoutId) {
+      return { session: await toSession(active, now), resumed: true };
+    }
+    throw new OtherWorkoutActiveError(toActiveRef(active));
+  }
+
+  const [plan, today] = await Promise.all([
+    Plan.findOne({ _id: planId, traineeId, status: 'published' }).lean<LeanPlan>(),
+    todayFor(traineeId, now),
+  ]);
+  if (!plan) throw new PlanNotFoundError('Plan not found.');
+  const workout = await loadPlannedWorkout(plan, workoutId);
+  if (!workout) throw new PlanNotFoundError('Workout not found.');
+
+  // Same rule as Home: a workout is doable until its week ends, never before it starts.
+  if (plan.weekStartDate !== weekStartOf(today)) {
+    throw new WorkoutNotStartableError("Only this week's workouts can be started.");
+  }
+  if (await WorkoutLog.exists({ traineeId, planId, workoutId, status: 'completed' })) {
+    throw new WorkoutNotStartableError('This workout is already done.');
+  }
+
+  const exerciseIds = [...new Set(workout.exercises.map((exercise) => exercise.exerciseId))];
+  const lastPerformance = await findLastPerformance(traineeId, exerciseIds);
+  const sets = workout.exercises.flatMap((exercise) =>
+    exercise.resolvedSets.map((set) => ({
+      exerciseId: exercise.exerciseId,
+      planExerciseId: exercise.id,
+      setIndex: set.setIndex,
+      type: set.type,
+      reps: set.reps,
+      durationSec: set.durationSec,
+      weight: set.targetWeight ?? lastPerformance[exercise.exerciseId]?.weight,
+      completed: false,
+    })),
+  );
+
+  try {
+    const created = await WorkoutLog.create({
+      traineeId,
+      planId,
+      workoutId,
+      workoutTitle: workout.title,
+      startedAt: now,
+      sets,
+    });
+    return { session: await toSession(created.toObject() as LeanWorkoutLog, now), resumed: false };
+  } catch (error) {
+    // Two devices tapped Start at once: the unique index let only one through.
+    if ((error as { code?: number }).code === DUPLICATE_KEY_ERROR) {
+      return startWorkout(traineeId, planId, workoutId, now);
+    }
+    throw error;
+  }
+}
+
+async function assertActive(logId: string, traineeId: string): Promise<LeanWorkoutLog> {
+  const log = await findOwnLog(logId, traineeId);
+  if (log.status !== 'in_progress') {
+    throw new WorkoutLogNotActiveError('This workout is no longer in progress.');
+  }
+  return log;
+}
+
+/**
+ * Applies set changes with one conditional update, so a change that arrives after the
+ * workout was finished on another device is refused instead of rewriting history, and
+ * two devices editing different sets never overwrite each other.
+ */
+async function applySetUpdates(log: LeanWorkoutLog, updates: WorkoutLogSetUpdate[], now: Date): Promise<void> {
+  if (updates.length === 0) return;
+
+  const $set: Record<string, unknown> = {};
+  const $unset: Record<string, ''> = {};
+  for (const update of updates) {
+    const index = log.sets.findIndex(
+      (set) => String(set.planExerciseId) === update.planExerciseId && set.setIndex === update.setIndex,
+    );
+    if (index === -1) {
+      throw new UnknownLogSetError(`Set ${update.setIndex + 1} is not part of this workout.`);
+    }
+    const path = `sets.${index}`;
+    for (const field of ['reps', 'weight', 'durationSec'] as const) {
+      const value = update[field];
+      if (value === null) $unset[`${path}.${field}`] = '';
+      else if (value !== undefined) $set[`${path}.${field}`] = value;
+    }
+    $set[`${path}.completed`] = update.completed;
+    if (!update.completed) $unset[`${path}.completedAt`] = '';
+    else if (!log.sets[index].completed) $set[`${path}.completedAt`] = now;
+  }
+
+  const result = await WorkoutLog.updateOne(
+    { _id: log._id, status: 'in_progress' },
+    { $set, ...(Object.keys($unset).length > 0 && { $unset }) },
+    { runValidators: true },
+  );
+  if (result.matchedCount === 0) {
+    throw new WorkoutLogNotActiveError('This workout is no longer in progress.');
+  }
+}
+
+export async function updateWorkoutSets(
+  logId: string,
+  traineeId: string,
+  updates: WorkoutLogSetUpdate[],
+  now: Date = new Date(),
+): Promise<PublicWorkoutLog> {
+  await applySetUpdates(await assertActive(logId, traineeId), updates, now);
+  return toPublicWorkoutLog(await findOwnLog(logId, traineeId));
+}
+
+/**
+ * Finishes the session: takes the last unsent set changes, then closes the log with
+ * server-side stats. Sets she didn't do stay in the log as not done — the coach sees
+ * what was skipped. PRs are computed in Phase 9 (prCount stays 0 until then).
+ */
+export async function finishWorkout(
+  logId: string,
+  traineeId: string,
+  updates: WorkoutLogSetUpdate[] = [],
+  now: Date = new Date(),
+): Promise<PublicWorkoutLog> {
+  await applySetUpdates(await assertActive(logId, traineeId), updates, now);
+  const log = await findOwnLog(logId, traineeId);
+
+  const done = log.sets.filter((set) => set.completed);
+  if (done.length === 0) {
+    throw new NothingCompletedError('Mark at least one set done, or discard the workout.');
+  }
+  const stats = {
+    durationSec: Math.max(0, Math.round((now.getTime() - log.startedAt.getTime()) / 1000)),
+    totalVolume: done.reduce((sum, set) => sum + (set.weight ?? 0) * (set.reps ?? 0), 0),
+    setsCompleted: done.length,
+    prCount: 0,
+  };
+
+  const result = await WorkoutLog.updateOne(
+    { _id: log._id, status: 'in_progress' },
+    { $set: { status: 'completed', finishedAt: now, stats } },
+  );
+  if (result.matchedCount === 0) {
+    throw new WorkoutLogNotActiveError('This workout is no longer in progress.');
+  }
+
+  emitAppEvent('workout.completed', { logId, traineeId, workoutTitle: log.workoutTitle, finishedAt: now });
+
+  const finished = toPublicWorkoutLog(await findOwnLog(logId, traineeId));
+  await attachLogExerciseFacts([finished]);
+  return finished;
+}
+
+/** Discard: the log is kept (status 'abandoned') but leaves her history; the workout can start fresh. */
+export async function abandonWorkout(logId: string, traineeId: string, now: Date = new Date()): Promise<PublicWorkoutLog> {
+  const log = await assertActive(logId, traineeId);
+  const result = await WorkoutLog.updateOne(
+    { _id: log._id, status: 'in_progress' },
+    { $set: { status: 'abandoned', finishedAt: now } },
+  );
+  if (result.matchedCount === 0) {
+    throw new WorkoutLogNotActiveError('This workout is no longer in progress.');
+  }
+  return toPublicWorkoutLog(await findOwnLog(logId, traineeId));
+}

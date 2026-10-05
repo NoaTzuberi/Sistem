@@ -38,7 +38,7 @@ export function toPublicWorkoutLog(log: LeanWorkoutLog): PublicWorkoutLog {
 }
 
 /** Adds the facts (names) of the logged exercises, in place — one query for all logs. */
-async function attachExerciseFacts(logs: PublicWorkoutLog[]): Promise<void> {
+export async function attachLogExerciseFacts(logs: PublicWorkoutLog[]): Promise<void> {
   const exerciseIds = new Set(logs.flatMap((log) => log.sets.map((set) => set.exerciseId)));
   const facts = await getExerciseFactsByIds([...exerciseIds]);
   for (const log of logs) {
@@ -47,8 +47,9 @@ async function attachExerciseFacts(logs: PublicWorkoutLog[]): Promise<void> {
   }
 }
 
+/** Discarded sessions stay in the database but are not part of her history. */
 export async function listWorkoutLogsForTrainee(traineeId: string): Promise<PublicWorkoutLog[]> {
-  const logs = await WorkoutLog.find({ traineeId }).sort({ startedAt: -1 }).lean<LeanWorkoutLog[]>();
+  const logs = await WorkoutLog.find({ traineeId, status: { $ne: 'abandoned' } }).sort({ startedAt: -1 }).lean<LeanWorkoutLog[]>();
   return logs.map(toPublicWorkoutLog);
 }
 
@@ -59,6 +60,6 @@ export async function getWorkoutLogForTrainee(logId: string, traineeId: string):
     throw new WorkoutLogNotFoundError('Workout log not found.');
   }
   const publicLog = toPublicWorkoutLog(log);
-  await attachExerciseFacts([publicLog]);
+  await attachLogExerciseFacts([publicLog]);
   return publicLog;
 }

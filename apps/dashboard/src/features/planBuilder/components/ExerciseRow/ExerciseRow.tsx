@@ -4,7 +4,7 @@ import { Button } from '../../../../components/common/Button/Button';
 import { NumberField } from '../../../../components/common/NumberField/NumberField';
 import { humanizeId } from '@sistem/shared';
 import { SUPERSET_LABELS } from '../../data/planDefaults';
-import { toPerSetTargets, toSimpleTargets } from '../../planDraft';
+import { isTimedExercise, toPerSetTargets, toSimpleTargets } from '../../planDraft';
 import type { DraftExercise } from '../../types';
 import { DragHandle } from '../DragHandle/DragHandle';
 import { SetTargetsTable } from '../SetTargetsTable/SetTargetsTable';
@@ -22,6 +22,8 @@ interface ExerciseRowProps {
   /** Superset hint while editing. */
   warning?: string;
   onChange: (exercise: DraftExercise) => void;
+  /** Interval on / off — the workout applies it to the whole superset. */
+  onIntervalChange: (interval: boolean) => void;
   onMove: (direction: -1 | 1) => void;
   onRemove: () => void;
 }
@@ -35,6 +37,7 @@ export function ExerciseRow({
   issues,
   warning,
   onChange,
+  onIntervalChange,
   onMove,
   onRemove,
 }: ExerciseRowProps) {
@@ -156,6 +159,21 @@ export function ExerciseRow({
             )}
           </select>
         </label>
+
+        {/* Shown for timed exercises (and to switch off a flag that no longer fits). */}
+        {(isTimedExercise(exercise) || exercise.interval) && (
+          <label className="exercise-interval">
+            <input
+              type="checkbox"
+              checked={exercise.interval}
+              onChange={(event) => onIntervalChange(event.target.checked)}
+            />
+            <span>Interval</span>
+            <span className="exercise-interval-hint">
+              {exercise.supersetGroup ? `whole superset ${exercise.supersetGroup} · ` : ''}seconds = work, rest = rest, sets = rounds
+            </span>
+          </label>
+        )}
 
         {isPerSet ? (
           <Button size="sm" className="exercise-toggle" onClick={handleBackToSimple}>

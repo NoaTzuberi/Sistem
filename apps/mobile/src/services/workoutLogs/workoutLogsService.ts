@@ -1,5 +1,15 @@
 import { createTraineeApi } from '@sistem/api-client';
 import { apiClient } from '../api/apiClient';
 
-// Read-only until Phase 8 adds starting, logging and finishing a workout.
-export const { listWorkoutLogs, getWorkoutLog } = createTraineeApi(apiClient);
+// The trainee's workout logs and the active session (Phase 8). The server owns the
+// log: it pre-fills the sets, stamps the times and computes the stats.
+export const {
+  listWorkoutLogs,
+  getWorkoutLog,
+  startWorkout,
+  getActiveSession,
+  getSession,
+  updateWorkoutSets,
+  finishWorkout,
+  abandonWorkout,
+} = createTraineeApi(apiClient);

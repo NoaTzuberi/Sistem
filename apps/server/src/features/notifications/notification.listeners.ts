@@ -1,5 +1,5 @@
 import { appEvents } from '../../events/appEvents';
-import type { PlanPublishedEvent, TraineeOnboardedEvent } from '../../events/appEvents';
+import type { PlanPublishedEvent, TraineeOnboardedEvent, WorkoutCompletedEvent } from '../../events/appEvents';
 import { User } from '../users/user.model';
 import { notify } from './notification.service';
 
@@ -26,6 +26,17 @@ export async function onPlanPublished(event: PlanPublishedEvent): Promise<void> 
   });
 }
 
+/** To her coach — read from the trainee now, so a later coach change is respected. */
+export async function onWorkoutCompleted(event: WorkoutCompletedEvent): Promise<void> {
+  const trainee = await User.findById(event.traineeId).select('name coachId').lean();
+  if (!trainee?.coachId) return;
+
+  await notify(String(trainee.coachId), {
+    type: 'workout_completed',
+    data: { traineeId: event.traineeId, traineeName: trainee.name, logId: event.logId, workoutTitle: event.workoutTitle },
+  });
+}
+
 let registered = false;
 
 /** Called once when the app is created; calling it again does nothing. */
@@ -34,4 +45,5 @@ export function registerNotificationListeners(): void {
   registered = true;
   appEvents.on('trainee.onboarded', onTraineeOnboarded);
   appEvents.on('plan.published', onPlanPublished);
+  appEvents.on('workout.completed', onWorkoutCompleted);
 }

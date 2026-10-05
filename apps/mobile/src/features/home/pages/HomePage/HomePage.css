@@ -104,3 +104,13 @@
 .home-next-empty {
   margin: 0;
 }
+
+.home-next-error {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-error);
+}
+
+.home-interval-timer {
+  width: 100%;
+}

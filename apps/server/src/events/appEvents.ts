@@ -20,9 +20,18 @@ export interface PlanPublishedEvent {
   publishedAt: Date;
 }
 
+/** Emitted by the workout session service (Phase 8) when a trainee finishes a workout. */
+export interface WorkoutCompletedEvent {
+  logId: string;
+  traineeId: string;
+  workoutTitle: string;
+  finishedAt: Date;
+}
+
 interface AppEventMap {
   'trainee.onboarded': [TraineeOnboardedEvent];
   'plan.published': [PlanPublishedEvent];
+  'workout.completed': [WorkoutCompletedEvent];
 }
 
 export type AppEventName = keyof AppEventMap;

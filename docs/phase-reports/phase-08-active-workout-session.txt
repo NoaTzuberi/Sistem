@@ -1,0 +1,437 @@
+SISTEM — PHASE 8 REPORT: ACTIVE WORKOUT SESSION (+ INTERVAL TIMER)
+Date: 2026-10-05 (updated after review: "no beeps" fix and hold beeps §2b, smooth
+countdown bars §2c, rest beeps + mute in the session header §2d)
+Scope: docs/BUILD_PLAN.md Phase 8 (PRD §5.2), the "workout completed" notification to the
+coach, removal of the ATLAS /api/workouts session API, plus the owner's additions (wake lock,
+weight steps by equipment, "Last time", interval timer). Phase 9 was NOT started.
+
+================================================================================
+1. SUMMARY
+================================================================================
+- Trainees can start, log, finish or discard a workout. The server creates the
+  WorkoutLog at start, with sets pre-filled from the plan, and every set change is
+  saved on the phone first and on the server right after. A session survives a closed
+  app, a lost connection and a second device.
+- The session screen: one exercise or superset open at a time, the coach's notes,
+  "Last time", big one-handed steppers, ✓ per set, holds with a countdown, an optional
+  rest timer, carry forward, the screen kept awake, and Finish / Discard.
+- Interval mode (HIIT / Tabata): the coach marks timed exercises or a whole superset as
+  Interval in the dashboard; the trainee runs it hands-free with beeps, and each work
+  period logs its set. A free interval timer (/timer) logs nothing.
+- Finishing notifies the coach: "<name> finished <workout>" in the dashboard bell and the
+  mobile Inbox; a tap opens that trainee's Logs tab.
+- Removed: the ATLAS Workout + WorkoutTemplate features (/api/workouts), the ATLAS
+  ActiveWorkoutPage / WorkoutSummaryPage and their API service.
+
+================================================================================
+2. DECISIONS (owner answers) AND HOW THEY WERE BUILT
+================================================================================
+Owner answers (proposal round 1):
+1. If the coach set no weight, the weight is pre-filled with her last logged weight for
+   that exercise. "Last time" uses the most recent completed log containing that
+   exercise. From that log it takes the heaviest working set (ties: more reps / longer
+   hold); if there are no working sets, any completed set.
+2. A rep range pre-fills its low end (8–12 → 8).
+3. Home "Start next workout" starts or resumes in one tap. If a workout is open,
+   Home's main button is "Resume workout · <title>" (also for one left open in an
+   earlier week).
+4. No "+ Add set". It is in the PRD §14 backlog, with "swap an exercise mid-workout".
+5. WorkoutSummaryPage deleted. Until Phase 9 builds the summary, Finish opens the
+   existing log screen (/workouts/logs/:id).
+A. Wake lock: Screen Wake Lock API while the session (or a free timer run) is open,
+   re-taken on return to the foreground, released on leave / finish / discard.
+   Unsupported or refused: the screen sleeps as usual.
+B. Weight step: ±1 kg for dumbbells and kettlebells, ±2.5 kg for everything else. The
+   rule is in one place: apps/mobile/src/features/workouts/data/sessionConfig.ts.
+C. "Last time: 40 kg × 10" is shown under the targets (see 1 for which set it uses).
+
+Interval (proposal round 2, docs/phase-reports/phase-08-interval-proposal.md):
+1. PlanExercise.interval (boolean). It is valid on timed sets only: every set has
+   seconds and none has reps (draft rule, shown next to the row). In a superset, every
+   exercise is Interval or none (publish rule, like the other superset rules — a draft
+   can be mid-edit). The dashboard checkbox ticks the whole superset and warns about a
+   mixed one.
+2. A 10 s "Get ready" lead-in, which Skip skips.
+3. After being away (backgrounded, locked, app closed), nothing is logged
+   automatically. On return the run pauses at the current point in time and a sheet asks
+   "While you were away, N work periods ended. Mark them as done?" — "Yes, I did them"
+   logs those sets, "No" leaves them not done; then the run continues (or shows the end
+   screen if all rounds are over). Closing the sheet counts as "No". The question is
+   stored with the run, so closing the app while it is open doesn't lose it. The free
+   timer logs nothing, so it never asks; it just continues from the right point.
+
+Things I decided inside your answers (say if you want any changed):
+- Server API (/api/workout-logs, trainee's own logs only; another trainee's log → 404):
+    POST /                  start, or resume the same workout (201 / 200). 409
+                            `other_workout_active` + the open log when another is open;
+                            409 for next week's or an already done workout.
+    GET  /active            her open session (any device) or null
+    GET  /:id/session       log + planned workout + lastPerformance + serverTime
+    PATCH /:id/sets         per-set updates; refused (409) once the log is finished
+    POST /:id/finish        optional last set updates in the body; refuses 0 sets done
+                            (400); stats from the server (duration, volume, sets done,
+                            prCount 0 until Phase 9); emits workout.completed
+    POST /:id/abandon       discard: status 'abandoned', kept but hidden from her lists
+                            (and the coach's); the workout can be started fresh
+  No schema change to WorkoutLog. GET /plans/week now also returns `activeLog`.
+- Only this week's published workouts can be started (missed ones too, until the week
+  ends — same rule as Home). One open workout at a time (the existing unique index).
+- Set changes are written with one conditional update ("only while in progress"), so
+  two devices editing different sets never overwrite each other, and a change that
+  arrives after the workout was finished elsewhere is refused. The phone then sees that
+  and leaves the screen (finished → the log page, discarded → Home).
+- Carry forward: when she ticks a set, later open sets of the same exercise with the
+  SAME planned target that she hasn't edited take its values. (While testing I narrowed
+  this: the first version would have overwritten a planned pyramid step.)
+- Focus follows her: after a ✓ it moves to the next open set after that one, wrapping
+  round. (The first version jumped back to the first exercise even when she was doing
+  the superset first.)
+- Rest timer: after a set with a planned rest, except between exercises of a superset
+  round and after the last open set. −15s / +15s / Skip; ticking the next set also ends
+  it. Rest, holds and intervals count from device end timestamps (local UX); the
+  workout's elapsed clock and all logged times use server time.
+- Interval phases: round by round, each exercise's work then its rest (A1 → rest →
+  A2 → rest …), no rest after the very last work period. Work = the set's seconds as she
+  left them (the coach's target unless edited). Only sets not done yet are included, so
+  a restarted interval continues where it stopped. The rows' own ▶ hold is hidden in an
+  interval block; the normal rest timer doesn't run for interval sets.
+- Sounds: one beep at 10 s left and at 3, 2, 1 (only when the phase is longer than that),
+  and a longer, lower beep when the phase switches. Web Audio, unlocked by the Start /
+  Resume tap. The mute toggle is remembered on the phone. Vibration where supported, also
+  when muted.
+- Free timer: defaults 20 s / 10 s × 8; work 5 s – 10 min, rest 0 – 10 min, ±5 s; rounds
+  1–50. Remembers her last values. Entry: Home ("Interval timer") and the session ⋯
+  menu.
+- Coach notification `workout_completed` { traineeId, traineeName, logId, workoutTitle }
+  goes to the trainee's coach at finish time (read from the trainee then), one per log
+  (dedupeKey). describeCoachNotification now also returns `section: 'logs'`.
+
+================================================================================
+2b. AFTER REVIEW — SOUND FIXES
+================================================================================
+Bug you found: no beeps at all in desktop Chrome (Mac), in the free timer and in interval
+runs.
+Root cause (reproduced in Chrome before changing anything): the Start tap created the
+AudioContext, then played a 10 ms silent "unlock" blip. Its fade-out was scheduled at
+start + 0.01 − 0.03 = −0.02 s (a new context starts at currentTime 0). Web Audio throws
+a RangeError for negative times, and the catch around it set the context to null, so
+every later beep returned before scheduling anything — silently. Each later tap (Resume,
+the "while you were away" answer) built a new context that failed the same way. The
+context was never created outside a tap, and the tones themselves (880 Hz 0.12 s / 520 Hz
+0.6 s at 0.4) were fine.
+Fix (data/intervalSounds.ts):
+  - every scheduled time is ≥ the start time, whatever the tone length;
+  - the context is kept even if the unlock step fails;
+  - the unlock uses the standard empty buffer, not a tone;
+  - a beep resumes a context that was suspended again (e.g. by the OS);
+  - any tap on the interval screen re-enables sound — a run restored after reopening the
+    app had no Start tap, so it stayed silent until Pause / Resume.
+Dev only: a "Test sound (dev)" button on the free timer setup (the 10 s beep, then the
+final beep), and each beep logs `[intervalSounds] beep <kind> — AudioContext: <state>`
+via console.debug (Chrome's "Verbose" level). Neither is in production builds.
+
+Hold beeps (your request): the ▶ countdown on timed sets (plank ▶ 45s) now uses the same
+pattern — one beep at 10 s left (skipped when the hold is 10 s or shorter), 3-2-1, a
+longer beep at 0 (with vibration where supported). The rule (`isCountdownBeep`) and the
+mute setting (`isSoundMuted` / `setSoundMuted`) moved into the shared sound module, so
+holds, interval runs and the free timer share one pattern and one mute (toggled on the
+interval screen). The ▶ tap unlocks audio.
+(The rest timer between sets got the same beeps afterwards — §2d.)
+
+Checked in Chrome (desktop):
+  - Test sound: a real click → the short beep fired while the context was still resuming
+    (a tone scheduled then plays once it runs), then the long beep with it "running".
+  - Free timer run: 3-2-1, the long beep at the work → rest switch, the next beep — all
+    "running".
+  - Hold on your open "Workout 2" session (3/4 sit-up, set 3): 12 s → beeps at 10 s
+    left, 3, 2, 1 one second apart, the long beep at 0, set marked done; 8 s → only
+    3-2-1 + the long beep. I then put set 3 back to 45 s / not done; the server copy
+    matched my snapshot from before the test.
+  - I can't hear the browser myself; the logs show when each beep fires and that audio was
+    running. Please confirm by ear (Test sound button, or a short hold).
+  - My earlier browser check had left the in-app mute ON in this Chrome profile
+    (localhost:5173 storage) — I reset it to the default (sound on).
+
+================================================================================
+2c. AFTER REVIEW — SMOOTH COUNTDOWN BARS
+================================================================================
+Bug you found: the interval run's progress line moved in visible jumps.
+Cause: the line was a <progress> element whose value was React state, redrawn only on
+the hook's timer tick (every 100 ms for the interval run, every 250 ms for the rest bar;
+slower whenever the browser throttles timers). Each redraw was a step, and <progress>
+repaints with layout.
+Fix: one CountdownBar component (features/workouts/components/CountdownBar):
+  - every animation frame (requestAnimationFrame) it reads the stored phase end
+    timestamp and sets transform: scaleX() on the fill (transform-origin left) — GPU
+    only, no layout, linear by construction (no transition, no easing). React re-renders
+    never move it.
+  - Paused: drawn once from the frozen time left, and no frame loop runs. Resume continues
+    from exactly there, because the new end time = now + the time left.
+  - Skip / next phase: the new end time and length are drawn at once from the left —
+    never animated backwards.
+  - prefers-reduced-motion: the same loop, but the value only changes in whole seconds.
+  - The big number still updates once per second.
+  Used by the interval run (fills up) and the free timer (the same screen), and by the
+  rest bar (drains). The hold countdown has no bar (only its "0:32 · Stop" label), and
+  the sets-done bar in the session header is not a countdown — both unchanged.
+  The fill's transform is set from code, like dnd-kit's drag position on the dashboard
+  (commented as the one inline-style exception).
+
+Checked in Chrome: my test window reports itself as hidden, so Chrome runs no animation
+frames there (0 fps). I replaced requestAnimationFrame with a queue that I flushed at
+measured times, reading the bar's scaleX after each frame (free timer, your 30 s / 15 s
+× 8 settings):
+  - Every 100 ms frame moved the bar by exactly +0.00333 (1/300 of a 30 s phase); one
+    frame loop running.
+  - A full work phase (30 s) and the following rest (15 s), sampled about once a second:
+    linear throughout (+0.030 and +0.060 per 0.9 s). At the work → rest switch the bar
+    started again from the left at once; the number stepped once per second.
+  - Pause mid-phase: frozen at 0.1505 for 2.8 s, no frame loop running. Resume: 0.1572
+    after 200 ms — continued from exactly where it stopped.
+  - Skip: reset to 0 at once.
+  - Reduced motion: whole-second steps only (1/15 per second in a 15 s rest).
+  - Not watched with real frames (needs a visible window — please watch one run), and the
+    session rest bar wasn't run in the browser (it would need a set ticked in your open
+    session); it uses the same component.
+  - Your free-timer settings are unchanged; my test run was stopped and cleared.
+
+================================================================================
+2d. AFTER REVIEW — REST BEEPS, ONE MUTE FOR ALL TIMERS
+================================================================================
+- Rest timer between sets: the same pattern as holds and intervals — one beep at 10 s
+  left (skipped when the rest is 10 s or shorter), 3-2-1, the longer beep at 0 — plus the
+  existing vibration and "Rest over — next: …". ±15s or a new rest starts the pattern
+  again. A rest that ended more than 2 s ago (the app was in the background) ends with
+  the notice but no late beep.
+- Any tap on the session screen enables sound (a rest restored after reopening the app
+  has had no Start tap).
+- Mute: a sound icon in the session header (✕ · title · 🔊 · ⋯), next to the ⋯ menu. It is
+  the same SoundToggle component as on the interval / free timer screen, and all of them
+  read one shared setting (a small store in data/intervalSounds.ts, hooks/useSoundMuted.ts),
+  so toggling one updates the others at once. Muted = no sound; vibration stays.
+
+Checked in Chrome. No workout could be started for the dev trainees this week (all of
+trainee2's are done, trainee1 has no plan), so I didn't create plans. Instead I opened a
+made-up session from the phone's local session cache with every request failing — the app's
+offline path, so nothing reached the server (removed afterwards):
+  - 12 s rest (real click on ✓): beeps at 10 s left, 3, 2, 1 one second apart, the long
+    beep at 0 — exactly 12 s after the tap, audio running.
+  - 8 s rest: only 3-2-1 + the long beep; "Rest over — next: Test squat · set 3" shown.
+  - Header mute: the same rest beeps logged as muted; the setting is stored once.
+  - One setting: muted in the session header → the free timer's screen showed muted;
+    unmuted there → the session header showed unmuted.
+  - I can't hear the browser — timing and "running" audio come from the dev logs. The
+    mute setting is back to its default (unset); your free-timer settings are untouched.
+
+================================================================================
+3. FILES CHANGED
+================================================================================
+Added — server
+  apps/server/src/features/workoutLogs/workoutSession.service.ts
+  apps/server/src/features/workoutLogs/__tests__/workoutSession.test.ts
+  apps/server/src/features/personalRecords/personalRecord.constants.ts   (moved from workouts)
+Modified — server
+  apps/server/src/app.ts                                   /api/workouts removed
+  apps/server/src/events/appEvents.ts                      workout.completed
+  apps/server/src/features/workoutLogs/workoutLog.{constants,controller,routes,service,validation}.ts
+  apps/server/src/features/plans/traineePlan.service.ts    activeLog, todayFor exported
+  apps/server/src/features/plans/{planWorkout.schema,plan.types,plan.service,plan.validation,planSets}.ts
+                                                           interval flag + rules
+  apps/server/src/features/plans/__tests__/planBuilder.test.ts   interval tests
+  apps/server/src/features/notifications/notification.{constants,types,service,listeners}.ts
+  apps/server/src/features/dashboard/dashboard.service.ts  counts completed WorkoutLogs
+  apps/server/src/features/personalRecords/personalRecord.{model,service,types}.ts   import path
+Deleted — server
+  apps/server/src/features/workouts/ (constants, controller, model, routes, service, types, validation)
+  apps/server/src/features/workoutTemplates/ (constants, model, types)
+
+Modified — packages
+  packages/types/src/index.ts           session types, workout_completed, PlanExercise(Input).interval,
+                                        TraineeWeek.activeLog
+  packages/api-client/src/traineeApi.ts start / active / session / sets / finish / abandon
+  packages/shared/src/coachNotifications.ts   workout_completed wording + section
+  packages/shared/src/planDisplay.ts          describeInterval
+
+Modified — dashboard
+  apps/dashboard/src/features/notifications/components/NotificationBell/NotificationBell.tsx
+  apps/dashboard/src/features/planBuilder/{types.ts,planDraft.ts}
+  apps/dashboard/src/features/planBuilder/components/ExerciseRow/ (.tsx + .css), WorkoutCard/WorkoutCard.tsx
+
+Added — mobile (apps/mobile/src)
+  hooks/useWakeLock.ts
+  features/workouts/pages/WorkoutSessionPage/ (hold beeps), IntervalTimerPage/ (dev-only
+    "Test sound" button)
+  features/workouts/components/CountdownBar/ (smooth countdown line, §2c),
+    SoundToggle/ (one mute for all timers, §2d), ExerciseMediaSlot/,
+    IntervalTimer/, NumberStepper/, RestBar/,
+    SessionBlock/, SessionClock/, SessionExerciseCard/, SessionSetRow/, StartConflictModal/
+  features/workouts/data/sessionConfig.ts, sessionSets.ts, sessionCache.ts,
+    intervalTimeline.ts, intervalSounds.ts (beeps, unlock, shared mute + beep rule;
+    dev-only test sound)
+  features/workouts/hooks/useWorkoutSession.ts, useStartWorkout.ts, useCountdown.ts, useIntervalRun.ts,
+    useSoundMuted.ts
+Modified — mobile
+  app/config/routes.ts, app/router/AppRouter.tsx           session + /timer routes
+  features/home/ (HomePage .tsx + .css, homeCopy.ts)        one-tap start / resume, timer entry
+  features/workouts/pages/WorkoutDetailPage/ (.tsx + .css)  Start / Resume
+  features/workouts/components/PlanExerciseList/ (.tsx + .css)   interval line
+  features/workouts/data/workoutCopy.ts                     SESSION_COPY, INTERVAL_COPY (placeholder)
+  features/coach/pages/InboxPage/InboxPage.tsx              opens the Logs tab
+  features/dashboard/components/AchievementBadges/AchievementBadges.tsx   reads workout logs
+  services/workoutLogs/workoutLogsService.ts
+Deleted — mobile
+  features/workouts/pages/ActiveWorkoutPage/, WorkoutSummaryPage/, features/workouts/types.ts,
+  services/workouts/workoutSessionService.ts
+
+Modified / added — docs
+  docs/PRD.md (§14: swap an exercise mid-workout, "+ Add set")
+  docs/phase-reports/phase-08-interval-proposal.md, phase-08-active-workout-session.txt
+  CLAUDE.md (gitignored — not in any commit)
+
+================================================================================
+4. DEPENDENCIES
+================================================================================
+Added: none.   Removed: none.
+
+================================================================================
+5. HOW TO TEST
+================================================================================
+Commands (repo root):
+  npm test        -> 19 files, 230 tests pass (was 18 / 212). New: start / resume /
+                     conflict / next-week / done / ownership, pre-fill (low end, last
+                     weight, per-set targets), per-set saves + completedAt, bad input,
+                     finish (stats, skipped sets kept, last changes in the body, coach
+                     notified once, none without a coach), PATCH after finish refused,
+                     discard (hidden, restartable), /plans/week activeLog; interval flag
+                     saved + duplicated, refused with reps, superset all-or-none on publish.
+  npm run build   -> passes. Mobile bundle 506 kB — just over Vite's 500 kB warning again
+                     (see §6).
+  npm run lint    -> 0 errors; the same 3 older warnings (AuthContext ×2, AchievementBadges).
+  npm run dev     -> server 5002 + mobile 5173 (see §6 about a stale server process).
+
+Manual (mobile http://localhost:5173, trainee2@sistem.dev / sistem-dev-1234):
+  1. Home -> "Start next workout" opens the session in one tap. Or Workouts -> a
+     workout of this week -> "Start workout".
+  2. Tick sets: done rows turn Cherry Rose, focus moves on, the rest bar counts down
+     (−15s / +15s / Skip). Change a weight with + (1 kg for dumbbells, 2.5 kg others),
+     tick -> later identical sets take it.
+  3. Superset: ticking A1 jumps to A2 with no rest; after A2 the rest starts.
+  4. ✕ -> Home shows "Resume workout · …". Reload the page mid-workout -> all kept.
+     DevTools -> Network -> Offline: keep logging ("Offline — saved on this phone"),
+     go back online -> it syncs. Open the same account in a second browser -> same sets.
+  5. Start another workout while one is open -> "Resume … / Discard it and start this one".
+  6. Finish with sets not done -> "N sets are not done" -> Finish anyway -> the log page.
+     Finish with nothing done -> refused. ⋯ -> Discard -> Home.
+  7. Coach (coach@sistem.dev): mobile Inbox and dashboard bell show "<name> finished
+     <workout>"; tap -> that trainee's Logs tab.
+  8. Interval: dashboard -> a trainee's plan -> an exercise with Time -> tick "Interval"
+     (in a superset it ticks the group) -> publish. Trainee: start that workout -> the
+     block shows "Interval · 8 rounds · 20s work / 10s rest" + "▶ Start interval" ->
+     Get ready (Skip) -> WORK (pink) / REST, beeps at 10 and 3-2-1, longer beep at each
+     switch, Pause / Skip / mute. Switch to another app for a while and come back ->
+     paused + "While you were away, N work periods ended…" -> Yes / No -> continues.
+  9. Free timer: Home -> "Interval timer" (or session ⋯) -> set work / rest / rounds ->
+     Start. Logs nothing. In dev, "Test sound (dev)" plays the 10 s beep and the final
+     beep; DevTools console (Verbose) shows "[intervalSounds] beep … AudioContext: running".
+ 10. Smooth bars: in an interval run (or the free timer) the line under the clock moves
+     continuously; Pause freezes it, Resume continues, Skip restarts it from the left.
+     The rest bar between sets drains smoothly too. With "Reduce motion" on (macOS /
+     iOS accessibility) it moves once per second.
+ 11. Hold beeps: a timed set (e.g. plank) -> ▶ Start 0:45 -> a beep at 0:10, then 3-2-1
+     and a longer beep at 0; set the seconds to 8 -> no 10 s beep.
+ 12. Rest beeps: tick a set with a planned rest > 10 s -> a beep at 10 s left, 3-2-1, a
+     longer beep + vibration + "Rest over" at 0; a rest of 10 s or less -> no 10 s beep.
+ 13. Mute: the 🔊 icon in the session header mutes rest, holds and intervals; the icon on
+     the interval / free timer screen shows and changes the same setting.
+
+================================================================================
+6. KNOWN ISSUES / TODOs
+================================================================================
+- What I checked myself in the browser (375×667, in a 375-wide frame because the
+  Chrome window wouldn't shrink; as trainee2 on your dev servers):
+    session: pre-filled pyramid with W / 1 / 2 / D tags, rest after the warm-up, superset
+    order (no rest A1 → A2, 1:15 after A2), carry forward of an edited value, focus,
+    reload mid-workout, an unsent change made while "offline" (requests forced to fail)
+    sent after reopening, the server copy matching, Home "Resume…", no sideways scroll,
+    44 px controls. Free timer: setup, Get ready, Skip, WORK / REST screens, ticking from
+    end times, Pause holding the time, mute remembered, coming back after being hidden
+    (continued in REST with the right time, no question), Stop sheet above the timer.
+    Conflict and discard checked against your running API.
+- NOT seen in the browser: the finish confirm sheet and redirect, the coach Inbox / bell entry, a planned interval block + the "while you were away"
+  sheet (the dev data has no interval exercise and I didn't add one), the dashboard
+  Interval checkbox (ticking it autosaves into your dev plan). I can't hear sound in
+  my test window (beep timing and "running" audio confirmed through the logs, §2b; the
+  hold ▶ countdown was checked there too), and the wake lock can't be seen there. These are covered by server
+  tests (finish, notification, interval rules), a throwaway script for the interval
+  timeline (timing after being away, pause / resume, skip, circuits) and type checks.
+  Steps 6–8 above cover them by hand.
+- Dev data: one test session for trainee2 ("Lower Body") was started and then
+  DISCARDED — it stays in the database as 'abandoned' (hidden). Nothing else was added.
+- Dev server: an orphaned server process (PID 52850, left over from an earlier nodemon
+  restart) was holding port 5002 and serving old code. I stopped that one process;
+  nodemon took over. If /api/workouts still answers 200 on your machine, restart
+  `npm run dev:all`.
+- Browser limits (no native app yet): on iPhone in the browser the silent switch mutes
+  Web Audio, nothing plays and timers don't tick while the screen is locked or the app
+  is in the background, there is no vibration, and the wake lock needs iOS 16.4+.
+  Native audio, notifications and background behavior come with Capacitor (Phase 5b).
+- The run only ticks while the page is visible — by design, because hidden time is
+  caught up on return with the "while you were away" question.
+- Mobile bundle 506 kB (over Vite's 500 kB warning). Backlog: split the bundle by role
+  (PRD §14); the session / interval screens are good candidates for lazy loading too.
+- If the coach removes an exercise from a plan after a workout started, its logged sets
+  stay in the log but no longer show on the session screen (edge case).
+- No client tests exist in the repo; the interval / session logic is pure functions
+  (data/intervalTimeline.ts, data/sessionSets.ts) and ready for them when a client test
+  setup is approved.
+- All new wording is placeholder (workoutCopy.ts SESSION_COPY / INTERVAL_COPY,
+  homeCopy.ts, the coach notification text in @sistem/shared).
+- Summary stats screen, rating, notes, Daily Pump and PRs: Phase 9 (prCount is 0).
+
+================================================================================
+7. SUGGESTED COMMITS (ready to paste — in order)
+================================================================================
+Note: packages/types holds the session, notification and interval types, so it goes
+whole into commit 1. Commit 2 adds the interval rules on top. packages/shared is split
+by file (planDisplay → 2, coachNotifications → 3).
+
+# 1) server + contract: workout session API, ATLAS /api/workouts removed
+git add -A -- \
+  apps/server/src/app.ts \
+  apps/server/src/events \
+  apps/server/src/features/workoutLogs \
+  apps/server/src/features/notifications \
+  apps/server/src/features/dashboard \
+  apps/server/src/features/personalRecords \
+  apps/server/src/features/workouts \
+  apps/server/src/features/workoutTemplates \
+  apps/server/src/features/plans/traineePlan.service.ts \
+  packages/types \
+  packages/api-client
+git commit -m "feat: workout session API (start, per-set saves, finish, discard), workout completed event; remove ATLAS /api/workouts"
+
+# 2) interval flag: schema, rules, dashboard checkbox
+git add -A -- \
+  apps/server/src/features/plans \
+  apps/dashboard/src/features/planBuilder \
+  packages/shared/src/planDisplay.ts
+git commit -m "feat: interval exercises — plan flag with timed-only and all-or-none superset rules, dashboard checkbox"
+
+# 3) workout completed notification in both inboxes
+git add -A -- \
+  packages/shared/src/coachNotifications.ts \
+  apps/dashboard/src/features/notifications \
+  apps/mobile/src/features/coach/pages/InboxPage
+git commit -m "feat: show workout completed notifications to the coach, opening the trainee's logs"
+
+# 4) mobile: active workout session, interval timer, free timer
+git add -A -- \
+  apps/mobile
+git commit -m "feat: active workout session with offline sync, rest timer and wake lock; interval and free timers; countdown beeps with one mute, smooth progress bars; ATLAS session screens removed"
+
+# 5) docs
+git add -A -- \
+  docs/PRD.md \
+  docs/phase-reports/phase-08-interval-proposal.md \
+  docs/phase-reports/phase-08-active-workout-session.txt
+git commit -m "docs: phase 8 report and interval proposal, backlog: exercise swap and extra sets"
