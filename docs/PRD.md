@@ -225,4 +225,9 @@ Design system notes:
 - **Coach private notes per trainee** — free notes about a trainee (injuries, preferences), visible only to the coach, never to the trainee.
 - **Swap an exercise mid-workout** — the trainee can replace an exercise during a session (e.g. the machine is busy) and note the substitution, so the coach sees what was done instead.
 - **"+ Add set"** — extra sets beyond the plan during a session (not in Phase 8: the trainee logs what the coach planned).
+- **Workout focus / Do Not Disturb** — fewer interruptions during a workout (native parts scheduled in Phase 5b, the web tip in Phase 9):
+  - *Android (native)*: when a workout starts, ask "Turn on Do Not Disturb for this workout?". If yes, request Notification Policy Access once, enable DND during the session, and restore the previous mode on finish / discard / leave.
+  - *iOS (native)*: apps can't toggle Focus. A one-time in-app guide shows how to create a Shortcuts automation "When Sistem is opened → Set Focus: Fitness".
+  - *All platforms*: Sistem's own push notifications are suppressed during an active session and delivered after it ends.
+  - *Web (now)*: when starting a workout, a gentle dismissible tip suggests Focus / Do Not Disturb, with a "Don't show again" option. Copy is a placeholder.
 - **Split the mobile bundle by role** — lazy-load the coach screens (and other role-only code) so a trainee never downloads coach mode, and the other way round. The mobile bundle was 507 kB after Phase 6b, over Vite's 500 kB warning line.

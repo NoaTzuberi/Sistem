@@ -211,6 +211,10 @@ Read PRD §9 and §11 (App packaging).
 3. Add push delivery via FCM inside the existing `notify(userId, payload)` service from Phase 5a: every notification is still stored, and is also pushed to the user's devices. Handle invalid/expired tokens.
 4. Tapping a push follows the notification's target: "trainee.onboarded" opens that trainee in the app's coach mode; "plan.published" opens Home. If the plan is published before the 48h timer ends, the waiting screen must switch to Home immediately when the app is open (listen for the event / poll) and on next launch otherwise.
 5. Document the required env vars and platform setup steps in docs/SETUP.md.
+6. Workout focus / Do Not Disturb (PRD §14):
+   - Android: when a workout starts, ask "Turn on Do Not Disturb for this workout?". If yes, request Notification Policy Access once, enable DND during the session, and restore the previous mode on finish / discard / leave.
+   - iOS: apps can't toggle Focus. Add a one-time in-app guide showing how to create a Shortcuts automation "When Sistem is opened → Set Focus: Fitness".
+   - All platforms: Sistem's own push notifications are suppressed during an active session and delivered after it ends (the notification is still stored at once; only the push waits).
 ```
 
 ---
@@ -280,6 +284,7 @@ Implement PRD §5.3.
 - Daily Pump photo: camera or gallery, compressed client-side, uploaded to Cloudinary (decided) as private/authenticated assets, served only through signed URLs. Credentials from .env only.
 - Save to WorkoutLog; visible to the coach in trainee detail.
 - Leave a slot for "achievements unlocked" (filled in Phase 11).
+- Small item (web, can be done in Phase 9 or later): when starting a workout, show a gentle dismissible tip suggesting Focus / Do Not Disturb, with a "Don't show again" option. Copy is a placeholder (PRD §14 "Workout focus / Do Not Disturb"; the native version is Phase 5b).
 ```
 
 ---
