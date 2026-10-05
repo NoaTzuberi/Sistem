@@ -11,7 +11,8 @@
   "scripts": {
     "dev": "concurrently -k -n server,mobile -c magenta,cyan \"npm:dev:server\" \"npm:dev:mobile\"",
     "dev:all": "concurrently -k -n server,mobile,dashboard -c magenta,cyan,yellow \"npm:dev:server\" \"npm:dev:mobile\" \"npm:dev:dashboard\"",
-    "dev:server": "npm run dev -w @sistem/server",
+    "dev:phone": "node scripts/dev-phone.mjs",
+    "dev:server":"npm run dev -w @sistem/server",
     "dev:mobile": "npm run dev -w @sistem/mobile",
     "dev:dashboard": "npm run dev -w @sistem/dashboard",
     "build": "npm run build --workspaces --if-present",

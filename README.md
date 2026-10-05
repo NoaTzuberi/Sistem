@@ -37,6 +37,52 @@ npm run dev:all    # + coach dashboard (http://localhost:5174)
 The onboarding videos (`apps/mobile/src/assets/onBoardingvid/`) are not in the repo yet;
 the mobile app only builds where they exist locally (moved to Cloudinary in Phase 2c).
 
+### Testing on a phone
+
+DEV ONLY. Runs the server and the mobile app so a phone on the **same Wi-Fi** as the Mac
+can open the app (the dashboard is not included).
+
+```bash
+npm run dev:phone
+```
+
+1. Stop `npm run dev` first — the app needs port 5173 and the script refuses another port
+   (so the printed address is always the real one).
+2. The script prints the address to open on the phone, e.g. `https://192.168.1.23:5173`
+   (the Mac's local IP). Vite also prints it as `Network:`.
+3. Open that address in Safari on the iPhone. The first time, macOS may ask whether `node`
+   may accept incoming connections — allow it.
+
+What it does, and why:
+
+- **Same-origin API.** The app calls `/api` on its own address and the Vite dev server
+  forwards it to the local server (`http://localhost:<PORT from apps/server/.env>`). The phone
+  only needs the Vite address — `localhost` on the phone would be the phone itself. For this run
+  only, `VITE_API_URL` is set to `/api` (it overrides `apps/mobile/.env`; no file changes).
+- **Network.** The Vite dev server listens on all interfaces (`server.host: true`), also with
+  plain `npm run dev`.
+- **HTTPS.** The app is served over HTTPS with a self-signed certificate
+  (`@vitejs/plugin-basic-ssl`), because the Screen Wake Lock API (screen stays on during a
+  workout) only works in a secure context. Only `dev:phone` turns it on; `npm run dev` stays HTTP.
+
+**The certificate warning.** The certificate is not signed by a trusted authority, so the phone
+shows a warning the first time. On iPhone Safari:
+
+1. Safari shows **"This Connection Is Not Private"**.
+2. Tap **Show Details**, then the link **visit this website**.
+3. Confirm with **Visit Website** (enter the iPhone passcode if asked).
+
+The app then loads and Safari remembers the exception for that address. If the Mac's IP changes
+or the certificate is regenerated (it is cached in `node_modules/.vite`), the warning comes back
+once — accept it again. Screen Wake Lock in Safari needs iOS 16.4 or later.
+
+If the phone can't reach the address: check both devices are on the same network (guest /
+office Wi-Fi often blocks devices from seeing each other; the iPhone's own hotspot works),
+and that the macOS firewall allows `node`.
+
+None of this touches production: the proxy, `host` and HTTPS settings only apply to the Vite
+dev server, and `npm run build` still uses `VITE_API_URL` from `apps/mobile/.env`.
+
 ### Optional data
 
 ```bash
@@ -63,6 +109,7 @@ promoted or seeded.
 | `npm run lint` | Lint mobile + dashboard (oxlint) |
 | `npm test` | Run the server test suite |
 | `npm run dev:server` / `dev:mobile` / `dev:dashboard` | Run one app |
+| `npm run dev:phone` | DEV ONLY: server + mobile app over HTTPS on the local network (see "Testing on a phone") |
 | `npm start -w @sistem/server` | Run the compiled server |
 
 ## Docs

@@ -1,4 +1,5 @@
-const API_ORIGIN = new URL(import.meta.env.VITE_API_URL).origin;
+// VITE_API_URL may be relative ("/api" behind the dev proxy, see `npm run dev:phone`).
+const API_ORIGIN = new URL(import.meta.env.VITE_API_URL, window.location.origin).origin;
 
 /**
  * Server-relative media paths (e.g. /media/...)
