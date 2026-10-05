@@ -13,7 +13,7 @@ import {
   isTraineeTab,
 } from '../../data/traineeTabs';
 import type { TraineeTab } from '../../data/traineeTabs';
-import { CoachMessage } from '../../components/CoachMessage/CoachMessage';
+import { StateMessage } from '../../../../components/common/StateMessage/StateMessage';
 import { PlanWindow, TraineeStatusBadges } from '../../components/TraineeStatusBadges/TraineeStatusBadges';
 import { OnboardingAnswers } from '../../components/OnboardingAnswers/OnboardingAnswers';
 import { TraineePlan } from '../../components/TraineePlan/TraineePlan';
@@ -55,8 +55,8 @@ export function TraineeDetailPage() {
           )}
         </header>
 
-        {isLoading && !trainee && <CoachMessage>Loading…</CoachMessage>}
-        {error && !trainee && <CoachMessage onRetry={reload}>{error}</CoachMessage>}
+        {isLoading && !trainee && <StateMessage>Loading…</StateMessage>}
+        {error && !trainee && <StateMessage onRetry={reload}>{error}</StateMessage>}
 
         {trainee && (
           <>

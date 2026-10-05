@@ -34,5 +34,13 @@ export function PlanBuilderPage() {
   }
 
   // Keyed by plan: another plan starts with a fresh editor (draft, save state).
-  return <PlanEditor key={data.plan.id} traineeId={traineeId} traineeName={data.trainee.name} initialPlan={data.plan} />;
+  return (
+    <PlanEditor
+      key={data.plan.id}
+      traineeId={traineeId}
+      traineeName={data.trainee.name}
+      currentWeekStart={data.trainee.currentWeekStart}
+      initialPlan={data.plan}
+    />
+  );
 }

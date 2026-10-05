@@ -1,5 +1,6 @@
 import type { Types } from 'mongoose';
 import type { WorkoutLog as PublicWorkoutLog } from '@sistem/types';
+import { getExerciseFactsByIds } from '../exercises/exercise.service';
 import { WorkoutLog } from './workoutLog.model';
 import type { WorkoutLogDocument } from './workoutLog.types';
 
@@ -36,6 +37,16 @@ export function toPublicWorkoutLog(log: LeanWorkoutLog): PublicWorkoutLog {
   };
 }
 
+/** Adds the facts (names) of the logged exercises, in place — one query for all logs. */
+async function attachExerciseFacts(logs: PublicWorkoutLog[]): Promise<void> {
+  const exerciseIds = new Set(logs.flatMap((log) => log.sets.map((set) => set.exerciseId)));
+  const facts = await getExerciseFactsByIds([...exerciseIds]);
+  for (const log of logs) {
+    const ids = [...new Set(log.sets.map((set) => set.exerciseId))];
+    log.exercises = ids.flatMap((id) => facts.get(id) ?? []);
+  }
+}
+
 export async function listWorkoutLogsForTrainee(traineeId: string): Promise<PublicWorkoutLog[]> {
   const logs = await WorkoutLog.find({ traineeId }).sort({ startedAt: -1 }).lean<LeanWorkoutLog[]>();
   return logs.map(toPublicWorkoutLog);
@@ -47,5 +58,7 @@ export async function getWorkoutLogForTrainee(logId: string, traineeId: string):
   if (!log) {
     throw new WorkoutLogNotFoundError('Workout log not found.');
   }
-  return toPublicWorkoutLog(log);
+  const publicLog = toPublicWorkoutLog(log);
+  await attachExerciseFacts([publicLog]);
+  return publicLog;
 }

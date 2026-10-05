@@ -8,6 +8,7 @@ export const {
   listTraineeBodyMetrics,
   searchExercises,
   listPlans,
+  listPlanWeeks,
   getPlan,
   createPlan,
   savePlan,

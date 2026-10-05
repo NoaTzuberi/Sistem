@@ -8,7 +8,7 @@ import { Button } from '../../../../components/common/Button/Button';
 import { listNotifications, markAllRead, markRead } from '../../../../services/notifications/notificationsService';
 import { refreshUnreadCount, setUnreadCount, useUnreadCount } from '../../../notifications/unreadCount';
 import { coachTraineePath } from '../../../../app/config/routes';
-import { CoachMessage } from '../../components/CoachMessage/CoachMessage';
+import { StateMessage } from '../../../../components/common/StateMessage/StateMessage';
 import './InboxPage.css';
 
 const PAGE_SIZE = 20;
@@ -90,9 +90,9 @@ export function InboxPage() {
           </button>
         </header>
 
-        {error && <CoachMessage onRetry={loadFirstPage}>{error}</CoachMessage>}
-        {!error && !items && <CoachMessage>Loading…</CoachMessage>}
-        {!error && items && visible.length === 0 && <CoachMessage>No notifications yet.</CoachMessage>}
+        {error && <StateMessage onRetry={loadFirstPage}>{error}</StateMessage>}
+        {!error && !items && <StateMessage>Loading…</StateMessage>}
+        {!error && items && visible.length === 0 && <StateMessage>No notifications yet.</StateMessage>}
 
         <ul className="coach-inbox-list">
           {visible.map(({ notification, text, traineeId }) => (

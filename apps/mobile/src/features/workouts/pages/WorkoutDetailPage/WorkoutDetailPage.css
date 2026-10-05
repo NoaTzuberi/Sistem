@@ -1,0 +1,63 @@
+.workout-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.workout-detail-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.workout-detail-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  min-width: 0;
+  padding-top: var(--space-1);
+}
+
+.workout-detail-title {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--text-2xl);
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+}
+
+.workout-detail-meta {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.workout-detail-status {
+  text-transform: none;
+}
+
+.workout-detail-notes {
+  margin: 0;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.workout-detail-hint {
+  margin: 0;
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  background-color: var(--color-surface);
+}
+
+.workout-detail-log-link {
+  display: flex;
+  align-items: center;
+  min-height: var(--touch-target-min);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary-deep);
+}
+
+.workout-detail-log-link:active {
+  background-color: var(--color-surface);
+}

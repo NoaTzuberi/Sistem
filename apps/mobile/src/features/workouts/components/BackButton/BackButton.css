@@ -1,0 +1,13 @@
+.back-button {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  margin-left: calc(-1 * var(--space-2));
+}
+
+.back-button:active {
+  background-color: var(--color-surface);
+}

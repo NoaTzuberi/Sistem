@@ -7,7 +7,7 @@ import type { CoachPlan, ExerciseFacts } from '@sistem/types';
 import { traineePath } from '../../../../app/config/routes';
 import { Badge } from '../../../../components/common/Badge/Badge';
 import { Button } from '../../../../components/common/Button/Button';
-import { formatDateOnly } from '@sistem/shared';
+import { formatWeekSpanWithDays, weekRelationLabel } from '@sistem/shared';
 import { usePlanEditor } from '../../hooks/usePlanEditor';
 import { useSortSensors } from '../../hooks/useSortSensors';
 import { duplicateWorkout, moveItem, newExercise, newWorkout } from '../../planDraft';
@@ -20,10 +20,12 @@ import './PlanEditor.css';
 interface PlanEditorProps {
   traineeId: string;
   traineeName: string;
+  /** The trainee's current week, from the server — labels this plan 'This week' / 'Next week'. */
+  currentWeekStart: string;
   initialPlan: CoachPlan;
 }
 
-export function PlanEditor({ traineeId, traineeName, initialPlan }: PlanEditorProps) {
+export function PlanEditor({ traineeId, traineeName, currentWeekStart, initialPlan }: PlanEditorProps) {
   const navigate = useNavigate();
   const sensors = useSortSensors();
   const { plan, draft, updateDraft, saveStatus, isDirty, issues, error, save, publish, unpublish, remove } = usePlanEditor(
@@ -106,7 +108,11 @@ export function PlanEditor({ traineeId, traineeName, initialPlan }: PlanEditorPr
 
       <header className="plan-header">
         <div className="plan-heading">
-          <h1 className="plan-title">Week of {formatDateOnly(plan.weekStartDate)}</h1>
+          <h1 className="plan-title">
+            {[weekRelationLabel(plan.weekStartDate, currentWeekStart), formatWeekSpanWithDays(plan.weekStartDate)]
+              .filter(Boolean)
+              .join(' · ')}
+          </h1>
           <Badge tone={isPublished ? 'accent' : 'neutral'}>{isPublished ? 'Published' : 'Draft'}</Badge>
           {plan.locked && <Badge>Started by trainee</Badge>}
           <SaveIndicator status={saveStatus} />

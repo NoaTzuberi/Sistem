@@ -18,7 +18,6 @@
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "import:exercises": "npm run import:exercises -w @sistem/server",
-    "seed:workout-templates": "npm run seed:workout-templates -w @sistem/server",
     "seed:knowledge": "npm run seed:knowledge -w @sistem/server",
     "promote:coach": "npm run promote:coach -w @sistem/server --",
     "seed:dev": "npm run seed:dev -w @sistem/server --"

@@ -2,7 +2,8 @@ import type { ReactNode } from 'react';
 import type { CoachPlan } from '@sistem/types';
 import { IconChevronDown } from '@tabler/icons-react';
 import { Badge } from '../../../../components/common/Badge/Badge';
-import { DAY_NAMES, describeTargets } from '../../data/planDisplay';
+import { DAY_NAMES } from '@sistem/shared';
+import { PlanExerciseList } from '../../../workouts/components/PlanExerciseList/PlanExerciseList';
 import './PlanCard.css';
 
 interface PlanCardProps {
@@ -39,28 +40,7 @@ export function PlanCard({ plan, children }: PlanCardProps) {
           </summary>
 
           {workout.notes && <p className="plan-card-notes">{workout.notes}</p>}
-          <ul className="plan-exercises">
-            {workout.exercises.map((exercise) => (
-              <li
-                key={exercise.id}
-                className={exercise.supersetGroup ? 'plan-exercise plan-exercise-superset' : 'plan-exercise'}
-              >
-                <span className="plan-exercise-name">
-                  {exercise.exercise?.name ?? 'Exercise'}
-                  {exercise.supersetGroup && (
-                    <span className="plan-exercise-superset-label"> · Superset {exercise.supersetGroup}</span>
-                  )}
-                </span>
-                {describeTargets(exercise.resolvedSets).map((line) => (
-                  <span key={line} className="plan-exercise-target">
-                    {line}
-                  </span>
-                ))}
-                {/* The coach's notes are the instructions the trainee sees (PRD §5.2). */}
-                {exercise.notes && <span className="plan-exercise-notes">{exercise.notes}</span>}
-              </li>
-            ))}
-          </ul>
+          <PlanExerciseList exercises={workout.exercises} />
         </details>
       ))}
 

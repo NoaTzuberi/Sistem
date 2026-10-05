@@ -1,6 +1,6 @@
 import type { MyOnboarding } from '@sistem/types';
 import { buildOnboardingSections, describeOnboardingProgress } from '@sistem/shared';
-import { CoachMessage } from '../CoachMessage/CoachMessage';
+import { StateMessage } from '../../../../components/common/StateMessage/StateMessage';
 import './OnboardingAnswers.css';
 
 interface OnboardingAnswersProps {
@@ -8,7 +8,7 @@ interface OnboardingAnswersProps {
 }
 
 export function OnboardingAnswers({ onboarding }: OnboardingAnswersProps) {
-  if (!onboarding) return <CoachMessage>This trainee has not started onboarding yet.</CoachMessage>;
+  if (!onboarding) return <StateMessage>This trainee has not started onboarding yet.</StateMessage>;
 
   return (
     <div className="onboarding-answers">

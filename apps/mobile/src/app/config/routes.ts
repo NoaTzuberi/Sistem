@@ -7,7 +7,6 @@ export const ROUTES = {
   PROFILE: '/profile',
   SETTINGS: '/settings',
   WORKOUTS: '/workouts',
-  WORKOUT_BUILDER: '/workouts/new',
   ONBOARDING: '/onboarding',
   // "Your plan is being built" — onboarding done, no published plan yet (PRD §4.1).
   WAITING: '/waiting',
@@ -35,10 +34,18 @@ export function coachTraineePath(traineeId: string): string {
   return `/coach/trainees/${traineeId}`;
 }
 
-export const WORKOUT_DETAIL_PATH = '/workouts/:id';
-export const WORKOUT_EDIT_PATH = '/workouts/:id/edit';
-export const WORKOUT_SESSION_PATH = '/workouts/session/:id';
-export const WORKOUT_SESSION_SUMMARY_PATH = '/workouts/session/:id/summary';
+// Trainee Workouts (PRD §5.4): one planned workout (read-only until Phase 8 adds the
+// session) and one completed workout log.
+export const WORKOUT_DETAIL_PATH = '/workouts/plan/:planId/:workoutId';
+export const WORKOUT_LOG_PATH = '/workouts/logs/:logId';
+
+export function workoutPath(planId: string, workoutId: string): string {
+  return `/workouts/plan/${planId}/${workoutId}`;
+}
+
+export function workoutLogPath(logId: string): string {
+  return `/workouts/logs/${logId}`;
+}
 
 // `step` is a plain string here (not the feature's OnboardingStepId union) so this
 // app-level config file stays free of any feature-level import — callers pass a
@@ -49,18 +56,7 @@ export function onboardingEditPath(step: string): string {
   return `/onboarding/${step}`;
 }
 
-export function workoutTemplatePath(id: string): string {
-  return `/workouts/${id}`;
-}
-
-export function workoutEditPath(id: string): string {
-  return `/workouts/${id}/edit`;
-}
-
-export function workoutSessionPath(id: string): string {
-  return `/workouts/session/${id}`;
-}
-
+// Not routed: only the kept ATLAS ActiveWorkoutPage (reference for Phase 8) uses it.
 export function workoutSessionSummaryPath(id: string): string {
   return `/workouts/session/${id}/summary`;
 }

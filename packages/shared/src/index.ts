@@ -3,6 +3,8 @@
 // in @sistem/api-client, contract types in @sistem/types (types only — this package
 // holds runtime code, so the server never imports it).
 export * from './format';
+export * from './planDisplay';
+export * from './workoutLogDisplay';
 export * from './traineeStatus';
 export * from './onboardingSections';
 export * from './coachNotifications';

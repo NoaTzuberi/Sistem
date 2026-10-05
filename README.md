@@ -41,7 +41,6 @@ the mobile app only builds where they exist locally (moved to Cloudinary in Phas
 
 ```bash
 npm run import:exercises          # exercise library from the Kaggle CSV (facts only)
-npm run seed:workout-templates    # ready-made workout templates
 npm run seed:knowledge            # knowledge base embeddings (needs VOYAGE_API_KEY)
 npm run seed:dev                  # DEV ONLY: 1 coach + 2 onboarded trainees (one with a plan)
 npm run promote:coach -- <email>  # DEV ONLY: make an existing user a coach

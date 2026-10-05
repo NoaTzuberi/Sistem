@@ -1,0 +1,83 @@
+.workout-log-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.workout-log-page-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.workout-log-page-heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  padding-top: var(--space-1);
+}
+
+.workout-log-page-title {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--text-2xl);
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+}
+
+.workout-log-page-date {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.workout-log-page-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.workout-log-page-stats > div {
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--color-surface);
+}
+
+.workout-log-page-stats dt {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.workout-log-page-stats dd {
+  margin: 0;
+  font-weight: var(--font-weight-bold);
+}
+
+.workout-log-page-notes {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.workout-log-page-photo-slot {
+  margin: 0;
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  border: 1px dashed var(--color-border);
+}
+
+.workout-log-page-exercise {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.workout-log-page-exercise-name {
+  font-weight: var(--font-weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.workout-log-page-set {
+  font-size: var(--text-sm);
+}

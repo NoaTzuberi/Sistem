@@ -3,9 +3,9 @@ import type { CoachPlan, PlanIssue } from '@sistem/types';
 import { emitAppEvent } from '../../events/appEvents';
 import { User } from '../users/user.model';
 import { WorkoutLog } from '../workoutLogs/workoutLog.model';
-import { getExerciseFactsByIds, findCoachLibraryIds } from '../exercises/exercise.service';
+import { findCoachLibraryIds } from '../exercises/exercise.service';
 import { Plan } from './plan.model';
-import { PlanNotFoundError, toPublicPlan } from './plan.service';
+import { PlanNotFoundError, attachExerciseFacts, toPublicPlan } from './plan.service';
 import type { LeanPlan } from './plan.service';
 import { currentWeekStart } from './planWeek';
 import { findPublishIssues } from './plan.validation';
@@ -32,26 +32,14 @@ function isDuplicateKeyError(error: unknown): boolean {
 }
 
 async function toCoachPlans(plans: LeanPlan[]): Promise<CoachPlan[]> {
-  const exerciseIds = new Set<string>();
-  for (const plan of plans) {
-    for (const workout of plan.workouts) {
-      for (const exercise of workout.exercises) exerciseIds.add(String(exercise.exerciseId));
-    }
-  }
-
-  const [startedPlanIds, facts] = await Promise.all([
+  const publicPlans = plans.map(toPublicPlan);
+  const [startedPlanIds] = await Promise.all([
     WorkoutLog.distinct('planId', { planId: { $in: plans.map((plan) => plan._id) } }),
-    getExerciseFactsByIds([...exerciseIds]),
+    attachExerciseFacts(publicPlans),
   ]);
   const locked = new Set(startedPlanIds.map(String));
 
-  return plans.map((plan) => {
-    const publicPlan = toPublicPlan(plan);
-    for (const workout of publicPlan.workouts) {
-      for (const exercise of workout.exercises) exercise.exercise = facts.get(exercise.exerciseId);
-    }
-    return { ...publicPlan, locked: locked.has(publicPlan.id) };
-  });
+  return publicPlans.map((plan) => ({ ...plan, locked: locked.has(plan.id) }));
 }
 
 async function findPlan(traineeId: string, planId: string): Promise<LeanPlan> {

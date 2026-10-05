@@ -11,7 +11,6 @@
     "start": "node dist/server.js",
     "test": "vitest run",
     "import:exercises": "tsx src/features/exercises/scripts/importExercises.ts",
-    "seed:workout-templates": "tsx src/features/workoutTemplates/scripts/seedWorkoutTemplates.ts",
     "seed:knowledge": "tsx src/features/knowledge/scripts/seedKnowledge.ts",
     "promote:coach": "tsx src/features/users/scripts/promoteCoach.ts",
     "seed:dev": "tsx src/features/users/scripts/seedDev.ts",

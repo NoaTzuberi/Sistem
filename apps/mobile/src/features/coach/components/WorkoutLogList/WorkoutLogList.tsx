@@ -1,10 +1,10 @@
 import { useCallback } from 'react';
-import type { WorkoutLog, WorkoutLogSet, WorkoutLogStatus } from '@sistem/types';
-import { formatDateTime, formatDuration, useLoad } from '@sistem/shared';
+import type { WorkoutLogStatus } from '@sistem/types';
+import { describeLogSet, formatDateTime, formatDuration, groupLogSetsByExercise, useLoad } from '@sistem/shared';
 import { IconChevronDown } from '@tabler/icons-react';
 import { listPlans, listTraineeWorkoutLogs } from '../../../../services/coach/coachService';
 import { Badge } from '../../../../components/common/Badge/Badge';
-import { CoachMessage } from '../CoachMessage/CoachMessage';
+import { StateMessage } from '../../../../components/common/StateMessage/StateMessage';
 import './WorkoutLogList.css';
 
 const STATUS_LABELS: Record<WorkoutLogStatus, string> = {
@@ -31,30 +31,13 @@ async function loadLogs(traineeId: string) {
   return { logs, exerciseNames };
 }
 
-function describeSet(set: WorkoutLogSet): string {
-  const amount = set.durationSec !== undefined ? formatDuration(set.durationSec) : `${set.reps ?? '—'} reps`;
-  const performed = set.weight !== undefined ? `${amount} × ${set.weight} kg` : amount;
-  return `${set.setIndex + 1} · ${performed}${set.completed ? '' : ' · not done'}`;
-}
-
-/** The sets of a log, kept in order, one group per run of the same exercise. */
-function groupByExercise(sets: WorkoutLog['sets']): { exerciseId: string; sets: WorkoutLogSet[] }[] {
-  const groups: { exerciseId: string; sets: WorkoutLogSet[] }[] = [];
-  for (const set of sets) {
-    const last = groups[groups.length - 1];
-    if (last && last.exerciseId === set.exerciseId) last.sets.push(set);
-    else groups.push({ exerciseId: set.exerciseId, sets: [set] });
-  }
-  return groups;
-}
-
 export function WorkoutLogList({ traineeId }: WorkoutLogListProps) {
   const load = useCallback(() => loadLogs(traineeId), [traineeId]);
   const { data, error, isLoading, reload } = useLoad(load, "Couldn't load the workout logs.");
 
-  if (isLoading && !data) return <CoachMessage>Loading…</CoachMessage>;
-  if (!data) return <CoachMessage onRetry={reload}>{error}</CoachMessage>;
-  if (data.logs.length === 0) return <CoachMessage>No workout logs yet.</CoachMessage>;
+  if (isLoading && !data) return <StateMessage>Loading…</StateMessage>;
+  if (!data) return <StateMessage onRetry={reload}>{error}</StateMessage>;
+  if (data.logs.length === 0) return <StateMessage>No workout logs yet.</StateMessage>;
 
   return (
     <ul className="workout-logs">
@@ -102,12 +85,12 @@ export function WorkoutLogList({ traineeId }: WorkoutLogListProps) {
                 {log.pumpPhoto ? `Daily Pump photo uploaded ${formatDateTime(log.pumpPhoto.uploadedAt)}` : 'No Daily Pump photo.'}
               </p>
 
-              {groupByExercise(log.sets).map((group, index) => (
+              {groupLogSetsByExercise(log.sets).map((group, index) => (
                 <div key={index} className="workout-log-exercise">
                   <span className="workout-log-exercise-name">{data.exerciseNames.get(group.exerciseId) ?? 'Exercise'}</span>
                   {group.sets.map((set) => (
                     <span key={set.setIndex} className="workout-log-set">
-                      {describeSet(set)}
+                      {describeLogSet(set)}
                     </span>
                   ))}
                 </div>

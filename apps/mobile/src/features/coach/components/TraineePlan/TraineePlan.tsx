@@ -6,7 +6,7 @@ import { IconInfoCircle } from '@tabler/icons-react';
 import { createPlan, listPlans, publishPlan } from '../../../../services/coach/coachService';
 import { Button } from '../../../../components/common/Button/Button';
 import { describeIssue } from '../../data/planDisplay';
-import { CoachMessage } from '../CoachMessage/CoachMessage';
+import { StateMessage } from '../../../../components/common/StateMessage/StateMessage';
 import { ConfirmSheet } from '../ConfirmSheet/ConfirmSheet';
 import { PlanCard } from '../PlanCard/PlanCard';
 import './TraineePlan.css';
@@ -38,8 +38,8 @@ export function TraineePlan({ trainee, onPlansChanged }: TraineePlanProps) {
   const [isWorking, setIsWorking] = useState(false);
   const [failure, setFailure] = useState<ActionFailure>();
 
-  if (isLoading && !plans) return <CoachMessage>Loading…</CoachMessage>;
-  if (!plans) return <CoachMessage onRetry={reload}>{error}</CoachMessage>;
+  if (isLoading && !plans) return <StateMessage>Loading…</StateMessage>;
+  if (!plans) return <StateMessage onRetry={reload}>{error}</StateMessage>;
 
   // Weeks are Sundays in the trainee's time zone; the server sends the current one.
   const weeks = [
@@ -88,7 +88,7 @@ export function TraineePlan({ trainee, onPlansChanged }: TraineePlanProps) {
 
   return (
     <div className="trainee-plan">
-      {error && <CoachMessage onRetry={reload}>{error}</CoachMessage>}
+      {error && <StateMessage onRetry={reload}>{error}</StateMessage>}
 
       {weeks.map((week) => {
         const plan = planFor(week.start);

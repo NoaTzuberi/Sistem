@@ -15,7 +15,7 @@ import { IconChevronRight } from '@tabler/icons-react';
 import { AppShell } from '../../../../components/layout/AppShell/AppShell';
 import { listTrainees } from '../../../../services/coach/coachService';
 import { coachTraineePath } from '../../../../app/config/routes';
-import { CoachMessage } from '../../components/CoachMessage/CoachMessage';
+import { StateMessage } from '../../../../components/common/StateMessage/StateMessage';
 import { PlanWindow, TraineeStatusBadges } from '../../components/TraineeStatusBadges/TraineeStatusBadges';
 import './TraineesPage.css';
 
@@ -70,10 +70,10 @@ export function TraineesPage() {
           <span className="coach-trainees-needs-plan-count">{countFor('needs_next_week')}</span>
         </button>
 
-        {isLoading && !data && <CoachMessage>Loading…</CoachMessage>}
-        {error && <CoachMessage onRetry={reload}>{error}</CoachMessage>}
+        {isLoading && !data && <StateMessage>Loading…</StateMessage>}
+        {error && <StateMessage onRetry={reload}>{error}</StateMessage>}
         {data && visible.length === 0 && (
-          <CoachMessage>{trainees.length === 0 ? 'No trainees yet.' : 'No trainees match this filter.'}</CoachMessage>
+          <StateMessage>{trainees.length === 0 ? 'No trainees yet.' : 'No trainees match this filter.'}</StateMessage>
         )}
 
         <ul className="coach-trainees-list">

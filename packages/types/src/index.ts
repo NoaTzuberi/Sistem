@@ -185,7 +185,7 @@ export interface ExerciseFacts {
 export interface PlanExercise {
   id: string;
   exerciseId: string;
-  /** Filled in by the coach endpoints; missing if the exercise left the library. */
+  /** The library facts (name, …); missing only if the exercise left the library. */
   exercise?: ExerciseFacts;
   sets: number;
   reps?: number;
@@ -222,6 +222,62 @@ export interface Plan {
   workouts: PlanWorkout[];
   createdAt: string;
   updatedAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// The trainee's own plans (/api/plans) — Phase 7
+// ---------------------------------------------------------------------------
+
+/**
+ * Computed on the server in the trainee's time zone (clients never derive it):
+ * done — a completed workout log exists · missed — not done and its day has passed
+ * (a workout without a day: once its week is over) · upcoming — everything else.
+ */
+export type WorkoutStatus = 'upcoming' | 'done' | 'missed';
+
+export interface TraineePlanWorkout extends PlanWorkout {
+  status: WorkoutStatus;
+  /** 'YYYY-MM-DD' of the planned day; null when the coach set no day. */
+  date: string | null;
+  /** Planned for today (in the trainee's time zone). */
+  isToday: boolean;
+  /** An unfinished workout log is open for it. */
+  inProgress: boolean;
+  /** The completed log of a done workout. */
+  logId: string | null;
+}
+
+/** Where a plan's week sits relative to the trainee's current week. */
+export type PlanPeriod = 'past' | 'current' | 'upcoming';
+
+export interface TraineePlan extends Plan {
+  period: PlanPeriod;
+  workouts: TraineePlanWorkout[];
+}
+
+/** GET /plans — the trainee's published plans, newest week first. */
+export interface TraineePlanList {
+  items: TraineePlan[];
+  /** Today's date in the trainee's time zone. */
+  today: string;
+  /** The Sunday that starts next week, so the app can pick next week's plan without date math. */
+  nextWeekStartDate: string;
+  serverTime: string;
+}
+
+/** GET /plans/week — what Home shows. */
+export interface TraineeWeek {
+  /** The Sunday of the current week in the trainee's time zone. */
+  weekStartDate: string;
+  today: string;
+  serverTime: string;
+  /** null when no plan is published for this week. */
+  plan: TraineePlan | null;
+  /**
+   * What "Start next workout" opens: the workout in progress, else the first upcoming
+   * one, else the earliest missed one (still doable until the week ends), else null.
+   */
+  nextWorkoutId: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -274,6 +330,30 @@ export interface CreatePlanPayload {
   weekStartDate: string;
   /** Start from a copy of the trainee's most recent earlier plan instead of empty. */
   duplicatePrevious?: boolean;
+}
+
+/** How a week sits relative to the trainee's current week (her time zone). */
+export type PlanWeekRelation = 'this' | 'next' | 'later';
+
+/** One week the coach can pick for a new plan — never a past week. */
+export interface PlanWeekOption {
+  /** 'YYYY-MM-DD', a Sunday in the trainee's time zone. */
+  weekStartDate: string;
+  relation: PlanWeekRelation;
+  /** The plan already in this week (draft or published): open it instead of creating. */
+  plan: { id: string; status: PlanStatus } | null;
+  /** The week "Duplicate last week" would copy into this one; null when there is none. */
+  copiesFromWeek: string | null;
+}
+
+/** GET …/plan-weeks — the week picker of "New plan" and "Duplicate last week". */
+export interface PlanWeekOptions {
+  currentWeekStart: string;
+  weeks: PlanWeekOption[];
+  /** Always this week (it may already have a plan — then the picker offers "Open"). */
+  defaultNewWeek: string;
+  /** This week, or next week when this week already has a plan. */
+  defaultDuplicateWeek: string;
 }
 
 /** One problem in a plan, pointing at the workout / exercise it belongs to (0-based). */
@@ -346,6 +426,8 @@ export interface WorkoutLog {
   notes?: string;
   /** Photos are private: the file is served only through signed URLs (Phase 9). */
   pumpPhoto: { uploadedAt: string } | null;
+  /** Facts of the exercises in `sets` — filled in by the trainee endpoints. */
+  exercises?: ExerciseFacts[];
 }
 
 export type ProgressPhotoPose = 'front' | 'side' | 'back';

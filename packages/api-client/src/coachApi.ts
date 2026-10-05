@@ -9,6 +9,7 @@ import type {
   ExerciseSearchParams,
   ExerciseSearchResult,
   PlanIssue,
+  PlanWeekOptions,
   SavePlanPayload,
   WorkoutLog,
 } from '@sistem/types';
@@ -67,6 +68,12 @@ export function createCoachApi(client: AxiosInstance) {
     return data.items;
   }
 
+  /** The weeks the picker offers for a new or duplicated plan, with their defaults. */
+  async function listPlanWeeks(traineeId: string): Promise<PlanWeekOptions> {
+    const { data } = await client.get<PlanWeekOptions>(`/coach/trainees/${traineeId}/plan-weeks`);
+    return data;
+  }
+
   async function getPlan(traineeId: string, planId: string): Promise<CoachPlan> {
     const { data } = await client.get<{ plan: CoachPlan }>(`${plansPath(traineeId)}/${planId}`);
     return data.plan;
@@ -123,6 +130,7 @@ export function createCoachApi(client: AxiosInstance) {
     listTraineeBodyMetrics,
     searchExercises,
     listPlans,
+    listPlanWeeks,
     getPlan,
     createPlan,
     savePlan,

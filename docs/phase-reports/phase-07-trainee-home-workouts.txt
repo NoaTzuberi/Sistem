@@ -1,0 +1,343 @@
+SISTEM — PHASE 7 REPORT: TRAINEE HOME & WORKOUTS
+Date: 2026-10-05 (updated after review: "Next week" section; dashboard week-picker fix, §2c)
+Scope: docs/BUILD_PLAN.md Phase 7 (PRD §5.1 Home, §5.4 Workouts). Server, shared packages,
+mobile app — plus a dashboard plan-builder bug fix and week picker you asked for during
+the review (§2c). Phase 8 was NOT started.
+
+================================================================================
+1. SUMMARY
+================================================================================
+- Trainee Home: greeting + week range, Sunday–Saturday week strip, a "Next workout" card
+  with "Start next workout", this week's workouts with their status, an empty
+  achievements strip and a streak placeholder (both filled in Phase 11).
+- Workouts tab: this week, next week (only when its plan is published), past weeks
+  (expandable, "2 / 3 done"), completed workouts.
+  Read-only screens for one planned workout and for one workout log.
+- The server computes each workout's status (upcoming / done / missed) and the next
+  workout, from today's date in the trainee's stored time zone. The app only shows it.
+- Trainee plan endpoints now return exercise names (facts only) next to resolvedSets,
+  like the coach endpoints; a workout log returns the names of its exercises.
+- Removed: the ATLAS workouts list / builder / template detail screens, the old
+  DashboardPage + calendar, and the unused parts of the server workoutTemplates feature.
+- PRD §14 backlog: split the mobile bundle by role.
+
+================================================================================
+2. DECISIONS (owner answers) AND HOW THEY WERE BUILT
+================================================================================
+Status rule (server only: apps/server/src/features/plans/planStatus.ts)
+  today      = the calendar date of the server's clock in User.timezone (planWeek.ts)
+  this week  = the plan whose weekStartDate is the Sunday of today's week
+  date       = weekStartDate + dayOfWeek (null when the coach set no day)
+  done       = a WorkoutLog with status 'completed' for that plan + workout (wins, even late)
+  missed     = not done and date < today; a workout with no day: only once today is past
+               its week's Saturday
+  upcoming   = everything else (+ flags isToday and inProgress)
+  next       = in progress → first upcoming (plan order) → earliest missed → none
+1. A missed workout stays tappable until the end of its week; "Start next workout" falls
+   back to the earliest missed one. Past weeks: missed rows are plain text, not links.
+   "Missed" is a placeholder label in features/workouts/data/workoutCopy.ts.
+2. "Start next workout" opens the read-only workout detail (exercises, sets, superset bar,
+   coach notes, and a "coming soon" line where the Phase 8 start button goes).
+3. Deleted WorkoutsPage (ATLAS), the builder, the template detail, their routes and
+   components. ActiveWorkoutPage and WorkoutSummaryPage stay, unrouted. CLAUDE.md updated.
+
+Server workoutTemplates — what I checked and what I removed:
+  - Nothing outside the feature used its routes, controller, service, validation or the
+    seed script → DELETED, with `/api/workout-templates` and the `seed:workout-templates`
+    npm scripts (root + server) and its README line. The mobile workoutTemplatesService
+    (the only caller) was deleted with the ATLAS screens.
+  - The MODEL, constants and types are still imported by the ATLAS workouts feature
+    (apps/server/src/features/workouts/workout.service.ts: startWorkout reads a
+    WorkoutTemplate; the Workout model refs it) → KEPT until Phase 8 replaces ATLAS
+    Workout. Note: with the routes gone, no template can be created any more, so the
+    ATLAS /api/workouts start call is dead in practice — nothing routed calls it.
+  - The Phase 3 `templates` model is untouched.
+
+Things I decided inside your answers (say if you want any changed):
+- API shape: GET /api/plans/week (Home), GET /api/plans now { items, today,
+  nextWeekStartDate, serverTime }
+  with a `period` (past / current / upcoming) on each plan, GET /api/plans/:id with the
+  same statuses. All published-only and scoped to the caller, as before.
+- "Next week" section (added after review, your request): shown above past weeks only
+  when a PUBLISHED plan exists for next week. Read-only; tapping a workout opens its
+  detail (status "Upcoming"). The server sends nextWeekStartDate, so the app picks the
+  plan by comparing dates it was given — no date math on the device. Plans the coach
+  published two or more weeks ahead stay hidden until they become next week; drafts
+  are never visible.
+- Old DashboardPage widgets: ProfilePage still uses StreakRing, WeekDotStrip, MilestoneBar
+  and AchievementBadges (plus /api/dashboard), so those stay until Phase 10 / 11. Home
+  reuses StreakRing (shown empty at 0 with "Coming soon"). WeekDotStrip counts "last
+  7 days", which doesn't fit a plan week, so Home has a new WeekStrip built on the same
+  idea. Deleted: DashboardPage, DashboardCalendar, MonthCalendar.
+- Week strip marks (placeholder look): filled Cherry Rose = done, ring = upcoming, grey
+  ring with a slash = missed, small grey dot = no workout; today is outlined pink.
+- Shared, not copied: describeTargets / DAY_NAMES and the log-set helpers moved from
+  coach mode into @sistem/shared; the exercise list of a planned workout is one
+  component (PlanExerciseList) used by coach mode and the trainee; CoachMessage became
+  components/common/StateMessage (same look) for the loading / empty / error lines.
+- Back button on the detail screens goes back in history; opened directly (reload, deep
+  link) it goes to Workouts.
+
+================================================================================
+2c. DASHBOARD FIX — NEW PLANS SILENTLY LANDED ON A LATER WEEK ("OCT 25")
+================================================================================
+What you saw: a new plan / its workouts were for the week of Oct 25, not this week.
+
+Investigation (before changing anything):
+- weekStartDate itself was right everywhere. The server computes the current week from
+  its own clock in the trainee's stored time zone (planWeek.currentWeekStart). On
+  Mon 5 Oct, 15:25 Jerusalem it gave Sun 4 Oct for every trainee in your dev DB
+  (checked through GET /api/coach/trainees: serverTime 12:25Z, currentWeekStart
+  2026-10-04, Asia/Jerusalem). Sunday logic and dates are tested and were fine.
+- The week was chosen in the dashboard (TraineePlans.tsx), not on the server: it
+  offered this week + the 3 after it and, unless you picked one, used THE FIRST WEEK
+  WITHOUT A PLAN. "New plan" and "Duplicate last week" both used that week.
+- Your dev DB: Dev Trainee One (trainee1) had Sep 27 (published), Oct 4 (draft, 0
+  workouts), Oct 11 (draft), Oct 18 (published) — so the first free week was Oct 25,
+  chosen without telling you. The Oct 25 plan in your DB was created today at 12:17
+  UTC (15:17 your time) for Dev Trainee One. Dev Trainee Two (trainee2) really has only
+  the Sep 27 plan; for them the old code would have picked Oct 4 correctly. So the
+  trainee where it happened had 4 plans, not 1 — the Oct 4 and Oct 11 drafts are easy
+  to miss (Oct 4 has no workouts). If you saw it on another trainee, tell me which.
+- Root cause: the client-side "first free week" fallback. It skipped weeks that
+  already had a plan instead of showing them, and nothing on screen said which week
+  was used. The builder header ("Week of Sun, 25 Oct 2026") was the only clue.
+
+Fix + feature (as you asked):
+- The server now decides the weeks and the defaults: new GET
+  /api/coach/trainees/:traineeId/plan-weeks (coach only, own trainee — else 404) ->
+  this week, next week and the 6 after them, each with its plan (id + Draft /
+  Published) or none, and the week a duplicate would copy from. Past weeks are never
+  offered (and the create endpoint still refuses them, 409).
+  Defaults: "New plan" -> this week, always. "Duplicate last week" -> this week, or
+  next week when this week already has a plan.
+- Dashboard: "New plan" and "Duplicate last week" open a week picker. "This week ·
+  Oct 4–10" and "Next week · Oct 11–17" are first; "Later…" shows the other 6. A week
+  with a plan shows Draft / Published and "Open", and choosing it turns the button
+  into "Open plan" — it never moves to another week. For a duplicate it says which
+  week is copied ("Copies the plan of Sep 27 – Oct 3").
+- Plan builder header: "This week · Sun, Oct 4 – Sat, Oct 10" ("Next week · …" or just
+  the dates for other weeks). The plans list uses the same short dates + This / Next
+  week badges.
+- Test that reproduces it: apps/server/src/features/plans/__tests__/planWeekOptions.test.ts
+  rebuilds Dev Trainee One's plans at Mon 5 Oct 15:25 Jerusalem and checks the defaults
+  are Oct 4 / Oct 11 and nothing points at Oct 25; also trainee2's case, no past weeks,
+  time zone at Saturday midnight, 404 / 403. (The old picker was client code with no
+  client tests, so the test pins the server's choice the picker now follows.)
+- Not changed: mobile coach mode ("Duplicate last week and publish" already targets
+  this week, else next week, and the server refuses a taken week).
+
+Checked in the browser against your dev DB (dashboard, signed in as the dev coach):
+- Dev Trainee One: New plan -> "(*) This week · Oct 4–10 Draft Open", "Next week ·
+  Oct 11–17 Draft Open", footer "…already has a draft plan · Open plan". Later… ->
+  Oct 18 Published, Oct 25 Published, Nov 1 – Nov 22 free. Duplicate last week ->
+  preselects Next week (Oct 11, Draft -> Open plan). Open -> builder header "This week ·
+  Sun, Oct 4 – Sat, Oct 10".
+- Dev Trainee Two: New plan -> This week Oct 4–10 preselected, "Create plan ·
+  Oct 4–10". Duplicate -> Oct 4–10, "Copies the plan of Sep 27 – Oct 3".
+- I did NOT click Create / Duplicate (it would add real plans to your dev DB).
+- The console showed errors from while I was editing (Vite hot reload picked up one
+  file before the other was saved; that also logged the dashboard out once). After a
+  full reload there were no errors.
+- Wording in the picker is placeholder.
+
+================================================================================
+3. FILES CHANGED
+================================================================================
+Added — server
+  apps/server/src/features/plans/planStatus.ts, traineePlan.service.ts
+  apps/server/src/features/plans/__tests__/planStatus.test.ts, traineePlans.test.ts
+Modified — server
+  apps/server/src/features/plans/plan.service.ts       attachExerciseFacts; removed the
+                                                       two trainee functions it replaces
+  apps/server/src/features/plans/planBuilder.service.ts   uses attachExerciseFacts
+  apps/server/src/features/plans/plan.controller.ts, plan.routes.ts   /week, statuses
+  apps/server/src/features/workoutLogs/workoutLog.service.ts   exercise facts on one log
+  apps/server/src/app.ts                               /api/workout-templates removed
+  apps/server/package.json, package.json               seed:workout-templates removed
+Deleted — server
+  apps/server/src/features/workoutTemplates/workoutTemplate.routes.ts, .controller.ts,
+    .service.ts, .validation.ts, scripts/seedWorkoutTemplates.ts
+
+Added — packages
+  packages/api-client/src/traineeApi.ts
+  packages/shared/src/planDisplay.ts, workoutLogDisplay.ts
+Modified — packages
+  packages/types/src/index.ts       WorkoutStatus, TraineePlanWorkout, TraineePlan,
+                                    PlanPeriod, TraineePlanList, TraineeWeek,
+                                    WorkoutLog.exercises
+  packages/api-client/src/index.ts, packages/shared/src/index.ts
+
+Added — mobile (apps/mobile/src)
+  components/common/StateMessage/                       (moved from coach CoachMessage)
+  services/plans/plansService.ts, services/workoutLogs/workoutLogsService.ts
+  features/home/components/WeekStrip/, features/home/data/homeCopy.ts,
+    features/home/pages/HomePage/HomePage.css
+  features/workouts/components/PlanExerciseList/, WorkoutRow/, BackButton/
+  features/workouts/data/workoutCopy.ts
+  features/workouts/pages/WorkoutDetailPage/, WorkoutLogPage/
+Modified — mobile
+  app/config/routes.ts, app/router/AppRouter.tsx
+  features/home/pages/HomePage/HomePage.tsx             was a placeholder
+  features/workouts/pages/WorkoutsPage/                 rewritten (ATLAS → Sistem)
+  features/coach/components/PlanCard/ (.tsx + .css), WorkoutLogList, TraineePlan,
+    BodyMetricsList, OnboardingAnswers; features/coach/data/planDisplay.ts;
+    features/coach/pages/InboxPage, TraineesPage, TraineeDetailPage   (imports only)
+Deleted — mobile
+  features/coach/components/CoachMessage/
+  features/dashboard/pages/DashboardPage/, components/DashboardCalendar/, MonthCalendar/
+  features/workouts/pages/WorkoutBuilderPage/, WorkoutTemplateDetailPage/
+  features/workouts/steps/ (4 steps), features/workouts/data/ (5 files)
+  features/workouts/components/: CategoryBadge, ExercisePicker, FeaturedWorkoutCard,
+    GlassSelect, GoalCard, MuscleCoverageMap, TemplateCard, WorkoutChip,
+    WorkoutExerciseRow, WorkoutSummaryCard, icons.tsx
+  services/workouts/workoutTemplatesService.ts
+  assets/core.jpg, full-body.jpg, lower-body.jpg, pull.jpg, push.jpg, upper-body.jpg
+
+Added — server / dashboard (§2c fix)
+  apps/server/src/features/plans/planWeekOptions.service.ts
+  apps/server/src/features/plans/__tests__/planWeekOptions.test.ts
+  apps/dashboard/src/features/trainees/components/WeekPicker/ (.tsx + .css)
+Modified — server / dashboard / packages (§2c fix)
+  apps/server/src/features/coach/coach.routes.ts, coach.controller.ts   /plan-weeks
+  apps/dashboard/src/features/trainees/components/TraineePlans/ (.tsx + .css)
+  apps/dashboard/src/features/planBuilder/pages/PlanBuilderPage/PlanBuilderPage.tsx
+  apps/dashboard/src/features/planBuilder/components/PlanEditor/PlanEditor.tsx
+  apps/dashboard/src/services/coach/coachService.ts
+  packages/types (PlanWeekOption, PlanWeekOptions), packages/api-client (listPlanWeeks),
+  packages/shared/src/format.ts (formatWeekSpan, formatWeekSpanWithDays),
+  packages/shared/src/planDisplay.ts (WEEK_RELATION_LABELS, weekRelationLabel)
+
+Modified — docs
+  docs/PRD.md (§14: split the mobile bundle by role), README.md (seed line removed)
+  CLAUDE.md (gitignored — not in any commit)
+
+================================================================================
+4. DEPENDENCIES
+================================================================================
+Added: none.   Removed: none.
+
+================================================================================
+5. HOW TO TEST
+================================================================================
+Commands (repo root):
+  npm test           -> 18 files, 212 tests pass (was 15 / 182). New: status rule incl.
+                        time-zone edges (midnight, Saturday night), no-day workouts, late
+                        completion, next-workout fallback; endpoints: names + resolvedSets,
+                        drafts and other trainees invisible, stored time zone wins,
+                        nextWeekStartDate + a next-week plan listed as 'upcoming';
+                        week picker (§2c): the Oct 25 case, defaults, no past weeks,
+                        time zone, 404 / 403.
+  npm run build      -> passes (dashboard, mobile, server). Mobile bundle 463 kB
+                        (was 507 kB) — under Vite's warning line again.
+  npm run lint       -> 0 errors; 3 older warnings (AuthContext ×2, AchievementBadges).
+  npm run dev        -> server 5002 + mobile 5173 (your running servers picked up the
+                        changes; the API answered as below).
+
+Manual — http://localhost:5173 as a trainee with a published plan (trainee2@sistem.dev /
+sistem-dev-1234 after `npm run seed:dev`):
+  1. Home: week range, strip with today outlined, next workout card, this week's rows.
+     The seed plan is Sunday + Wednesday: once those days pass without a log both show
+     "Missed", and "Start next workout" points to the Sunday one (earliest missed).
+  2. Start next workout -> read-only workout detail: names, sets, superset bar, notes,
+     "coming soon" line. Back -> Home.
+  3. Workouts tab: this week, past weeks (tap to expand, "x / y done"), completed logs.
+     Next week: in the coach app (Trainees -> the trainee -> Plan) use "Duplicate last
+     week and publish", or publish a next-week draft from the dashboard -> a "Next week"
+     section appears above Past weeks; tap a workout -> its detail. Unpublish it on the
+     dashboard -> the section disappears.
+  4. A done workout or a completed log opens the log screen (stats, rating, notes,
+     Daily Pump text slot, sets per exercise). No completed logs exist until Phase 8 —
+     the tests create them; in the dev DB you would need to insert one by hand.
+  5. Reload a detail URL directly -> Back goes to Workouts.
+  6. Coach mode still shows plans and logs as before (shared PlanExerciseList / helpers).
+  7. Dashboard (5174), dev coach -> Dev Trainee One -> Plans -> New plan / Duplicate
+     last week: see §2c. Dev Trainee Two -> New plan -> Create plan · Oct 4–10 ->
+     builder header "This week · Sun, Oct 4 – Sat, Oct 10".
+
+================================================================================
+6. KNOWN ISSUES / TODOs
+================================================================================
+- What I checked myself, against your running dev servers (not started or stopped by me):
+  - API as trainee2 (2026-10-01, a Thursday): /plans/week -> week 2026-09-27, both seed
+    workouts 'missed', nextWorkoutId = the Sunday one, exercise names + resolvedSets
+    present; /plans -> one 'current' plan; /api/workout-templates -> 404.
+  - Browser, signed in as the session already open (Dev Trainee One, one workout with no
+    day): Home, "Start next workout" -> detail -> Back -> Home, Workouts tab, Profile
+    still loads. No sideways scroll, no touch target under 44px, no console errors.
+- The browser window would not go below 345×614 of page area (the 375×667 window
+  includes the browser frame), so the check was at 345 wide — narrower than an iPhone
+  SE. At that width the header's week range wrapped next to the streak block; I moved
+  the streak label under the ring and it now fits on one line. Not checked at 430×932
+  or on a real phone.
+- Not seen in the browser with real data: done rows, the log screen, past weeks with
+  rows, the missed slash mark (no completed logs / past plans in the dev DB at the
+  time). Covered by server tests; the screens type-check and build.
+- The screen fade-in looked frozen in my screenshots because the test tab was in a
+  background window (animations pause there) — not an app issue.
+- Wording everywhere is placeholder (homeCopy.ts, workoutCopy.ts), "Missed" especially.
+- Streak shows 0 + "Coming soon" and achievements show an empty line until Phase 11.
+- "Next week" section: built and type-checked, the API field checked on your dev server
+  (2026-10-05: nextWeekStartDate 2026-10-11, no plan for it in the dev DB), and covered
+  by a server test. NOT seen in the browser — there is no published next-week plan in
+  the dev DB and I did not create one (it would add a real plan + notification). Your
+  step 3 covers it.
+- The dev seed plan (week of 27 Sept) is now a past week, so Home for trainee2 shows
+  "No plan for this week yet." until a plan for the current week is published.
+- features/workouts/types.ts still holds the ATLAS template types used by the kept
+  ActiveWorkoutPage / workoutSessionService; cleaned up in Phase 8.
+- The bundle split by role is backlog (PRD §14), not done here.
+
+================================================================================
+7. SUGGESTED COMMITS (ready to paste — in order)
+================================================================================
+Note: packages/types, packages/api-client and packages/shared each hold both Phase 7
+and §2c changes, so each goes whole into one commit (types + api-client in 1, shared
+in 3); the fix commit (4) builds on them.
+
+# 1) server + contract: trainee plans with statuses and exercise names
+#    (the two week-picker files go into commit 4)
+git add -A -- \
+  apps/server/src/features/plans \
+  apps/server/src/features/workoutLogs \
+  packages/types \
+  packages/api-client \
+  ':(exclude)apps/server/src/features/plans/planWeekOptions.service.ts' \
+  ':(exclude)apps/server/src/features/plans/__tests__/planWeekOptions.test.ts'
+git commit -m "feat: trainee plan endpoints with workout status, next workout and exercise names"
+
+# 2) server: remove the unused ATLAS workout template API
+git add -A -- \
+  apps/server/src/features/workoutTemplates \
+  apps/server/src/app.ts \
+  apps/server/package.json \
+  package.json \
+  README.md
+git commit -m "chore: remove unused ATLAS workout template routes, service and seed script"
+
+# 3) shared display helpers, StateMessage and PlanExerciseList (coach mode uses them)
+git add -A -- \
+  packages/shared \
+  apps/mobile/src/components/common/StateMessage \
+  apps/mobile/src/features/coach \
+  apps/mobile/src/features/workouts/components/PlanExerciseList
+git commit -m "refactor: share plan, log and week display helpers, StateMessage and PlanExerciseList"
+
+# 4) dashboard fix: explicit week picker, no silent jump to a later week
+git add -A -- \
+  apps/server/src/features/plans/planWeekOptions.service.ts \
+  apps/server/src/features/plans/__tests__/planWeekOptions.test.ts \
+  apps/server/src/features/coach \
+  apps/dashboard
+git commit -m "fix: dashboard new plans no longer jump to the first free week — explicit week picker"
+
+# 5) mobile: trainee Home and Workouts, ATLAS screens removed
+git add -A -- \
+  apps/mobile
+git commit -m "feat: trainee home and workouts tab (this week, next week, past weeks, logs), ATLAS workout screens removed"
+
+# 6) docs
+git add -A -- \
+  docs/PRD.md \
+  docs/phase-reports/phase-07-trainee-home-workouts.txt
+git commit -m "docs: phase 7 report, bundle split by role added to backlog"

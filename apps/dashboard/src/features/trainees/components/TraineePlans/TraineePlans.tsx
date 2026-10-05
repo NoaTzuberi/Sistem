@@ -1,15 +1,14 @@
 import { useCallback, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import type { CoachTraineeDetail } from '@sistem/types';
-import { createPlan, listPlans } from '../../../../services/coach/coachService';
-import { useLoad, addDaysToDate, formatDateOnly } from '@sistem/shared';
+import type { CoachTraineeDetail, PlanWeekOptions } from '@sistem/types';
+import { createPlan, listPlanWeeks, listPlans } from '../../../../services/coach/coachService';
+import { useLoad, formatWeekSpan, weekRelationLabel } from '@sistem/shared';
 import { planPath } from '../../../../app/config/routes';
 import { Badge } from '../../../../components/common/Badge/Badge';
 import { Button } from '../../../../components/common/Button/Button';
+import { WeekPicker } from '../WeekPicker/WeekPicker';
+import type { WeekPickerMode } from '../WeekPicker/WeekPicker';
 import './TraineePlans.css';
-
-// The current week plus the three after it.
-const WEEKS_OFFERED = 4;
 
 interface TraineePlansProps {
   trainee: CoachTraineeDetail;
@@ -21,55 +20,64 @@ export function TraineePlans({ trainee, onPlansChanged }: TraineePlansProps) {
   const navigate = useNavigate();
   const load = useCallback(() => listPlans(trainee.id), [trainee.id]);
   const { data: plans, error, isLoading, reload } = useLoad(load, "Couldn't load the plans.");
-  const [chosenWeek, setChosenWeek] = useState('');
+  // The week picker: which action opened it, and the weeks the server offers (fresh each time).
+  const [picker, setPicker] = useState<{ mode: WeekPickerMode; options: PlanWeekOptions } | null>(null);
+  const [isOpeningPicker, setIsOpeningPicker] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState<string>();
 
-  const takenWeeks = new Set(plans?.map((plan) => plan.weekStartDate));
-  // Weeks are Sundays in the trainee's time zone; the server sends the current one.
-  const weeks = Array.from({ length: WEEKS_OFFERED }, (_, index) => addDaysToDate(trainee.currentWeekStart, index * 7));
-  // Until she picks one, the first week that still has no plan.
-  const week = chosenWeek && !takenWeeks.has(chosenWeek) ? chosenWeek : (weeks.find((option) => !takenWeeks.has(option)) ?? '');
+  async function openPicker(mode: WeekPickerMode) {
+    setIsOpeningPicker(true);
+    setCreateError(undefined);
+    try {
+      setPicker({ mode, options: await listPlanWeeks(trainee.id) });
+    } catch {
+      setCreateError("Couldn't load the weeks. Please try again.");
+    } finally {
+      setIsOpeningPicker(false);
+    }
+  }
 
-  const canCreate = plans !== undefined && week !== '' && !isCreating;
-  const hasEarlierPlan = plans?.some((plan) => plan.weekStartDate < week) ?? false;
-
-  async function handleCreate(duplicatePrevious: boolean) {
+  async function handleCreate(weekStartDate: string) {
+    if (!picker) return;
     setIsCreating(true);
     setCreateError(undefined);
     try {
-      const plan = await createPlan(trainee.id, { weekStartDate: week, duplicatePrevious });
+      const plan = await createPlan(trainee.id, { weekStartDate, duplicatePrevious: picker.mode === 'duplicate' });
       onPlansChanged();
       navigate(planPath(trainee.id, plan.id));
     } catch (createFailure) {
       setCreateError(createFailure instanceof Error ? createFailure.message : "Couldn't create the plan.");
       reload();
       setIsCreating(false);
+      // The weeks may have changed (e.g. a plan made elsewhere): show the fresh state.
+      void openPicker(picker.mode);
     }
   }
 
   return (
     <div className="trainee-plans">
-      <div className="plans-create">
-        <label className="plans-week">
-          <span className="plans-week-label">Week</span>
-          <select className="plans-week-select" value={week} onChange={(event) => setChosenWeek(event.target.value)}>
-            {week === '' && <option value="">No free week</option>}
-            {weeks.map((option) => (
-              <option key={option} value={option} disabled={takenWeeks.has(option)}>
-                {formatDateOnly(option)}
-                {takenWeeks.has(option) ? ' — has a plan' : ''}
-              </option>
-            ))}
-          </select>
-        </label>
-        <Button variant="primary" disabled={!canCreate} onClick={() => handleCreate(false)}>
-          New plan
-        </Button>
-        <Button disabled={!canCreate || !hasEarlierPlan} onClick={() => handleCreate(true)}>
-          Duplicate last week
-        </Button>
-      </div>
+      {!picker && (
+        <div className="plans-create">
+          <Button variant="primary" disabled={isOpeningPicker} onClick={() => void openPicker('new')}>
+            New plan
+          </Button>
+          <Button disabled={isOpeningPicker || !plans || plans.length === 0} onClick={() => void openPicker('duplicate')}>
+            Duplicate last week
+          </Button>
+        </div>
+      )}
+      {picker && (
+        <WeekPicker
+          key={picker.mode}
+          traineeId={trainee.id}
+          mode={picker.mode}
+          options={picker.options}
+          isCreating={isCreating}
+          onConfirm={(week) => void handleCreate(week)}
+          onCancel={() => setPicker(null)}
+        />
+      )}
       {createError && (
         <p className="plans-error" role="alert">
           {createError}
@@ -88,14 +96,15 @@ export function TraineePlans({ trainee, onPlansChanged }: TraineePlansProps) {
         <ul className="plans-list">
           {plans.map((plan) => {
             const exerciseCount = plan.workouts.reduce((total, workout) => total + workout.exercises.length, 0);
+            const relation = weekRelationLabel(plan.weekStartDate, trainee.currentWeekStart);
             return (
               <li key={plan.id} className="plans-item">
                 <div className="plans-item-main">
-                  <span className="plans-item-week">Week of {formatDateOnly(plan.weekStartDate)}</span>
+                  <span className="plans-item-week">{formatWeekSpan(plan.weekStartDate)}</span>
                   <Badge tone={plan.status === 'published' ? 'accent' : 'neutral'}>
                     {plan.status === 'published' ? 'Published' : 'Draft'}
                   </Badge>
-                  {plan.weekStartDate === trainee.currentWeekStart && <Badge>This week</Badge>}
+                  {relation && <Badge>{relation}</Badge>}
                   {plan.locked && <Badge>Started by trainee</Badge>}
                 </div>
                 <span className="plans-item-size">

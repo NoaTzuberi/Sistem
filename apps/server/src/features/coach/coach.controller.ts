@@ -21,6 +21,7 @@ import { listCoachExercises } from '../exercises/exercise.service';
 import type { ListCoachExercisesParams } from '../exercises/exercise.service';
 import { validateExerciseListQuery } from '../exercises/exercise.validation';
 import type { Muscle, Equipment, Difficulty } from '../exercises/exercise.constants';
+import { listPlanWeekOptions } from '../plans/planWeekOptions.service';
 
 export async function getTrainees(req: AuthenticatedRequest, res: Response) {
   const now = new Date();
@@ -59,6 +60,11 @@ export async function getTrainee(req: AuthenticatedRequest, res: Response) {
 export async function getTraineePlans(req: AuthenticatedRequest, res: Response) {
   const plans = await listCoachPlans(req.traineeId!);
   res.status(200).json({ items: plans });
+}
+
+/** The weeks a new plan can be made for (this week onwards), with what each one holds. */
+export async function getTraineePlanWeeks(req: AuthenticatedRequest, res: Response) {
+  res.status(200).json(await listPlanWeekOptions(req.traineeId!));
 }
 
 export async function getTraineeWorkoutLogs(req: AuthenticatedRequest, res: Response) {

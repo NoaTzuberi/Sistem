@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { formatDateOnly, humanizeId, useLoad } from '@sistem/shared';
 import { listTraineeBodyMetrics } from '../../../../services/coach/coachService';
-import { CoachMessage } from '../CoachMessage/CoachMessage';
+import { StateMessage } from '../../../../components/common/StateMessage/StateMessage';
 import './BodyMetricsList.css';
 
 interface BodyMetricsListProps {
@@ -12,9 +12,9 @@ export function BodyMetricsList({ traineeId }: BodyMetricsListProps) {
   const load = useCallback(() => listTraineeBodyMetrics(traineeId), [traineeId]);
   const { data: metrics, error, isLoading, reload } = useLoad(load, "Couldn't load the body metrics.");
 
-  if (isLoading && !metrics) return <CoachMessage>Loading…</CoachMessage>;
-  if (!metrics) return <CoachMessage onRetry={reload}>{error}</CoachMessage>;
-  if (metrics.length === 0) return <CoachMessage>No body metrics yet.</CoachMessage>;
+  if (isLoading && !metrics) return <StateMessage>Loading…</StateMessage>;
+  if (!metrics) return <StateMessage onRetry={reload}>{error}</StateMessage>;
+  if (metrics.length === 0) return <StateMessage>No body metrics yet.</StateMessage>;
 
   return (
     <ul className="body-metrics">

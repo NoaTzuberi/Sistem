@@ -1,5 +1,6 @@
 import type { Types } from 'mongoose';
 import type { Plan as PublicPlan, PlanExercise, PlanWorkout } from '@sistem/types';
+import { getExerciseFactsByIds } from '../exercises/exercise.service';
 import { Plan } from './plan.model';
 import { resolvePlanExerciseSets } from './planSets';
 import type { PlanDocument, PlanExerciseFields, PlanWorkoutFields } from './plan.types';
@@ -51,24 +52,24 @@ export function toPublicPlan(plan: LeanPlan): PublicPlan {
   };
 }
 
-interface ListPlansOptions {
-  /** Drafts are the coach's work in progress — trainees never see them. */
-  includeDrafts: boolean;
-}
-
-export async function listPlansForTrainee(traineeId: string, { includeDrafts }: ListPlansOptions): Promise<PublicPlan[]> {
-  const filter: Record<string, unknown> = includeDrafts ? { traineeId } : { traineeId, status: 'published' };
-  const plans = await Plan.find(filter).sort({ weekStartDate: -1 }).lean<LeanPlan[]>();
-  return plans.map(toPublicPlan);
-}
-
-/** A trainee's own published plan. Someone else's plan or a draft looks the same: not found. */
-export async function getPublishedPlanForTrainee(planId: string, traineeId: string): Promise<PublicPlan> {
-  const plan = await Plan.findOne({ _id: planId, traineeId, status: 'published' }).lean<LeanPlan>();
-  if (!plan) {
-    throw new PlanNotFoundError('Plan not found.');
+/**
+ * Adds the library facts (name, muscles, …) to every plan exercise, in place — one
+ * query for all the plans. Facts only: the imported text is never returned.
+ */
+export async function attachExerciseFacts(plans: PublicPlan[]): Promise<void> {
+  const exerciseIds = new Set<string>();
+  for (const plan of plans) {
+    for (const workout of plan.workouts) {
+      for (const exercise of workout.exercises) exerciseIds.add(exercise.exerciseId);
+    }
   }
-  return toPublicPlan(plan);
+
+  const facts = await getExerciseFactsByIds([...exerciseIds]);
+  for (const plan of plans) {
+    for (const workout of plan.workouts) {
+      for (const exercise of workout.exercises) exercise.exercise = facts.get(exercise.exerciseId);
+    }
+  }
 }
 
 export async function hasPublishedPlan(traineeId: string): Promise<boolean> {

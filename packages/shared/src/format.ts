@@ -43,6 +43,30 @@ export function formatWeekRange(weekStartDate: string): string {
   return `${dayMonthFormat.format(parseDateOnly(weekStartDate))} – ${dayMonthFormat.format(lastDay)}`;
 }
 
+const monthDayFormat = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
+const weekdayMonthDayFormat = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'UTC',
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+});
+
+/** A plan week from its Sunday, short: 'Oct 4–10', or 'Sep 27 – Oct 3' across months. */
+export function formatWeekSpan(weekStartDate: string): string {
+  const first = parseDateOnly(weekStartDate);
+  const last = parseDateOnly(addDaysToDate(weekStartDate, 6));
+  if (first.getUTCMonth() === last.getUTCMonth()) {
+    return `${monthDayFormat.format(first)}–${last.getUTCDate()}`;
+  }
+  return `${monthDayFormat.format(first)} – ${monthDayFormat.format(last)}`;
+}
+
+/** A plan week with its days: 'Sun, Oct 4 – Sat, Oct 10'. */
+export function formatWeekSpanWithDays(weekStartDate: string): string {
+  const last = addDaysToDate(weekStartDate, 6);
+  return `${weekdayMonthDayFormat.format(parseDateOnly(weekStartDate))} – ${weekdayMonthDayFormat.format(parseDateOnly(last))}`;
+}
+
 const dateTimeFormat = new Intl.DateTimeFormat('en-GB', {
   day: 'numeric',
   month: 'short',
