@@ -230,4 +230,6 @@ Design system notes:
   - *iOS (native)*: apps can't toggle Focus. A one-time in-app guide shows how to create a Shortcuts automation "When Sistem is opened → Set Focus: Fitness".
   - *All platforms*: Sistem's own push notifications are suppressed during an active session and delivered after it ends.
   - *Web (now)*: when starting a workout, a gentle dismissible tip suggests Focus / Do Not Disturb, with a "Don't show again" option. Copy is a placeholder.
+- **Delete a trainee's photos with her account** — account deletion must also delete all her photos from Cloudinary (Daily Pump and progress photos), for privacy compliance.
+- **"Summary added" notification (optional)** — tell the coach when a trainee adds or changes her workout summary / Daily Pump photo after finishing. Only if the coach wants it.
 - **Split the mobile bundle by role** — lazy-load the coach screens (and other role-only code) so a trainee never downloads coach mode, and the other way round. The mobile bundle was 507 kB after Phase 6b, over Vite's 500 kB warning line.

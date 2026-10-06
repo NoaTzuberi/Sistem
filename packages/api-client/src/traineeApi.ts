@@ -6,6 +6,7 @@ import type {
   WorkoutLog,
   WorkoutLogSetUpdate,
   WorkoutSession,
+  WorkoutSummaryPayload,
 } from '@sistem/types';
 
 // The trainee's own plans and workout logs (/api/plans, /api/workout-logs). The
@@ -42,10 +43,10 @@ export function createTraineeApi(client: AxiosInstance) {
   // --- The active workout session (Phase 8). A 409 on start carries an
   // ActiveWorkoutConflictBody when another workout is still open.
 
-  /** Starts this workout, or resumes it if it is already open. */
-  async function startWorkout(planId: string, workoutId: string): Promise<WorkoutSession> {
-    const { data } = await client.post<{ session: WorkoutSession }>('/workout-logs', { planId, workoutId });
-    return data.session;
+  /** Starts this workout, or resumes it if it is already open (`resumed`: 200, not 201). */
+  async function startWorkout(planId: string, workoutId: string): Promise<{ session: WorkoutSession; resumed: boolean }> {
+    const response = await client.post<{ session: WorkoutSession }>('/workout-logs', { planId, workoutId });
+    return { session: response.data.session, resumed: response.status === 200 };
   }
 
   async function getActiveSession(): Promise<WorkoutSession | null> {
@@ -74,6 +75,33 @@ export function createTraineeApi(client: AxiosInstance) {
     return data.log;
   }
 
+  // --- The summary (Phase 9): her own finished workouts, editable any time.
+
+  async function updateWorkoutSummary(logId: string, payload: WorkoutSummaryPayload): Promise<WorkoutLog> {
+    const { data } = await client.patch<{ log: WorkoutLog }>(`/workout-logs/${logId}/summary`, payload);
+    return data.log;
+  }
+
+  /** Sends the (already compressed) image as the raw body; replaces any earlier photo. */
+  async function uploadPumpPhoto(
+    logId: string,
+    photo: Blob,
+    onProgress?: (fraction: number) => void,
+  ): Promise<WorkoutLog> {
+    const { data } = await client.put<{ log: WorkoutLog }>(`/workout-logs/${logId}/pump-photo`, photo, {
+      headers: { 'Content-Type': photo.type || 'image/jpeg' },
+      onUploadProgress: (event) => {
+        if (onProgress && event.total) onProgress(event.loaded / event.total);
+      },
+    });
+    return data.log;
+  }
+
+  async function removePumpPhoto(logId: string): Promise<WorkoutLog> {
+    const { data } = await client.delete<{ log: WorkoutLog }>(`/workout-logs/${logId}/pump-photo`);
+    return data.log;
+  }
+
   return {
     getWeek,
     listPlans,
@@ -86,6 +114,9 @@ export function createTraineeApi(client: AxiosInstance) {
     updateWorkoutSets,
     finishWorkout,
     abandonWorkout,
+    updateWorkoutSummary,
+    uploadPumpPhoto,
+    removePumpPhoto,
   };
 }
 

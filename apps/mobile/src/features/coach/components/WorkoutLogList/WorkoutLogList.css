@@ -93,7 +93,26 @@
   overflow-wrap: anywhere;
 }
 
-/* Where the Daily Pump photo goes once signed URLs exist (Phase 9). */
+.workout-log-records {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* "Done" / success uses Cherry Rose, never green. */
+.workout-log-records li {
+  padding: var(--space-1) var(--space-2);
+  border-left: 3px solid var(--color-primary-deep);
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary-deep);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  overflow-wrap: anywhere;
+}
+
 .workout-log-photo-slot {
   margin: 0;
   padding: var(--space-2);

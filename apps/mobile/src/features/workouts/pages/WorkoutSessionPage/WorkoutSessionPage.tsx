@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AppShell } from '../../../../components/layout/AppShell/AppShell';
 import { Button } from '../../../../components/common/Button/Button';
 import { Modal } from '../../../../components/common/Modal/Modal';
 import { StateMessage } from '../../../../components/common/StateMessage/StateMessage';
 import { useWakeLock } from '../../../../hooks/useWakeLock';
-import { ROUTES, workoutLogPath } from '../../../../app/config/routes';
+import { ROUTES, workoutLogPath, workoutSummaryPath } from '../../../../app/config/routes';
 import { REST_LATE_BEEP_MS, REST_OVER_NOTICE_MS, SYNC_RETRY_MS, VIBRATE_SET_DONE_MS } from '../../data/sessionConfig';
 import { countDone, nextOpenSet, nextOpenSetAfter } from '../../data/sessionSets';
 import type { SessionModel } from '../../data/sessionSets';
@@ -22,6 +22,7 @@ import { useWorkoutSession } from '../../hooks/useWorkoutSession';
 import { RestBar } from '../../components/RestBar/RestBar';
 import { SessionBlock } from '../../components/SessionBlock/SessionBlock';
 import { SessionClock } from '../../components/SessionClock/SessionClock';
+import { FocusTip } from '../../components/FocusTip/FocusTip';
 import './WorkoutSessionPage.css';
 
 type Dialog = 'menu' | 'confirmDiscard' | 'confirmFinish' | 'nothingDone';
@@ -61,6 +62,10 @@ function describeSet(model: SessionModel, key: string): string {
 export function WorkoutSessionPage() {
   const { logId = '' } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  // Only a fresh start (useStartWorkout) shows the Focus tip; read once, so a reload or
+  // a later visit (resume) doesn't show it again.
+  const [showFocusTip] = useState(() => (location.state as { justStarted?: boolean } | null)?.justStarted === true);
   const {
     session,
     model,
@@ -117,6 +122,12 @@ export function WorkoutSessionPage() {
   const openId = openBlockId ?? currentBlockId ?? model?.blocks[0]?.id ?? null;
   const totalSets = model?.flow.length ?? 0;
   const doneSets = model ? countDone(model, values) : 0;
+
+  useEffect(() => {
+    if (showFocusTip) navigate(location.pathname, { replace: true, state: null });
+    // Once, on arrival: clears the history entry's flag.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Finished or discarded (here or on another device): leave the session screen.
   useEffect(() => {
@@ -241,8 +252,7 @@ export function WorkoutSessionPage() {
     const result = await finish();
     setIsFinishing(false);
     if (result.kind === 'finished') {
-      // The summary screen arrives in Phase 9; until then the log screen shows the result.
-      navigate(workoutLogPath(result.log.id), { replace: true });
+      navigate(workoutSummaryPath(result.log.id), { replace: true });
     } else if (result.kind === 'error') {
       setActionError(result.message);
     }
@@ -341,6 +351,7 @@ export function WorkoutSessionPage() {
 
         {statusLine && <p className="workout-session-status">{statusLine}</p>}
         {actionError && <p className="workout-session-error">{actionError}</p>}
+        {showFocusTip && <FocusTip />}
 
         {session.workout.notes && <p className="workout-session-notes">{session.workout.notes}</p>}
 

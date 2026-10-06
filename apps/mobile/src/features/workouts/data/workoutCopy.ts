@@ -34,8 +34,8 @@ export const WORKOUTS_COPY = {
   // Next week's workouts open when their week starts (the server refuses them before).
   notStartableYet: 'You can start this workout when its week begins.',
   viewLog: 'View what you logged',
-  noPumpPhoto: 'No Daily Pump photo.',
-  pumpPhotoUploaded: 'Daily Pump photo uploaded',
+  addSummary: 'Add summary',
+  editSummary: 'Edit summary',
   back: 'Back',
 } as const;
 
@@ -183,4 +183,54 @@ export const INTERVAL_COPY = {
   timerTotal: (total: string) => `Total ${total}`,
   timerStart: 'Start',
   back: 'Back',
+} as const;
+
+// The workout summary (Phase 9, PRD §5.3). PLACEHOLDER copy — the owner sends the final text.
+export const SUMMARY_COPY = {
+  title: 'Workout complete',
+  close: 'Close',
+  loading: 'Loading…',
+  loadError: "Couldn't load your workout.",
+  notFinished: 'This workout is not finished yet.',
+  statDuration: 'Duration',
+  statVolume: 'Total volume',
+  statSets: 'Sets done',
+  statPrs: 'PRs',
+  personalRecords: 'Personal records',
+  ratingQuestion: 'How was it?',
+  ratingOption: (value: number) => `${value} out of 5`,
+  notes: 'Notes',
+  notesPlaceholder: 'Anything to remember or tell your coach?',
+  save: 'Save & finish',
+  saveError: "Couldn't save your summary. Try again.",
+  rating: 'Rating',
+} as const;
+
+export const PUMP_PHOTO_COPY = {
+  title: 'Daily Pump',
+  privacy: 'Visible only to you and your coach',
+  takePhoto: 'Take photo',
+  chooseFromGallery: 'Gallery',
+  remove: 'Remove',
+  removeTitle: 'Remove this photo?',
+  removeConfirm: 'Remove photo',
+  cancel: 'Cancel',
+  preparing: 'Preparing photo…',
+  uploading: (percent: number) => `Uploading… ${percent}%`,
+  open: 'Open photo',
+  alt: 'Daily Pump photo',
+  noPhoto: 'No Daily Pump photo.',
+  readError: "Couldn't read this photo. Try another one.",
+  tooLarge: 'This photo is too large. Try another one.',
+  uploadError: "Couldn't upload the photo.",
+  offline: 'No connection — the photo needs a connection to upload.',
+  removeError: "Couldn't remove the photo.",
+  retry: 'Try again',
+} as const;
+
+// Shown once when a workout is freshly started (PRD §14 — the native version is Phase 5b).
+export const FOCUS_TIP_COPY = {
+  text: 'Tip: turn on Focus / Do Not Disturb so nothing interrupts your workout.',
+  gotIt: 'Got it',
+  dontShowAgain: "Don't show again",
 } as const;

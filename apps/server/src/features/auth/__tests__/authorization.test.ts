@@ -8,6 +8,7 @@ import { WorkoutLog } from '../../workoutLogs/workoutLog.model';
 import { BodyMetric } from '../../bodyMetrics/bodyMetric.model';
 import { Achievement } from '../../achievements/achievement.model';
 import { OnboardingResponse } from '../../onboarding/onboardingResponse.model';
+import { config } from '../../../config/env';
 
 // PRD §3: every route enforces roles server-side, and a trainee only ever reads her
 // own data. A coach only sees trainees assigned to her (multi-coach ready).
@@ -68,6 +69,8 @@ describe('authorization', () => {
   beforeAll(async () => {
     await connectTestDatabase();
     api = await startApiTestClient();
+    // Signing photo links is local (no network); fixed values keep the test off .env.
+    config.cloudinary = { cloudName: 'test-cloud', apiKey: 'test-key', apiSecret: 'test-secret' };
   });
 
   afterAll(async () => {
@@ -117,11 +120,21 @@ describe('authorization', () => {
       expect(res.status).toBe(404);
     });
 
-    it('her own workout log is readable and never exposes the photo storage id', async () => {
+    it('her own workout log is readable; the photo comes only as an expiring signed link', async () => {
+      const before = Date.now();
       const res = await api.request('GET', `/workout-logs/${world.logB.id}`, { token: world.traineeB.token });
       expect(res.status).toBe(200);
-      expect(res.body.log.pumpPhoto).toEqual({ uploadedAt: expect.any(String) });
-      expect(JSON.stringify(res.body)).not.toContain('pump-b');
+      const { pumpPhoto } = res.body.log;
+      expect(Object.keys(pumpPhoto).sort()).toEqual(['uploadedAt', 'url', 'urlExpiresAt']);
+      // An authenticated asset via the signed download API — never a public delivery URL.
+      const url = new URL(pumpPhoto.url);
+      expect(url.origin + url.pathname).toBe('https://api.cloudinary.com/v1_1/test-cloud/image/download');
+      expect(url.searchParams.get('type')).toBe('authenticated');
+      expect(url.searchParams.get('signature')).toBeTruthy();
+      const expiresAt = Number(url.searchParams.get('expires_at')) * 1000;
+      expect(expiresAt).toBe(new Date(pumpPhoto.urlExpiresAt).getTime());
+      expect(Math.abs(expiresAt - before - 3600_000)).toBeLessThan(5_000);
+      expect(JSON.stringify(res.body)).not.toContain('publicId');
     });
 
     it.each(['/plans', '/workout-logs', '/body-metrics', '/achievements'])('GET %s lists only her own items', async (path) => {

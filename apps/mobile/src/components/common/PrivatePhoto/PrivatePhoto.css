@@ -1,0 +1,19 @@
+.private-photo {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background-color: var(--color-surface);
+  cursor: zoom-in;
+}
+
+.private-photo:active {
+  opacity: var(--opacity-disabled);
+}
+
+.private-photo-image {
+  display: block;
+  width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+}

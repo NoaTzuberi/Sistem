@@ -1,0 +1,115 @@
+.workout-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  /* Room for the fixed Save footer. */
+  padding-bottom: 120px;
+}
+
+.workout-summary-header {
+  display: grid;
+  grid-template-columns: var(--touch-target-min) minmax(0, 1fr);
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.workout-summary-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.workout-summary-close:active {
+  background-color: var(--color-surface);
+}
+
+.workout-summary-heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  padding-top: var(--space-1);
+}
+
+.workout-summary-title {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--text-2xl);
+  line-height: var(--line-height-tight);
+}
+
+.workout-summary-meta {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.workout-summary-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.workout-summary-section-title {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-bold);
+}
+
+/* 16px+ so iOS doesn't zoom on focus. */
+.workout-summary-notes {
+  width: 100%;
+  min-height: calc(var(--touch-target-min) * 2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-none);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-family-body);
+  font-size: var(--text-base);
+  resize: vertical;
+}
+
+.workout-summary-notes:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.workout-summary-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-tab-bar);
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg);
+  border-top: 1px solid var(--color-border);
+}
+
+.workout-summary-error {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--color-error-soft);
+  color: var(--color-error);
+  font-size: var(--text-sm);
+}
+
+.workout-summary-footer-row {
+  display: flex;
+  padding:
+    var(--space-2)
+    calc(var(--space-3) + var(--safe-right))
+    calc(var(--space-2) + var(--safe-bottom))
+    calc(var(--space-3) + var(--safe-left));
+}
+
+.workout-summary-save {
+  flex: 1;
+}

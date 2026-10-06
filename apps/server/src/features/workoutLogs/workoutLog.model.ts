@@ -1,6 +1,6 @@
 import { Schema, model } from 'mongoose';
 import { SET_TYPE_IDS } from '../plans/plan.constants';
-import { WORKOUT_LOG_STATUS_IDS, DEFAULT_WORKOUT_LOG_STATUS, MIN_RATING, MAX_RATING } from './workoutLog.constants';
+import { WORKOUT_LOG_STATUS_IDS, DEFAULT_WORKOUT_LOG_STATUS, MIN_RATING, MAX_RATING, MAX_NOTES_LENGTH } from './workoutLog.constants';
 import type { PrivatePhoto, WorkoutLogDocument, WorkoutLogSetFields, WorkoutLogStatsFields } from './workoutLog.types';
 
 const logSetSchema = new Schema<WorkoutLogSetFields>(
@@ -50,10 +50,12 @@ const workoutLogSchema = new Schema<WorkoutLogDocument>(
     startedAt: { type: Date, required: true, default: () => new Date() },
     finishedAt: { type: Date, default: null },
     sets: { type: [logSetSchema], default: [] },
-    // Computed when the workout is finished (Phase 9).
+    // Computed when the workout is finished, PRs included (Phase 9).
     stats: { type: statsSchema, default: undefined },
+    // The summary (PRD §5.3) — she can change it any time after finishing.
     rating: { type: Number, min: MIN_RATING, max: MAX_RATING },
-    notes: { type: String, trim: true },
+    notes: { type: String, trim: true, maxlength: MAX_NOTES_LENGTH },
+    // Cloudinary authenticated asset; served only as a short-lived signed link.
     pumpPhoto: { type: privatePhotoSchema, default: undefined },
   },
   { timestamps: true },

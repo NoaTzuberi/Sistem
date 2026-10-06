@@ -5,6 +5,7 @@ export const DEFAULT_WORKOUT_LOG_STATUS = 'in_progress';
 
 export const MIN_RATING = 1;
 export const MAX_RATING = 5;
+export const MAX_NOTES_LENGTH = 1000;
 
 // How many recent completed logs are searched for "Last time" — enough for a
 // weekly plan, without reading her whole history on every session load.

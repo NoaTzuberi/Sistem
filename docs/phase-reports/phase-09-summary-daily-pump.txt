@@ -1,0 +1,299 @@
+SISTEM — PHASE 9 REPORT: WORKOUT SUMMARY & DAILY PUMP
+Date: 2026-10-06
+Scope: docs/BUILD_PLAN.md Phase 9 (PRD §5.3): stats + PRs, rating + notes, the Daily Pump
+photo as a private Cloudinary asset with signed links, the coach's view in the dashboard
+and the mobile coach mode, the achievements slot, and the Focus / Do Not Disturb tip.
+Phase 10 was NOT started.
+
+================================================================================
+1. SUMMARY
+================================================================================
+- Finish now opens a full-screen summary: duration, total volume, sets done and PRs (all
+  computed by the server), the PR lines, an empty achievements slot (Phase 11), a 1–5
+  "How was it?", notes and the Daily Pump photo. She can reopen it from the log page any
+  time ("Add summary" / "Edit summary").
+- PRs are detected on the server at Finish against ALL her earlier finished workouts and
+  stored in the kept ATLAS PersonalRecord collection, which is now the PR record.
+- Daily Pump: camera or gallery → compressed on the phone (≤1600 px JPEG, metadata incl.
+  GPS dropped) → uploaded through our server to Cloudinary as an `authenticated` asset →
+  shown only through 1-hour signed links, made per request for the trainee or her coach.
+- The coach sees rating, PR count, photo marker, notes, PR lines and the photo in the
+  dashboard Logs tab and the mobile coach mode Logs tab.
+- A dismissible Focus / Do Not Disturb tip shows when a workout is freshly started.
+
+================================================================================
+2. DECISIONS (owner answers) AND HOW THEY WERE BUILT
+================================================================================
+Owner answers:
+1. First time on an exercise = baseline, not a PR.
+2. PersonalRecord schema change approved: logId, weight, duration type.
+3. Expiring 1-hour private download links.
+4. Upload through our server with express.raw.
+5. 1–5 buttons as a placeholder; the summary can be edited any time from the log page.
+A. PRs count only WORKING sets — warm-ups and drop sets are ignored, in this workout and
+   in her history.
+B. "Visible only to you and your coach" under the Daily Pump section (placeholder copy).
+C. PRD §14 backlog: delete a trainee's photos from Cloudinary with her account; optional
+   "summary added" notification to the coach.
+
+PR rules (apps/server/src/features/personalRecords/personalRecordDetection.ts — pure):
+- weight   — heaviest weight on a rep set (≥1 rep) above every earlier working rep set
+             of that exercise. A weighted hold is not a lift.
+- reps     — more reps than ever at a weight she has lifted before (no weight = 0 kg =
+             bodyweight). A weight she has never done is a baseline. The heaviest such
+             weight wins.
+- duration — a longer hold (timed set, no reps) at the same weight (or none). Interval
+             sets of THIS workout never count (they run on the coach's clock). Her earlier
+             interval sets do count as history (finding them would need every old plan).
+- One PR per exercise, priority weight → reps → duration, in workout order.
+- Only sets marked done count. Discarded workouts and other trainees never count.
+- Written once, after the conditional "in progress → completed" update, so a retried
+  finish can't record twice (also a unique index on logId + exerciseId).
+- stats.prCount = the number of PRs (was always 0).
+
+The existing personalRecords feature (kept from ATLAS) — decision: KEEP, as the PR record.
+- Since Phase 8 nothing wrote it, but /api/personal-records, the Profile stats
+  (/api/dashboard recentPersonalRecords) and AchievementBadges still read it, and Phase
+  11's "new personal record" achievement needs stored PR events. Phase 9's finish is now
+  its only writer.
+- Schema: + logId (required, ref WorkoutLog), + weight (optional), type + 'duration'.
+  Fresh database, so no migration. /api/personal-records items now also carry logId and
+  weight. The mobile Profile type got 'duration'.
+
+Photo flow:
+- Phone (apps/mobile/src/features/workouts/data/photoCompression.ts): "Take photo"
+  (file input with `capture`) or "Gallery" (without). Input ≤15 MB. Decoded with an
+  <img> (browsers apply the EXIF rotation), drawn on a canvas at ≤1600 px on the long
+  side, saved as JPEG 0.82 — redrawing drops all metadata, GPS included. No dependency.
+  Uploaded at once, separately from rating/notes; progress %, Retry, Remove (confirm).
+- Server: PUT /api/workout-logs/:id/pump-photo, raw body image/jpeg|png|webp (≤3 MB,
+  privatePhotos/privatePhoto.middleware.ts answers 413/415 as JSON). Checks: her own log,
+  status completed (409 otherwise), the file's first bytes are JPEG/PNG/WebP (400).
+  Uploaded as type `authenticated`, public id sistem/pump-photos/<traineeId>/<logId>-<random>,
+  stored as JPG, limited to 2000 px (Cloudinary re-encodes, a second metadata strip).
+  Only the public id is stored. Replacing deletes the old asset (the log update returns
+  the replaced photo, so concurrent uploads delete the right one); DELETE …/pump-photo
+  removes it. A failed delete on Cloudinary is logged, not shown to her.
+- Viewing: every read endpoint (her log, her list, the finish response, the coach's
+  list) returns pumpPhoto { uploadedAt, url, urlExpiresAt }. url =
+  cloudinary.utils.private_download_url(…, type 'authenticated', expires_at now + 1 h),
+  signed locally after the access check. The link carries the asset path and the
+  (non-secret) API key, never the secret. Cloudinary's CDN signed URLs would never
+  expire; expiring CDN tokens are a paid add-on — switching later changes only
+  photoUrl() in privatePhotos/privatePhoto.service.ts. Trade-off: no CDN caching, no
+  resizing (a ~300 KB photo is loaded whole; the lists load it lazily).
+- Expired link on an open screen: the image fails once → the screen refetches the log
+  (new link). Each link is retried once.
+- Who can see it: the trainee (her own logs only — another trainee gets 404) and her
+  coach (loadCoachTrainee — another coach gets 404, a trainee on coach routes 403).
+
+Summary API: PATCH /api/workout-logs/:id/summary { rating?: 1–5 | null, notes?: string
+| null } — completed logs only (409), notes trimmed, ≤1000 chars, empty = cleared.
+
+Things I decided inside your answers (say if you want any changed):
+- Summary screen ✕ = leave without saving; "Save & finish" saves rating + notes (only if
+  changed). After Finish both go Home; opened from the log page they go back to it.
+- Tapping the chosen rating again clears it.
+- The log page button says "Add summary" until rating, notes AND photo are all set, then
+  "Edit summary".
+- The coach log lists (both apps) now read exercise names from the log itself (the
+  server attaches them) instead of loading her plans.
+- Focus tip: only on a fresh start (POST /workout-logs answered 201 → `justStarted` in
+  the navigation state, cleared from history at once so a reload doesn't show it again).
+  "Got it" hides it for this workout; "Don't show again" is remembered on this phone
+  (localStorage). The api-client's startWorkout now returns { session, resumed }.
+- The photo field shows the photo she just picked from the phone itself (no download
+  right after the upload).
+- Shared helpers in @sistem/shared: describePersonalRecord, prCountLabel, logExerciseNames.
+- Common mobile components PrivatePhoto (lazy image, expired-link refetch, tap → viewer)
+  and PhotoViewer (full screen) — Phase 10's progress photos can reuse them, and the
+  server's privatePhotos feature too.
+
+================================================================================
+3. CLOUDINARY CHECK (your account) AND CLEAN-UP
+================================================================================
+Script run once (removed afterwards), with the real service code:
+  - upload as authenticated → stored jpg 640×480, asset_folder sistem/pump-photos/…
+  - the 1-hour signed link                     → 200 image/jpeg
+  - the public delivery URL (/image/upload/…)   → 404
+  - the authenticated URL without a signature   → 401
+  - a link that expired (made 2 h ago)          → 401
+  - a link with its expiry changed by hand      → 401
+  - after delete, the signed link               → 404
+  - left in the test folder: 0; empty folders sistem/pump-photos/phase9-check and
+    sistem/pump-photos deleted.
+Browser check (§5) uploaded one more test photo through the app: stored 1600×1067,
+28 KB (from a 3000×2000 original), shown to the trainee and the coach. Then I removed it
+through DELETE …/pump-photo (old link → 404), cleared the rating/notes I had added, and
+deleted the empty folders. Assets left under sistem/pump-photos: 0. The dev log
+"Lower Body" of trainee2 is back to how it was.
+
+================================================================================
+4. FILES CHANGED
+================================================================================
+Added — server
+  apps/server/src/features/privatePhotos/privatePhoto.{constants,service,validation,middleware}.ts
+  apps/server/src/features/personalRecords/personalRecordDetection.ts
+  apps/server/src/features/personalRecords/__tests__/personalRecordDetection.test.ts
+  apps/server/src/features/workoutLogs/workoutSummary.service.ts
+  apps/server/src/features/workoutLogs/__tests__/workoutSummary.test.ts
+Modified — server
+  apps/server/src/features/personalRecords/personalRecord.{constants,model,service,types}.ts
+  apps/server/src/features/workoutLogs/workoutLog.{constants,controller,model,routes,service,validation}.ts
+  apps/server/src/features/workoutLogs/workoutSession.service.ts   PRs at finish
+  apps/server/src/features/auth/__tests__/authorization.test.ts    photo = signed link
+  apps/server/src/testing/apiTestClient.ts                          raw request bodies
+  apps/server/.env.example                                          Cloudinary comment
+
+Modified — packages
+  packages/types/src/index.ts                 PrivatePhoto, PersonalRecordType,
+                                              LogPersonalRecord, WorkoutSummaryPayload,
+                                              WorkoutLog.personalRecords / pumpPhoto
+  packages/api-client/src/traineeApi.ts       summary / photo upload + remove; startWorkout
+                                              returns { session, resumed }
+  packages/shared/src/workoutLogDisplay.ts    describePersonalRecord, prCountLabel,
+                                              logExerciseNames
+
+Added — mobile (apps/mobile/src)
+  components/common/PhotoViewer/, components/common/PrivatePhoto/
+  features/workouts/pages/WorkoutSummaryPage/
+  features/workouts/components/SummaryStats/, PersonalRecordList/, RatingPicker/,
+    PumpPhotoField/, AchievementsUnlockedSlot/ (renders nothing until Phase 11), FocusTip/
+  features/workouts/data/photoCompression.ts
+Modified — mobile
+  app/config/routes.ts, app/router/AppRouter.tsx              /workouts/logs/:id/summary
+  features/workouts/pages/WorkoutSessionPage/WorkoutSessionPage.tsx   Finish → summary, tip
+  features/workouts/pages/WorkoutLogPage/ (.tsx + .css)       PRs, photo, Add/Edit summary
+  features/workouts/hooks/useStartWorkout.ts                  justStarted
+  features/workouts/data/workoutCopy.ts                       SUMMARY_COPY, PUMP_PHOTO_COPY,
+                                                              FOCUS_TIP_COPY (placeholder)
+  features/coach/components/WorkoutLogList/ (.tsx + .css)     PRs, photo, badges
+  features/dashboard/types.ts                                 'duration' PR type
+  services/workoutLogs/workoutLogsService.ts
+
+Modified — dashboard
+  apps/dashboard/src/features/trainees/components/WorkoutLogList/ (.tsx + .css)
+
+Modified / added — docs
+  docs/PRD.md (§14: photo deletion with the account, optional "summary added" notification)
+  docs/phase-reports/phase-09-summary-daily-pump.txt
+  CLAUDE.md (gitignored — not in any commit)
+
+================================================================================
+5. DEPENDENCIES
+================================================================================
+Added: none (cloudinary was already a server dependency since Phase 2c; compression uses
+the browser canvas; the upload uses express.raw).   Removed: none.
+
+================================================================================
+6. HOW TO TEST
+================================================================================
+Commands (repo root):
+  npm test        -> 21 files, 253 tests pass (was 19 / 230). New: PR rules (baseline,
+                     weight / reps / duration, working sets only, done only, interval
+                     holds, one per exercise, order); PRs at finish (stored once, shown on
+                     the log, the list and /personal-records; never vs. another trainee
+                     or a discarded workout); summary save / change / clear and bad input,
+                     open workout 409, other trainee 404; photo upload into her folder,
+                     no storage id in the API, replace deletes the old one, remove, not an
+                     image 400, wrong type 415, too large 413, open workout 409, other
+                     trainee 404; her coach sees summary + PRs + photo link, another coach
+                     404, a trainee 403; the signed link is an expiring authenticated
+                     download link (expires_at = now + 1 h). Cloudinary is faked in tests.
+  npm run build   -> passes. Mobile bundle 520 kB (was 506) — over Vite's 500 kB warning
+                     (see §7).
+  npm run lint    -> 0 errors; the same 3 older warnings (AuthContext ×2, AchievementBadges).
+  npm run dev     -> the API (5002, restarted by nodemon on the new code) answers
+                     /api/health; the mobile app and dashboard served the screens below.
+
+Manual (mobile, trainee2@sistem.dev / sistem-dev-1234):
+  1. Workouts -> a completed log -> stat tiles, "No Daily Pump photo.", "Add summary".
+  2. Add summary -> tap 4, type a note -> Gallery -> pick a photo -> "Preparing…" /
+     "Uploading… N%" -> the photo shows; "Visible only to you and your coach" under it.
+  3. Save & finish -> back on the log page: "Rating: 4 / 5", the note, the photo (tap ->
+     full screen, ✕ closes), "Edit summary".
+  4. Finish a workout (needs a startable workout this week) -> the summary opens; Save &
+     finish -> Home. Beat an earlier weight on an exercise -> "Personal records" lines and
+     the PRs tile.
+  5. Start a workout -> the Focus tip at the top; "Don't show again" -> never again on this
+     phone; Resume -> no tip.
+  6. Coach (coach@sistem.dev): mobile Trainees -> trainee2 -> Logs -> badges "Rating 4",
+     "N PRs", camera; open -> PR lines, note, photo (tap -> full screen). Dashboard ->
+     trainee2 -> Logs -> same; the photo opens full size in a new tab.
+  7. Privacy: copy a photo link, wait an hour (or change expires_at in it) -> 401.
+
+================================================================================
+7. KNOWN ISSUES / TODOs
+================================================================================
+- What I checked in the browser (375×667, in a 375-wide frame because the Chrome window
+  wouldn't shrink — same as Phase 8): trainee2's log page, the summary screen (rating,
+  notes, a real upload of a generated 3000×2000 JPEG through the app's compression and
+  upload code, Save & finish back to the log page), the log page with the photo and the
+  full-screen viewer, coach mode Logs tab (badges, note, photo), dashboard Logs tab
+  (row badges, note, 280 px photo). No sideways scroll; photo buttons 44 px tall.
+  Found and fixed while checking: three photo buttons in one row wrapped "Take photo" to
+  two lines and squashed the icons at 375 px — now two per row, Remove on its own row.
+- NOT seen in the browser: PR lines and a non-zero PRs tile (the dev data's logs were all
+  finished before Phase 9, and no workout can be started for the dev trainees this week),
+  the Finish → summary redirect, the Focus tip, the expired-link refetch, and the real
+  camera / gallery pickers (the browser tool can't drive file inputs; I gave the gallery
+  input a file through the page). These are covered by server tests, type checks and
+  steps 4–7 above.
+- Dev servers: your `npm run dev:phone` was running on 5173 (self-signed HTTPS); I left it
+  alone and used a second plain mobile server on 5175 and the dashboard on 5174 for the
+  check, both stopped afterwards.
+- The test window reports itself as hidden, so the GSAP page-enter fade never finishes
+  there (screens looked washed out) — not a bug in the pages.
+- Photo links go through Cloudinary's download API (no CDN): fine at ~300 KB, but a coach
+  scrolling many logs downloads full photos. If the coach mode feels slow, the paid
+  token-based CDN auth would allow cached, resized thumbnails (only photoUrl() changes).
+- The photo link contains the asset path (sistem/pump-photos/<traineeId>/…) and the
+  Cloudinary API key (not secret). Without the signature and before the expiry it opens
+  nothing.
+- If Cloudinary fails to delete a replaced / removed photo, the asset is orphaned (logged
+  on the server). Backlog item C (delete all photos with the account) should also sweep
+  sistem/pump-photos/<traineeId>/ by prefix.
+- iPhone HEIC: iOS Safari hands the page a JPEG; a desktop browser that can't decode HEIC
+  shows "Couldn't read this photo".
+- Upload needs a connection (no offline queue for photos); the summary save works on its
+  own.
+- workout_completed is still sent at Finish, before the summary exists (backlog item C:
+  optional "summary added" notification).
+- Mobile bundle 520 kB: backlog "split the mobile bundle by role" (PRD §14); the summary
+  and session screens are good lazy-load candidates.
+- All new wording is placeholder (workoutCopy.ts SUMMARY_COPY / PUMP_PHOTO_COPY /
+  FOCUS_TIP_COPY, describePersonalRecord in @sistem/shared, coach list labels).
+- No client tests in the repo; photoCompression and the PR display helper are ready for
+  them when a client test setup is approved.
+
+================================================================================
+8. SUGGESTED COMMITS (ready to paste — in order)
+================================================================================
+Note: packages/types and packages/api-client hold both the PR and the photo contract, so
+they go whole into commit 1. Commit 2 adds the client screens on top (the mobile app
+builds again after commit 2 — startWorkout's return value changed in commit 1).
+
+# 1) server + contract: PRs at finish, summary API, private Daily Pump photos
+git add -A -- \
+  apps/server/src/features/personalRecords \
+  apps/server/src/features/privatePhotos \
+  apps/server/src/features/workoutLogs \
+  apps/server/src/features/auth/__tests__/authorization.test.ts \
+  apps/server/src/testing/apiTestClient.ts \
+  apps/server/.env.example \
+  packages/types \
+  packages/api-client
+git commit -m "feat: workout PRs at finish (working sets, baseline first time), summary API, Daily Pump photo as private Cloudinary asset with 1-hour signed links"
+
+# 2) clients: summary screen, photo upload, coach views, focus tip
+git add -A -- \
+  packages/shared/src/workoutLogDisplay.ts \
+  apps/mobile \
+  apps/dashboard/src/features/trainees/components/WorkoutLogList
+git commit -m "feat: workout summary screen with rating, notes and Daily Pump upload; PRs and photos for the coach in the app and dashboard; focus tip at workout start"
+
+# 3) docs
+git add -A -- \
+  docs/PRD.md \
+  docs/phase-reports/phase-09-summary-daily-pump.txt
+git commit -m "docs: phase 9 report, backlog: delete photos with the account, optional summary notification"

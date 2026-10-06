@@ -431,12 +431,46 @@ export interface WorkoutLog {
   finishedAt: string | null;
   sets: WorkoutLogSet[];
   stats: WorkoutLogStats | null;
+  /** 1–5, "How was it?" (PRD §5.3). */
   rating?: number;
   notes?: string;
-  /** Photos are private: the file is served only through signed URLs (Phase 9). */
-  pumpPhoto: { uploadedAt: string } | null;
-  /** Facts of the exercises in `sets` — filled in by the trainee endpoints. */
+  pumpPhoto: PrivatePhoto | null;
+  /** Facts of the exercises in `sets` — filled in by the read endpoints (trainee + coach). */
   exercises?: ExerciseFacts[];
+  /** PRs hit in this workout, in workout order — filled in by the read endpoints. */
+  personalRecords?: LogPersonalRecord[];
+}
+
+/**
+ * A private photo (Daily Pump, later progress photos). The file is never public: `url`
+ * is a short-lived signed link made for the signed-in viewer (the trainee or her
+ * coach) on each request. When it expires, fetch the log again for a fresh one.
+ */
+export interface PrivatePhoto {
+  uploadedAt: string;
+  url: string;
+  urlExpiresAt: string;
+}
+
+/**
+ * weight = heaviest ever (kg) · reps = most reps at a weight done before · duration =
+ * longest hold (seconds) at a weight. Working sets only; the first time is a baseline.
+ */
+export type PersonalRecordType = 'weight' | 'reps' | 'duration';
+
+export interface LogPersonalRecord {
+  exerciseId: string;
+  type: PersonalRecordType;
+  newValue: number;
+  previousValue: number;
+  /** kg — the weight a reps / duration record was done at; absent = bodyweight / none. */
+  weight?: number;
+}
+
+/** Body of PATCH /workout-logs/:id/summary. null clears a value; a missing key leaves it. */
+export interface WorkoutSummaryPayload {
+  rating?: number | null;
+  notes?: string | null;
 }
 
 // ---------------------------------------------------------------------------

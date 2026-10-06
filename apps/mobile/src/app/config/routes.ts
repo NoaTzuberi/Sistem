@@ -41,6 +41,12 @@ export function coachTraineePath(traineeId: string): string {
 export const WORKOUT_DETAIL_PATH = '/workouts/plan/:planId/:workoutId';
 export const WORKOUT_LOG_PATH = '/workouts/logs/:logId';
 export const WORKOUT_SESSION_PATH = '/workouts/session/:logId';
+// The summary after Finish (PRD §5.3, full screen) — also reopened from the log page.
+export const WORKOUT_SUMMARY_PATH = '/workouts/logs/:logId/summary';
+
+export function workoutSummaryPath(logId: string): string {
+  return `/workouts/logs/${logId}/summary`;
+}
 
 export function workoutSessionPath(logId: string): string {
   return `/workouts/session/${logId}`;

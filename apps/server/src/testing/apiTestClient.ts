@@ -13,6 +13,8 @@ import type { UserDocument } from '../features/users/user.model';
 interface RequestOptions {
   token?: string;
   body?: unknown;
+  /** A raw body (e.g. a photo upload) instead of JSON. */
+  raw?: { data: Buffer; contentType: string };
 }
 
 export interface ApiResponse<T = any> {
@@ -32,14 +34,15 @@ export async function startApiTestClient(): Promise<ApiTestClient> {
   const { port } = server.address() as AddressInfo;
 
   return {
-    async request(method, path, { token, body } = {}) {
+    async request(method, path, { token, body, raw } = {}) {
       const headers: Record<string, string> = {};
       if (token) headers.Authorization = `Bearer ${token}`;
       if (body !== undefined) headers['Content-Type'] = 'application/json';
+      if (raw) headers['Content-Type'] = raw.contentType;
       const response = await fetch(`http://127.0.0.1:${port}/api${path}`, {
         method,
         headers,
-        body: body === undefined ? undefined : JSON.stringify(body),
+        body: raw ? new Uint8Array(raw.data) : body === undefined ? undefined : JSON.stringify(body),
       });
       // Express's own 404 page is HTML, not JSON.
       const isJson = response.headers.get('content-type')?.includes('application/json');

@@ -1,19 +1,33 @@
 import { useCallback } from 'react';
-import { useParams } from 'react-router-dom';
-import { describeLogSet, formatDateTime, formatDuration, groupLogSetsByExercise, useLoad } from '@sistem/shared';
+import { useNavigate, useParams } from 'react-router-dom';
+import { describeLogSet, formatDateTime, groupLogSetsByExercise, logExerciseNames, useLoad } from '@sistem/shared';
 import { AppShell } from '../../../../components/layout/AppShell/AppShell';
+import { Button } from '../../../../components/common/Button/Button';
+import { PrivatePhoto } from '../../../../components/common/PrivatePhoto/PrivatePhoto';
 import { StateMessage } from '../../../../components/common/StateMessage/StateMessage';
+import { workoutSummaryPath } from '../../../../app/config/routes';
 import { getWorkoutLog } from '../../../../services/workoutLogs/workoutLogsService';
 import { BackButton } from '../../components/BackButton/BackButton';
-import { WORKOUTS_COPY } from '../../data/workoutCopy';
+import { PersonalRecordList } from '../../components/PersonalRecordList/PersonalRecordList';
+import { SummaryStats } from '../../components/SummaryStats/SummaryStats';
+import { PUMP_PHOTO_COPY, SUMMARY_COPY, WORKOUTS_COPY } from '../../data/workoutCopy';
+import type { SummaryLocationState } from '../WorkoutSummaryPage/WorkoutSummaryPage';
 import './WorkoutLogPage.css';
 
-// One workout log, read-only (PRD §5.4): what was performed and the summary.
+// One workout log, read-only (PRD §5.4): what was performed, the summary and the Daily
+// Pump photo. The summary itself is changed on the summary screen.
 export function WorkoutLogPage() {
   const { logId = '' } = useParams();
+  const navigate = useNavigate();
   const load = useCallback(() => getWorkoutLog(logId), [logId]);
   const { data: log, error, isLoading, reload } = useLoad(load, WORKOUTS_COPY.logLoadError);
-  const exerciseNames = new Map(log?.exercises?.map((exercise) => [exercise.id, exercise.name]));
+  const exerciseNames = log ? logExerciseNames(log) : new Map<string, string>();
+  const hasFullSummary = log?.rating !== undefined && log?.notes !== undefined && log?.pumpPhoto !== null;
+
+  function openSummary() {
+    const state: SummaryLocationState = { fromLog: true };
+    navigate(workoutSummaryPath(logId), { state });
+  }
 
   return (
     <AppShell>
@@ -33,45 +47,33 @@ export function WorkoutLogPage() {
 
         {log && (
           <>
-            {(log.stats || log.rating !== undefined) && (
-              <dl className="workout-log-page-stats">
-                {log.stats && (
-                  <>
-                    <div>
-                      <dt>Duration</dt>
-                      <dd>{formatDuration(log.stats.durationSec)}</dd>
-                    </div>
-                    <div>
-                      <dt>Total volume</dt>
-                      <dd>{log.stats.totalVolume} kg</dd>
-                    </div>
-                    <div>
-                      <dt>Sets completed</dt>
-                      <dd>{log.stats.setsCompleted}</dd>
-                    </div>
-                    <div>
-                      <dt>Personal records</dt>
-                      <dd>{log.stats.prCount}</dd>
-                    </div>
-                  </>
-                )}
-                {log.rating !== undefined && (
-                  <div>
-                    <dt>Rating</dt>
-                    <dd>{log.rating} / 5</dd>
-                  </div>
-                )}
-              </dl>
-            )}
+            {log.stats && <SummaryStats stats={log.stats} />}
+            <PersonalRecordList log={log} title={SUMMARY_COPY.personalRecords} />
 
+            {log.rating !== undefined && (
+              <p className="workout-log-page-rating">
+                {SUMMARY_COPY.rating}: {log.rating} / 5
+              </p>
+            )}
             {log.notes && <p className="workout-log-page-notes">{log.notes}</p>}
 
-            {/* Daily Pump: the photo itself needs signed URLs (Phase 9). */}
-            <p className="workout-log-page-photo-slot">
-              {log.pumpPhoto
-                ? `${WORKOUTS_COPY.pumpPhotoUploaded} ${formatDateTime(log.pumpPhoto.uploadedAt)}`
-                : WORKOUTS_COPY.noPumpPhoto}
-            </p>
+            {log.pumpPhoto ? (
+              <PrivatePhoto
+                photo={log.pumpPhoto}
+                alt={PUMP_PHOTO_COPY.alt}
+                openLabel={PUMP_PHOTO_COPY.open}
+                closeLabel={SUMMARY_COPY.close}
+                onLinkExpired={reload}
+              />
+            ) : (
+              <p className="workout-log-page-photo-slot">{PUMP_PHOTO_COPY.noPhoto}</p>
+            )}
+
+            {log.status === 'completed' && (
+              <Button variant="secondary" onClick={openSummary}>
+                {hasFullSummary ? WORKOUTS_COPY.editSummary : WORKOUTS_COPY.addSummary}
+              </Button>
+            )}
 
             <ul className="workout-log-page-exercises">
               {groupLogSetsByExercise(log.sets).map((group, index) => (

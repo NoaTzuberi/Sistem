@@ -1,18 +1,23 @@
 import { Router } from 'express';
 import { requireAuth } from '../../middleware/auth.middleware';
+import { readPhotoBody } from '../privatePhotos/privatePhoto.middleware';
 import {
+  deleteMyPumpPhoto,
   getMyActiveSession,
   getMySession,
   getMyWorkoutLog,
   getMyWorkoutLogs,
   patchMySets,
+  patchMySummary,
   postAbandonWorkout,
   postFinishWorkout,
   postStartWorkout,
+  putMyPumpPhoto,
 } from './workoutLog.controller';
 
-// The trainee's own workout logs and the active session (Phase 8, PRD §5.2). Every
-// call is scoped to the caller: another trainee's log is simply not found.
+// The trainee's own workout logs, the active session (Phase 8, PRD §5.2) and the
+// summary + Daily Pump photo (Phase 9, PRD §5.3). Every call is scoped to the caller:
+// another trainee's log is simply not found.
 export const workoutLogsRouter = Router();
 
 workoutLogsRouter.use(requireAuth);
@@ -26,3 +31,6 @@ workoutLogsRouter.get('/:id/session', getMySession);
 workoutLogsRouter.patch('/:id/sets', patchMySets);
 workoutLogsRouter.post('/:id/finish', postFinishWorkout);
 workoutLogsRouter.post('/:id/abandon', postAbandonWorkout);
+workoutLogsRouter.patch('/:id/summary', patchMySummary);
+workoutLogsRouter.put('/:id/pump-photo', readPhotoBody, putMyPumpPhoto);
+workoutLogsRouter.delete('/:id/pump-photo', deleteMyPumpPhoto);

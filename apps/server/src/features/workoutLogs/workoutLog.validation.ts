@@ -1,6 +1,14 @@
 import mongoose from 'mongoose';
-import type { StartWorkoutPayload, WorkoutLogSetUpdate } from '@sistem/types';
-import { MAX_LOGGED_DURATION_SEC, MAX_LOGGED_REPS, MAX_LOGGED_WEIGHT, MAX_SET_UPDATES } from './workoutLog.constants';
+import type { StartWorkoutPayload, WorkoutLogSetUpdate, WorkoutSummaryPayload } from '@sistem/types';
+import {
+  MAX_LOGGED_DURATION_SEC,
+  MAX_LOGGED_REPS,
+  MAX_LOGGED_WEIGHT,
+  MAX_NOTES_LENGTH,
+  MAX_RATING,
+  MAX_SET_UPDATES,
+  MIN_RATING,
+} from './workoutLog.constants';
 
 export function validateWorkoutLogIdParam(id: unknown): string | null {
   if (typeof id !== 'string' || !mongoose.isValidObjectId(id)) {
@@ -66,4 +74,27 @@ export function parseSetUpdates(body: unknown, { optional = false } = {}): Resul
     updates.push(parsed.value);
   }
   return { value: updates };
+}
+
+/** `{ rating?, notes? }`: null clears; empty notes clear too. */
+export function parseSummaryPayload(body: unknown): Result<WorkoutSummaryPayload> {
+  if (!isObject(body)) return { error: 'The summary must be an object.' };
+  const value: WorkoutSummaryPayload = {};
+
+  if (body.rating === null) value.rating = null;
+  else if (body.rating !== undefined) {
+    if (typeof body.rating !== 'number' || !Number.isInteger(body.rating) || body.rating < MIN_RATING || body.rating > MAX_RATING) {
+      return { error: `rating must be a whole number from ${MIN_RATING} to ${MAX_RATING}.` };
+    }
+    value.rating = body.rating;
+  }
+
+  if (body.notes === null) value.notes = null;
+  else if (body.notes !== undefined) {
+    if (typeof body.notes !== 'string') return { error: 'notes must be text.' };
+    const notes = body.notes.trim();
+    if (notes.length > MAX_NOTES_LENGTH) return { error: `notes can be at most ${MAX_NOTES_LENGTH} characters.` };
+    value.notes = notes === '' ? null : notes;
+  }
+  return { value };
 }

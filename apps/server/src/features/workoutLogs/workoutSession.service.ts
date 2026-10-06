@@ -13,8 +13,9 @@ import { PlanNotFoundError, attachExerciseFacts, toPublicPlan } from '../plans/p
 import type { LeanPlan } from '../plans/plan.service';
 import { weekStartOf } from '../plans/planWeek';
 import { todayFor } from '../plans/traineePlan.service';
+import { detectPersonalRecordsForLog, savePersonalRecords } from '../personalRecords/personalRecord.service';
 import { WorkoutLog } from './workoutLog.model';
-import { WorkoutLogNotFoundError, attachLogExerciseFacts, toPublicWorkoutLog } from './workoutLog.service';
+import { WorkoutLogNotFoundError, attachLogDetails, attachLogExerciseFacts, toPublicWorkoutLog } from './workoutLog.service';
 import type { WorkoutLogDocument, WorkoutLogSetFields } from './workoutLog.types';
 import { LAST_PERFORMANCE_LOG_SCAN } from './workoutLog.constants';
 
@@ -261,10 +262,17 @@ export async function updateWorkoutSets(
   return toPublicWorkoutLog(await findOwnLog(logId, traineeId));
 }
 
+/** The plan exercises of this log's workout that run as intervals (on the coach's clock). */
+async function intervalPlanExerciseIds(log: LeanWorkoutLog): Promise<Set<string>> {
+  const plan = await Plan.findOne({ _id: log.planId, traineeId: log.traineeId }).select('workouts').lean<LeanPlan>();
+  const workout = plan?.workouts.find((candidate) => String(candidate._id) === String(log.workoutId));
+  return new Set(workout?.exercises.filter((exercise) => exercise.interval).map((exercise) => String(exercise._id)) ?? []);
+}
+
 /**
  * Finishes the session: takes the last unsent set changes, then closes the log with
- * server-side stats. Sets she didn't do stay in the log as not done — the coach sees
- * what was skipped. PRs are computed in Phase 9 (prCount stays 0 until then).
+ * server-side stats and PRs (compared with all her earlier workouts). Sets she didn't
+ * do stay in the log as not done — the coach sees what was skipped.
  */
 export async function finishWorkout(
   logId: string,
@@ -279,11 +287,21 @@ export async function finishWorkout(
   if (done.length === 0) {
     throw new NothingCompletedError('Mark at least one set done, or discard the workout.');
   }
+  const records = await detectPersonalRecordsForLog(
+    log.traineeId,
+    log._id,
+    log.sets.map((set) => ({
+      ...set,
+      exerciseId: String(set.exerciseId),
+      planExerciseId: set.planExerciseId ? String(set.planExerciseId) : undefined,
+    })),
+    await intervalPlanExerciseIds(log),
+  );
   const stats = {
     durationSec: Math.max(0, Math.round((now.getTime() - log.startedAt.getTime()) / 1000)),
     totalVolume: done.reduce((sum, set) => sum + (set.weight ?? 0) * (set.reps ?? 0), 0),
     setsCompleted: done.length,
-    prCount: 0,
+    prCount: records.length,
   };
 
   const result = await WorkoutLog.updateOne(
@@ -293,11 +311,13 @@ export async function finishWorkout(
   if (result.matchedCount === 0) {
     throw new WorkoutLogNotActiveError('This workout is no longer in progress.');
   }
+  // After the conditional update: only the one finish that closed the log records PRs.
+  await savePersonalRecords(log.traineeId, log._id, records, now);
 
   emitAppEvent('workout.completed', { logId, traineeId, workoutTitle: log.workoutTitle, finishedAt: now });
 
   const finished = toPublicWorkoutLog(await findOwnLog(logId, traineeId));
-  await attachLogExerciseFacts([finished]);
+  await attachLogDetails([finished]);
   return finished;
 }
 

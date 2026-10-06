@@ -35,8 +35,9 @@ export function useStartWorkout() {
     setIsStarting(true);
     setError(null);
     try {
-      const session = await startWorkout(planId, workoutId);
-      navigate(workoutSessionPath(session.log.id));
+      const { session, resumed } = await startWorkout(planId, workoutId);
+      // A fresh start shows the Focus / Do Not Disturb tip once; a resume doesn't.
+      navigate(workoutSessionPath(session.log.id), { state: { justStarted: !resumed } });
     } catch (caught) {
       const active = conflictOf(caught);
       if (active) setConflict({ active, planId, workoutId });

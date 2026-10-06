@@ -2,7 +2,8 @@ import { Response } from 'express';
 import type { ActiveWorkoutConflictBody } from '@sistem/types';
 import { AuthenticatedRequest } from '../../middleware/auth.middleware';
 import { PlanNotFoundError } from '../plans/plan.service';
-import { parseSetUpdates, parseStartWorkoutPayload, validateWorkoutLogIdParam } from './workoutLog.validation';
+import { PhotoStorageUnavailableError } from '../privatePhotos/privatePhoto.service';
+import { parseSetUpdates, parseStartWorkoutPayload, parseSummaryPayload, validateWorkoutLogIdParam } from './workoutLog.validation';
 import { listWorkoutLogsForTrainee, getWorkoutLogForTrainee, WorkoutLogNotFoundError } from './workoutLog.service';
 import {
   abandonWorkout,
@@ -17,8 +18,15 @@ import {
   WorkoutLogNotActiveError,
   WorkoutNotStartableError,
 } from './workoutSession.service';
+import {
+  InvalidPhotoError,
+  WorkoutLogNotCompletedError,
+  removePumpPhoto,
+  setPumpPhoto,
+  updateWorkoutSummary,
+} from './workoutSummary.service';
 
-/** Maps the session errors to HTTP; anything else goes to the error handler. */
+/** Maps the session and summary errors to HTTP; anything else goes to the error handler. */
 function sendSessionError(res: Response, error: unknown): void {
   if (error instanceof WorkoutLogNotFoundError || error instanceof PlanNotFoundError) {
     res.status(404).json({ message: error.message });
@@ -29,10 +37,16 @@ function sendSessionError(res: Response, error: unknown): void {
       activeLog: error.activeLog,
     };
     res.status(409).json(body);
-  } else if (error instanceof WorkoutNotStartableError || error instanceof WorkoutLogNotActiveError) {
+  } else if (
+    error instanceof WorkoutNotStartableError ||
+    error instanceof WorkoutLogNotActiveError ||
+    error instanceof WorkoutLogNotCompletedError
+  ) {
     res.status(409).json({ message: error.message });
-  } else if (error instanceof NothingCompletedError || error instanceof UnknownLogSetError) {
+  } else if (error instanceof NothingCompletedError || error instanceof UnknownLogSetError || error instanceof InvalidPhotoError) {
     res.status(400).json({ message: error.message });
+  } else if (error instanceof PhotoStorageUnavailableError) {
+    res.status(503).json({ message: error.message });
   } else {
     throw error;
   }
@@ -106,4 +120,24 @@ export const postFinishWorkout = withLogId(async (req, res, logId) => {
 
 export const postAbandonWorkout = withLogId(async (req, res, logId) => {
   res.status(200).json({ log: await abandonWorkout(logId, req.userId!) });
+});
+
+// --- The summary (Phase 9, PRD §5.3) — her own finished workouts only.
+
+export const patchMySummary = withLogId(async (req, res, logId) => {
+  const parsed = parseSummaryPayload(req.body);
+  if (parsed.error !== undefined) {
+    res.status(400).json({ message: parsed.error });
+    return;
+  }
+  res.status(200).json({ log: await updateWorkoutSummary(logId, req.userId!, parsed.value) });
+});
+
+/** The body is the image itself (readPhotoBody); the phone has already compressed it. */
+export const putMyPumpPhoto = withLogId(async (req, res, logId) => {
+  res.status(200).json({ log: await setPumpPhoto(logId, req.userId!, req.body as Buffer) });
+});
+
+export const deleteMyPumpPhoto = withLogId(async (req, res, logId) => {
+  res.status(200).json({ log: await removePumpPhoto(logId, req.userId!) });
 });

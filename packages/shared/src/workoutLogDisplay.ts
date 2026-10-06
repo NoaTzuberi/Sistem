@@ -1,4 +1,4 @@
-import type { WorkoutLogSet } from '@sistem/types';
+import type { LogPersonalRecord, WorkoutLog, WorkoutLogSet } from '@sistem/types';
 import { formatDuration } from './format';
 
 // Read-only wording for a workout log, shared by the coach's and the trainee's screens.
@@ -25,4 +25,29 @@ export function groupLogSetsByExercise(sets: WorkoutLogSet[]): LogExerciseGroup[
     else groups.push({ exerciseId: set.exerciseId, sets: [set] });
   }
   return groups;
+}
+
+/** Exercise id → name, from the facts the read endpoints attach to a log. */
+export function logExerciseNames(log: WorkoutLog): Map<string, string> {
+  return new Map(log.exercises?.map((exercise) => [exercise.id, exercise.name]));
+}
+
+/**
+ * 'Hip thrust — 62.5 kg (was 60 kg)' · 'Push-up — 20 reps (was 15)' ·
+ * 'Plank — 1 min 15s hold (was 1 min)'. Placeholder wording.
+ */
+export function describePersonalRecord(record: LogPersonalRecord, exerciseName = 'Exercise'): string {
+  const at = record.weight !== undefined ? ` at ${record.weight} kg` : '';
+  switch (record.type) {
+    case 'weight':
+      return `${exerciseName} — ${record.newValue} kg (was ${record.previousValue} kg)`;
+    case 'reps':
+      return `${exerciseName} — ${record.newValue} reps${at} (was ${record.previousValue})`;
+    case 'duration':
+      return `${exerciseName} — ${formatDuration(record.newValue)} hold${at} (was ${formatDuration(record.previousValue)})`;
+  }
+}
+
+export function prCountLabel(count: number): string {
+  return `${count} ${count === 1 ? 'PR' : 'PRs'}`;
 }

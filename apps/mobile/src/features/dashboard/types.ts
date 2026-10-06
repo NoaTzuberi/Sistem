@@ -1,4 +1,4 @@
-export type PersonalRecordType = 'weight' | 'reps';
+export type PersonalRecordType = 'weight' | 'reps' | 'duration';
 
 export interface DashboardPersonalRecord {
   id: string;
