@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { AxiosInstance } from 'axios';
 import type {
-  BodyMetric,
+  BodyMetricList,
   CoachPlan,
   CoachTraineeList,
   CoachTraineeResponse,
@@ -53,9 +53,10 @@ export function createCoachApi(client: AxiosInstance) {
     return data.items;
   }
 
-  async function listTraineeBodyMetrics(traineeId: string): Promise<BodyMetric[]> {
-    const { data } = await client.get<{ items: BodyMetric[] }>(`/coach/trainees/${traineeId}/body-metrics`);
-    return data.items;
+  /** Her days (newest first) with signed photo links, and the measurement list. */
+  async function listTraineeBodyMetrics(traineeId: string): Promise<BodyMetricList> {
+    const { data } = await client.get<BodyMetricList>(`/coach/trainees/${traineeId}/body-metrics`);
+    return data;
   }
 
   async function searchExercises(params: ExerciseSearchParams = {}): Promise<ExerciseSearchResult> {

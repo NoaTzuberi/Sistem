@@ -6,12 +6,16 @@ import type {
   OnboardingSaveResponse,
   OnboardingStepId,
   WaitingStatus,
+  WeightUnit,
 } from '@sistem/types';
 import { User } from '../users/user.model';
 import type { UserDocument } from '../users/user.model';
 import { toPublicUser } from '../auth/auth.service';
 import { getAppState } from '../users/appState.service';
 import { emitAppEvent } from '../../events/appEvents';
+import { lbToKg } from '../users/units';
+import { localDateString } from '../plans/planWeek';
+import { recordOnboardingWeight } from '../bodyMetrics/bodyMetric.service';
 import { PLAN_WAIT_MS } from './onboarding.constants';
 import { OnboardingResponse } from './onboardingResponse.model';
 import type { OnboardingAnswersFields, OnboardingResponseDocument } from './onboardingResponse.model';
@@ -49,12 +53,16 @@ export function toMyOnboarding(
   };
 }
 
-/** The answers as stored: `name` and `units` live on the User, the rest in answers. */
-function toAnswerUpdates(payload: OnboardingAnswersPayload): Record<string, unknown> {
+/**
+ * The answers as stored: `name` and `units` live on the User, the rest in answers.
+ * The weight is typed in her chosen unit and always stored in kg (a 140 lb answer used
+ * to be stored as 140 kg). The height field is in cm whatever she chose — stored as is.
+ */
+function toAnswerUpdates(payload: OnboardingAnswersPayload, weightUnit: WeightUnit): Record<string, unknown> {
   const updates: Record<string, unknown> = {};
   if (payload.birthDate !== undefined) updates.birthDate = new Date(payload.birthDate);
   if (payload.height !== undefined) updates.height = payload.height;
-  if (payload.weight !== undefined) updates.weight = payload.weight;
+  if (payload.weight !== undefined) updates.weight = weightUnit === 'lb' ? lbToKg(payload.weight) : payload.weight;
   if (payload.gender !== undefined) updates.gender = payload.gender || undefined;
   if (payload.goals !== undefined) updates.goals = payload.goals;
   if (payload.trainingFrequency !== undefined) updates.trainingFrequency = payload.trainingFrequency;
@@ -85,15 +93,27 @@ async function saveAnswers(user: UserDoc, payload: OnboardingAnswersPayload, ste
   const response =
     (await OnboardingResponse.findOne({ userId: user._id })) ?? new OnboardingResponse({ userId: user._id });
 
-  for (const [field, value] of Object.entries(toAnswerUpdates(payload))) {
+  // The unit sent with the weight (same step), else the one she chose earlier.
+  const weightUnit = payload.units?.weight ?? user.preferences?.units?.weight ?? 'kg';
+  for (const [field, value] of Object.entries(toAnswerUpdates(payload, weightUnit))) {
     response.set(`answers.${field}`, value);
   }
   response.lastStep = step;
 
   if (payload.name !== undefined) user.name = payload.name.trim();
-  if (payload.units !== undefined) user.preferences = { units: payload.units };
+  // Set one by one: the length unit (Settings) is not part of onboarding and must stay.
+  if (payload.units !== undefined) {
+    user.set('preferences.units.weight', payload.units.weight);
+    user.set('preferences.units.distance', payload.units.distance);
+  }
 
   return response;
+}
+
+/** The weight unit she chose earlier — the answers are validated in it when a save carries no units. */
+export async function getStoredWeightUnit(userId: string): Promise<WeightUnit> {
+  const user = await User.findById(userId).select('preferences').lean();
+  return user?.preferences?.units?.weight ?? 'kg';
 }
 
 export async function getMyOnboarding(userId: string): Promise<MyOnboarding> {
@@ -156,8 +176,13 @@ export async function completeOnboarding(userId: string, payload: OnboardingAnsw
   await response.save();
   await user.save();
 
-  // Only the first completion: a re-submit must not notify the coach again.
+  // Only the first completion: a re-submit must not notify the coach again, and the
+  // onboarding weight becomes the first point of her weight chart only once — editing
+  // the answer later never rewrites her weigh-in history.
   if (isFirstCompletion) {
+    if (response.answers.weight !== undefined) {
+      await recordOnboardingWeight(user.id, localDateString(now, user.timezone), response.answers.weight);
+    }
     emitAppEvent('trainee.onboarded', {
       traineeId: user.id,
       coachId: user.coachId ? String(user.coachId) : null,

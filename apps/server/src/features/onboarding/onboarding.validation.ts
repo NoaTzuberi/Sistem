@@ -1,4 +1,5 @@
-import type { OnboardingStepId } from '@sistem/types';
+import type { OnboardingStepId, WeightUnit } from '@sistem/types';
+import { KG_PER_LB, lbToKg } from '../users/units';
 import {
   GOAL_IDS,
   ACTIVITY_IDS,
@@ -22,10 +23,36 @@ const MIN_AGE = 5;
 const MAX_AGE = 120;
 const MIN_HEIGHT_CM = 50;
 const MAX_HEIGHT_CM = 300;
-const MIN_WEIGHT = 20;
-const MAX_WEIGHT = 400;
+// The weight is typed in her unit; the limits apply to the kg value it is stored as
+// (Phase 10), so in lb they are about 44–882. Height is always typed in cm.
+const MIN_WEIGHT_KG = 20;
+const MAX_WEIGHT_KG = 400;
 
-type FieldValidator = (value: unknown) => string | null;
+interface ValidationContext {
+  /** The unit the weight was typed in. */
+  weightUnit: WeightUnit;
+}
+
+type FieldValidator = (value: unknown, context: ValidationContext) => string | null;
+
+function roundOneDecimal(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
+function weightRangeMessage(unit: WeightUnit): string {
+  if (unit === 'kg') return `Weight must be a number between ${MIN_WEIGHT_KG} and ${MAX_WEIGHT_KG}.`;
+  return `Weight must be a number between ${roundOneDecimal(MIN_WEIGHT_KG / KG_PER_LB)} and ${roundOneDecimal(MAX_WEIGHT_KG / KG_PER_LB)} lb.`;
+}
+
+function isWeightUnit(value: unknown): value is WeightUnit {
+  return value === 'kg' || value === 'lb';
+}
+
+/** The unit sent with the answers (same step), else the one she chose before. */
+function resolveWeightUnit(answers: Record<string, unknown>, storedUnit: WeightUnit): WeightUnit {
+  const units = answers.units;
+  return isObject(units) && isWeightUnit(units.weight) ? units.weight : storedUnit;
+}
 
 function isStringArrayWithinSet(value: unknown, allowed: readonly string[]): boolean {
   return (
@@ -71,10 +98,11 @@ const FIELD_VALIDATORS: Record<OnboardingField, FieldValidator> = {
       : `Height must be a number between ${MIN_HEIGHT_CM} and ${MAX_HEIGHT_CM}.`;
   },
 
-  weight(value) {
-    return isNumberInRange(value, MIN_WEIGHT, MAX_WEIGHT)
-      ? null
-      : `Weight must be a number between ${MIN_WEIGHT} and ${MAX_WEIGHT}.`;
+  weight(value, { weightUnit }) {
+    if (typeof value !== 'number' || !Number.isFinite(value)) return weightRangeMessage(weightUnit);
+    // Converted the same way the service stores it, so the limits match what is saved.
+    const kg = weightUnit === 'lb' ? lbToKg(value) : value;
+    return kg >= MIN_WEIGHT_KG && kg <= MAX_WEIGHT_KG ? null : weightRangeMessage(weightUnit);
   },
 
   gender(value) {
@@ -149,16 +177,20 @@ const FIELD_VALIDATORS: Record<OnboardingField, FieldValidator> = {
   },
 };
 
-/** POST /onboarding/complete — every required answer, same rules as the ATLAS submit. */
-export function validateCompleteOnboardingPayload(body: unknown): string | null {
+/**
+ * POST /onboarding/complete — every required answer, same rules as the ATLAS submit.
+ * `storedWeightUnit`: her saved unit, used when the body carries no units.
+ */
+export function validateCompleteOnboardingPayload(body: unknown, storedWeightUnit: WeightUnit = 'kg'): string | null {
   if (!isObject(body)) {
     return 'Invalid request body.';
   }
 
+  const context = { weightUnit: resolveWeightUnit(body, storedWeightUnit) };
   for (const field of ONBOARDING_FIELDS) {
     const value = body[field];
     if (value === undefined && !REQUIRED_ON_COMPLETE.includes(field)) continue;
-    const error = FIELD_VALIDATORS[field](value);
+    const error = FIELD_VALIDATORS[field](value, context);
     if (error) return error;
   }
   return null;
@@ -169,7 +201,7 @@ function isStepId(value: unknown): value is OnboardingStepId {
 }
 
 /** PATCH /onboarding — `{ step, answers }` with only that step's fields. */
-export function validateOnboardingStepPayload(body: unknown): string | null {
+export function validateOnboardingStepPayload(body: unknown, storedWeightUnit: WeightUnit = 'kg'): string | null {
   if (!isObject(body)) {
     return 'Invalid request body.';
   }
@@ -182,12 +214,13 @@ export function validateOnboardingStepPayload(body: unknown): string | null {
   }
 
   const allowed = ONBOARDING_STEP_FIELDS[body.step];
+  const context = { weightUnit: resolveWeightUnit(answers, storedWeightUnit) };
   for (const [field, value] of Object.entries(answers)) {
     if (!(allowed as readonly string[]).includes(field)) {
       return `'${field}' is not part of the ${body.step} step.`;
     }
     if (value === undefined) continue;
-    const error = FIELD_VALIDATORS[field as OnboardingField](value);
+    const error = FIELD_VALIDATORS[field as OnboardingField](value, context);
     if (error) return error;
   }
   return null;

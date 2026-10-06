@@ -233,3 +233,5 @@ Design system notes:
 - **Delete a trainee's photos with her account** — account deletion must also delete all her photos from Cloudinary (Daily Pump and progress photos), for privacy compliance.
 - **"Summary added" notification (optional)** — tell the coach when a trainee adds or changes her workout summary / Daily Pump photo after finishing. Only if the coach wants it.
 - **Split the mobile bundle by role** — lazy-load the coach screens (and other role-only code) so a trainee never downloads coach mode, and the other way round. The mobile bundle was 507 kB after Phase 6b, over Vite's 500 kB warning line.
+- **lb for workouts** — workout sets, targets and the session's weight steps are kg only. Phase 10 added kg/lb (and cm/in) for body tracking only (owner decision); extend the same unit setting to workout weights.
+- **Progress photo slider** — a before/after slider overlay in Compare (Phase 10 compares side by side).

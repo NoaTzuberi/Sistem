@@ -2,12 +2,14 @@
  * DEV ONLY: creates one coach and two trainees with completed onboarding.
  * Trainee 1 lands on the waiting screen; trainee 2 also gets a published plan for
  * the current week (so the app opens on Home) that shows the plan features:
- * a rep range, a superset, a time-based exercise and per-set targets.
+ * a rep range, a superset, a time-based exercise and per-set targets, and about three
+ * months of weigh-ins and measurements (Phase 10 body tracking — no photos).
  *
  *   npm run seed:dev                   (local database)
  *   npm run seed:dev -- --allow-remote (non-local dev database)
  *
- * Re-running is safe: existing seed accounts and plans are left as they are.
+ * Re-running is safe: existing seed accounts, plans and body entries are left as they are
+ * (body entries are added to an existing trainee 2 once, if she has at most one).
  * Same database guard as promote:coach.
  */
 import bcrypt from 'bcrypt';
@@ -21,7 +23,8 @@ import { resolveDefaultCoachId, assignUnassignedTrainees } from '../coachAssignm
 import { completeOnboarding } from '../../onboarding/onboarding.service';
 import { validateCompleteOnboardingPayload } from '../../onboarding/onboarding.validation';
 import { Plan } from '../../plans/plan.model';
-import { currentWeekStart } from '../../plans/planWeek';
+import { addDays, currentWeekStart, localDateString } from '../../plans/planWeek';
+import { BodyMetric } from '../../bodyMetrics/bodyMetric.model';
 import type { PlanSetTargetFields } from '../../plans/plan.types';
 import { Exercise } from '../../exercises/exercise.model';
 import { assertDevDatabase } from './devDatabaseGuard';
@@ -31,7 +34,13 @@ const SALT_ROUNDS = 12;
 
 const COACH = { name: 'Dev Coach', email: 'coach@sistem.dev' };
 
-const TRAINEES: { name: string; email: string; withPlan: boolean; onboarding: OnboardingAnswersPayload }[] = [
+const TRAINEES: {
+  name: string;
+  email: string;
+  withPlan: boolean;
+  withBodyMetrics?: boolean;
+  onboarding: OnboardingAnswersPayload;
+}[] = [
   {
     name: 'Dev Trainee One',
     email: 'trainee1@sistem.dev',
@@ -54,6 +63,7 @@ const TRAINEES: { name: string; email: string; withPlan: boolean; onboarding: On
     name: 'Dev Trainee Two',
     email: 'trainee2@sistem.dev',
     withPlan: true,
+    withBodyMetrics: true,
     onboarding: {
       birthDate: '1990-09-30',
       height: 170,
@@ -133,6 +143,32 @@ async function seedPlan(traineeId: Types.ObjectId, coachId: Types.ObjectId, time
   console.log(`  created  published plan for week ${weekStartDate}`);
 }
 
+// kg every ~9 days (oldest first), and measurements (cm) on some of those days.
+const SEED_WEIGHTS = [70.4, 70.1, 70.3, 69.6, 69.4, 69.0, 69.2, 68.7, 68.3, 68.5, 67.9, 67.6];
+const SEED_MEASUREMENTS: Record<number, Record<string, number>> = {
+  0: { chest: 92, waist: 76, hips: 101, arms: 30, thighs: 58 },
+  4: { chest: 91, waist: 74.5, hips: 100, arms: 30, thighs: 57.5 },
+  8: { chest: 90.5, waist: 73, hips: 99, arms: 29.5, thighs: 57 },
+  11: { chest: 90, waist: 72, hips: 98.5, arms: 29.5, thighs: 56.5 },
+};
+
+async function seedBodyMetrics(traineeId: Types.ObjectId, timezone: string) {
+  if ((await BodyMetric.countDocuments({ traineeId })) > 1) {
+    console.log('  exists   body entries — left unchanged');
+    return;
+  }
+  const today = localDateString(new Date(), timezone);
+  let added = 0;
+  for (const [index, weight] of SEED_WEIGHTS.entries()) {
+    // Ends yesterday, so today's onboarding weigh-in is left alone.
+    const date = addDays(today, -1 - (SEED_WEIGHTS.length - 1 - index) * 9);
+    if (await BodyMetric.exists({ traineeId, date })) continue;
+    await BodyMetric.create({ traineeId, date, weight, measurements: SEED_MEASUREMENTS[index] });
+    added += 1;
+  }
+  console.log(`  created  ${added} body entries (weight + measurements)`);
+}
+
 async function main() {
   const allowRemote = process.argv.slice(2).includes('--allow-remote');
   assertDevDatabase(allowRemote);
@@ -150,6 +186,7 @@ async function main() {
     console.log('Trainees:');
     for (const trainee of TRAINEES) {
       const { user, created } = await findOrCreateUser(trainee.name, trainee.email, { coachId: coach._id });
+      if (trainee.withBodyMetrics && user.role === 'trainee') await seedBodyMetrics(user._id, user.timezone);
       if (!created) continue;
 
       const payload = { name: trainee.name, ...trainee.onboarding };

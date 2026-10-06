@@ -1,0 +1,142 @@
+.progress-photos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.progress-photos-empty {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.progress-photos-compare {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.progress-photos-poses {
+  display: flex;
+  align-self: flex-start;
+  border: 1px solid var(--color-border);
+}
+
+.progress-photos-pose {
+  min-width: 72px;
+  padding: var(--space-1) var(--space-3);
+  border: 0;
+  border-left: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.progress-photos-pose:first-child {
+  border-left: 0;
+}
+
+@media (hover: hover) {
+  .progress-photos-pose:hover {
+    background: var(--color-surface);
+  }
+}
+
+.progress-photos-pose:active {
+  background: var(--color-border);
+}
+
+.progress-photos-pose[aria-pressed='true'] {
+  background: var(--color-primary-deep);
+  color: var(--color-on-primary);
+}
+
+.progress-photos-sides {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 260px));
+  gap: var(--space-4);
+}
+
+.progress-photos-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.progress-photos-select {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.progress-photos-select select {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.progress-photos-weight {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.progress-photos-days {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.progress-photos-day {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.progress-photos-date {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.progress-photos-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 140px));
+  gap: var(--space-2);
+}
+
+.progress-photos-figure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.progress-photo-link,
+.progress-photo-missing {
+  display: block;
+  aspect-ratio: 3 / 4;
+  background: var(--color-surface);
+}
+
+.progress-photo-missing {
+  border: 1px dashed var(--color-border);
+  background: none;
+}
+
+.progress-photo-link img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

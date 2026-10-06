@@ -1,0 +1,50 @@
+.progress-photo-slot {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.progress-photo-slot-empty {
+  aspect-ratio: 3 / 4;
+  border: 1px dashed var(--color-border);
+  background: var(--color-surface);
+}
+
+.progress-photo-slot-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.progress-photo-slot-title {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+.progress-photo-slot-status {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.progress-photo-slot-error {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-error);
+}
+
+.progress-photo-slot-input {
+  display: none;
+}
+
+.progress-photo-slot-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}

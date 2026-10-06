@@ -5,6 +5,8 @@ import type { ApiTestClient } from '../../../testing/apiTestClient';
 import { User } from '../../users/user.model';
 import { OnboardingResponse } from '../onboardingResponse.model';
 import { Plan } from '../../plans/plan.model';
+import { BodyMetric } from '../../bodyMetrics/bodyMetric.model';
+import { localDateString } from '../../plans/planWeek';
 import { appEvents } from '../../../events/appEvents';
 import type { TraineeOnboardedEvent } from '../../../events/appEvents';
 
@@ -218,5 +220,120 @@ describe('onboarding (OnboardingResponse)', () => {
   it('the old PUT /users/profile is gone', async () => {
     const res = await api.request('PUT', '/users/profile', { token: trainee.token, body: FULL_PAYLOAD });
     expect(res.status).toBe(404);
+  });
+  // Phase 10: the weight is typed in her chosen unit and stored in kg (it used to be
+  // stored as typed); the onboarding weight becomes her first weigh-in, once.
+  describe('units and the first weigh-in', () => {
+    const basicProfile = (weight: number, unit: 'kg' | 'lb') => ({
+      step: 'basic_profile',
+      answers: { name: 'Maya', birthDate: '1995-04-12', height: 165, weight, units: { weight: unit, distance: 'km' } },
+    });
+
+    it('stores a weight typed in lb as kg; the height (always cm) as typed', async () => {
+      const res = await api.request('PATCH', '/onboarding', { token: trainee.token, body: basicProfile(140, 'lb') });
+      expect(res.status).toBe(200);
+      expect(res.body.onboarding.answers).toMatchObject({ weight: 63.5, height: 165 });
+      expect(res.body.onboarding.units).toMatchObject({ weight: 'lb' });
+    });
+
+    it('a weight in kg is stored as typed', async () => {
+      const res = await api.request('PATCH', '/onboarding', { token: trainee.token, body: basicProfile(60.5, 'kg') });
+      expect(res.body.onboarding.answers.weight).toBe(60.5);
+    });
+
+    it('the final submit converts lb the same way', async () => {
+      const res = await api.request('POST', '/onboarding/complete', {
+        token: trainee.token,
+        body: { ...FULL_PAYLOAD, weight: 150, units: { weight: 'lb', distance: 'miles' } },
+      });
+      expect(res.status).toBe(200);
+      expect(res.body.onboarding.answers.weight).toBe(68.04);
+    });
+
+    // The limits apply to the stored kg value: 20–400 kg, so about 44.1–881.8 lb.
+    it.each([
+      [450, 'lb', 204.12],
+      [881.8, 'lb', 399.98],
+      [44.1, 'lb', 20],
+      [400, 'kg', 400],
+      [20, 'kg', 20],
+    ] as const)('accepts %s %s (stored as %s kg)', async (weight, unit, storedKg) => {
+      const res = await api.request('PATCH', '/onboarding', { token: trainee.token, body: basicProfile(weight, unit) });
+      expect(res.status).toBe(200);
+      expect(res.body.onboarding.answers.weight).toBe(storedKg);
+    });
+
+    it.each([
+      [881.9, 'lb', 'Weight must be a number between 44.1 and 881.8 lb.'],
+      [40, 'lb', 'Weight must be a number between 44.1 and 881.8 lb.'],
+      [401, 'kg', 'Weight must be a number between 20 and 400.'],
+      [19, 'kg', 'Weight must be a number between 20 and 400.'],
+    ] as const)('rejects %s %s with a message in that unit', async (weight, unit, message) => {
+      const res = await api.request('PATCH', '/onboarding', { token: trainee.token, body: basicProfile(weight, unit) });
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe(message);
+    });
+
+    it('a weight saved without units is checked and converted in the unit she chose before', async () => {
+      await api.request('PATCH', '/onboarding', { token: trainee.token, body: basicProfile(140, 'lb') });
+      const accepted = await api.request('PATCH', '/onboarding', {
+        token: trainee.token,
+        body: { step: 'basic_profile', answers: { weight: 450 } },
+      });
+      expect(accepted.status).toBe(200);
+      expect(accepted.body.onboarding.answers.weight).toBe(204.12);
+      const rejected = await api.request('PATCH', '/onboarding', {
+        token: trainee.token,
+        body: { step: 'basic_profile', answers: { weight: 900 } },
+      });
+      expect(rejected.status).toBe(400);
+    });
+
+    it('the final submit uses the same kg limits', async () => {
+      const lb = { ...FULL_PAYLOAD, units: { weight: 'lb', distance: 'km' } };
+      expect((await api.request('POST', '/onboarding/complete', { token: trainee.token, body: { ...lb, weight: 900 } })).status).toBe(400);
+      expect((await api.request('POST', '/onboarding/complete', { token: trainee.token, body: { ...lb, weight: 450 } })).status).toBe(200);
+    });
+
+    it('height stays in cm whatever the weight unit (50–300)', async () => {
+      const res = await api.request('PATCH', '/onboarding', {
+        token: trainee.token,
+        body: { step: 'basic_profile', answers: { height: 301, units: { weight: 'lb', distance: 'miles' } } },
+      });
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe('Height must be a number between 50 and 300.');
+    });
+
+    it('saving onboarding units keeps the length unit chosen in Settings', async () => {
+      await api.request('PATCH', '/users/preferences', { token: trainee.token, body: { units: { length: 'in' } } });
+      const res = await api.request('PATCH', '/onboarding', { token: trainee.token, body: basicProfile(140, 'lb') });
+      expect(res.body.user.units).toEqual({ weight: 'lb', length: 'in' });
+    });
+
+    it('the first completion records the onboarding weight (kg) as a weigh-in for that day', async () => {
+      await api.request('POST', '/onboarding/complete', {
+        token: trainee.token,
+        body: { ...FULL_PAYLOAD, weight: 132, units: { weight: 'lb', distance: 'km' } },
+      });
+      const metrics = await BodyMetric.find({ traineeId: trainee.user._id }).lean();
+      expect(metrics).toHaveLength(1);
+      expect(metrics[0]).toMatchObject({ date: localDateString(new Date(), 'Asia/Jerusalem'), weight: 59.87 });
+    });
+
+    it('re-completing or editing the weight later never rewrites the weigh-in', async () => {
+      await api.request('POST', '/onboarding/complete', { token: trainee.token, body: FULL_PAYLOAD });
+      await api.request('POST', '/onboarding/complete', { token: trainee.token, body: { ...FULL_PAYLOAD, weight: 70 } });
+      await api.request('PATCH', '/onboarding', { token: trainee.token, body: basicProfile(72, 'kg') });
+      const metrics = await BodyMetric.find({ traineeId: trainee.user._id }).lean();
+      expect(metrics.map((metric) => metric.weight)).toEqual([60]);
+    });
+
+    it('keeps a weight she already logged that day', async () => {
+      const today = localDateString(new Date(), 'Asia/Jerusalem');
+      await BodyMetric.create({ traineeId: trainee.user._id, date: today, weight: 58 });
+      await api.request('POST', '/onboarding/complete', { token: trainee.token, body: FULL_PAYLOAD });
+      const metrics = await BodyMetric.find({ traineeId: trainee.user._id }).lean();
+      expect(metrics.map((metric) => metric.weight)).toEqual([58]);
+    });
   });
 });

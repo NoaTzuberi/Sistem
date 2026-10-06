@@ -41,6 +41,8 @@ const bodyMetricSchema = new Schema<BodyMetricDocument>(
   { timestamps: true },
 );
 
-bodyMetricSchema.index({ traineeId: 1, date: -1 });
+// One day of body tracking per trainee: weight, measurements and photos of the same
+// date share it (owner decision, Phase 10).
+bodyMetricSchema.index({ traineeId: 1, date: -1 }, { unique: true });
 
 export const BodyMetric = model<BodyMetricDocument>('BodyMetric', bodyMetricSchema);

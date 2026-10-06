@@ -17,3 +17,13 @@
   max-height: 60vh;
   object-fit: contain;
 }
+
+.private-photo-thumbnail {
+  aspect-ratio: 3 / 4;
+}
+
+.private-photo-thumbnail .private-photo-image {
+  height: 100%;
+  max-height: none;
+  object-fit: cover;
+}

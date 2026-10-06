@@ -21,6 +21,10 @@ import { AchievementBadges } from '../../../dashboard/components/AchievementBadg
 import { useAuth } from '../../../../services/auth/AuthContext';
 import { useStaggerReveal } from '../../../../hooks/useStaggerReveal';
 import { ROUTES, onboardingEditPath } from '../../../../app/config/routes';
+import { IconChevronRight, IconSettings } from '@tabler/icons-react';
+import { BodySummary } from '../../components/BodySummary/BodySummary';
+import { PROFILE_COPY } from '../../data/profileCopy';
+import { useMyBodyMetrics, useMyUnits } from '../../hooks/useMyBody';
 import './ProfilePage.css';
 
 const GOAL_LABELS = new Map(GOAL_OPTIONS.map((option) => [option.id, option.label]));
@@ -155,6 +159,8 @@ export function ProfilePage() {
   const [isStatsLoading, setIsStatsLoading] = useState(true);
   const trainingBlocksRef = useStaggerReveal<HTMLDivElement>([profile]);
   const layoutRef = useStaggerReveal<HTMLDivElement>([profile, dashboardSummary]);
+  const body = useMyBodyMetrics();
+  const { units } = useMyUnits();
 
   useEffect(() => {
     getMyProfile()
@@ -206,16 +212,14 @@ export function ProfilePage() {
                       <span className="text-label">Email</span>
                       <span>{user?.email}</span>
                     </div>
-                    <Link
-                      to={ROUTES.FORGOT_PASSWORD}
-                      state={{ email: user?.email }}
-                      className="profile-change-password-link"
-                    >
-                      Change password
-                    </Link>
                   </div>
                 </GlassCard>
               )}
+
+              <GlassCard variant="flat" className="profile-section-card profile-body-card">
+                <h2>{PROFILE_COPY.bodyTitle}</h2>
+                <BodySummary list={body.list} error={body.error} units={units} onRetry={body.reload} />
+              </GlassCard>
 
               <GlassCard variant="flat" className="profile-section-card profile-training-card">
                 <h2>Training Profile</h2>
@@ -332,6 +336,11 @@ export function ProfilePage() {
                   </>
                 )}
 
+                <Link to={ROUTES.SETTINGS} className="profile-settings-link">
+                  <IconSettings size={20} aria-hidden="true" />
+                  <span>{PROFILE_COPY.settings}</span>
+                  <IconChevronRight size={20} aria-hidden="true" />
+                </Link>
                 <LogoutButton />
               </GlassCard>
             </div>

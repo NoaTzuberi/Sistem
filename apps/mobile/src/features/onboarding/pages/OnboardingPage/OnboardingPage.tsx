@@ -16,6 +16,8 @@ import { EquipmentStep } from '../../steps/EquipmentStep/EquipmentStep';
 import { ReviewStep } from '../../steps/ReviewStep/ReviewStep';
 import { INITIAL_ONBOARDING_STATE } from '../../types';
 import type { OnboardingFormState, OnboardingMedia } from '../../types';
+import { toDisplayWeight } from '@sistem/shared';
+import { extractErrorMessage } from '@sistem/api-client';
 import type { MyOnboarding } from '@sistem/types';
 import {
   completeOnboarding,
@@ -128,14 +130,16 @@ function OnboardingScreen({ media, header, footer, children }: OnboardingScreenP
  * and editing one step both start from real answers. */
 function mapOnboardingToFormState(onboarding: MyOnboarding, fallbackName: string): OnboardingFormState {
   const p = onboarding.answers;
+  const weightUnit = onboarding.units?.weight ?? INITIAL_ONBOARDING_STATE.units.weight;
   return {
     name: onboarding.name || fallbackName,
     birthDate: p?.birthDate ? p.birthDate.slice(0, 10) : '',
     height: p?.height !== undefined ? String(p.height) : '',
-    weight: p?.weight !== undefined ? String(p.weight) : '',
+    // Stored in kg; shown back in the unit she typed it in (the server converts lb on save).
+    weight: p?.weight !== undefined ? String(toDisplayWeight(p.weight, weightUnit)) : '',
     gender: p?.gender ?? '',
     units: {
-      weight: onboarding.units?.weight ?? INITIAL_ONBOARDING_STATE.units.weight,
+      weight: weightUnit,
       distance: onboarding.units?.distance ?? INITIAL_ONBOARDING_STATE.units.distance,
     },
     goals: p?.goals ?? [],
@@ -259,7 +263,8 @@ export function OnboardingPage() {
       updateUser(savedUser);
       goToStep(stepIndex + 1);
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'Could not save your answers. Please try again.');
+      // The server's own message (e.g. the weight range in her unit); generic when it sent none.
+      setSubmitError(extractErrorMessage(error, 'Could not save your answers. Please try again.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -300,7 +305,7 @@ export function OnboardingPage() {
       updateUser(savedUser);
       navigate(ROUTES.PROFILE);
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'Could not save your profile. Please try again.');
+      setSubmitError(extractErrorMessage(error, 'Could not save your profile. Please try again.'));
     } finally {
       setIsSubmitting(false);
     }

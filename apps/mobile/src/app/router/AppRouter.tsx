@@ -18,6 +18,13 @@ import { RootRedirect } from '../../features/auth/components/RootRedirect/RootRe
 import { WaitingPage } from '../../features/waiting/pages/WaitingPage/WaitingPage';
 import { HomePage } from '../../features/home/pages/HomePage/HomePage';
 import { ProfilePage } from '../../features/profile/pages/ProfilePage/ProfilePage';
+import { WeightPage } from '../../features/profile/pages/WeightPage/WeightPage';
+import { MeasurementsPage } from '../../features/profile/pages/MeasurementsPage/MeasurementsPage';
+import { MeasurementsLogPage } from '../../features/profile/pages/MeasurementsLogPage/MeasurementsLogPage';
+import { ProgressPhotosPage } from '../../features/profile/pages/ProgressPhotosPage/ProgressPhotosPage';
+import { ProgressPhotosDayPage } from '../../features/profile/pages/ProgressPhotosDayPage/ProgressPhotosDayPage';
+import { PhotoComparePage } from '../../features/profile/pages/PhotoComparePage/PhotoComparePage';
+import { SettingsPage } from '../../features/profile/pages/SettingsPage/SettingsPage';
 import { WorkoutsPage } from '../../features/workouts/pages/WorkoutsPage/WorkoutsPage';
 import { OnboardingPage } from '../../features/onboarding/pages/OnboardingPage/OnboardingPage';
 import { WorkoutDetailPage } from '../../features/workouts/pages/WorkoutDetailPage/WorkoutDetailPage';
@@ -52,6 +59,13 @@ export function AppRouter() {
 
         <Route element={<AppStateGuard allow={['home']} />}>
           <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
+          <Route path={ROUTES.PROFILE_WEIGHT} element={<WeightPage />} />
+          <Route path={ROUTES.PROFILE_MEASUREMENTS} element={<MeasurementsPage />} />
+          <Route path={ROUTES.PROFILE_MEASUREMENTS_LOG} element={<MeasurementsLogPage />} />
+          <Route path={ROUTES.PROFILE_PHOTOS} element={<ProgressPhotosPage />} />
+          <Route path={ROUTES.PROFILE_PHOTOS_DAY} element={<ProgressPhotosDayPage />} />
+          <Route path={ROUTES.PROFILE_PHOTOS_COMPARE} element={<PhotoComparePage />} />
+          <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
           <Route path={ROUTES.WORKOUTS} element={<WorkoutsPage />} />
           <Route path={WORKOUT_DETAIL_PATH} element={<WorkoutDetailPage />} />
           <Route path={WORKOUT_LOG_PATH} element={<WorkoutLogPage />} />

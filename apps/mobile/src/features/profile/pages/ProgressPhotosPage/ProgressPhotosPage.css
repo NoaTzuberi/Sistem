@@ -1,0 +1,11 @@
+.progress-photos-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.progress-photos-page-privacy {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}

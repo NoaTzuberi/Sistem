@@ -14,6 +14,8 @@ interface UserPreferences {
   units?: {
     weight?: 'kg' | 'lb';
     distance?: 'km' | 'miles';
+    // Body measurements (Phase 10). Unset = cm.
+    length?: 'cm' | 'in';
   };
 }
 
@@ -47,6 +49,7 @@ const preferencesSchema = new Schema<UserPreferences>(
     units: {
       weight: { type: String, enum: ['kg', 'lb'] },
       distance: { type: String, enum: ['km', 'miles'] },
+      length: { type: String, enum: ['cm', 'in'] },
     },
   },
   { _id: false },

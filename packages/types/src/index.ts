@@ -25,6 +25,8 @@ export interface AuthUser {
   onboardingCompletedAt: string | null;
   /** IANA time zone, e.g. 'Asia/Jerusalem'. Weeks start on Sunday in this zone. */
   timezone: string;
+  /** Display units for body tracking, defaults filled in by the server. */
+  units: UnitPreferences;
   createdAt: string;
 }
 
@@ -67,6 +69,21 @@ export type OnboardingStepId =
 
 export type WeightUnit = 'kg' | 'lb';
 export type DistanceUnit = 'km' | 'miles';
+export type LengthUnit = 'cm' | 'in';
+
+/**
+ * How body weight and measurements are shown and typed (Phase 10). Values are always
+ * stored and sent in kg and cm; only the screens convert. Workout sets stay in kg.
+ */
+export interface UnitPreferences {
+  weight: WeightUnit;
+  length: LengthUnit;
+}
+
+/** Body of PATCH /users/preferences — a missing key leaves that unit unchanged. */
+export interface UpdatePreferencesPayload {
+  units: Partial<UnitPreferences>;
+}
 
 /** The questionnaire answers — the same shape ATLAS stored in User.profile. */
 export interface OnboardingAnswers {
@@ -536,8 +553,18 @@ export interface UpdateWorkoutSetsPayload {
   sets: WorkoutLogSetUpdate[];
 }
 
+// ---------------------------------------------------------------------------
+// Body tracking (/api/body-metrics) — Phase 10, PRD §5.5
+// ---------------------------------------------------------------------------
+
 export type ProgressPhotoPose = 'front' | 'side' | 'back';
 
+/** A progress photo: private, viewed only through its short-lived signed `url`. */
+export interface ProgressPhoto extends PrivatePhoto {
+  pose: ProgressPhotoPose;
+}
+
+/** One day of body tracking — at most one per trainee per date. */
 export interface BodyMetric {
   id: string;
   traineeId: string;
@@ -545,10 +572,32 @@ export interface BodyMetric {
   date: string;
   /** kg */
   weight?: number;
-  /** cm, keyed by measurement id (chest, waist, hips, arms, thighs) */
+  /** cm, keyed by measurement id (BodyMetricList.measurementIds) */
   measurements: Record<string, number>;
-  photos: { pose: ProgressPhotoPose; uploadedAt: string }[];
+  /** At most one per pose, in front / side / back order. */
+  photos: ProgressPhoto[];
   notes?: string;
+}
+
+/** GET /body-metrics (and the coach's copy): newest day first. */
+export interface BodyMetricList {
+  items: BodyMetric[];
+  /** The measurements that can be logged, in display order — the list lives on the server. */
+  measurementIds: string[];
+}
+
+/**
+ * Body of PUT /body-metrics/:date. kg / cm; null clears a value, a missing key leaves
+ * it. A day left with nothing in it is deleted.
+ */
+export interface SaveBodyMetricPayload {
+  weight?: number | null;
+  measurements?: Record<string, number | null>;
+}
+
+/** PUT / DELETE answers: the day as it is now, or null when nothing is left in it. */
+export interface BodyMetricResponse {
+  metric: BodyMetric | null;
 }
 
 export interface Achievement {

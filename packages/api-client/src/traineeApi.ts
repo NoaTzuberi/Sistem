@@ -1,5 +1,11 @@
 import type { AxiosInstance } from 'axios';
 import type {
+  AuthUser,
+  BodyMetric,
+  BodyMetricList,
+  BodyMetricResponse,
+  ProgressPhotoPose,
+  SaveBodyMetricPayload,
   TraineePlan,
   TraineePlanList,
   TraineeWeek,
@@ -7,6 +13,7 @@ import type {
   WorkoutLogSetUpdate,
   WorkoutSession,
   WorkoutSummaryPayload,
+  UpdatePreferencesPayload,
 } from '@sistem/types';
 
 // The trainee's own plans and workout logs (/api/plans, /api/workout-logs). The
@@ -102,6 +109,50 @@ export function createTraineeApi(client: AxiosInstance) {
     return data.log;
   }
 
+  // --- Body tracking (Phase 10): one day per date, kg / cm. A day left empty is
+  // deleted, so the writes answer null for it.
+
+  async function listBodyMetrics(): Promise<BodyMetricList> {
+    const { data } = await client.get<BodyMetricList>('/body-metrics');
+    return data;
+  }
+
+  async function saveBodyMetric(date: string, payload: SaveBodyMetricPayload): Promise<BodyMetric | null> {
+    const { data } = await client.put<BodyMetricResponse>(`/body-metrics/${date}`, payload);
+    return data.metric;
+  }
+
+  async function deleteBodyMetricDay(date: string): Promise<void> {
+    await client.delete(`/body-metrics/${date}`);
+  }
+
+  /** Sends the (already compressed) image as the raw body; replaces that pose's photo. */
+  async function uploadProgressPhoto(
+    date: string,
+    pose: ProgressPhotoPose,
+    photo: Blob,
+    onProgress?: (fraction: number) => void,
+  ): Promise<BodyMetric | null> {
+    const { data } = await client.put<BodyMetricResponse>(`/body-metrics/${date}/photos/${pose}`, photo, {
+      headers: { 'Content-Type': photo.type || 'image/jpeg' },
+      onUploadProgress: (event) => {
+        if (onProgress && event.total) onProgress(event.loaded / event.total);
+      },
+    });
+    return data.metric;
+  }
+
+  async function removeProgressPhoto(date: string, pose: ProgressPhotoPose): Promise<BodyMetric | null> {
+    const { data } = await client.delete<BodyMetricResponse>(`/body-metrics/${date}/photos/${pose}`);
+    return data.metric;
+  }
+
+  /** Her display units (Settings); answers the updated user. */
+  async function updatePreferences(payload: UpdatePreferencesPayload): Promise<AuthUser> {
+    const { data } = await client.patch<{ user: AuthUser }>('/users/preferences', payload);
+    return data.user;
+  }
+
   return {
     getWeek,
     listPlans,
@@ -117,6 +168,12 @@ export function createTraineeApi(client: AxiosInstance) {
     updateWorkoutSummary,
     uploadPumpPhoto,
     removePumpPhoto,
+    listBodyMetrics,
+    saveBodyMetric,
+    deleteBodyMetricDay,
+    uploadProgressPhoto,
+    removeProgressPhoto,
+    updatePreferences,
   };
 }
 

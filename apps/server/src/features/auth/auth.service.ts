@@ -9,6 +9,7 @@ import { getAppState } from '../users/appState.service';
 import { resolveDefaultCoachId } from '../users/coachAssignment.service';
 import { isValidTimezone } from '../users/timezone';
 import { DEFAULT_TIMEZONE } from '../users/users.constants';
+import { resolveUnits } from '../users/units';
 
 const SALT_ROUNDS = 12;
 const TOKEN_EXPIRY = '7d';
@@ -39,6 +40,7 @@ export async function toPublicUser(user: UserDocument & { _id: unknown }): Promi
     onboardingCompleted: isOnboardingCompleted(user),
     onboardingCompletedAt: user.onboardingCompletedAt ? user.onboardingCompletedAt.toISOString() : null,
     timezone: user.timezone,
+    units: resolveUnits(user.preferences),
     createdAt: user.createdAt.toISOString(),
   };
 }

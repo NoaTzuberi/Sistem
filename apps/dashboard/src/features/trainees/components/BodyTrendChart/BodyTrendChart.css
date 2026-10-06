@@ -1,0 +1,123 @@
+.body-trend-chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.body-trend-chart-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.body-trend-chart-title {
+  margin: 0;
+  font-size: var(--text-base);
+}
+
+.body-trend-chart-ranges {
+  display: flex;
+  border: 1px solid var(--color-border);
+}
+
+.body-trend-chart-range {
+  min-width: 40px;
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-left: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.body-trend-chart-range:first-child {
+  border-left: 0;
+}
+
+@media (hover: hover) {
+  .body-trend-chart-range:hover {
+    background: var(--color-surface);
+  }
+}
+
+.body-trend-chart-range:active {
+  background: var(--color-border);
+}
+
+.body-trend-chart-range[aria-pressed='true'] {
+  background: var(--color-primary-deep);
+  color: var(--color-on-primary);
+}
+
+.body-trend-chart-readout {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.body-trend-chart-change {
+  color: var(--color-text-muted);
+}
+
+.body-trend-chart-plot {
+  min-height: 220px;
+}
+
+.body-trend-chart-plot svg {
+  display: block;
+}
+
+/* Only keyboard focus is outlined; a tap or click on the chart is not. */
+.body-trend-chart-plot svg:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.body-trend-chart-plot svg:focus-visible {
+  outline: 2px solid var(--color-primary-deep);
+  outline-offset: 2px;
+}
+
+.body-trend-chart-empty {
+  margin: 0;
+  padding: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  border: 1px dashed var(--color-border);
+}
+
+.body-trend-chart-grid {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.body-trend-chart-axis {
+  fill: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.body-trend-chart-crosshair {
+  stroke: var(--color-text-muted);
+  stroke-width: 1;
+}
+
+.body-trend-chart-line {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.body-trend-chart-dot {
+  fill: var(--color-primary);
+  stroke: var(--color-bg);
+  stroke-width: 2;
+}
+
+.body-trend-chart-dot-selected {
+  fill: var(--color-primary-deep);
+}

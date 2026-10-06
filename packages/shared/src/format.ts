@@ -35,6 +35,13 @@ export function formatDateOnly(dateString: string): string {
   return dateOnlyFormat.format(parseDateOnly(dateString));
 }
 
+const dayMonthYearFormat = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' });
+
+/** '8 Sept 2026' — a date without the weekday, for tight spots (date pickers). */
+export function formatDateShort(dateString: string): string {
+  return dayMonthYearFormat.format(parseDateOnly(dateString));
+}
+
 const dayMonthFormat = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'short' });
 
 /** A plan week from its Sunday: '27 Sept – 3 Oct'. */

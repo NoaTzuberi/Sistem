@@ -10,7 +10,9 @@ export interface DashboardPersonalRecord {
 }
 
 export interface WeightTrendPoint {
+  /** 'YYYY-MM-DD' */
   date: string;
+  /** kg */
   weight: number;
 }
 

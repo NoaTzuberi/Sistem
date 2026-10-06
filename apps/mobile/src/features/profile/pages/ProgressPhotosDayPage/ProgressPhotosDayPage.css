@@ -1,0 +1,11 @@
+.progress-photos-day-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.progress-photos-day-page-hint {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}

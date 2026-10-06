@@ -6,6 +6,7 @@ import {
   getWaitingStatus,
   saveOnboardingStep,
   completeOnboarding,
+  getStoredWeightUnit,
   OnboardingUserNotFoundError,
 } from './onboarding.service';
 
@@ -35,7 +36,7 @@ export async function getWaiting(req: AuthenticatedRequest, res: Response) {
 }
 
 export async function patchOnboardingStep(req: AuthenticatedRequest, res: Response) {
-  const validationError = validateOnboardingStepPayload(req.body);
+  const validationError = validateOnboardingStepPayload(req.body, await getStoredWeightUnit(req.userId!));
   if (validationError) {
     res.status(400).json({ message: validationError });
     return;
@@ -50,7 +51,7 @@ export async function patchOnboardingStep(req: AuthenticatedRequest, res: Respon
 }
 
 export async function postCompleteOnboarding(req: AuthenticatedRequest, res: Response) {
-  const validationError = validateCompleteOnboardingPayload(req.body);
+  const validationError = validateCompleteOnboardingPayload(req.body, await getStoredWeightUnit(req.userId!));
   if (validationError) {
     res.status(400).json({ message: validationError });
     return;

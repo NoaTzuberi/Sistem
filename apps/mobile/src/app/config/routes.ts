@@ -5,7 +5,15 @@ export const ROUTES = {
   FORGOT_PASSWORD: '/forgot-password',
   RESET_PASSWORD: '/reset-password',
   PROFILE: '/profile',
-  SETTINGS: '/settings',
+  // Body tracking (Phase 10, PRD §5.5) — sub-screens of Profile.
+  PROFILE_WEIGHT: '/profile/weight',
+  PROFILE_MEASUREMENTS: '/profile/measurements',
+  PROFILE_MEASUREMENTS_LOG: '/profile/measurements/log',
+  PROFILE_PHOTOS: '/profile/photos',
+  PROFILE_PHOTOS_DAY: '/profile/photos/day',
+  PROFILE_PHOTOS_COMPARE: '/profile/photos/compare',
+  // Under /profile so the Profile tab stays highlighted.
+  SETTINGS: '/profile/settings',
   WORKOUTS: '/workouts',
   ONBOARDING: '/onboarding',
   // "Your plan is being built" — onboarding done, no published plan yet (PRD §4.1).
@@ -67,4 +75,13 @@ export const ONBOARDING_EDIT_PATH = '/onboarding/:step';
 
 export function onboardingEditPath(step: string): string {
   return `/onboarding/${step}`;
+}
+
+// One day of measurements / progress photos ('YYYY-MM-DD'); today when no date is given.
+export function measurementsLogPath(date?: string): string {
+  return date ? `${ROUTES.PROFILE_MEASUREMENTS_LOG}?date=${date}` : ROUTES.PROFILE_MEASUREMENTS_LOG;
+}
+
+export function progressPhotosDayPath(date?: string): string {
+  return date ? `${ROUTES.PROFILE_PHOTOS_DAY}?date=${date}` : ROUTES.PROFILE_PHOTOS_DAY;
 }

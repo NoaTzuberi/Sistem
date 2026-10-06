@@ -7,7 +7,7 @@ import { Button } from '../../../../components/common/Button/Button';
 import { Modal } from '../../../../components/common/Modal/Modal';
 import { PrivatePhoto } from '../../../../components/common/PrivatePhoto/PrivatePhoto';
 import { removePumpPhoto, uploadPumpPhoto } from '../../../../services/workoutLogs/workoutLogsService';
-import { PhotoTooLargeError, compressPhoto } from '../../data/photoCompression';
+import { PhotoTooLargeError, compressPhoto } from '../../../privatePhotos/data/photoCompression';
 import { PUMP_PHOTO_COPY, SUMMARY_COPY } from '../../data/workoutCopy';
 import './PumpPhotoField.css';
 

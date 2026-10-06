@@ -72,9 +72,9 @@ export async function getTraineeWorkoutLogs(req: AuthenticatedRequest, res: Resp
   res.status(200).json({ items: logs });
 }
 
+/** Read-only: her weight, measurements and progress photos (signed links made for the coach). */
 export async function getTraineeBodyMetrics(req: AuthenticatedRequest, res: Response) {
-  const metrics = await listBodyMetricsForTrainee(req.traineeId!);
-  res.status(200).json({ items: metrics });
+  res.status(200).json(await listBodyMetricsForTrainee(req.traineeId!));
 }
 
 // --- Plan builder -----------------------------------------------------------

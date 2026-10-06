@@ -1,3 +1,4 @@
+import { createTraineeApi } from '@sistem/api-client';
 import { apiClient } from '../api/apiClient';
 
 export interface MyProfileResponse {
@@ -38,3 +39,6 @@ export async function getMyProfile(): Promise<MyProfileResponse> {
   const { data } = await apiClient.get<{ user: MyProfileResponse }>('/users/profile');
   return data.user;
 }
+
+// Her display units (Settings, Phase 10).
+export const { updatePreferences } = createTraineeApi(apiClient);

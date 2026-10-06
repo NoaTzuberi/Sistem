@@ -9,14 +9,14 @@ import { TraineeStatusBadges, PlanWindow } from '../../components/TraineeStatusB
 import { OnboardingAnswers } from '../../components/OnboardingAnswers/OnboardingAnswers';
 import { TraineePlans } from '../../components/TraineePlans/TraineePlans';
 import { WorkoutLogList } from '../../components/WorkoutLogList/WorkoutLogList';
-import { BodyMetricsTable } from '../../components/BodyMetricsTable/BodyMetricsTable';
+import { BodyTracking } from '../../components/BodyTracking/BodyTracking';
 import './TraineeDetailPage.css';
 
 const TAB_LABELS: Record<TraineeTab, string> = {
   onboarding: 'Onboarding',
   plans: 'Plans',
   logs: 'Workout logs',
-  metrics: 'Body metrics',
+  metrics: 'Body',
 };
 
 function isTraineeTab(value: string | null): value is TraineeTab {
@@ -97,7 +97,7 @@ export function TraineeDetailPage() {
             {tab === 'onboarding' && <OnboardingAnswers onboarding={trainee.onboarding} />}
             {tab === 'plans' && <TraineePlans trainee={trainee} onPlansChanged={reload} />}
             {tab === 'logs' && <WorkoutLogList traineeId={trainee.id} />}
-            {tab === 'metrics' && <BodyMetricsTable traineeId={trainee.id} />}
+            {tab === 'metrics' && <BodyTracking traineeId={trainee.id} timezone={trainee.timezone} />}
           </section>
         </>
       )}

@@ -1,0 +1,335 @@
+SISTEM — PHASE 10 REPORT: PROFILE & BODY TRACKING
+Date: 2026-10-06
+Scope: docs/BUILD_PLAN.md Phase 10 (PRD §5.5): body weight log + chart, measurements over
+time, progress photos (front / side / back) with side-by-side compare, Settings (units, log
+out), the coach's view in the dashboard and the mobile coach mode, the ATLAS Progress
+API replaced by BodyMetric, and the onboarding lb bug fix. Phase 11 was NOT started.
+
+================================================================================
+1. SUMMARY
+================================================================================
+- Profile has a new Body section: latest weight + change + sparkline, latest measurements,
+  newest progress photos. Each card opens its own screen.
+- Weight: chart with 1M / 3M / 6M / 1Y / All, tap/drag crosshair, every weigh-in listed;
+  log (today or an earlier day), edit, delete in a bottom sheet.
+- Measurements: pick one (chest / waist / hips / arms / thighs) for the chart; a full-screen
+  form logs or edits one day; "Last: …" hints.
+- Progress photos: dated front / side / back gallery; add or change one day's photos
+  (camera or gallery, Daily Pump private flow, 1-hour links); Compare one pose on two days.
+- Settings: weight kg | lb and measurements cm | in (body tracking only), time zone, log out.
+- Coach: dashboard Body tab (two charts, full entries table, photos + compare) and the
+  mobile coach Body tab (the trainee's own views, read-only). Coach values are kg / cm.
+- The ATLAS Progress model / API / client code is deleted.
+- Onboarding: a weight typed in lb is now stored in kg, and its 20–400 limit applies to
+  that kg value (about 44.1–881.8 lb). The first completion records it as her first
+  weigh-in.
+
+================================================================================
+2. DECISIONS (owner answers) AND HOW THEY WERE BUILT
+================================================================================
+1. Schema: User.preferences.units.length ('cm' | 'in', unset = cm). BodyMetric has a
+   unique index on traineeId + date: one day per trainee. That day's weight,
+   measurements and photos live in the same document. A day left with nothing in it is
+   deleted.
+2. kg / lb (and cm / in) apply to body tracking only. Workouts stay kg. PRD §14 backlog:
+   "lb for workouts".
+3. Onboarding weight:
+   - Bug fix (server, onboarding.service): a weight sent with units.weight = 'lb' (or
+     saved after she chose lb) is converted to kg, 2 decimals. The height field is
+     labelled "(cm)" whatever she picks, so it is stored as typed. The phone shows a
+     stored kg weight back in lb when she reopens the step. Also fixed: saving the
+     onboarding units used to replace the whole units object. It now sets weight and
+     distance one by one, so the Settings length unit survives. No onboarding wording
+     changed.
+   - Unit-aware limit (follow-up owner decision): the weight is converted to kg exactly as
+     it is stored (2 decimals) and then checked against 20–400 kg, so lb accepts
+     44.1–881.8. The unit is the one sent with the weight (same step), else the one she
+     saved before (the controller reads it: onboarding.service getStoredWeightUnit). An
+     error in lb reads "Weight must be a number between 44.1 and 881.8 lb." The kg
+     message is unchanged. Height has no unit choice (always typed in cm), so its 50–300
+     cm limit is unchanged.
+   - Onboarding error text (follow-up owner decision): when saving a step, finishing, or
+     editing one step from Profile fails, the screen now shows the server's own message
+     (e.g. "Weight must be a number between 44.1 and 881.8 lb."). It uses the shared
+     extractErrorMessage. When the server sends no message (offline, server error), it
+     shows the existing generic text ("Could not save your answers. Please try again." /
+     "Could not save your profile. Please try again.") instead of axios's "Request failed
+     with status code 400". Only the error lines changed; no onboarding wording or flow
+     changed. Loading the answers still shows its old error text (not a validation
+     message).
+   - First weigh-in: on the FIRST completion only, the onboarding weight (kg) is saved
+     as a BodyMetric for that day in her time zone. A weight she already logged that day
+     is kept. Re-completing or editing the answer later never rewrites history.
+4. Settings has no notification section (comes with Phase 5b).
+5. The "Change password" link is removed from Profile.
+6. Compare is side by side. PRD §14 backlog: "Progress photo slider".
+
+Things I decided inside your answers (say if you want any changed):
+- API (trainee-only, requireRole('trainee')):
+    GET    /api/body-metrics                      { items (newest first), measurementIds }
+    PUT    /api/body-metrics/:date                { weight?, measurements? } kg / cm, null
+                                                  clears → { metric | null }
+    DELETE /api/body-metrics/:date                whole day, its photos too → 204
+    PUT    /api/body-metrics/:date/photos/:pose   raw image (≤3 MB), replaces that pose
+    DELETE /api/body-metrics/:date/photos/:pose
+    PATCH  /api/users/preferences                 { units: { weight?, length? } } → { user }
+  Coach: GET /api/coach/trainees/:id/body-metrics now returns the same { items,
+  measurementIds } with signed photo links.
+  AuthUser has `units` (defaults filled in by the server) in /auth/me and login.
+- Rules: no date in the future (her time zone) or before 2000-01-01. Weight 20–400 kg,
+  measurements 10–300 cm. Values kept to 2 decimals, so 140 lb shows back as 140.0 lb.
+  Unknown measurement ids are rejected. The measurement list stays one server constant.
+- Photos: folder sistem/progress-photos/<traineeId>, name <date>-<pose>-<random>, same
+  privatePhotos service as Daily Pump (authenticated asset, only the public id stored,
+  1-hour private_download_url made per request after the access check). Replace /
+  remove / delete-day delete the old asset from Cloudinary.
+- Editing: tap a weight row → sheet with Save / Delete (date fixed). Measurements form:
+  the fields always show the chosen date's values, so picking a date that already has
+  measurements edits them. Emptying a saved field clears it.
+- Chart (dataviz rules): one series in --color-primary, 2px line, 4px dots with a
+  background ring (only up to 40 points), hairline solid grid, clean y ticks not from 0,
+  3 date labels. The crosshair snaps to the nearest date. Readout above: value, date,
+  change over the range. Default range = 3M when she has older data, else All. The list
+  under each chart is the table view. Arrow keys move the crosshair.
+- Coach view uses the trainee's time zone for "today"; values in kg / cm.
+- Dev seed: trainee 2 gets 12 weigh-ins over ~3 months and 4 measurement days (no
+  photos). Added once to an existing trainee 2 if she has ≤1 body entry.
+- photoCompression.ts moved from features/workouts/data to features/privatePhotos/data
+  (now used by two features). PrivatePhoto got a `thumbnail` option (3:4 crop).
+- Settings moved from /settings to /profile/settings so the Profile tab stays active.
+- Header actions on the sub-screens use short labels ("+ Log", "+ Add"); the full text
+  is their accessible name. Placeholder wording is in bodyCopy.ts and profileCopy.ts.
+
+Old ATLAS Progress (decision: DELETE): server features/progress + /api/progress (404 now,
+tested), mobile services/progress + features/progress/types. Its two readers moved to
+BodyMetric:
+- the Profile stats endpoint (/api/dashboard weightTrend)
+- the "weigh-ins" badge in AchievementBadges, which Phase 11 reworks
+
+================================================================================
+3. FILES CHANGED
+================================================================================
+Added — server
+  apps/server/src/features/bodyMetrics/bodyMetric.validation.ts
+  apps/server/src/features/bodyMetrics/__tests__/bodyMetrics.test.ts
+  apps/server/src/features/users/units.ts               kg/lb, defaults
+  apps/server/src/features/users/users.validation.ts    PATCH /users/preferences
+Modified — server
+  apps/server/src/app.ts                                /api/progress removed
+  apps/server/src/features/bodyMetrics/bodyMetric.{constants,controller,model,routes,service}.ts
+  apps/server/src/features/coach/coach.controller.ts
+  apps/server/src/features/dashboard/dashboard.service.ts   weightTrend from BodyMetric
+  apps/server/src/features/onboarding/onboarding.service.ts lb → kg, units merge, first weigh-in,
+                                                            getStoredWeightUnit
+  apps/server/src/features/onboarding/onboarding.validation.ts  weight limit on the kg value
+  apps/server/src/features/onboarding/onboarding.controller.ts  passes her saved weight unit
+  apps/server/src/features/onboarding/__tests__/onboarding.test.ts
+  apps/server/src/features/privatePhotos/privatePhoto.constants.ts  PROGRESS_PHOTO_FOLDER
+  apps/server/src/features/auth/auth.service.ts         AuthUser.units
+  apps/server/src/features/users/{user.model,users.controller,users.routes,users.service}.ts
+  apps/server/src/features/users/scripts/seedDev.ts     body entries for trainee 2
+Deleted — server
+  apps/server/src/features/progress/ (controller, model, routes, service, types, validation)
+
+Modified — packages
+  packages/types/src/index.ts          UnitPreferences, LengthUnit, AuthUser.units,
+                                       UpdatePreferencesPayload, ProgressPhoto, BodyMetric
+                                       photos with links, BodyMetricList,
+                                       SaveBodyMetricPayload, BodyMetricResponse
+  packages/api-client/src/traineeApi.ts  body metrics + photo + preferences calls
+  packages/api-client/src/coachApi.ts    listTraineeBodyMetrics → BodyMetricList
+  packages/shared/src/index.ts, format.ts (formatDateShort)
+Added — packages
+  packages/shared/src/units.ts           conversions + formatting (kg/lb, cm/in)
+  packages/shared/src/bodyChart.ts       chart math (ranges, ticks, path, nearest point)
+  packages/shared/src/bodyMetricsDisplay.ts  chart points, latest values, photo days
+
+Added — mobile (apps/mobile/src)
+  services/bodyMetrics/bodyMetricsService.ts
+  features/bodyTracking/  data/bodyCopy.ts, hooks/useBodyMetrics.ts, components/
+    LineChart, TrendChart, RangePicker, Sparkline, WeightHistory, MeasurementHistory,
+    MeasurementPicker, ProgressPhotoGallery, ProgressPhotoSlot, PhotoCompare
+  features/profile/  data/profileCopy.ts, hooks/useMyBody.ts, hooks/useGoBack.ts,
+    components/BodySummary, SubPageHeader, UnitToggle, WeightLogSheet,
+    pages/WeightPage, MeasurementsPage, MeasurementsLogPage, ProgressPhotosPage,
+    ProgressPhotosDayPage, PhotoComparePage, SettingsPage
+  features/coach/components/TraineeBodyTracking/
+  features/privatePhotos/data/photoCompression.ts   (moved)
+Modified — mobile
+  app/config/routes.ts, app/router/AppRouter.tsx
+  components/common/PrivatePhoto/ (.tsx + .css)     thumbnail option
+  features/profile/pages/ProfilePage/ (.tsx + .css) Body section, Settings link, no password link
+  features/coach/pages/TraineeDetailPage/TraineeDetailPage.tsx
+  features/onboarding/pages/OnboardingPage/OnboardingPage.tsx  kg shown back in lb; the
+                                                               server's message on a failed save
+  features/dashboard/components/AchievementBadges/AchievementBadges.tsx, features/dashboard/types.ts
+  features/workouts/components/PumpPhotoField/PumpPhotoField.tsx  import path
+  services/users/usersService.ts
+Deleted — mobile
+  services/progress/progressService.ts, features/progress/types.ts,
+  features/coach/components/BodyMetricsList/, features/workouts/data/photoCompression.ts (moved)
+
+Added — dashboard (apps/dashboard/src/features/trainees/components)
+  BodyTracking/, BodyTrendChart/, ProgressPhotos/
+Modified — dashboard
+  features/trainees/pages/TraineeDetailPage/TraineeDetailPage.tsx   tab "Body"
+Deleted — dashboard
+  features/trainees/components/BodyMetricsTable/
+
+Modified / added — docs
+  docs/PRD.md   §14: lb for workouts, progress photo slider
+  docs/phase-reports/phase-10-profile-body-tracking.txt
+  CLAUDE.md (gitignored — not in any commit)
+
+================================================================================
+4. DEPENDENCIES
+================================================================================
+Added: none. The chart is hand-written SVG, photos use the existing cloudinary server
+dependency and the browser canvas. Removed: none.
+
+================================================================================
+5. HOW TO TEST
+================================================================================
+Commands (repo root):
+  npm test        -> 22 files, 306 tests pass (was 21 / 253).
+    New (53):
+    - body tracking: save / replace a day, newest first, merge + clear, the empty day is
+      deleted, delete a day; bad input 400 (future date incl. her own zone, invalid
+      date, before 2000, unknown measurement, out of range, wrong type, empty, unknown
+      field)
+    - photos: into her folder, signed link only, pose order, replace deletes the old
+      one, remove, delete a day deletes its photos, not an image 400, wrong type 415,
+      bad pose 400
+    - access: another trainee can't touch her days; her coach reads everything, another
+      coach 404, a trainee 403 on coach routes, a coach 403 on trainee routes, /progress
+      404
+    - units: defaults, one at a time, bad values 400
+    - onboarding: 140 lb → 63.5 kg, kg as typed, height as typed, the final submit
+      converts, units save keeps the length unit, the first weigh-in once only, an
+      existing weight that day kept
+    - unit-aware limit: 450 / 881.8 / 44.1 lb and 400 / 20 kg accepted (stored kg
+      checked); 881.9 lb, 40 lb, 401 kg, 19 kg rejected with the message in that unit;
+      a weight saved without units uses her saved unit (450 accepted as 204.12 kg, 900
+      rejected); the final submit uses the same limits; height 301 still rejected in lb
+  npm run build   -> passes (all three apps). Mobile bundle 553 kB (was 520), over Vite's
+                     500 kB warning (see §6).
+  npm run lint    -> 0 errors; the same 3 older warnings (AuthContext ×2, AchievementBadges).
+  npm run dev     -> checked with the same workspace scripts on spare ports (5012 + 5176,
+                     because 5002 / 5173 were busy with your dev:phone): /api/health 200,
+                     the mobile app 200, "MongoDB connected". Stopped afterwards.
+
+Dev data: `npm run seed:dev -- --allow-remote` (or without the flag on a local DB) adds
+trainee 2's body entries. I ran it once on the dev database.
+
+Manual (mobile, trainee2@sistem.dev / sistem-dev-1234):
+  1. Profile → Body: Weight 67.6 kg, −2.8 kg, sparkline; Measurements; Photos "Nothing
+     logged yet". No "Change password" link. Settings link at the bottom.
+  2. Weight → chart on 3M; tap / drag on the chart → value and date above it; All / 1M.
+     "+ Log" → today, 67,4 (comma works) → Save → in the chart and the list. Tap the
+     row → Delete → Delete → gone.
+  3. Measurements → chips switch the chart; "+ Log" → fields with "Last: …"; type a
+     waist → Save. Tap that day → its values prefilled → Delete.
+  4. Profile → Settings → lb + in → Weight / Measurements / Compare show lb / in.
+     Switch back to kg / cm.
+  5. Photos → "+ Add" → today → Take photo / Gallery per pose → each uploads at once.
+     Add a front photo on an earlier day → Photos → Compare → Front: the two days side
+     by side with that day's weight; Side with one day → the "add photos" hint.
+  6. Coach (coach@sistem.dev): mobile Trainees → trainee2 → Body → charts, lists, photos,
+     Compare, no edit buttons. Dashboard → trainee2 → Body → two charts with ranges
+     (hover = crosshair), entries table, photos (click opens full size), compare.
+  7. Onboarding (new account): choose lb, weight 140 → finish → Profile → Weight shows
+     140 lb, and in kg 63.5. With lb, 450 is accepted; 900 shows "Weight must be a number
+     between 44.1 and 881.8 lb." under the step. With the API stopped, Continue shows
+     "Could not save your answers. Please try again."
+
+================================================================================
+6. KNOWN ISSUES / TODOs
+================================================================================
+- ⚠ Your `npm run dev:phone` (API 5002 + phone app 5173) was running when I started
+  and is NOT running now. When I stopped my temporary dev server I used
+  `pkill -f "nodemon … src/server.ts" -P 1`. It most likely also matched your nodemon,
+  and dev:phone then stopped its app too. Start it again with `npm run dev:phone`.
+  Nothing else was touched.
+- Browser check at 375×667: done inside a 375×667 frame, because the Chrome window
+  wouldn't shrink (same as Phase 8/9). Checked: Profile (Body cards, Settings link),
+  Weight (chart, ranges, crosshair, log via the sheet with a comma, edit + delete), Settings
+  (kg↔lb, cm↔in saved on the server), Measurements in inches (picker, chart, list),
+  the measurements form (28 in → stored 71.12 cm, reopened prefilled, deleted), photo day
+  screen (real uploads of 4 generated JPEGs through the app's compression + upload: one
+  earlier day, three today), the gallery, Compare in lb (68.3 kg → 150.6 lb) and the
+  one-day empty state, coach mode Body tab with Compare, dashboard Body tab (charts,
+  table, photos, compare). No sideways scroll anywhere (scrollWidth 375).
+  Found and fixed while checking:
+  - "98.5 cm" wrapped between number and unit → non-breaking space.
+  - "Measurements" broke mid-word next to the long header button → short "+ Log" / "+ Add"
+    labels, and titles no longer break inside a word.
+  - The browser's blue focus ring showed on a chart tap → only keyboard focus is outlined.
+  - Compare's date select cut the date off → "8 Sept 2026" (no weekday).
+  - The Settings link touched the achievements card → spacing.
+- Clean-up after the check: the 4 test photos were removed through the API (Cloudinary
+  delete; the old links answer 404), the test weigh-in and measurement were deleted,
+  trainee 2's units are back to kg / cm, 0 assets under sistem/progress-photos, and the
+  empty folders were deleted. Trainee 2 keeps the 12 seeded body entries.
+- In the test window, images with loading="lazy" never started loading and the GSAP page
+  fade never finished. Both are because the window counts as hidden. I forced both for the
+  check. The signed links themselves answered 200 image/jpeg. Not a bug in the pages.
+- NOT seen in the browser: the real camera / gallery pickers (the browser tool can't drive
+  file inputs — I gave the gallery input a file through the page), the expired-link
+  refetch, a new onboarding in lb (server tests cover the conversion and the first
+  weigh-in), keyboard arrows on the chart.
+- Body tracking (not onboarding) error messages for out-of-range values name kg / cm,
+  e.g. "weight must be between 20 and 400 kg", even when she types lb. They only show for
+  extreme values.
+- The phone's onboarding form has no range check of its own; the server's message is shown
+  after Continue / Save. The new onboarding error text was NOT checked in the browser
+  (it needs a fresh onboarding account, and your dev API was stopped). It is covered by
+  the type check and build only. The same extractErrorMessage is already used for server
+  messages in the new weight sheet and measurements form, and across the dashboard.
+- The coach sees kg / cm only (no coach unit setting).
+- trainee 2 (created before this phase) has no onboarding weigh-in: that only happens on a
+  first completion from now on. Existing trainees are not backfilled (fresh-database
+  rule). Same for onboarding weights saved in lb before this fix: they are still stored as
+  typed. Re-saving the basic profile step fixes one.
+- Mobile bundle 553 kB: backlog "split the mobile bundle by role" (PRD §14). The Profile
+  sub-screens are good lazy-load candidates too.
+- No client tests in the repo, so the shared chart math and unit conversions have no unit
+  tests yet. They are pure functions, ready for a client test setup once you approve one.
+- Photos: no offline queue (like Daily Pump). A replaced asset whose Cloudinary delete
+  fails is logged and orphaned. The "delete photos with the account" backlog item should
+  also sweep sistem/progress-photos/<traineeId>/.
+- All new wording is placeholder: bodyCopy.ts, profileCopy.ts, the dashboard Body tab
+  labels, "Body" as the dashboard tab name (was "Body metrics").
+
+================================================================================
+7. SUGGESTED COMMITS (ready to paste — in order)
+================================================================================
+Note: commit 1 changes the API contract (packages/types, packages/api-client), so the
+mobile app and dashboard build again only after commit 2, as in Phase 9.
+
+# 1) server + contract: BodyMetric API, units, onboarding lb fix, Progress removed
+git add -A -- \
+  apps/server/src/app.ts \
+  apps/server/src/features/bodyMetrics \
+  apps/server/src/features/progress \
+  apps/server/src/features/coach/coach.controller.ts \
+  apps/server/src/features/dashboard/dashboard.service.ts \
+  apps/server/src/features/onboarding \
+  apps/server/src/features/privatePhotos/privatePhoto.constants.ts \
+  apps/server/src/features/auth/auth.service.ts \
+  apps/server/src/features/users \
+  packages/types \
+  packages/api-client
+git commit -m "feat: body tracking API (one day per date: weight, measurements, private progress photos), unit preferences, onboarding weight in lb stored as kg and recorded as the first weigh-in; remove ATLAS progress API"
+
+# 2) clients: Profile body tracking, settings, coach views
+git add -A -- \
+  packages/shared \
+  apps/mobile \
+  apps/dashboard
+git commit -m "feat: profile body tracking with weight and measurement charts, progress photo gallery and compare, unit settings; read-only body tab for the coach in the app and dashboard"
+
+# 3) docs
+git add -A -- \
+  docs/PRD.md \
+  docs/phase-reports/phase-10-profile-body-tracking.txt
+git commit -m "docs: phase 10 report, backlog: lb for workouts, progress photo slider"

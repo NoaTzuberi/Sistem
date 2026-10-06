@@ -13,7 +13,8 @@ import {
 } from '../icons';
 import { useStaggerReveal } from '../../../../hooks/useStaggerReveal';
 import { listPersonalRecords } from '../../../../services/personalRecords/personalRecordsService';
-import { listProgressEntries } from '../../../../services/progress/progressService';
+import { weighIns } from '@sistem/shared';
+import { listBodyMetrics } from '../../../../services/bodyMetrics/bodyMetricsService';
 import { listWorkoutLogs } from '../../../../services/workoutLogs/workoutLogsService';
 import { getMyProfile } from '../../../../services/users/usersService';
 import type { DashboardSummary } from '../../types';
@@ -262,9 +263,10 @@ export function AchievementBadges({ summary, limit }: AchievementBadgesProps) {
 
   useEffect(() => {
     let cancelled = false;
-    listProgressEntries(50)
-      .then((entries) => {
-        if (!cancelled) setWeighInCount(entries.length);
+    // Body tracking weigh-ins (Phase 10; the ATLAS Progress API is gone). Reworked in Phase 11.
+    listBodyMetrics()
+      .then((list) => {
+        if (!cancelled) setWeighInCount(weighIns(list.items).length);
       })
       .catch(() => {
         // Weigh-in badge just stays at 0 if entries can't be loaded.

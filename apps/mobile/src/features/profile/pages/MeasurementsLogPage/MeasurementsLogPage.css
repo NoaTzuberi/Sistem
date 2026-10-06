@@ -1,0 +1,24 @@
+.measurements-log-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.measurements-log-page-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.measurements-log-page-error {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-error);
+}
+
+.measurements-log-page-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+}
