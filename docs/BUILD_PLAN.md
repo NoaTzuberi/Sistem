@@ -46,6 +46,11 @@ These apply to every later phase. Details and reasoning: `docs/phase-reports/pha
 - **Password reset is not in the MVP** (see Backlog).
 - **Monorepo approved.** Phase 1 removals happen in the current structure; the move to apps/ + packages/ happens in Phase 2.
 
+Later owner decisions (2026-10-07):
+
+- **Hebrew is the default language, right-to-left everywhere**; English is an option in Settings. Built in Phase 15, **before any design work**. Coach content is never auto-translated.
+- **`docs/reference/` is gitignored** (the coach's own content). The repo is private now and will become public later — see the PRD §14 backlog item on auditing the git history first.
+
 ---
 
 ## Phase 0 — Audit & project memory (no code changes)
@@ -333,8 +338,142 @@ Implement PRD §8.
 
 ## Phase 13 (later) — Nutrition
 
+Owner decision (2026-10-07): nutrition follows the coach's guide `docs/reference/nutrition-guide-1500.pdf` —
+an exchange-list ("portions") method: food groups with a calorie cap per portion (protein ≤ 150 kcal, carb
+≤ 120, fat ≤ 90, vegetables free), each meal = a number of portions per group, any portion swappable for
+another item from the same group. Split into 13a (core, open to users), 13b (built behind feature flags,
+closed) and 13c (AI draft, after Phase 12). 13a designs the data model for 13b so nothing needs reworking.
+Read PRD §5.6 (including the owner decisions) before each sub-phase. The guide and its review list
+(`docs/reference/nutrition-guide-issues.md`) are local only — `docs/reference/` is gitignored.
+If Phase 15 (Hebrew & RTL) is already done when 13 starts, all new copy goes into the translation files.
+
+### Phase 13a — Nutrition core (open to users)
+
 ```
-Implement PRD §5.6: coach nutrition builder (meals, foods, portions, notes) per trainee, and a Nutrition tab for the trainee to view their plan. Propose the schema first.
+Implement PRD §5.6 (core). Read docs/reference/nutrition-guide-1500.pdf and
+docs/reference/nutrition-guide-issues.md first (local files, gitignored — never commit or quote them in
+committed files beyond what PRD §5.6 says). Propose the schemas (13a AND the 13b models — see Phase 13b),
+the onboarding step and the calorie config before writing routes.
+
+1. Food list (coach): FoodItem — coachId, group (protein / carb / fat / vegetable), name, portion
+   description, grams (optional), kcal per portion (optional, never above the group cap), "new" tag,
+   diet tags (contains: meat / poultry / fish / dairy / eggs / gluten / peanuts / tree nuts / sesame /
+   soy — ids in constants), order, archivedAt (items a plan uses are archived, never deleted). Dashboard
+   screen to edit and add. Group values (150 / 120 / 90 / 0 kcal per portion) live in the nutrition
+   config, coach-tunable.
+2. Nutrition preferences — a NEW onboarding step (owner-approved change to the protected onboarding;
+   everything else in onboarding stays untouched). Placeholder copy, marked as such. Fields: diet type
+   (none / vegetarian / vegan / pescatarian), kosher (yes / no), allergies and intolerances (a common list
+   in constants + free text), foods she dislikes (free text). Saved per step to OnboardingResponse like
+   every other step (server validation, resume works); same privacy as the other answers (her own + her
+   coach's). Place it before Review and show it in Review. Trainees who completed onboarding before this
+   step are not sent back — the coach sees "not answered". The coach sees the preferences in the trainee
+   profile (both apps, via the shared onboarding answer sections in @sistem/shared) and in the nutrition
+   builder, which warns when an option line uses an item that conflicts with them (diet type / allergy
+   tags / kosher = meat + dairy in one option).
+3. Seed script (idempotent, per coach, DEV + first setup): the guide's 44 food items verbatim (20 protein,
+   12 carb, 12 fat, with the "new" tags; diet tags proposed for the coach to review), the two tips
+   (protein tip, swap rule), and one template "1,500 kcal" (breakfast 1P+1C+1F, lunch 2P+1C+1F, snack
+   1C+1F, dinner 1.5P+1C+1F, with the guide's options). The food list's values win: option lines use the
+   list's amounts, meal kcal is computed (dinner 435, day 1,515), and each gap is seeded exactly as written
+   in nutrition-guide-issues.md (patties = free-text line, etc.). Never invent values the guide doesn't
+   give: no per-item kcal, no vegetable items.
+4. Calorie target (one pure module, reused by 13c): BMR Mifflin-St Jeor (latest weigh-in, else the
+   onboarding weight; height; age from birthDate; sex) × an activity factor from her training frequency
+   (table in config) → goal adjustment. Goal mapping (owner-approved): "lose weight" → fat-loss deficit;
+   "build muscle" without "lose weight" → muscle-gain small surplus; anything else → toning / recomp
+   small deficit; maintenance 0 available to the coach. ALL numbers in ONE config: `nutrition.config.ts`
+   defaults + per-coach overrides the coach edits in a dashboard settings screen (the four goal
+   percentages, the activity factors, the floor, the group values). Sex "other" or missing → no automatic
+   estimate: the coach picks the formula (male / female constants) or types the target. The server returns
+   the suggestion with its inputs; the coach approves or overrides. Floor: a target below 1,200 kcal
+   (config) needs an explicit coach confirmation, stored on the plan and enforced on publish.
+   Unit tests for the formula, the factor table, the goal mapping, the no-estimate case and the floor.
+5. Nutrition plan (dashboard builder): one current plan per trainee — calorie target (value, source
+   suggested / override, suggestion inputs, floor confirmation), meals (stable ids, editable list, default
+   breakfast / lunch / snack / dinner) with portions per group in steps of 0.5 (vegetables free), meal kcal
+   and day total computed on the server from the group values, options per meal (label + lines: food item +
+   portions, or free text), coach tips. Draft autosaves; publish is explicit; editing a published plan
+   and publishing again creates a new version (keep a snapshot per published version — 13b logs point
+   to it). Publish rules are server-only (like plan.validation.ts → `issues`): ≥ 1 meal, portions in 0.5
+   steps, target set, floor confirmed, option food ids exist / not archived / in the right group; an option
+   whose portions differ from its meal is a warning, not a block.
+6. Templates — decided: REUSE the Phase 3 Template model (PRD §10 "Template: coachId, type, content").
+   Add type `nutrition_plan` and a `nutrition` field holding the SAME meals subschema as NutritionPlan
+   (target kcal, meals → portions, options, tips — no trainee data, no calorie confirmation), the way
+   `workouts` reuses planWorkoutSchema so a template copies into a plan as-is. The pre-validate shape
+   check gets one rule per type (a nutrition template has ≥ 1 meal and no workouts; workout / plan
+   templates have no `nutrition`). Why: one templates collection and API pattern for the coach, matches
+   the PRD, and the existing `{ coachId, type, updatedAt }` index already serves "my templates of type X".
+   Save a plan as a template, start a trainee's plan from one, then adjust.
+7. Trainee Nutrition tab (mobile, tab bar Home · Workouts · Nutrition · Profile): her meals with portions
+   per group, options and tips; tap a portion → bottom sheet with every item of that group (name, portion,
+   grams, "new"). No calorie numbers on trainee screens. Loading / empty ("no nutrition plan yet") / error
+   states. Mobile-first.
+8. Coach mode (mobile): read-only Nutrition tab in trainee detail (`?tab=nutrition`), "Edit on dashboard" hint.
+9. Notification: the publish service emits `nutrition_plan.published` (first publish and every update) →
+   listener → `notify()` → trainee, type + data only ({ planId, version, isUpdate }), tap → Nutrition tab.
+   Wording built by the screen (placeholder until the owner sends copy).
+10. Authorization: coach routes under /api/coach via loadCoachTrainee; a trainee reads only her own
+    published plan; nutrition preferences only through the existing onboarding access rules. Tests for
+    the rules, the calorie module, the preferences step validation and the publish validation.
+```
+
+### Phase 13b — Recipes, meal logging, water (built behind feature flags, closed)
+
+The models below are designed (and their schemas approved) in Phase 13a. The routes and UI are built in
+13b but stay closed until the owner opens each flag.
+
+```
+Implement the PRD §5.6 "planned, closed" features behind feature flags. Propose the flag mechanism first
+(there is none yet): one server config with a flag per feature (`nutritionRecipes`, `mealLogging`,
+`waterTracking`), default OFF; the server enforces them (a closed feature's routes answer 404) and sends
+them to the clients (e.g. with the nutrition plan) so the UI stays hidden — never client-only hiding.
+
+1. Recipes & menu suggestions (coach, dashboard): Recipe — coachId, name, ingredients (food item +
+   portions, or free text), steps / notes, computed portions per group. A meal option line may point to
+   a recipe. Trainee sees recipes inside her meal options.
+2. Meal logging (trainee): MealLog — traineeId, date ('YYYY-MM-DD' in her zone), planId, plan version,
+   mealId, portions eaten per group, optional option id, and a snapshot of the planned portions (so an
+   edited plan never rewrites history); unique traineeId + date + mealId. The coach sees adherence per day.
+3. Water tracking: daily goal on the nutrition plan (ml, set by the coach) + WaterLog — traineeId, date,
+   total ml; quick-add buttons (amounts from config). Unique traineeId + date.
+4. Tests: flags off → 404 and no UI; flags on → full flow; authorization rules.
+```
+
+### Phase 13c — AI nutrition recommendation (after Phase 12)
+
+```
+Implement the PRD §5.6 AI draft on top of the Phase 12 AI infrastructure (same LLM provider, job runner
+and AIRecommendation model with a nutrition kind — do not add a second provider).
+
+1. Trigger: when "trainee.onboarded" fires (next to the Phase 12 plan job) and on demand from the coach
+   ("Generate AI draft" in the nutrition plan builder).
+2. Calorie target in CODE, never by the model: the Phase 13a calorie module (Mifflin-St Jeor × activity
+   factor from training frequency → goal adjustment: fat loss = deficit, toning / recomp = small deficit,
+   muscle gain = small surplus; percentages in the coach-tunable config). Below the 1,200 kcal floor the
+   draft is raised to the floor and flagged — the coach confirms as in 13a.
+3. Nutrition preferences (13a onboarding step) are enforced IN CODE before the model sees anything:
+   filter the coach's food list by her diet type, allergies (diet tags) and kosher — a filtered-out item
+   is never sent, so the model cannot pick it. Kosher also = no meat + dairy in the same option (checked
+   on the output, step 5). Free-text allergies / dislikes cannot be filtered by code: they are sent to
+   the model as text and shown to the coach next to the draft. If the filtered list leaves a group empty,
+   do not call the model — tell the coach.
+4. Model input: the computed target, the group values, the meal list (from the coach's default template),
+   relevant onboarding answers, and the FILTERED food list as ids grouped by group (active items only).
+   Model output (structured JSON): portions per group per meal, options per meal (lines = food item id +
+   portions), a short rationale for the coach. Nothing else — no calorie numbers from the model.
+5. Validation in code: schema; every food id exists, belongs to the coach, is not archived, was in the
+   filtered list sent and is in the group the line claims; kosher → no meat + dairy in one option; every
+   meal present and non-empty; portions in 0.5 steps; each option's portions
+   per group equal its meal's; day total (computed from the group values) within a tolerance of the target
+   (config, e.g. ±5%). Invalid → retry with the errors (max retries in config) → else mark failed; the coach
+   sees "couldn't generate" and builds manually. Store the inputs with the recommendation.
+6. Coach UX: "Load AI draft" pre-fills an editable draft nutrition plan with the rationale and her
+   preferences shown alongside. Never visible to the trainee; only the coach's publish reaches her.
+7. Tests: the preference filter (each diet type, allergy tags, kosher), the validator (good output, bad
+   ids, filtered-out id, wrong group, meat + dairy for kosher, missing meal, off-target totals), retry and
+   reject paths, and that nothing is sent to the trainee before publish. The LLM is mocked in tests.
 ```
 
 ---
@@ -384,6 +523,63 @@ Implement smartwatch import through the phone's health platforms. Needs Phase 5b
 ```
 Strava and/or Garmin Connect APIs. Before building: verify their current API terms (especially
 showing a user's data to a coach) and developer program approval. Decision deferred — ask first.
+```
+
+---
+
+## Phase 15 — Hebrew & RTL (before any design work)
+
+Owner decision (2026-10-07): the app launches in Israel first. **Hebrew is the default language** of the
+mobile app and the dashboard, right-to-left everywhere; English is an option. Numbered 15 but it is NOT
+"later": it runs before any design work (PRD §12) — the design is made for the Hebrew RTL app. It can run
+before Phases 12–14; whichever of them comes after it writes its copy straight into the translation files.
+
+```
+Implement PRD §11 "Language". Read PRD §11 and §12 first. Propose the approach before changing code:
+the i18n library (e.g. i18next + react-i18next) or a small in-house helper — a new dependency needs my
+OK — the key naming, the file layout, and the list of screens / components affected.
+
+1. Language setting: `User.preferences.language` 'he' | 'en', default 'he', in AuthUser like the units;
+   changed in Settings (mobile Profile → Settings, and the dashboard), PATCH /api/users/preferences,
+   remembered on the server. Before login (auth screens): Hebrew, or the language last used on this
+   device. Both apps switch immediately, without a reload.
+2. i18n setup: ALL UI copy moves out of components into translation files. The existing *Copy.ts files
+   (homeCopy, workoutCopy, waitingCopy, bodyCopy, profileCopy, achievementCopy, ...) are the source; also
+   every inline string in components, onboarding (the step texts and option labels — onboarding logic,
+   ids and data stay untouched), the dashboard, and the display helpers in @sistem/shared
+   (describeTargets, achievement names, status labels, describeCoachNotification, ...). Keys shared by
+   both apps live in @sistem/shared. Hebrew is the primary, complete locale; English must stay complete
+   too — add a check (script in `npm test` or lint) that both locales have exactly the same keys and
+   the same {placeholders}. Plurals via the library / Intl.PluralRules, never string concatenation.
+3. Hebrew copy: the owner writes product copy. Draft the Hebrew strings as faithful translations of the
+   current English and list every one in the phase report for owner review (mark them as drafts); copy
+   already marked "placeholder" stays a placeholder in both languages. Never invent new wording.
+4. RTL layout: `<html dir lang>` follows the language. All CSS moves to logical properties
+   (margin-inline-start, padding-inline-end, inset-inline-start, text-align: start, border-start-*, ...);
+   no physical left / right properties remain in the CSS except where physical direction is meant (comment why). Direction-
+   aware: back / forward chevrons and arrows flip; icons that show real-world direction (clock, play,
+   checkmark) do not. The sharp-cut clip-paths and notch / bracket shapes mirror. GSAP x-transforms and
+   page transitions flip their direction. Swipe gestures follow the reading direction. Charts (body
+   trend, achievements): propose the time-axis direction for RTL and ask before changing it.
+5. Numbers and units inside RTL text: numbers, units, times and mixed Hebrew / Latin strings render in
+   the right order (Unicode isolation / <bdi>, `dir="ltr"` on numeric inputs where needed): "80 ק״ג",
+   "3 × 10", "12:30", "-2.5 kg", rest timers, set rows, pace. Check every screen with numbers.
+6. Dates, weekdays, numbers: Intl (DateTimeFormat, NumberFormat, RelativeTimeFormat, PluralRules) in the
+   selected locale everywhere — no hand-written month / day names (DAY_NAMES in @sistem/shared becomes
+   Intl-based). Weeks still start on Sunday. Israel defaults stay: Asia/Jerusalem, kg, cm.
+7. Fonts: check the typography tokens render Hebrew well (glyph support, weights). If the current fonts
+   have no Hebrew, stop and ask me — choosing a font is design.
+8. Server-built texts follow the user's language: validation / error messages (send a stable code AND
+   a localized message; clients may show their own text by code), emails (Resend), and the push texts
+   Phase 5b will build (notifications keep storing type + data only — the text is built per recipient's
+   language at send time). Server messages live in their own translation files with the same key check.
+9. Coach content is stored and shown exactly as written — exercise notes, plan / workout names, food
+   list, tips, nutrition notes, summaries. No auto-translation. User-written text renders with
+   `dir="auto"` so Hebrew in an English UI (and English in a Hebrew UI) displays correctly.
+   The imported exercise names (Kaggle facts) stay in English for now — note it as a known issue.
+10. Verify in both languages on iPhone SE (375×667) and Pro Max (430×932) and the dashboard at desktop
+    width: every screen, onboarding end to end, an active workout session (timers, interval mode), body
+    charts, coach mode. List remaining issues in the report.
 ```
 
 ---

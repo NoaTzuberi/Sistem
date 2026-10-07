@@ -107,9 +107,57 @@ Bottom tab navigation: **Home · Workouts · Profile** (Nutrition added later).
 - **Progress photos**: dated gallery (front / side / back).
 - Settings, notifications, log out.
 
-### 5.6 Nutrition (later phase)
-- Coach-assigned meal plan per trainee: meals, foods, portions, notes.
-- Trainee views the plan; optional meal logging later.
+### 5.6 Nutrition (later phase — Phase 13a / 13b / 13c)
+
+Source: the coach's guide `docs/reference/nutrition-guide-1500.pdf` ("1,500 kcal menu — modular portions guide") and the review list `docs/reference/nutrition-guide-issues.md`. `docs/reference/` is the coach's own content: local only, gitignored.
+
+**Method — exchange lists ("portions").** Food is grouped, and every group has a calorie cap per portion:
+
+| Group | Cap per portion | Notes |
+|---|---|---|
+| Protein | ≤ 150 kcal | e.g. 150 g cottage 5%, 2 L eggs, 130 g chicken breast |
+| Carb | ≤ 120 kcal | e.g. 30 g dry oats, 3 slices light bread, 1 medium banana |
+| Fat | ≤ 90 kcal | e.g. 2 tsp olive oil, ¼ large avocado, 10 almonds |
+| Vegetable | free | not counted |
+
+A meal is defined as **a number of portions per group** (halves allowed, e.g. 1.5 protein). Any portion can be swapped for any other item **from the same group** (the guide's "iron rule for variety"). Meal calories are computed from the portions × the group value (the guide's own table: 1 protein + 1 carb + 1 fat ≈ 360 kcal), never from individual foods.
+
+**Food list (coach).** Food items: group (protein / carb / fat / vegetable), name, portion description (e.g. "3 slices", "1 heaping tsp"), grams (optional — eggs, slices and spoons have none), kcal per portion (optional; the guide gives only the group caps, so it is empty unless the coach fills it, and it may never exceed the group cap), an optional "new" tag, and diet tags (what it contains — e.g. meat, poultry, fish, dairy, eggs, gluten, peanuts, tree nuts, sesame, soy — so the list can be filtered by her nutrition preferences). Seeded from the guide (20 protein, 12 carb, 12 fat items, names as written by the coach; the food list's values are the source of truth, the guide's gaps are listed for the coach in the issues file); the coach edits and adds, and reviews the seeded tags. No vegetable items are invented. Items used by a plan are archived, never deleted.
+
+**Nutrition preferences (new onboarding step, Phase 13a).** A "Nutrition preferences" step (placeholder copy until the owner sends wording): diet type (none / vegetarian / vegan / pescatarian), kosher (yes / no), allergies and intolerances (a common list + free text), foods she dislikes (free text). Stored in OnboardingResponse with the other answers. Allergies are health data and get the same privacy as the rest of onboarding (her own and her coach's eyes only). The coach sees them in the trainee profile and in the nutrition builder (with a warning when an option uses an item that conflicts with them).
+
+**Nutrition plan (coach, dashboard).** One current plan per trainee (not weekly), built in the dashboard:
+- **Calorie target**: the server suggests an estimate — BMR (Mifflin-St Jeor, from her latest weight, height, age from birth date, and sex) × an activity factor from her training frequency, then a goal adjustment (deficit / surplus %). The coach approves the suggestion or overrides it. The inputs used are shown next to the number.
+  - Goal mapping (onboarding goals, which stay unchanged): "lose weight" → fat-loss deficit; "build muscle" without "lose weight" → small surplus (muscle gain); anything else → small deficit (toning / recomp). Maintenance (0%) is available to the coach.
+  - All percentages (fat-loss deficit, toning / recomp small deficit, muscle-gain small surplus, maintenance 0), the activity factors and the floor live in **one config the coach can tune**.
+  - Sex "other" or missing: **no automatic estimate** — the coach picks the formula (male / female constants) or types the target.
+- **Safety floor**: a target below **1,200 kcal** needs an explicit coach confirmation (stored with the plan).
+- **Meals**: an editable list (default: breakfast, lunch, snack, dinner), each with portions per group (steps of 0.5), vegetables free, kcal per meal computed; the day total is shown against the target.
+- **Meal options**: each meal has options (the guide's "Option A / Option B", "Classic combo / Salty combo") — lines that point to food-list items with a portion count, or free text (e.g. "cut vegetables — free").
+- **Coach tips**: free notes on the plan (e.g. the guide's protein tip and swap rule).
+- **Templates**: e.g. "1,500 kcal" — the coach starts a trainee's plan from a template and adjusts it. One template is seeded from the guide.
+- Draft → publish. Editing a published plan and publishing again creates a new version; the trainee always sees the latest published version.
+
+**Trainee — Nutrition tab.** Her meals for the day, each with its portions per group (e.g. "1 protein · 1 carb · 1 fat · vegetables free"), the coach's options and tips. Tapping a portion opens **all swaps from that group** (name, portion description, grams, "new" tag). Portions are the focus: calorie numbers are not on the trainee screens.
+
+**Coach mode (mobile).** Read-only view of a trainee's nutrition plan (Trainee detail → Nutrition). Building and editing happen on the web dashboard.
+
+**Notifications.** The trainee is notified when a nutrition plan is published and when a published plan is updated (tap → Nutrition tab).
+
+**Planned, closed behind feature flags (13b).** Data model designed in 13a, UI hidden:
+- Recipes and menu suggestions built by the coach (ingredients mapped to food items and portions).
+- Meal logging: the trainee marks the portions eaten per meal.
+- Water tracking: daily goal and quick-add.
+
+**AI nutrition draft (13c — uses the Phase 12 AI infrastructure).** Same rule as §8: nothing AI-generated reaches the trainee without the coach publishing it.
+- Runs when onboarding completes and on demand from the coach.
+- The calorie target is computed **in code, never by the model** (the same calculation as the suggestion above; percentages in one coach-tunable config; same 1,200 kcal floor).
+- The model only chooses the meal structure (portions per group per meal) and the meal options, using **only** the coach's food list (sent as ids), plus a short rationale for the coach.
+- Her nutrition preferences are respected **in code first**: the food list is filtered (diet type, allergies, kosher) before it is sent to the model; kosher also means no meat and dairy in the same option (checked on the output). Dislikes are free text: sent to the model and shown to the coach, who reviews.
+- Code validates the output (food ids exist, are allowed for her and match their group, every meal complete, portion totals match the target within a tolerance); invalid output is retried, then rejected.
+- The coach sees it as an editable draft in the nutrition plan builder, with the rationale.
+
+**Decisions (owner, 2026-10-07).** Goal mapping, sex "other" / missing, and the nutrition preferences step: as above. The guide's gaps (dinner 435 vs ~420 kcal, lunch turkey / patties amounts, cheese slices, no vegetable items) are seeded with the food list's values and listed in `docs/reference/nutrition-guide-issues.md` for the coach. Food names and all coach content are stored and shown as written (Hebrew) — no auto-translation; the app becomes Hebrew-first in Phase 15 (§11).
 
 ## 6. Coach Admin — Screens
 
@@ -125,7 +173,7 @@ Both use the same backend, auth and data. Tapping a "new trainee" push opens tha
 - **Templates**: reusable workouts and plans.
 - **Notifications**: new trainee, workout completed (optional), plan due soon.
 - *(Later)* **AI recommendation panel** inside the plan builder (see §8).
-- *(Later)* **Nutrition builder**.
+- *(Later)* **Nutrition builder** — food list, per-trainee nutrition plans, templates, AI draft (see §5.6).
 
 ## 7. Achievements & Streaks
 
@@ -154,6 +202,7 @@ No achievements are based on body weight gain or loss — trainees have differen
 |---|---|---|
 | New trainee completed onboarding | Coach | Push |
 | Plan published | Trainee | Push |
+| Nutrition plan published / updated | Trainee | Push |
 | Workout reminder (scheduled day) | Trainee | Push (configurable) |
 | Achievement unlocked | Trainee | In-app (push optional) |
 
@@ -162,7 +211,7 @@ Store device push tokens per user. Fail gracefully when push permission is denie
 ## 10. Data Model (initial sketch)
 
 - **User**: name, email, passwordHash, role, onboardingStatus, onboardingCompletedAt, pushTokens[], coachId (for trainees)
-- **OnboardingResponse**: userId, answers (reuse ATLAS schema), completedAt
+- **OnboardingResponse**: userId, answers (reuse ATLAS schema; Phase 13a adds nutrition preferences), completedAt
 - **Exercise**: reused from ATLAS exercise library
 - **Plan**: traineeId, coachId, weekStartDate, status (draft/published), workouts[]
 - **Workout** (embedded in Plan or own collection): title, dayOfWeek/order, exercises[{ exerciseId, sets, reps, targetWeight, restSec, notes }]
@@ -170,7 +219,8 @@ Store device push tokens per user. Fail gracefully when push permission is denie
 - **BodyMetric**: traineeId, date, weight?, measurements{...}?, photos[]
 - **Achievement**: traineeId, type, value, unlockedAt, sourceLogId
 - **Template**: coachId, type (workout/plan), content
-- *(Later)* **NutritionPlan**, **AIRecommendation**
+- *(Later)* **AIRecommendation**
+- *(Later, §5.6)* **FoodItem** (coach food list), **NutritionPlan** (calorie target, meals → portions per group, options, tips, versions), nutrition templates; 13b: **Recipe**, **MealLog**, **WaterLog**
 
 ## 11. Technical Notes & Open Decisions
 
@@ -182,10 +232,13 @@ Store device push tokens per user. Fail gracefully when push permission is denie
 - **Photo storage**: private object storage (e.g. S3 / Cloudinary) with signed URLs. Photos are personal data — never public URLs.
 - **Timer source of truth**: always the server timestamp.
 - **Offline resilience**: active workout state persisted locally and synced on reconnect.
+- **Language (decided, 2026-10-07)**: **Hebrew is the default language** of the mobile app and the dashboard, right-to-left everywhere. English is an option in Settings (per user, stored on the server). Launch is in Israel first; other markets later. Israel defaults: `Asia/Jerusalem`, kg, cm, week starts Sunday. Server-built texts follow the user's language. Coach content (food list, tips, notes) is shown as written — never auto-translated. Built in Phase 15.
 
 ## 12. Design Direction
 
 The owner leads visual design. These are the ground rules for implementation.
+
+**Design work happens after Phase 15 (Hebrew & RTL)** — the final design is made for the Hebrew, right-to-left app (English is the mirrored variant), not the other way round.
 
 **Feel**: modern, alive, bold. **Sharp cuts** — angled corners and diagonal clip-path shapes rather than soft rounded cards. Pink and white dominate the app.
 
@@ -216,6 +269,7 @@ Design system notes:
 | v1.1 | Profile: body weight, measurements, progress photos; achievements & streaks; templates |
 | v1.2 | AI plan recommendation for the coach |
 | v1.3 | Nutrition plans |
+| Before design work | Hebrew (default) & RTL, English as an option (Phase 15) |
 
 ## 14. Backlog
 
@@ -237,3 +291,4 @@ Design system notes:
 - **Split the mobile bundle by role** — lazy-load the coach screens (and other role-only code) so a trainee never downloads coach mode, and the other way round. The mobile bundle was 507 kB after Phase 6b, over Vite's 500 kB warning line.
 - **lb for workouts** — workout sets, targets and the session's weight steps are kg only. Phase 10 added kg/lb (and cm/in) for body tracking only (owner decision); extend the same unit setting to workout weights.
 - **Progress photo slider** — a before/after slider overlay in Compare (Phase 10 compares side by side).
+- **Before making the repo public** — audit the full git history for secrets, coach content, personal data and seed data; rotate any exposed secret; rewrite history if needed. (The repo is private now; `docs/reference/` is gitignored for this reason.)
