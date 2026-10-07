@@ -4,6 +4,7 @@ import { emitAppEvent } from '../../events/appEvents';
 import { User } from '../users/user.model';
 import { WorkoutLog } from '../workoutLogs/workoutLog.model';
 import { findCoachLibraryIds } from '../exercises/exercise.service';
+import { isLinkableRecommendation } from '../aiRecommendations/aiRecommendation.service';
 import { Plan } from './plan.model';
 import { PlanNotFoundError, attachExerciseFacts, toPublicPlan } from './plan.service';
 import type { LeanPlan } from './plan.service';
@@ -39,7 +40,14 @@ async function toCoachPlans(plans: LeanPlan[]): Promise<CoachPlan[]> {
   ]);
   const locked = new Set(startedPlanIds.map(String));
 
-  return publicPlans.map((plan) => ({ ...plan, locked: locked.has(plan.id) }));
+  return publicPlans.map((plan, index) => {
+    const aiRecommendationId = plans[index].aiRecommendationId;
+    return {
+      ...plan,
+      locked: locked.has(plan.id),
+      ...(aiRecommendationId ? { aiRecommendationId: String(aiRecommendationId) } : {}),
+    };
+  });
 }
 
 async function findPlan(traineeId: string, planId: string): Promise<LeanPlan> {
@@ -143,6 +151,9 @@ export async function saveCoachPlan(traineeId: string, planId: string, input: Sa
       }
     });
   });
+  if (input.aiRecommendationId && !(await isLinkableRecommendation(traineeId, input.aiRecommendationId))) {
+    issues.push({ message: 'That AI recommendation was not found for this trainee.' });
+  }
   if (issues.length > 0) {
     throw new PlanValidationError(issues);
   }
@@ -171,6 +182,7 @@ export async function saveCoachPlan(traineeId: string, planId: string, input: Sa
     })),
   );
   plan.set('notes', input.notes);
+  if (input.aiRecommendationId !== undefined) plan.set('aiRecommendationId', input.aiRecommendationId ?? undefined);
   await plan.save();
 
   return getCoachPlan(traineeId, planId);

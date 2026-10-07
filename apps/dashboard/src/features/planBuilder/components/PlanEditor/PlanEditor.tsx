@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import type { CoachPlan, ExerciseFacts } from '@sistem/types';
+import type { AiRecommendation, CoachPlan, ExerciseFacts } from '@sistem/types';
 import { traineePath } from '../../../../app/config/routes';
 import { Badge } from '../../../../components/common/Badge/Badge';
 import { Button } from '../../../../components/common/Button/Button';
@@ -15,6 +15,10 @@ import type { DraftWorkout } from '../../types';
 import { ExerciseLibrary } from '../ExerciseLibrary/ExerciseLibrary';
 import { SaveIndicator } from '../SaveIndicator/SaveIndicator';
 import { WorkoutCard } from '../WorkoutCard/WorkoutCard';
+import { useLatestAiDraft } from '../../../aiDraft/hooks/useLatestAiDraft';
+import { draftWorkoutsFromAi } from '../../../aiDraft/aiDraftToPlan';
+import { AiRationalePanel } from '../../../aiDraft/components/AiRationalePanel/AiRationalePanel';
+import { AI_DRAFT_COPY } from '../../../aiDraft/data/aiDraftCopy';
 import './PlanEditor.css';
 
 interface PlanEditorProps {
@@ -23,10 +27,14 @@ interface PlanEditorProps {
   /** The trainee's current week, from the server — labels this plan 'This week' / 'Next week'. */
   currentWeekStart: string;
   initialPlan: CoachPlan;
+  /** Fill this (empty, draft) plan from that AI draft once it is loaded ("Use in a new plan"). */
+  loadAiDraftId?: string;
 }
 
-export function PlanEditor({ traineeId, traineeName, currentWeekStart, initialPlan }: PlanEditorProps) {
+export function PlanEditor({ traineeId, traineeName, currentWeekStart, initialPlan, loadAiDraftId }: PlanEditorProps) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const ai = useLatestAiDraft(traineeId);
   const sensors = useSortSensors();
   const { plan, draft, updateDraft, saveStatus, isDirty, issues, error, save, publish, unpublish, remove } = usePlanEditor(
     traineeId,
@@ -45,6 +53,31 @@ export function PlanEditor({ traineeId, traineeName, currentWeekStart, initialPl
   function setWorkouts(update: (current: DraftWorkout[]) => DraftWorkout[]) {
     updateDraft((current) => ({ ...current, workouts: update(current.workouts) }));
   }
+
+  function loadAiDraft(recommendation: AiRecommendation) {
+    if (!recommendation.output) return;
+    const aiWorkouts = draftWorkoutsFromAi(recommendation.output);
+    // The editor's draft is replaced; autosave stores it through the normal plan rules.
+    updateDraft((current) => ({ ...current, aiRecommendationId: recommendation.id, workouts: aiWorkouts }));
+    setSelectedKey(aiWorkouts[0]?.key);
+  }
+
+  function handleLoadAiDraft() {
+    if (!ai.ready) return;
+    if (workouts.length > 0 && !window.confirm(AI_DRAFT_COPY.replaceConfirm)) return;
+    loadAiDraft(ai.ready);
+  }
+
+  // "Use in a new plan": once, into the empty draft; the router state is cleared so a
+  // reload never loads it again.
+  const autoLoaded = useRef(false);
+  useEffect(() => {
+    if (autoLoaded.current || !loadAiDraftId || ai.ready?.id !== loadAiDraftId) return;
+    autoLoaded.current = true;
+    if (!isPublished && workouts.length === 0) loadAiDraft(ai.ready);
+    navigate(location.pathname, { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs when the draft arrives
+  }, [loadAiDraftId, ai.ready]);
 
   function handleAddWorkout() {
     const workout = newWorkout(workouts.length + 1);
@@ -131,6 +164,11 @@ export function PlanEditor({ traineeId, traineeName, currentWeekStart, initialPl
             </>
           ) : (
             <>
+              {(ai.ready || ai.running) && (
+                <Button disabled={!ai.ready || isBusy} onClick={handleLoadAiDraft}>
+                  {ai.ready ? AI_DRAFT_COPY.loadIntoPlan : AI_DRAFT_COPY.loadingRunning}
+                </Button>
+              )}
               <Button disabled={!isDirty || isBusy || saveStatus === 'saving'} onClick={() => void save()}>
                 Save draft
               </Button>
@@ -173,6 +211,10 @@ export function PlanEditor({ traineeId, traineeName, currentWeekStart, initialPl
 
       <div className="plan-layout">
         <div className="plan-main">
+          {draft.aiRecommendationId && (
+            <AiRationalePanel traineeId={traineeId} recommendationId={draft.aiRecommendationId} recommendation={ai.latest} />
+          )}
+
           <label className="plan-notes">
             <span className="plan-notes-label">Plan notes</span>
             <textarea

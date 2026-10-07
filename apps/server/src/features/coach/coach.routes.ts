@@ -17,6 +17,11 @@ import {
   unpublishTraineePlan,
   deleteTraineePlan,
 } from './coach.controller';
+import {
+  getLatestTraineeRecommendation,
+  getTraineeRecommendation,
+  createTraineeRecommendation,
+} from '../aiRecommendations/aiRecommendation.controller';
 
 // The human Coach (PRD §6) — the ATLAS AI chat that used /api/coach is gone.
 // Every route needs role=coach; every :traineeId route also needs that trainee to
@@ -42,3 +47,8 @@ coachRouter.put('/trainees/:traineeId/plans/:planId', loadCoachTrainee, saveTrai
 coachRouter.delete('/trainees/:traineeId/plans/:planId', loadCoachTrainee, deleteTraineePlan);
 coachRouter.post('/trainees/:traineeId/plans/:planId/publish', loadCoachTrainee, publishTraineePlan);
 coachRouter.post('/trainees/:traineeId/plans/:planId/unpublish', loadCoachTrainee, unpublishTraineePlan);
+
+// AI recommendations (Phase 12): coach-only drafts, never sent to the trainee.
+coachRouter.get('/trainees/:traineeId/ai-recommendations/latest', loadCoachTrainee, getLatestTraineeRecommendation);
+coachRouter.get('/trainees/:traineeId/ai-recommendations/:recommendationId', loadCoachTrainee, getTraineeRecommendation);
+coachRouter.post('/trainees/:traineeId/ai-recommendations', loadCoachTrainee, createTraineeRecommendation);

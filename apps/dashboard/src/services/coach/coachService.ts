@@ -16,4 +16,7 @@ export const {
   publishPlan,
   unpublishPlan,
   deletePlan,
+  getLatestAiRecommendation,
+  getAiRecommendation,
+  generateAiRecommendation,
 } = createCoachApi(apiClient);

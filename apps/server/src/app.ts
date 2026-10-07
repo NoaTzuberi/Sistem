@@ -13,6 +13,7 @@ import { achievementsRouter } from './features/achievements/achievement.routes';
 import { coachRouter } from './features/coach/coach.routes';
 import { notificationsRouter } from './features/notifications/notification.routes';
 import { registerNotificationListeners } from './features/notifications/notification.listeners';
+import { registerAiRecommendationListeners } from './features/aiRecommendations/aiRecommendation.listeners';
 
 const app = express();
 
@@ -32,5 +33,6 @@ app.use('/api/coach', coachRouter);
 app.use('/api/notifications', notificationsRouter);
 
 registerNotificationListeners();
+registerAiRecommendationListeners();
 
 export default app;

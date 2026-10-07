@@ -47,6 +47,8 @@ export interface DraftWorkout {
 export interface PlanDraft {
   notes: string;
   workouts: DraftWorkout[];
+  /** The AI recommendation the workouts were loaded from (its rationale shows beside the plan). */
+  aiRecommendationId?: string;
 }
 
 /** The keys of a draft in payload order — to match a save response back to it. */

@@ -315,6 +315,8 @@ export interface CoachPlan extends Plan {
    * but no longer unpublished or deleted.
    */
   locked: boolean;
+  /** The AI recommendation this plan was loaded from (coach-only; Phase 12). */
+  aiRecommendationId?: string;
 }
 
 export interface PlanExerciseInput {
@@ -348,6 +350,8 @@ export interface PlanWorkoutInput {
 export interface SavePlanPayload {
   notes?: string;
   workouts: PlanWorkoutInput[];
+  /** Links the plan to the AI recommendation it was loaded from; null clears; omitted keeps. */
+  aiRecommendationId?: string | null;
 }
 
 /** Body of POST …/plans. */
@@ -785,4 +789,102 @@ export interface NotificationListParams {
   before?: string;
   /** true = unread only */
   unread?: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// AI recommendations (/api/coach/trainees/:id/ai-recommendations) — Phase 12, PRD §8.
+// Coach-only drafts: nothing here ever reaches a trainee. Phase 13c adds 'nutrition_plan'.
+// ---------------------------------------------------------------------------
+
+export type AiRecommendationType = 'training_plan';
+export type AiRecommendationStatus = 'pending' | 'running' | 'ready' | 'failed';
+/** Started by the trainee finishing onboarding, or by the coach (Generate / Regenerate). */
+export type AiRecommendationTrigger = 'onboarding' | 'coach';
+
+/**
+ * Exactly what the model was told about the trainee — no name, email, ids or exact
+ * birth date. Free text is trimmed, with emails and phone numbers removed.
+ */
+export interface AiTraineeProfile {
+  ageYears?: number;
+  heightCm?: number;
+  weightKg?: number;
+  gender?: string;
+  goals: string[];
+  trainingDays?: { min: number; max: number; flexible: boolean };
+  preferredActivities: string[];
+  muscleFocus: string[];
+  equipment: string[];
+  recoveryFlags: string[];
+  notes: { favoriteExercises?: string; exercisesToImprove?: string; recovery?: string };
+}
+
+/** One exercise of the AI draft. No target weight and no notes (the coach writes those). */
+export interface AiPlanExercise {
+  exerciseId: string;
+  /** Library facts; missing only if the exercise left the library since. */
+  exercise?: ExerciseFacts;
+  sets: number;
+  reps?: number;
+  repsMax?: number;
+  durationSec?: number;
+  restSec?: number;
+  supersetGroup?: string;
+  /** For the coach only: why this exercise. */
+  why: string;
+}
+
+export interface AiPlanWorkout {
+  title: string;
+  /** 0 = Sunday … 6 = Saturday */
+  dayOfWeek?: number;
+  /** For the coach only. */
+  focus: string;
+  exercises: AiPlanExercise[];
+}
+
+/** The training plan draft, with its rationale for the coach. */
+export interface AiTrainingPlanDraft {
+  summary: string;
+  split: string;
+  considerations: string[];
+  workouts: AiPlanWorkout[];
+}
+
+export interface AiRecommendationInputSummary {
+  profile: AiTraineeProfile;
+  /** Titles of the training-knowledge passages (RAG) the model was given. */
+  guidanceSources: string[];
+  /** Set when the knowledge passages could not be retrieved. */
+  guidanceNote?: string;
+  candidateCount: number;
+  promptVersion: string;
+}
+
+export interface AiRecommendation {
+  id: string;
+  traineeId: string;
+  type: AiRecommendationType;
+  status: AiRecommendationStatus;
+  trigger: AiRecommendationTrigger;
+  createdAt: string;
+  completedAt: string | null;
+  /** The model that produced the draft (or the last one tried). */
+  model: string | null;
+  attemptCount: number;
+  error: { code: string; message: string } | null;
+  input: AiRecommendationInputSummary | null;
+  output: AiTrainingPlanDraft | null;
+}
+
+/** GET …/ai-recommendations/latest */
+export interface AiRecommendationLatest {
+  recommendation: AiRecommendation | null;
+  /** Why AI drafts can't run on this server; null when they can. */
+  unavailableReason: string | null;
+}
+
+/** Body of POST …/ai-recommendations */
+export interface CreateAiRecommendationPayload {
+  type: AiRecommendationType;
 }

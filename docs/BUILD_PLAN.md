@@ -322,7 +322,13 @@ Implement PRD §7.
 
 ---
 
-## Phase 12 (later) — AI plan recommendation
+## Phase 12 — AI plan recommendation
+
+Owner decisions (2026-10-07): Google Gemini API, free tier, dev only, behind `features/ai/ai.client.ts`
+(model via `AI_MODEL`, fallback model via `AI_FALLBACK_MODEL`, 429 backoff); no Anthropic SDK. Free text sent
+trimmed to 500 chars with emails / phones removed; exercise notes stay empty (the AI "why" is coach-only);
+beginner + intermediate exercises only; `Plan.aiRecommendationId` added; no "AI draft ready" notification.
+PRD §14 holds the two REQUIRED-before-launch items (paid AI tier, legal) and the experience-level question.
 
 ```
 Implement PRD §8.

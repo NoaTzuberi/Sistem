@@ -22,6 +22,15 @@ export const config = {
     apiKey: process.env.CLOUDINARY_API_KEY || '',
     apiSecret: process.env.CLOUDINARY_API_SECRET || '',
   },
+  // AI recommendations (Phase 12). Defaults and limits live in features/ai/ai.config.ts.
+  ai: {
+    geminiApiKey: process.env.GEMINI_API_KEY || '',
+    model: (process.env.AI_MODEL || '').trim(),
+    fallbackModel: (process.env.AI_FALLBACK_MODEL || '').trim(),
+    // The Gemini free tier may use what we send to improve Google's products, so the AI
+    // never runs in production until a paid tier / provider that excludes training is set.
+    paidTier: process.env.AI_PAID_TIER === 'true',
+  },
 };
 
 if (config.nodeEnv === 'production' && config.jwtSecret === DEFAULT_JWT_SECRET) {

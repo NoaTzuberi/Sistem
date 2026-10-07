@@ -12,6 +12,7 @@ export function newKey(): string {
 export function draftFromPlan(plan: CoachPlan): PlanDraft {
   return {
     notes: plan.notes ?? '',
+    aiRecommendationId: plan.aiRecommendationId,
     workouts: plan.workouts.map((workout) => ({
       key: newKey(),
       id: workout.id,
@@ -77,6 +78,7 @@ function exerciseToInput(exercise: DraftExercise): PlanExerciseInput {
 export function toPayload(draft: PlanDraft): SavePlanPayload {
   return {
     notes: draft.notes.trim() || undefined,
+    aiRecommendationId: draft.aiRecommendationId ?? null,
     workouts: draft.workouts.map((workout) => ({
       id: workout.id,
       title: workout.title,

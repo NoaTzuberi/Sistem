@@ -195,6 +195,7 @@ No achievements are based on body weight gain or loss — trainees have differen
 - When a trainee completes onboarding, an AI job analyzes the answers and generates a **draft plan recommendation** for the coach.
 - Grounded in the ATLAS **exercise library** (RAG), so it only suggests exercises that exist in the library.
 - Output is a structured draft (workouts, exercises, sets/reps, rationale) that pre-fills the plan builder. **The coach always reviews and edits before publishing.** Nothing AI-generated reaches a trainee directly.
+- **Built in Phase 12 (owner decisions, 2026-10-07):** provider = Google Gemini API, **free tier, dev only** (default `gemini-3.8-flash`, fallback `gemini-3.5-flash-lite`, switchable via `AI_MODEL` / `AI_FALLBACK_MODEL`), behind one provider client so a paid provider is a contained change. Sent to the model: her onboarding answers by option id, age in years (not the birth date), rounded height / weight, her three free-text answers trimmed to 500 characters with emails and phone numbers removed — never her name, email, ids, photos, logs or body history. The AI never sets weights and never writes the exercise notes (those are what the trainee sees); its "why" per exercise is coach-only. Only beginner and intermediate exercises are offered (no experience question in onboarding yet). The AI is off in production until a paid tier is configured (see §14).
 
 ## 9. Notifications
 
@@ -219,7 +220,7 @@ Store device push tokens per user. Fail gracefully when push permission is denie
 - **BodyMetric**: traineeId, date, weight?, measurements{...}?, photos[]
 - **Achievement**: traineeId, type, value, unlockedAt, sourceLogId
 - **Template**: coachId, type (workout/plan), content
-- *(Later)* **AIRecommendation**
+- **AIRecommendation** (Phase 12): traineeId, coachId, type (training_plan; nutrition_plan in 13c), status, trigger, the input sent, the validated output, attempts. Plan.aiRecommendationId links a plan to the draft it was loaded from (coach-only).
 - *(Later, §5.6)* **FoodItem** (coach food list), **NutritionPlan** (calorie target, meals → portions per group, options, tips, versions), nutrition templates; 13b: **Recipe**, **MealLog**, **WaterLog**
 
 ## 11. Technical Notes & Open Decisions
@@ -291,4 +292,7 @@ Design system notes:
 - **Split the mobile bundle by role** — lazy-load the coach screens (and other role-only code) so a trainee never downloads coach mode, and the other way round. The mobile bundle was 507 kB after Phase 6b, over Vite's 500 kB warning line.
 - **lb for workouts** — workout sets, targets and the session's weight steps are kg only. Phase 10 added kg/lb (and cm/in) for body tracking only (owner decision); extend the same unit setting to workout weights.
 - **Progress photo slider** — a before/after slider overlay in Compare (Phase 10 compares side by side).
+- **REQUIRED BEFORE LAUNCH — AI provider terms.** Switch AI to a paid tier / provider whose terms exclude training on our data before any real trainee data is sent. The Gemini free tier may use submitted data to improve Google's products; until then, the AI only runs on dev / seed data (the server refuses to run it in production unless `AI_PAID_TIER=true`).
+- **REQUIRED BEFORE LAUNCH — Legal.** Privacy policy, terms of use and an in-app consent screen covering health-related onboarding answers, body and Daily Pump photos, and processing by an AI provider. Review with a lawyer (Israeli Privacy Protection Law, Amendment 13) before launch.
+- **Onboarding experience-level question** — so the AI plan recommendation can use advanced exercises when appropriate (Phase 12 offers beginner and intermediate exercises only). Onboarding is protected: an owner-approved change with placeholder copy, like the Phase 13a nutrition step.
 - **Before making the repo public** — audit the full git history for secrets, coach content, personal data and seed data; rotate any exposed secret; rewrite history if needed. (The repo is private now; `docs/reference/` is gitignored for this reason.)

@@ -19,6 +19,9 @@ const planSchema = new Schema<PlanDocument>(
     publishedAt: { type: Date, default: null },
     notes: { type: String, trim: true },
     workouts: { type: [planWorkoutSchema], default: [] },
+    // The AI recommendation the coach loaded into this plan (Phase 12) — coach-only, so the
+    // builder can show its rationale. Never copied by "duplicate last week".
+    aiRecommendationId: { type: Schema.Types.ObjectId, ref: 'AiRecommendation', default: undefined },
   },
   { timestamps: true },
 );

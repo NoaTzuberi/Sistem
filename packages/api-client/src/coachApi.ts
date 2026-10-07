@@ -2,6 +2,9 @@ import axios from 'axios';
 import type { AxiosInstance } from 'axios';
 import type {
   AchievementOverview,
+  AiRecommendation,
+  AiRecommendationLatest,
+  AiRecommendationType,
   BodyMetricList,
   CoachPlan,
   CoachTraineeList,
@@ -131,6 +134,34 @@ export function createCoachApi(client: AxiosInstance) {
     }
   }
 
+  // --- AI recommendations (Phase 12): coach-only drafts --------------------------
+
+  const aiPath = (traineeId: string) => `/coach/trainees/${traineeId}/ai-recommendations`;
+
+  /** The newest draft of that type (any status), and why AI is off on this server, if it is. */
+  async function getLatestAiRecommendation(traineeId: string, type: AiRecommendationType = 'training_plan'): Promise<AiRecommendationLatest> {
+    const { data } = await client.get<AiRecommendationLatest>(`${aiPath(traineeId)}/latest`, { params: { type } });
+    return data;
+  }
+
+  async function getAiRecommendation(traineeId: string, recommendationId: string): Promise<AiRecommendation> {
+    const { data } = await client.get<{ recommendation: AiRecommendation }>(`${aiPath(traineeId)}/${recommendationId}`);
+    return data.recommendation;
+  }
+
+  /** Starts a new draft in the background (poll getLatestAiRecommendation for the result). */
+  async function generateAiRecommendation(traineeId: string, type: AiRecommendationType = 'training_plan'): Promise<AiRecommendation> {
+    try {
+      const { data } = await client.post<{ recommendation: AiRecommendation }>(aiPath(traineeId), { type });
+      return data.recommendation;
+    } catch (error) {
+      // Already running: that one is the answer.
+      const running: unknown = axios.isAxiosError(error) && error.response?.status === 409 ? error.response.data?.recommendation : undefined;
+      if (running) return running as AiRecommendation;
+      throw new Error(extractErrorMessage(error, "Couldn't start the AI draft. Please try again."));
+    }
+  }
+
   return {
     listTrainees,
     getTrainee,
@@ -146,6 +177,9 @@ export function createCoachApi(client: AxiosInstance) {
     publishPlan,
     unpublishPlan,
     deletePlan,
+    getLatestAiRecommendation,
+    getAiRecommendation,
+    generateAiRecommendation,
   };
 }
 

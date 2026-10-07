@@ -8,6 +8,9 @@ import { Badge } from '../../../../components/common/Badge/Badge';
 import { Button } from '../../../../components/common/Button/Button';
 import { WeekPicker } from '../WeekPicker/WeekPicker';
 import type { WeekPickerMode } from '../WeekPicker/WeekPicker';
+import { AiDraftCard } from '../../../aiDraft/components/AiDraftCard/AiDraftCard';
+import { useLatestAiDraft } from '../../../aiDraft/hooks/useLatestAiDraft';
+import { AI_DRAFT_COPY } from '../../../aiDraft/data/aiDraftCopy';
 import './TraineePlans.css';
 
 interface TraineePlansProps {
@@ -20,17 +23,19 @@ export function TraineePlans({ trainee, onPlansChanged }: TraineePlansProps) {
   const navigate = useNavigate();
   const load = useCallback(() => listPlans(trainee.id), [trainee.id]);
   const { data: plans, error, isLoading, reload } = useLoad(load, "Couldn't load the plans.");
-  // The week picker: which action opened it, and the weeks the server offers (fresh each time).
-  const [picker, setPicker] = useState<{ mode: WeekPickerMode; options: PlanWeekOptions } | null>(null);
+  const ai = useLatestAiDraft(trainee.id);
+  // The week picker: which action opened it, the weeks the server offers (fresh each time),
+  // and the AI draft the new plan starts from ("Use in a new plan").
+  const [picker, setPicker] = useState<{ mode: WeekPickerMode; options: PlanWeekOptions; aiDraftId?: string } | null>(null);
   const [isOpeningPicker, setIsOpeningPicker] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState<string>();
 
-  async function openPicker(mode: WeekPickerMode) {
+  async function openPicker(mode: WeekPickerMode, aiDraftId?: string) {
     setIsOpeningPicker(true);
     setCreateError(undefined);
     try {
-      setPicker({ mode, options: await listPlanWeeks(trainee.id) });
+      setPicker({ mode, options: await listPlanWeeks(trainee.id), aiDraftId });
     } catch {
       setCreateError("Couldn't load the weeks. Please try again.");
     } finally {
@@ -45,18 +50,24 @@ export function TraineePlans({ trainee, onPlansChanged }: TraineePlansProps) {
     try {
       const plan = await createPlan(trainee.id, { weekStartDate, duplicatePrevious: picker.mode === 'duplicate' });
       onPlansChanged();
-      navigate(planPath(trainee.id, plan.id));
+      navigate(planPath(trainee.id, plan.id), picker.aiDraftId ? { state: { loadAiDraftId: picker.aiDraftId } } : undefined);
     } catch (createFailure) {
       setCreateError(createFailure instanceof Error ? createFailure.message : "Couldn't create the plan.");
       reload();
       setIsCreating(false);
       // The weeks may have changed (e.g. a plan made elsewhere): show the fresh state.
-      void openPicker(picker.mode);
+      void openPicker(picker.mode, picker.aiDraftId);
     }
   }
 
   return (
     <div className="trainee-plans">
+      <AiDraftCard
+        ai={ai}
+        disabled={isOpeningPicker || picker !== null}
+        onUseInNewPlan={() => ai.ready && void openPicker('new', ai.ready.id)}
+      />
+
       {!picker && (
         <div className="plans-create">
           <Button variant="primary" disabled={isOpeningPicker} onClick={() => void openPicker('new')}>
@@ -106,6 +117,7 @@ export function TraineePlans({ trainee, onPlansChanged }: TraineePlansProps) {
                   </Badge>
                   {relation && <Badge>{relation}</Badge>}
                   {plan.locked && <Badge>Started by trainee</Badge>}
+                  {plan.aiRecommendationId && <Badge>{AI_DRAFT_COPY.fromAiBadge}</Badge>}
                 </div>
                 <span className="plans-item-size">
                   {plan.workouts.length} workouts · {exerciseCount} exercises

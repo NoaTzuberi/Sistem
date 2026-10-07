@@ -42,6 +42,7 @@ export interface PlanDocument {
   publishedAt?: Date | null;
   notes?: string;
   workouts: (PlanWorkoutFields & { _id: Types.ObjectId })[];
+  aiRecommendationId?: Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
 }

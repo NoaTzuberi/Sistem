@@ -60,6 +60,8 @@ export interface PlanWorkoutInputFields {
 export interface SavePlanInput {
   notes?: string;
   workouts: PlanWorkoutInputFields[];
+  /** undefined = keep the current link; null = clear it. */
+  aiRecommendationId?: string | null;
 }
 
 type ParseResult<T> = { value: T; issues: [] } | { value: null; issues: PlanIssue[] };
@@ -214,6 +216,13 @@ export function parseSavePlanPayload(body: unknown): ParseResult<SavePlanInput> 
   const issues: PlanIssue[] = [];
   const planProblems: string[] = [];
   const notes = readText(body, 'notes', 'Plan notes', planProblems);
+  let aiRecommendationId: string | null | undefined;
+  if (body.aiRecommendationId === null) aiRecommendationId = null;
+  else if (body.aiRecommendationId !== undefined) {
+    if (typeof body.aiRecommendationId === 'string' && mongoose.isValidObjectId(body.aiRecommendationId)) {
+      aiRecommendationId = body.aiRecommendationId;
+    } else planProblems.push('Invalid AI recommendation id.');
+  }
   issues.push(...planProblems.map((message) => ({ message })));
 
   const workouts: PlanWorkoutInputFields[] = [];
@@ -256,7 +265,7 @@ export function parseSavePlanPayload(body: unknown): ParseResult<SavePlanInput> 
   });
 
   if (issues.length > 0) return { value: null, issues };
-  return { value: { notes, workouts }, issues: [] };
+  return { value: { notes, workouts, aiRecommendationId }, issues: [] };
 }
 
 interface PublishableWorkout {

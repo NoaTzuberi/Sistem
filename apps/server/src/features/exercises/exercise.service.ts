@@ -322,3 +322,21 @@ export async function findCoachLibraryIds(ids: string[]): Promise<Set<string>> {
   const docs = await Exercise.find({ ...COACH_LIBRARY_FILTER, _id: { $in: ids } }).select('_id').lean();
   return new Set(docs.map((doc) => String(doc._id)));
 }
+
+export interface CoachLibraryFilter {
+  difficulties: Difficulty[];
+  movementTypes: MovementType[];
+}
+
+/** The coach library's facts, narrowed by level and type (the AI draft's candidate pool). */
+export async function listCoachLibraryFacts(filter: CoachLibraryFilter): Promise<ExerciseFacts[]> {
+  const docs = await Exercise.find({
+    ...COACH_LIBRARY_FILTER,
+    difficulty: { $in: filter.difficulties },
+    movementType: { $in: filter.movementTypes },
+  })
+    .select(FACT_FIELDS)
+    .sort({ name: 1, _id: 1 })
+    .lean<ExerciseFactsLeanDoc[]>();
+  return docs.map(toExerciseFacts);
+}
