@@ -21,7 +21,8 @@
     "import:exercises": "npm run import:exercises -w @sistem/server",
     "seed:knowledge": "npm run seed:knowledge -w @sistem/server",
     "promote:coach": "npm run promote:coach -w @sistem/server --",
-    "seed:dev": "npm run seed:dev -w @sistem/server --"
+    "seed:dev": "npm run seed:dev -w @sistem/server --",
+    "backfill:achievements": "npm run backfill:achievements -w @sistem/server --"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

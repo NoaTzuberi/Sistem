@@ -2,6 +2,7 @@ import { Types } from 'mongoose';
 import type { WorkoutLog as PublicWorkoutLog } from '@sistem/types';
 import { getExerciseFactsByIds } from '../exercises/exercise.service';
 import { personalRecordsByLog } from '../personalRecords/personalRecord.service';
+import { achievementsByLog } from '../achievements/achievement.service';
 import { toPublicPhoto } from '../privatePhotos/privatePhoto.service';
 import { WorkoutLog } from './workoutLog.model';
 import type { WorkoutLogDocument } from './workoutLog.types';
@@ -50,13 +51,18 @@ export async function attachLogExerciseFacts(logs: PublicWorkoutLog[]): Promise<
   }
 }
 
-/** Exercise names and PR lines for read screens (trainee + coach), in place. */
+/** Exercise names, PR lines and unlocked achievements for read screens (trainee + coach), in place. */
 export async function attachLogDetails(logs: PublicWorkoutLog[]): Promise<void> {
-  const [records] = await Promise.all([
-    personalRecordsByLog(logs.map((log) => new Types.ObjectId(log.id))),
+  const logIds = logs.map((log) => new Types.ObjectId(log.id));
+  const [records, achievements] = await Promise.all([
+    personalRecordsByLog(logIds),
+    achievementsByLog(logIds),
     attachLogExerciseFacts(logs),
   ]);
-  for (const log of logs) log.personalRecords = records.get(log.id) ?? [];
+  for (const log of logs) {
+    log.personalRecords = records.get(log.id) ?? [];
+    log.achievements = achievements.get(log.id) ?? [];
+  }
 }
 
 /** Discarded sessions stay in the database but are not part of her history. */

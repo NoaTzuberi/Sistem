@@ -456,6 +456,8 @@ export interface WorkoutLog {
   exercises?: ExerciseFacts[];
   /** PRs hit in this workout, in workout order — filled in by the read endpoints. */
   personalRecords?: LogPersonalRecord[];
+  /** Achievements this workout unlocked (incl. its Daily Pump) — filled in by the read endpoints. */
+  achievements?: Achievement[];
 }
 
 /**
@@ -595,19 +597,107 @@ export interface SaveBodyMetricPayload {
   measurements?: Record<string, number | null>;
 }
 
-/** PUT / DELETE answers: the day as it is now, or null when nothing is left in it. */
+/**
+ * PUT / DELETE answers: the day as it is now, or null when nothing is left in it.
+ * PUT answers also carry the achievements this save unlocked (Phase 11).
+ */
 export interface BodyMetricResponse {
   metric: BodyMetric | null;
+  achievementsUnlocked?: Achievement[];
 }
+
+// ---------------------------------------------------------------------------
+// Achievements & streaks (/api/achievements) — Phase 11, PRD §7
+// Rules live on the server (achievement.definitions.ts); names are built by the
+// clients from `type` (@sistem/shared describeAchievement).
+// ---------------------------------------------------------------------------
+
+export type AchievementType =
+  | 'first_workout'
+  | 'workouts_5'
+  | 'workouts_10'
+  | 'workouts_25'
+  | 'workouts_50'
+  | 'workouts_100'
+  | 'first_weight_pr'
+  | 'first_reps_pr'
+  | 'prs_10'
+  | 'prs_25'
+  | 'prs_50'
+  | 'volume_10k'
+  | 'volume_50k'
+  | 'volume_100k'
+  | 'volume_500k'
+  | 'volume_1m'
+  | 'perfect_week'
+  | 'streak_2'
+  | 'streak_4'
+  | 'streak_8'
+  | 'streak_12'
+  | 'streak_26'
+  | 'streak_52'
+  | 'comeback'
+  | 'first_pump_photo'
+  | 'first_measurement'
+  | 'first_progress_photo'
+  | 'weigh_ins_10';
 
 export interface Achievement {
   id: string;
   traineeId: string;
-  type: string;
+  type: AchievementType;
+  /** The threshold reached (one-time), or the metric's value then (repeatable). */
   value?: number;
   unlockedAt: string;
+  /** The workout log / body day that met the rule. */
   sourceLogId: string | null;
   sourceBodyMetricId: string | null;
+  /** false until its celebration was shown to the trainee (POST /achievements/seen). */
+  seen: boolean;
+}
+
+/** Weekly plan completion streak, computed by the server in the trainee's time zone. */
+export interface StreakSummary {
+  /** Consecutive counting weeks up to now (weeks without a plan are skipped). */
+  current: number;
+  best: number;
+  /** This week's published plan; null when there is none (or it has no workouts). */
+  thisWeek: { done: number; planned: number } | null;
+  /** done / planned a week needs to count, e.g. 1 = every workout. */
+  weekCompletionRatio: number;
+}
+
+/** One definition's progress, in the server's config order. */
+export interface AchievementProgress {
+  type: AchievementType;
+  repeatable: boolean;
+  /** One-time: the target; repeatable: absent. */
+  threshold?: number;
+  /** The metric's value now (capped at nothing — compare with threshold). */
+  current: number;
+  /** Times unlocked (one-time: 0 or 1). */
+  count: number;
+  /** The latest unlock, if any. */
+  unlockedAt: string | null;
+}
+
+/** GET /achievements and GET /coach/trainees/:id/achievements. */
+export interface AchievementOverview {
+  streak: StreakSummary;
+  stats: {
+    completedWorkouts: number;
+    /** kg — lifetime sum of every workout's total volume */
+    totalVolume: number;
+    personalRecords: number;
+  };
+  /** Newest first. */
+  unlocked: Achievement[];
+  progress: AchievementProgress[];
+}
+
+/** Body of POST /achievements/seen. */
+export interface MarkAchievementsSeenPayload {
+  ids: string[];
 }
 
 // ---------------------------------------------------------------------------

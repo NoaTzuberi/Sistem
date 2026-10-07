@@ -8,6 +8,7 @@ export interface AchievementDocument {
   unlockedAt: Date;
   sourceLogId?: Types.ObjectId | null;
   sourceBodyMetricId?: Types.ObjectId | null;
+  seenAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

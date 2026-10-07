@@ -339,6 +339,55 @@ Implement PRD §5.6: coach nutrition builder (meals, foods, portions, notes) per
 
 ---
 
+## Phase 14 (later) — Cardio & running
+
+Owner decision (2026-10-07): the long-term goal is **smartwatch integration**; manual logging is the
+fallback for trainees without a watch. Split into 14a (web, no native needed), 14b (watch import via
+the phone, after Phase 5b) and 14c (direct integrations, optional). The achievement metrics
+(`achievementMetrics.ts`) and the PersonalRecord types (`PERSONAL_RECORD_TYPE_IDS`) are extensible
+since Phase 11, so cardio metrics are added without reworking the engine.
+
+### Phase 14a — Cardio foundation (web, no native needed)
+
+```
+Implement the cardio foundation. Propose the schema first.
+
+1. Plan builder: cardio exercises with target distance / time / pace, run intervals (e.g. 6 × 400 m,
+   rest 60 s), and an optional target HR zone (e.g. "40 min, Zone 2").
+2. Personal HR zones: the coach sets max HR (optional resting HR); otherwise it is estimated from age
+   (onboarding birth date). Zones 1–5 as a configurable % table. The trainee sees her own bpm range.
+3. Manual logging: distance + time (pace computed), optional average HR; marks whether the average
+   was on target.
+4. Data model ready for imported workouts from day one: source (manual / apple_health /
+   health_connect / strava / garmin), external id (dedupe), optional HR samples or precomputed
+   time-in-zone, splits per km.
+5. PRs: longest distance, fastest 1K / 5K / 10K, longest run. Heart rate itself is never a PR.
+6. Achievements: first 5K, first 10K, lifetime km; Zone 2 runs on target (5 / 10 / 25); lifetime
+   Zone 2 minutes (300 / 1,000); "aerobic progress" (same pace at lower average HR than earlier runs).
+```
+
+### Phase 14b — Smartwatch import via the phone (after Phase 5b, native)
+
+```
+Implement smartwatch import through the phone's health platforms. Needs Phase 5b (Capacitor).
+
+1. Apple HealthKit (iOS) and Google Health Connect (Android): read workouts, distance and HR samples,
+   with explicit trainee permission. These cover Apple Watch and most watches that sync to them
+   (Garmin, Polar, Coros, Samsung, Fitbit).
+2. Match an imported workout to the planned cardio exercise (same day, similar type / duration) or
+   keep it as an extra activity; exact time-in-zone from HR samples.
+3. The coach sees imported runs with HR zones, pace and splits.
+```
+
+### Phase 14c — Direct integrations (optional, later)
+
+```
+Strava and/or Garmin Connect APIs. Before building: verify their current API terms (especially
+showing a user's data to a coach) and developer program approval. Decision deferred — ask first.
+```
+
+---
+
 ## Backlog (not scheduled)
 
 - **Password reset** — not in the MVP. The ATLAS forgot/reset-password flow (server routes + Resend email + client pages) exists; before enabling it in the app it needs a deep link / universal link or a small web reset page, and a Sistem email sender.

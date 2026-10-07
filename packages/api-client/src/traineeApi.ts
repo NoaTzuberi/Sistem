@@ -1,5 +1,6 @@
 import type { AxiosInstance } from 'axios';
 import type {
+  AchievementOverview,
   AuthUser,
   BodyMetric,
   BodyMetricList,
@@ -117,9 +118,10 @@ export function createTraineeApi(client: AxiosInstance) {
     return data;
   }
 
-  async function saveBodyMetric(date: string, payload: SaveBodyMetricPayload): Promise<BodyMetric | null> {
+  /** The day as saved, and the achievements this save unlocked. */
+  async function saveBodyMetric(date: string, payload: SaveBodyMetricPayload): Promise<BodyMetricResponse> {
     const { data } = await client.put<BodyMetricResponse>(`/body-metrics/${date}`, payload);
-    return data.metric;
+    return data;
   }
 
   async function deleteBodyMetricDay(date: string): Promise<void> {
@@ -132,14 +134,14 @@ export function createTraineeApi(client: AxiosInstance) {
     pose: ProgressPhotoPose,
     photo: Blob,
     onProgress?: (fraction: number) => void,
-  ): Promise<BodyMetric | null> {
+  ): Promise<BodyMetricResponse> {
     const { data } = await client.put<BodyMetricResponse>(`/body-metrics/${date}/photos/${pose}`, photo, {
       headers: { 'Content-Type': photo.type || 'image/jpeg' },
       onUploadProgress: (event) => {
         if (onProgress && event.total) onProgress(event.loaded / event.total);
       },
     });
-    return data.metric;
+    return data;
   }
 
   async function removeProgressPhoto(date: string, pose: ProgressPhotoPose): Promise<BodyMetric | null> {
@@ -151,6 +153,18 @@ export function createTraineeApi(client: AxiosInstance) {
   async function updatePreferences(payload: UpdatePreferencesPayload): Promise<AuthUser> {
     const { data } = await client.patch<{ user: AuthUser }>('/users/preferences', payload);
     return data.user;
+  }
+
+  // --- Achievements & streak (Phase 11): awarded by the server after saves.
+
+  async function getAchievements(): Promise<AchievementOverview> {
+    const { data } = await client.get<AchievementOverview>('/achievements');
+    return data;
+  }
+
+  /** Their celebration was shown — they won't be celebrated again. */
+  async function markAchievementsSeen(ids: string[]): Promise<void> {
+    await client.post('/achievements/seen', { ids });
   }
 
   return {
@@ -174,6 +188,8 @@ export function createTraineeApi(client: AxiosInstance) {
     uploadProgressPhoto,
     removeProgressPhoto,
     updatePreferences,
+    getAchievements,
+    markAchievementsSeen,
   };
 }
 

@@ -1,8 +1,18 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../../middleware/auth.middleware';
-import { listAchievementsForTrainee } from './achievement.service';
+import { getAchievementOverview, markAchievementsSeen } from './achievement.service';
+import { parseMarkSeenPayload } from './achievement.validation';
 
 export async function getMyAchievements(req: AuthenticatedRequest, res: Response) {
-  const achievements = await listAchievementsForTrainee(req.userId!);
-  res.status(200).json({ items: achievements });
+  res.status(200).json(await getAchievementOverview(req.userId!));
+}
+
+export async function postAchievementsSeen(req: AuthenticatedRequest, res: Response) {
+  const parsed = parseMarkSeenPayload(req.body);
+  if (parsed.error !== undefined) {
+    res.status(400).json({ message: parsed.error });
+    return;
+  }
+  await markAchievementsSeen(req.userId!, parsed.value);
+  res.status(204).end();
 }

@@ -14,6 +14,8 @@ export const ROUTES = {
   PROFILE_PHOTOS_COMPARE: '/profile/photos/compare',
   // Under /profile so the Profile tab stays highlighted.
   SETTINGS: '/profile/settings',
+  // Every achievement + the streak (Phase 11) — opened from Home and Profile.
+  PROFILE_ACHIEVEMENTS: '/profile/achievements',
   WORKOUTS: '/workouts',
   ONBOARDING: '/onboarding',
   // "Your plan is being built" — onboarding done, no published plan yet (PRD §4.1).

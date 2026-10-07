@@ -8,6 +8,7 @@ import { Button } from '../../../../components/common/Button/Button';
 import { Modal } from '../../../../components/common/Modal/Modal';
 import { PrivatePhoto } from '../../../../components/common/PrivatePhoto/PrivatePhoto';
 import { removeProgressPhoto, uploadProgressPhoto } from '../../../../services/bodyMetrics/bodyMetricsService';
+import { celebrate } from '../../../achievements/celebration';
 import { PhotoTooLargeError, compressPhoto } from '../../../privatePhotos/data/photoCompression';
 import { BODY_COPY } from '../../data/bodyCopy';
 import './ProgressPhotoSlot.css';
@@ -57,12 +58,13 @@ export function ProgressPhotoSlot({ date, pose, photo, onDayChange, onLinkExpire
     setPending(file);
     setBusy({ kind: 'uploading', percent: 0 });
     try {
-      const metric = await uploadProgressPhoto(date, pose, file, (fraction) =>
+      const saved = await uploadProgressPhoto(date, pose, file, (fraction) =>
         setBusy({ kind: 'uploading', percent: Math.round(fraction * 100) }),
       );
       setLocalSrc(URL.createObjectURL(file));
       setPending(null);
-      onDayChange(metric);
+      onDayChange(saved.metric);
+      celebrate(saved.achievementsUnlocked);
     } catch (caught) {
       setError(uploadErrorMessage(caught));
     } finally {

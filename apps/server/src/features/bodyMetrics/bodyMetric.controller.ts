@@ -1,6 +1,7 @@
 import { Response } from 'express';
-import type { BodyMetricResponse } from '@sistem/types';
+import type { Achievement, BodyMetricResponse } from '@sistem/types';
 import { AuthenticatedRequest } from '../../middleware/auth.middleware';
+import { evaluateAchievementsSafely } from '../achievements/achievement.service';
 import { PhotoStorageUnavailableError } from '../privatePhotos/privatePhoto.service';
 import { parsePoseParam, parseSaveBodyMetricPayload, validateBodyMetricDateParam } from './bodyMetric.validation';
 import {
@@ -40,9 +41,14 @@ function withDate(handler: (req: AuthenticatedRequest, res: Response, date: stri
   };
 }
 
-function sendDay(res: Response, metric: BodyMetricResponse['metric']): void {
-  const body: BodyMetricResponse = { metric };
+function sendDay(res: Response, metric: BodyMetricResponse['metric'], achievementsUnlocked?: Achievement[]): void {
+  const body: BodyMetricResponse = { metric, ...(achievementsUnlocked && { achievementsUnlocked }) };
   res.status(200).json(body);
+}
+
+/** After a save: the achievements it unlocked (PRD §7), shown at once on her phone. */
+async function sendSavedDay(res: Response, traineeId: string, metric: BodyMetricResponse['metric']): Promise<void> {
+  sendDay(res, metric, await evaluateAchievementsSafely(traineeId));
 }
 
 export async function getMyBodyMetrics(req: AuthenticatedRequest, res: Response) {
@@ -55,7 +61,7 @@ export const putMyBodyMetric = withDate(async (req, res, date) => {
     res.status(400).json({ message: parsed.error });
     return;
   }
-  sendDay(res, await saveBodyMetric(req.userId!, date, parsed.value));
+  await sendSavedDay(res, req.userId!, await saveBodyMetric(req.userId!, date, parsed.value));
 });
 
 export const deleteMyBodyMetric = withDate(async (req, res, date) => {
@@ -70,7 +76,7 @@ export const putMyProgressPhoto = withDate(async (req, res, date) => {
     res.status(400).json({ message: pose.error });
     return;
   }
-  sendDay(res, await setProgressPhoto(req.userId!, date, pose.value, req.body as Buffer));
+  await sendSavedDay(res, req.userId!, await setProgressPhoto(req.userId!, date, pose.value, req.body as Buffer));
 });
 
 export const deleteMyProgressPhoto = withDate(async (req, res, date) => {

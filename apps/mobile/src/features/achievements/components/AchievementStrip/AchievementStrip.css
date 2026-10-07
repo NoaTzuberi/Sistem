@@ -1,0 +1,60 @@
+.achievement-strip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.achievement-strip-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Same look as Home's other section titles. */
+.achievement-strip-title {
+  margin: 0;
+  padding-bottom: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+.achievement-strip-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-deep);
+  text-decoration: none;
+}
+
+.achievement-strip-link:active {
+  opacity: 0.6;
+}
+
+/* Swiped sideways (touch); no arrows, no hover. */
+.achievement-strip-list {
+  display: flex;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0 0 var(--space-1);
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+
+.achievement-strip-list::-webkit-scrollbar {
+  display: none;
+}
+
+.achievement-strip-item {
+  flex-shrink: 0;
+  scroll-snap-align: start;
+}

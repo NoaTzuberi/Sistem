@@ -25,6 +25,8 @@ import { ProgressPhotosPage } from '../../features/profile/pages/ProgressPhotosP
 import { ProgressPhotosDayPage } from '../../features/profile/pages/ProgressPhotosDayPage/ProgressPhotosDayPage';
 import { PhotoComparePage } from '../../features/profile/pages/PhotoComparePage/PhotoComparePage';
 import { SettingsPage } from '../../features/profile/pages/SettingsPage/SettingsPage';
+import { AchievementsPage } from '../../features/achievements/pages/AchievementsPage/AchievementsPage';
+import { AchievementCelebration } from '../../features/achievements/components/AchievementCelebration/AchievementCelebration';
 import { WorkoutsPage } from '../../features/workouts/pages/WorkoutsPage/WorkoutsPage';
 import { OnboardingPage } from '../../features/onboarding/pages/OnboardingPage/OnboardingPage';
 import { WorkoutDetailPage } from '../../features/workouts/pages/WorkoutDetailPage/WorkoutDetailPage';
@@ -39,53 +41,57 @@ import { CoachProfilePage } from '../../features/coach/pages/CoachProfilePage/Co
 
 export function AppRouter() {
   return (
-    <Routes>
-      {/* No homepage: "/" redirects by the server-decided app state (PRD §4.2). */}
-      <Route path={ROUTES.HOME} element={<RootRedirect />} />
-      <Route path={ROUTES.LOGIN} element={<Login />} />
-      <Route path={ROUTES.REGISTER} element={<Register />} />
-      <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPassword />} />
-      <Route path={ROUTES.RESET_PASSWORD} element={<ResetPassword />} />
+    <>
+      {/* One celebration sheet for the whole app (Phase 11) — trainees only. */}
+      <AchievementCelebration />
+      <Routes>
+        {/* No homepage: "/" redirects by the server-decided app state (PRD §4.2). */}
+        <Route path={ROUTES.HOME} element={<RootRedirect />} />
+        <Route path={ROUTES.LOGIN} element={<Login />} />
+        <Route path={ROUTES.REGISTER} element={<Register />} />
+        <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPassword />} />
+        <Route path={ROUTES.RESET_PASSWORD} element={<ResetPassword />} />
 
-      <Route element={<ProtectedRoute />}>
-        <Route element={<AppStateGuard allow={['onboarding']} />}>
-          <Route path={ROUTES.ONBOARDING} element={<OnboardingPage />} />
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppStateGuard allow={['onboarding']} />}>
+            <Route path={ROUTES.ONBOARDING} element={<OnboardingPage />} />
+          </Route>
+
+          {/* Until a plan is published, the waiting screen is the only trainee screen. */}
+          <Route element={<AppStateGuard allow={['waiting']} />}>
+            <Route path={ROUTES.WAITING} element={<WaitingPage />} />
+          </Route>
+
+          <Route element={<AppStateGuard allow={['home']} />}>
+            <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
+            <Route path={ROUTES.PROFILE_WEIGHT} element={<WeightPage />} />
+            <Route path={ROUTES.PROFILE_MEASUREMENTS} element={<MeasurementsPage />} />
+            <Route path={ROUTES.PROFILE_MEASUREMENTS_LOG} element={<MeasurementsLogPage />} />
+            <Route path={ROUTES.PROFILE_PHOTOS} element={<ProgressPhotosPage />} />
+            <Route path={ROUTES.PROFILE_PHOTOS_DAY} element={<ProgressPhotosDayPage />} />
+            <Route path={ROUTES.PROFILE_PHOTOS_COMPARE} element={<PhotoComparePage />} />
+            <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
+            <Route path={ROUTES.PROFILE_ACHIEVEMENTS} element={<AchievementsPage />} />
+            <Route path={ROUTES.WORKOUTS} element={<WorkoutsPage />} />
+            <Route path={WORKOUT_DETAIL_PATH} element={<WorkoutDetailPage />} />
+            <Route path={WORKOUT_LOG_PATH} element={<WorkoutLogPage />} />
+            <Route path={WORKOUT_SESSION_PATH} element={<WorkoutSessionPage />} />
+            <Route path={WORKOUT_SUMMARY_PATH} element={<WorkoutSummaryPage />} />
+            <Route path={ROUTES.INTERVAL_TIMER} element={<IntervalTimerPage />} />
+            <Route path={ONBOARDING_EDIT_PATH} element={<OnboardingPage />} />
+            <Route path={ROUTES.TRAINEE_HOME} element={<HomePage />} />
+          </Route>
+
+          <Route element={<AppStateGuard allow={['coach']} />}>
+            <Route path={ROUTES.COACH_INBOX} element={<InboxPage />} />
+            <Route path={ROUTES.COACH_TRAINEES} element={<TraineesPage />} />
+            <Route path={COACH_TRAINEE_PATH} element={<TraineeDetailPage />} />
+            <Route path={ROUTES.COACH_PROFILE} element={<CoachProfilePage />} />
+          </Route>
         </Route>
 
-        {/* Until a plan is published, the waiting screen is the only trainee screen. */}
-        <Route element={<AppStateGuard allow={['waiting']} />}>
-          <Route path={ROUTES.WAITING} element={<WaitingPage />} />
-        </Route>
-
-        <Route element={<AppStateGuard allow={['home']} />}>
-          <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
-          <Route path={ROUTES.PROFILE_WEIGHT} element={<WeightPage />} />
-          <Route path={ROUTES.PROFILE_MEASUREMENTS} element={<MeasurementsPage />} />
-          <Route path={ROUTES.PROFILE_MEASUREMENTS_LOG} element={<MeasurementsLogPage />} />
-          <Route path={ROUTES.PROFILE_PHOTOS} element={<ProgressPhotosPage />} />
-          <Route path={ROUTES.PROFILE_PHOTOS_DAY} element={<ProgressPhotosDayPage />} />
-          <Route path={ROUTES.PROFILE_PHOTOS_COMPARE} element={<PhotoComparePage />} />
-          <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
-          <Route path={ROUTES.WORKOUTS} element={<WorkoutsPage />} />
-          <Route path={WORKOUT_DETAIL_PATH} element={<WorkoutDetailPage />} />
-          <Route path={WORKOUT_LOG_PATH} element={<WorkoutLogPage />} />
-          <Route path={WORKOUT_SESSION_PATH} element={<WorkoutSessionPage />} />
-          <Route path={WORKOUT_SUMMARY_PATH} element={<WorkoutSummaryPage />} />
-          <Route path={ROUTES.INTERVAL_TIMER} element={<IntervalTimerPage />} />
-          <Route path={ONBOARDING_EDIT_PATH} element={<OnboardingPage />} />
-          <Route path={ROUTES.TRAINEE_HOME} element={<HomePage />} />
-        </Route>
-
-        <Route element={<AppStateGuard allow={['coach']} />}>
-          <Route path={ROUTES.COACH_INBOX} element={<InboxPage />} />
-          <Route path={ROUTES.COACH_TRAINEES} element={<TraineesPage />} />
-          <Route path={COACH_TRAINEE_PATH} element={<TraineeDetailPage />} />
-          <Route path={ROUTES.COACH_PROFILE} element={<CoachProfilePage />} />
-        </Route>
-      </Route>
-
-      <Route path="*" element={<RootRedirect />} />
-    </Routes>
-
+        <Route path="*" element={<RootRedirect />} />
+      </Routes>
+    </>
   );
 }

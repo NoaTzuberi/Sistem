@@ -1,0 +1,25 @@
+.achievement-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  /* Wide enough for the longest word of a name ("measurements") — no mid-word breaks. */
+  width: 136px;
+  height: 100%;
+  padding: var(--space-3);
+  background-color: var(--color-surface);
+  clip-path: polygon(0 0, calc(100% - var(--cut-size)) 0, 100% var(--cut-size), 100% 100%, 0 100%);
+}
+
+.achievement-tile-name {
+  margin-top: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  overflow-wrap: break-word;
+}
+
+.achievement-tile-date {
+  margin-top: auto;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}

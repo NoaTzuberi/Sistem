@@ -1,4 +1,5 @@
 import type { WorkoutLog as PublicWorkoutLog, WorkoutSummaryPayload } from '@sistem/types';
+import { evaluateAchievementsSafely } from '../achievements/achievement.service';
 import { PUMP_PHOTO_FOLDER } from '../privatePhotos/privatePhoto.constants';
 import { deletePrivatePhoto, uploadPrivatePhoto } from '../privatePhotos/privatePhoto.service';
 import { isAcceptedImage } from '../privatePhotos/privatePhoto.validation';
@@ -75,6 +76,8 @@ export async function setPumpPhoto(
     throw new WorkoutLogNotFoundError('Workout log not found.');
   }
   if (previous.pumpPhoto) await deleteQuietly(previous.pumpPhoto.publicId);
+  // first_pump_photo: unlocked by this log, so the summary shows it with the photo.
+  await evaluateAchievementsSafely(traineeId, now);
   return getWorkoutLogForTrainee(logId, traineeId);
 }
 

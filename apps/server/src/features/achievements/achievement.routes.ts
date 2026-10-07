@@ -1,10 +1,12 @@
 import { Router } from 'express';
-import { requireAuth } from '../../middleware/auth.middleware';
-import { getMyAchievements } from './achievement.controller';
+import { requireAuth, requireRole } from '../../middleware/auth.middleware';
+import { getMyAchievements, postAchievementsSeen } from './achievement.controller';
 
-// Read-only: achievements are only ever awarded by the server (Phase 11).
+// Achievements are only ever awarded by the server (after saves); the trainee reads
+// them and marks their celebration as shown. The coach reads hers via /api/coach.
 export const achievementsRouter = Router();
 
-achievementsRouter.use(requireAuth);
+achievementsRouter.use(requireAuth, requireRole('trainee'));
 
 achievementsRouter.get('/', getMyAchievements);
+achievementsRouter.post('/seen', postAchievementsSeen);

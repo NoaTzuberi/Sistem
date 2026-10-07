@@ -5,6 +5,7 @@ import { Container } from '../../../../components/layout/Container/Container';
 import { Section } from '../../../../components/layout/Section/Section';
 import { GlassCard } from '../../../../components/common/GlassCard/GlassCard';
 import { Spinner } from '../../../../components/common/Spinner/Spinner';
+import { StateMessage } from '../../../../components/common/StateMessage/StateMessage';
 import { LogoutButton } from '../../../../components/common/LogoutButton/LogoutButton';
 import { FlagIcon, CalendarIcon, CompassIcon, DumbbellIcon, EditIcon } from '../../components/icons';
 import { GOAL_OPTIONS, EQUIPMENT_OPTIONS } from '../../../onboarding/data/options';
@@ -12,16 +13,14 @@ import { ACTIVITIES } from '../../../onboarding/data/activities';
 import type { OnboardingStepId } from '../../../onboarding/data/stepVideoMap';
 import { getMyProfile } from '../../../../services/users/usersService';
 import type { MyProfileResponse } from '../../../../services/users/usersService';
-import { getDashboardSummary } from '../../../../services/dashboard/dashboardService';
-import type { DashboardSummary } from '../../../dashboard/types';
-import { StreakRing } from '../../../dashboard/components/StreakRing/StreakRing';
-import { WeekDotStrip } from '../../../dashboard/components/WeekDotStrip/WeekDotStrip';
-import { MilestoneBar } from '../../../dashboard/components/MilestoneBar/MilestoneBar';
-import { AchievementBadges } from '../../../dashboard/components/AchievementBadges/AchievementBadges';
+import { StreakSummary } from '../../../achievements/components/StreakSummary/StreakSummary';
+import { ProgressStats } from '../../../achievements/components/ProgressStats/ProgressStats';
+import { useMyAchievements } from '../../../achievements/hooks/useMyAchievements';
+import { ACHIEVEMENT_COPY } from '../../../achievements/data/achievementCopy';
 import { useAuth } from '../../../../services/auth/AuthContext';
 import { useStaggerReveal } from '../../../../hooks/useStaggerReveal';
 import { ROUTES, onboardingEditPath } from '../../../../app/config/routes';
-import { IconChevronRight, IconSettings } from '@tabler/icons-react';
+import { IconChevronRight, IconSettings, IconTrophy } from '@tabler/icons-react';
 import { BodySummary } from '../../components/BodySummary/BodySummary';
 import { PROFILE_COPY } from '../../data/profileCopy';
 import { useMyBodyMetrics, useMyUnits } from '../../hooks/useMyBody';
@@ -155,10 +154,11 @@ export function ProfilePage() {
   const [profile, setProfile] = useState<MyProfileResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string>();
-  const [dashboardSummary, setDashboardSummary] = useState<DashboardSummary | null>(null);
-  const [isStatsLoading, setIsStatsLoading] = useState(true);
+  // Her streak and numbers (Phase 11). Secondary: if it can't load, the card says so
+  // and the rest of the profile still works.
+  const { data: progress, error: progressError, reload: reloadProgress } = useMyAchievements();
   const trainingBlocksRef = useStaggerReveal<HTMLDivElement>([profile]);
-  const layoutRef = useStaggerReveal<HTMLDivElement>([profile, dashboardSummary]);
+  const layoutRef = useStaggerReveal<HTMLDivElement>([profile, progress]);
   const body = useMyBodyMetrics();
   const { units } = useMyUnits();
 
@@ -169,17 +169,6 @@ export function ProfilePage() {
         setLoadError(error instanceof Error ? error.message : "Couldn't load your profile.");
       })
       .finally(() => setIsLoading(false));
-  }, []);
-
-  useEffect(() => {
-    getDashboardSummary()
-      .then(setDashboardSummary)
-      .catch(() => {
-        // The progress snapshot is a secondary widget on this page — if it
-        // can't load, the card below just shows its own empty state instead
-        // of blocking the rest of the profile.
-      })
-      .finally(() => setIsStatsLoading(false));
   }, []);
 
   const frequency = profile?.profile?.trainingFrequency;
@@ -294,48 +283,29 @@ export function ProfilePage() {
 
             <div className="profile-side-column">
               <GlassCard variant="flat" className="profile-section-card profile-stats-card">
-                <h2>Your Progress</h2>
+                <h2>{ACHIEVEMENT_COPY.statsTitle}</h2>
 
-                {isStatsLoading && (
+                {!progress && !progressError && (
                   <div className="profile-loading-inline">
                     <Spinner size="sm" />
                   </div>
                 )}
-
-                {!isStatsLoading && !dashboardSummary && (
-                  <span className="profile-summary-empty">Progress data unavailable</span>
+                {!progress && progressError && (
+                  <StateMessage onRetry={reloadProgress}>{progressError}</StateMessage>
                 )}
 
-                {!isStatsLoading && dashboardSummary && (
-                  <>
-                    <div className="profile-stat-streak">
-                      <StreakRing streak={dashboardSummary.streak} compact />
-                      <div className="profile-stat-streak-text">
-                        <span className="profile-stat-value">
-                          {dashboardSummary.streak} day{dashboardSummary.streak === 1 ? '' : 's'}
-                        </span>
-                        <span className="profile-stat-caption">Current streak</span>
-                      </div>
-                    </div>
-
-                    <div className="profile-stat-block">
-                      <span className="text-label">Total Workouts</span>
-                      <span className="profile-stat-block-value">{dashboardSummary.totalWorkouts}</span>
-                      <MilestoneBar totalWorkouts={dashboardSummary.totalWorkouts} compact />
-                    </div>
-
-                    <div className="profile-stat-block">
-                      <span className="text-label">This Week</span>
-                      <WeekDotStrip workoutsLast7Days={dashboardSummary.workoutsLast7Days} compact />
-                    </div>
-
-                    <div className="profile-stat-block">
-                      <span className="text-label">Achievements</span>
-                      <AchievementBadges summary={dashboardSummary} limit={3} />
-                    </div>
-                  </>
+                {progress && (
+                  <div className="profile-progress">
+                    <StreakSummary streak={progress.streak} />
+                    <ProgressStats overview={progress} />
+                  </div>
                 )}
 
+                <Link to={ROUTES.PROFILE_ACHIEVEMENTS} className="profile-settings-link">
+                  <IconTrophy size={20} aria-hidden="true" />
+                  <span>{ACHIEVEMENT_COPY.allTitle}</span>
+                  <IconChevronRight size={20} aria-hidden="true" />
+                </Link>
                 <Link to={ROUTES.SETTINGS} className="profile-settings-link">
                   <IconSettings size={20} aria-hidden="true" />
                   <span>{PROFILE_COPY.settings}</span>

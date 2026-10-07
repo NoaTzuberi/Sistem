@@ -6,7 +6,7 @@ export const ROUTES = {
   PLAN: '/trainees/:traineeId/plans/:planId',
 } as const;
 
-export const TRAINEE_TABS = ['onboarding', 'plans', 'logs', 'metrics'] as const;
+export const TRAINEE_TABS = ['onboarding', 'plans', 'logs', 'metrics', 'achievements'] as const;
 export type TraineeTab = (typeof TRAINEE_TABS)[number];
 export const DEFAULT_TRAINEE_TAB: TraineeTab = 'onboarding';
 /** The trainee page keeps its open tab in the URL, so links can point at one. */

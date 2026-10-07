@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { AxiosInstance } from 'axios';
 import type {
+  AchievementOverview,
   BodyMetricList,
   CoachPlan,
   CoachTraineeList,
@@ -56,6 +57,12 @@ export function createCoachApi(client: AxiosInstance) {
   /** Her days (newest first) with signed photo links, and the measurement list. */
   async function listTraineeBodyMetrics(traineeId: string): Promise<BodyMetricList> {
     const { data } = await client.get<BodyMetricList>(`/coach/trainees/${traineeId}/body-metrics`);
+    return data;
+  }
+
+  /** Her streak and achievements, read-only. */
+  async function getTraineeAchievements(traineeId: string): Promise<AchievementOverview> {
+    const { data } = await client.get<AchievementOverview>(`/coach/trainees/${traineeId}/achievements`);
     return data;
   }
 
@@ -129,6 +136,7 @@ export function createCoachApi(client: AxiosInstance) {
     getTrainee,
     listTraineeWorkoutLogs,
     listTraineeBodyMetrics,
+    getTraineeAchievements,
     searchExercises,
     listPlans,
     listPlanWeeks,

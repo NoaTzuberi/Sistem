@@ -14,6 +14,7 @@
     "seed:knowledge": "tsx src/features/knowledge/scripts/seedKnowledge.ts",
     "promote:coach": "tsx src/features/users/scripts/promoteCoach.ts",
     "seed:dev": "tsx src/features/users/scripts/seedDev.ts",
+    "backfill:achievements": "tsx src/features/achievements/scripts/backfillAchievements.ts",
     "media:compress": "tsx src/features/onboardingMedia/scripts/compressOnboardingVideos.ts",
     "media:upload": "tsx src/features/onboardingMedia/scripts/uploadOnboardingMedia.ts"
   },

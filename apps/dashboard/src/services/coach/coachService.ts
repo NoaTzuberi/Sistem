@@ -6,6 +6,7 @@ export const {
   getTrainee,
   listTraineeWorkoutLogs,
   listTraineeBodyMetrics,
+  getTraineeAchievements,
   searchExercises,
   listPlans,
   listPlanWeeks,

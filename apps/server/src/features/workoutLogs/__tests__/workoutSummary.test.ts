@@ -155,13 +155,13 @@ describe('workout summary & Daily Pump', () => {
       expect(stored).toHaveLength(1);
       expect(String(stored[0].logId)).toBe(logId);
 
-      // The same PR lines on her log page, in her list, and in the PR endpoint.
+      // The same PR lines on her log page and in her list.
       const log = await api.request('GET', `/workout-logs/${logId}`, { token: trainee.token });
       expect(log.body.log.personalRecords).toHaveLength(1);
       const list = await api.request('GET', '/workout-logs', { token: trainee.token });
       expect(list.body.items.find((item: { id: string }) => item.id === logId).personalRecords).toHaveLength(1);
-      const records = await api.request('GET', '/personal-records', { token: trainee.token });
-      expect(records.body.items[0]).toMatchObject({ type: 'weight', newValue: 45, logId, exercise: { name: 'Squat' } });
+      // The old PR list endpoint is gone (Phase 11).
+      expect((await api.request('GET', '/personal-records', { token: trainee.token })).status).toBe(404);
     });
 
     it('never compares with another trainee or a discarded workout', async () => {

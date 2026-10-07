@@ -1,0 +1,337 @@
+SISTEM — PHASE 11 REPORT: ACHIEVEMENTS & STREAKS
+Date: 2026-10-07
+Scope: docs/BUILD_PLAN.md Phase 11 (PRD §7): data-driven achievements evaluated on the server,
+the weekly plan completion streak, unlocks shown in the workout summary, on Home (strip + a
+one-time celebration) and in Profile, the coach's view (app + dashboard), the old ATLAS widgets
+and /api/dashboard + /api/personal-records removed, and a backfill run on the dev database.
+Plus the owner's additions: a configurable streak week ratio, the "comeback" achievement,
+the PRD §7 sentence, and Phase 14 (cardio) in the build plan. Phase 12 was NOT started.
+
+================================================================================
+1. SUMMARY
+================================================================================
+- One config file (achievement.definitions.ts) holds the 28 achievements, one line each.
+  Each line names a metric and a threshold (one-time) or `repeatable`. Metrics are pure
+  timelines over her history, so the same code awards live and backdates the backfill.
+- Evaluation runs on the server after a workout finish (after the PRs), a Daily Pump upload,
+  a body save and a progress photo upload. It is idempotent (unique traineeId + key), never
+  takes an achievement back, never fails the save, and each run catches up on anything missed.
+- Streak = consecutive weeks that reach the completion ratio (config, default 1.0). Weeks
+  without a plan are neutral. The week in progress never breaks the streak.
+- The phone shows unlocks in three places:
+  - the summary: they pop in (GSAP), then are marked seen
+  - a celebration sheet: after a body save, and on Home for anything not celebrated yet
+  - Home's "Recent achievements" strip and its streak ring
+  Profile has "Your progress" and a full Achievements screen.
+- The coach sees the trainee's streak, numbers and every achievement (date or progress) in a
+  new Achievements tab, in the app and in the dashboard.
+- Backfill: `npm run backfill:achievements` was run on the dev database. It gave trainee 2 seven
+  achievements. A second run added none.
+
+================================================================================
+2. DECISIONS (owner answers) AND HOW THEY WERE BUILT
+================================================================================
+Owner decisions:
+1. PR achievements are milestones only (first weight PR, first reps PR, 10 / 25 / 50 PRs). There
+   is no achievement per PR.
+2. Weeks with no published plan (or a plan with no workouts) are neutral: skipped, they neither
+   add to nor break the streak.
+3. Achievement.seenAt + the celebration sheet were added.
+4. /api/personal-records is deleted (404 now, tested).
+A. ACHIEVEMENT_CONFIG.streakWeekCompletionRatio (default 1) sets when a week counts toward the
+   streak: done / planned ≥ ratio. Workouts needed = ceil(ratio × planned), never fewer than 1,
+   with a small epsilon so 0.7 × 10 needs 7. perfect_week always needs 100%. Unit-tested at
+   1.0 and 0.75 (3 of 4 counts at 0.75, breaks at 1.0; 3 of 3 is needed at 0.75; a 3-of-4
+   week is never a perfect week).
+B. comeback: repeatable, key comeback:<logId>. A completed workout at least 14 calendar days (in
+   her time zone) after her previous completed workout. Example: 1 Oct → 15 Oct counts, 1 Oct →
+   14 Oct does not. Her first ever workout is never a comeback. The 14 is
+   ACHIEVEMENT_CONFIG.comebackGapDays.
+- PRD §7 now says: "No achievements are based on body weight gain or loss — trainees have
+  different goals and weight-based rewards can be harmful." weigh_ins_10 counts days with a
+  weight logged and never reads the values (a test checks this).
+- Phase 14 — Cardio & running is in docs/BUILD_PLAN.md after Phase 13. A follow-up owner
+  decision rewrote it around smartwatch integration (manual logging as the fallback):
+  14a cardio foundation (web: targets, intervals, HR zones, manual logging, import-ready data
+  model, cardio PRs and achievements), 14b watch import via HealthKit / Health Connect (after
+  Phase 5b), 14c direct Strava / Garmin integrations (optional, API terms to verify first).
+  How the engine leaves room for it:
+  - achievementMetrics.ts takes new facts in AchievementHistory and new metrics in the METRICS
+    registry; the evaluator doesn't change.
+  - PERSONAL_RECORD_TYPE_IDS takes new types, and the PR metrics are built per type by a factory.
+
+The achievement list (names are PLACEHOLDERS, in @sistem/shared achievementDisplay.ts):
+  One-time:
+    first_workout, workouts_5/10/25/50/100                      completed workouts
+    first_weight_pr, first_reps_pr                              PersonalRecord of that type
+    prs_10/25/50                                                PersonalRecords of any type
+    volume_10k/50k/100k/500k/1m                                 lifetime total volume (kg)
+    streak_2/4/8/12/26/52                                       longest streak (weeks) reached
+    first_pump_photo                                            Daily Pump photo
+    first_measurement, first_progress_photo, weigh_ins_10       body tracking
+  Repeatable:
+    perfect_week (perfect_week:<weekStartDate>), comeback (comeback:<logId>)
+
+Streak rules (achievements/streak.ts, pure, unit-tested):
+  - Week = the plan's weekStartDate (Sunday, her zone); "today" is in her stored zone.
+  - A week counts when done / planned ≥ ratio. done = planned workouts with a completed log
+    (abandoned / in-progress logs never count; a log finished late still counts, the same rule
+    as the Home status).
+  - A week breaks the streak when it has ended without reaching the ratio.
+  - Weeks without a plan, or with an empty plan, are skipped. Future weeks are ignored.
+  - current = the run up to now; best = the longest run ever. thisWeek = { done, planned } for
+    the ring.
+  - The streak is computed on each read, never stored, so a coach's plan edit shows at once.
+    Achievements already awarded stay.
+
+Things I decided inside your answers (say if you want any changed):
+- unlockedAt:
+  - Live: the moment of the save.
+  - Backfill: when the rule was met (the Nth workout's finish, the log that crossed a volume
+    line or completed a week, the photo's upload).
+  - Body days have no per-field time, so a body achievement's backfill date is when that day
+    was first saved (its createdAt). Trainee 2's body achievements therefore show 6 Oct, the
+    day her seed entries were created.
+- Each unlock's source is the log or body day that met the rule:
+  - The summary shows the achievements whose source is that log, including first_pump_photo
+    right after the upload.
+  - Streak / perfect-week unlocks point to the workout that completed the week.
+- Repeatable achievements in progress lists show "×N". Locked one-time achievements show
+  "current / target" with a flat native <progress> bar (no inline styles).
+- Celebration:
+  - One queue for the whole app (features/achievements/celebration.ts) and one sheet, mounted
+    once in AppRouter, for trainees only.
+  - Closing it ("Nice!", ✕, Esc or the backdrop) marks everything shown as seen.
+  - Home queues every unseen achievement on load. The summary marks its own as seen once they
+    have popped in, so they aren't celebrated again on Home.
+  - With reduced motion nothing pops; the items simply show.
+- The coach's views never mark anything seen.
+- No notification is stored for an unlock (PRD §9 "in-app" = the summary reveal + the
+  celebration). Phase 5b can add push through an `achievement.unlocked` event.
+- Icons: features/achievements/data/achievementIcons.ts maps a type to your image. Without one,
+  a placeholder badge shows: a pink cut tile with a trophy, or grey with a lock when locked.
+- Profile's old "Your Progress" card (day-based streak, MilestoneBar, WeekDotStrip, the
+  client-computed AchievementBadges) is replaced by:
+  - the streak (current, best, this week)
+  - Workouts / Total volume / PRs / Achievements N of 28
+  - an "Achievements" link above Settings
+- Home: the streak ring sits where the placeholder was (weeks in the middle, this week's done /
+  planned on the ring). The strip shows the latest 6 and a "See all" link.
+- The coach tab in the app is "Achievements". The five tabs now share the width (flex) and
+  scroll sideways only if a label can't fit; at 375 px they fit.
+- /api/achievements is trainee-only now (requireRole('trainee')). The coach reads through
+  /api/coach/trainees/:id/achievements (loadCoachTrainee).
+- The api-client's saveBodyMetric / uploadProgressPhoto now return { metric,
+  achievementsUnlocked } instead of the metric alone. The three callers were updated.
+
+================================================================================
+3. FILES CHANGED
+================================================================================
+Added — server (apps/server/src/features/achievements)
+  achievement.definitions.ts      THE config (28 achievements + ACHIEVEMENT_CONFIG)
+  achievementMetrics.ts           pure metric timelines (extensible registry)
+  achievementEvaluation.ts        pure unlocks + progress
+  streak.ts                       pure streak rules
+  achievement.validation.ts       POST /achievements/seen body
+  scripts/backfillAchievements.ts
+  __tests__/streak.test.ts, __tests__/achievementRules.test.ts, __tests__/achievements.test.ts
+Modified — server
+  apps/server/package.json                                   backfill:achievements script
+  apps/server/src/app.ts                                     /api/dashboard + /api/personal-records removed
+  features/achievements/achievement.{controller,model,routes,service,types}.ts   seenAt, overview, seen
+  features/bodyMetrics/bodyMetric.controller.ts              evaluation + achievementsUnlocked
+  features/coach/coach.{controller,routes}.ts                GET /coach/trainees/:id/achievements
+  features/personalRecords/personalRecord.service.ts         listPersonalRecords removed
+  features/personalRecords/personalRecord.constants.ts       comment (cardio note)
+  features/workoutLogs/workoutSession.service.ts             evaluation after finish
+  features/workoutLogs/workoutSummary.service.ts             evaluation after Daily Pump upload
+  features/workoutLogs/workoutLog.service.ts                 log.achievements attached
+  features/auth/__tests__/authorization.test.ts, features/workoutLogs/__tests__/workoutSummary.test.ts
+Deleted — server
+  features/dashboard/ (controller, routes, service)
+  features/personalRecords/personalRecord.{controller,routes}.ts
+
+Modified — root
+  package.json                    backfill:achievements script
+
+Modified — packages
+  packages/types/src/index.ts     AchievementType, Achievement.seen, StreakSummary,
+                                  AchievementProgress, AchievementOverview,
+                                  MarkAchievementsSeenPayload, WorkoutLog.achievements,
+                                  BodyMetricResponse.achievementsUnlocked
+  packages/api-client/src/traineeApi.ts   getAchievements, markAchievementsSeen; body saves
+                                          return the whole response
+  packages/api-client/src/coachApi.ts     getTraineeAchievements
+  packages/shared/src/index.ts
+Added — packages
+  packages/shared/src/achievementDisplay.ts   names, progress, streak labels, formatVolume
+
+Added — mobile (apps/mobile/src)
+  services/achievements/achievementsService.ts
+  features/achievements/
+    celebration.ts
+    data/achievementCopy.ts, data/achievementIcons.ts
+    hooks/useMyAchievements.ts, hooks/usePopReveal.ts
+    components/AchievementBadge, AchievementCelebration, AchievementList, AchievementStrip,
+      AchievementTile, ProgressStats, StreakRing, StreakSummary, UnlockedAchievements
+    pages/AchievementsPage
+  features/coach/components/TraineeAchievements/
+Modified — mobile
+  app/config/routes.ts (PROFILE_ACHIEVEMENTS), app/router/AppRouter.tsx
+  features/home/pages/HomePage/HomePage.tsx, features/home/data/homeCopy.ts
+  features/profile/pages/ProfilePage/ (.tsx + .css)
+  features/profile/components/WeightLogSheet/WeightLogSheet.tsx
+  features/profile/pages/MeasurementsLogPage/MeasurementsLogPage.tsx
+  features/bodyTracking/components/ProgressPhotoSlot/ProgressPhotoSlot.tsx
+  features/workouts/pages/WorkoutSummaryPage/WorkoutSummaryPage.tsx
+  features/coach/data/traineeTabs.ts, features/coach/pages/TraineeDetailPage/ (.tsx + .css)
+  services/coach/coachService.ts
+Deleted — mobile
+  features/dashboard/ (AchievementBadges, MilestoneBar, ProgressRing, StreakRing, WeekDotStrip,
+    icons.tsx, types.ts)
+  features/workouts/components/AchievementsUnlockedSlot/
+  services/dashboard/dashboardService.ts, services/personalRecords/personalRecordsService.ts
+
+Added — dashboard
+  apps/dashboard/src/features/trainees/components/TraineeAchievements/
+Modified — dashboard
+  app/config/routes.ts (tab "achievements"), features/trainees/pages/TraineeDetailPage/TraineeDetailPage.tsx,
+  services/coach/coachService.ts
+
+Modified / added — docs
+  docs/PRD.md            §7: no body-weight achievements
+  docs/BUILD_PLAN.md     Phase 14 — Cardio & running
+  docs/phase-reports/phase-11-achievements-streaks.txt
+  CLAUDE.md (gitignored — not in any commit)
+
+================================================================================
+4. DEPENDENCIES
+================================================================================
+Added: none (GSAP and @tabler/icons-react were already there). Removed: none.
+
+================================================================================
+5. HOW TO TEST
+================================================================================
+Commands (repo root):
+  npm test        -> 25 files, 378 tests pass (was 22 / 306).
+    New: streak.test.ts, achievementRules.test.ts, achievements.test.ts (69 tests in total):
+    - every rule: workout counts 1–100, first weight / reps PR, PR milestones (all types, time
+      order), volume lines (the crossing log), perfect_week (100% only, keyed by week), streak
+      milestones up to 52 (longest run, a break, neutral weeks, ratio 1.0 vs 0.75), comeback
+      (14 days yes, 13 no, first ever no, her time zone, each counts once, other gap), first
+      pump photo (upload time), measurements, progress photo, 10 weigh-ins, no weight values
+    - streak math: workoutsNeeded (incl. 0.7 × 10), the current week, ended weeks, empty plans,
+      future weeks, order
+    - progress: current / threshold / count / unlockedAt
+    - API: first_workout on the finished log (not seen), perfect_week + streak + stats, a
+      discarded workout never counts, comeback, a failing evaluation never fails the finish and
+      the next one catches up, concurrent evaluations award once, first_pump_photo on the log,
+      body saves (once only, a weight alone unlocks nothing, first progress photo), seen (+ bad
+      bodies 400), a coach 403 on trainee routes, the coach reads without marking seen, another
+      coach 404, backfill dates + seen + a second run adds nothing
+    Updated: authorization (achievements are hers only, she can't mark another trainee's as
+    seen, coach route 403 / 404), workoutSummary (/personal-records 404).
+  npm run build   -> passes (server tsc, mobile, dashboard). Mobile bundle 551 kB (was 553).
+  npm run lint    -> 0 errors; 2 older warnings (AuthContext). The AchievementBadges warning
+                     went away with the file.
+  npm run dev     -> checked with the same workspace scripts on spare ports (API 5012, mobile 5176,
+                     dashboard 5177), because your servers were on 5002 / 5173: /api/health 200, the
+                     apps 200, "MongoDB connected". I stopped only my own processes, by task id.
+                     Your 5002 / 5173 are still running.
+
+Backfill (done on the dev database — remote Atlas, so with the flag):
+  npm run backfill:achievements -- --allow-remote
+    trainee2@sistem.dev: 7 new (first_workout, workouts_5, perfect_week, first_reps_pr,
+    first_pump_photo, first_measurement, weigh_ins_10); the other 5 trainees: 0.
+    Second run: 0 awarded.
+
+Manual (mobile, trainee2@sistem.dev / sistem-dev-1234):
+  1. Home: the ring is full (4 / 4 this week) with "1 week". "Recent achievements" shows 6 tiles,
+     swipe sideways, "See all" opens Achievements.
+  2. Achievements (also Profile → Achievements): the streak with best and this week, 4 numbers,
+     Unlocked (with dates) and Still to unlock (with progress bars "5 / 10").
+  3. Profile: "Your progress" = streak + numbers; Achievements and Settings links.
+  4. Workouts → the 5th workout's log → Add summary: "Achievements unlocked" lists 5 workouts and
+     Perfect week (static, already seen).
+  5. Celebration: a new unlock pops in on the summary right after Finish. A first measurement
+     or progress photo opens the sheet at once. Anything not celebrated yet opens the sheet on
+     the next Home visit. "Nice!" closes it for good.
+  6. Coach (coach@sistem.dev): app Trainees → trainee 2 → Achievements; dashboard trainee 2 →
+     Achievements (facts, the ratio note, a table with dates / progress).
+
+================================================================================
+6. KNOWN ISSUES / TODOs
+================================================================================
+- Browser check at 375×667: done in a 375×667 frame, because the Chrome window wouldn't shrink
+  (same as Phases 8–10). The hidden frame slows down GSAP and CSS transitions, so some
+  screenshots caught a fade or the ring mid-sweep (the ring's target was checked: full).
+  Checked:
+  - Home: ring, strip, no sideways scroll, the strip clears the tab bar
+  - Achievements screen, Profile card, a reopened summary
+  - the celebration sheet, live: I set two of trainee 2's achievements to unseen, Home opened
+    "2 achievements unlocked!" with the pop-in, and "Nice!" marked both seen on the server.
+    Dev data is back to all seen.
+  - coach mode Achievements tab; the dashboard tab (desktop)
+  Found and fixed while checking:
+  - "First measurements" broke mid-word in a Home tile → tiles are 136 px and break only
+    between words.
+  - The five coach tabs overflowed by 8 px at 375 → back to the original tab padding; they
+    fit, 44 px tall.
+- NOT seen in the browser: the summary pop-in after a real Finish. Trainee 2's week is fully
+  done, so there was no workout to start. Server tests cover the unlock on the finished log; the
+  pop-in uses the same hook as the celebration, which was seen live. The celebration after a
+  body save wasn't seen live either (trainee 2 already has those achievements).
+- To check the sheet, a one-off script in my scratchpad (not in the repo) set seenAt to null on
+  two dev achievements. The sheet then marked them seen again, so nothing is left changed.
+- The backfill dates body achievements by the day's createdAt (no per-field times exist).
+- Achievements are never revoked. If the coach later adds a workout to a completed week, that
+  perfect_week stays, while the streak (computed live) reflects the new plan.
+- Neutral weeks have no limit: a trainee with no plans for months keeps her streak. Say if a
+  long gap should break it.
+- The streak counts the trainee's own plan weeks only (one plan per week per trainee is already
+  a unique index).
+- Mobile bundle 551 kB: still over Vite's 500 kB warning (backlog "split the mobile bundle by
+  role").
+- No client tests (as before). The shared achievement display helpers are pure and ready for
+  them.
+- All new wording is placeholder: achievement names / descriptions (@sistem/shared
+  achievementDisplay.ts), achievementCopy.ts, the dashboard tab text, "Achievements" as the tab
+  name, the celebration title and "Nice!". The badge is a placeholder until your icons arrive
+  (achievementIcons.ts).
+
+================================================================================
+7. SUGGESTED COMMITS (ready to paste — in order)
+================================================================================
+Note: commit 1 changes the API contract (packages/types, packages/api-client), so the mobile app
+and dashboard build again only after commit 2, as in Phases 9 and 10.
+
+# 1) server + contract: achievement engine, streak, evaluation, backfill; old endpoints removed
+git add -A -- \
+  package.json \
+  apps/server/package.json \
+  apps/server/src/app.ts \
+  apps/server/src/features/achievements \
+  apps/server/src/features/bodyMetrics/bodyMetric.controller.ts \
+  apps/server/src/features/coach/coach.controller.ts \
+  apps/server/src/features/coach/coach.routes.ts \
+  apps/server/src/features/dashboard \
+  apps/server/src/features/personalRecords \
+  apps/server/src/features/workoutLogs \
+  apps/server/src/features/auth/__tests__/authorization.test.ts \
+  packages/types \
+  packages/api-client
+git commit -m "feat: data-driven achievements and weekly plan streak evaluated on the server after workouts, Daily Pump and body saves; coach read endpoint, seen state, backfill script; remove /api/dashboard and /api/personal-records"
+
+# 2) clients: Home streak + strip, summary reveal, celebration, Profile progress, coach tabs
+git add -A -- \
+  packages/shared \
+  apps/mobile \
+  apps/dashboard
+git commit -m "feat: achievements and streak on Home, Profile and a full achievements screen, unlock reveal in the workout summary and a one-time celebration; achievements tab for the coach in the app and dashboard; remove ATLAS dashboard widgets"
+
+# 3) docs
+git add -A -- \
+  docs/PRD.md \
+  docs/BUILD_PLAN.md \
+  docs/phase-reports/phase-11-achievements-streaks.txt
+git commit -m "docs: phase 11 report, PRD no body-weight achievements, build plan phase 14 cardio & running"

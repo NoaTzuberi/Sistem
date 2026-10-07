@@ -9,6 +9,7 @@ import {
   getTraineePlanWeeks,
   getTraineeWorkoutLogs,
   getTraineeBodyMetrics,
+  getTraineeAchievements,
   createTraineePlan,
   getTraineePlan,
   saveTraineePlan,
@@ -30,6 +31,7 @@ coachRouter.get('/trainees', getTrainees);
 coachRouter.get('/trainees/:traineeId', loadCoachTrainee, getTrainee);
 coachRouter.get('/trainees/:traineeId/workout-logs', loadCoachTrainee, getTraineeWorkoutLogs);
 coachRouter.get('/trainees/:traineeId/body-metrics', loadCoachTrainee, getTraineeBodyMetrics);
+coachRouter.get('/trainees/:traineeId/achievements', loadCoachTrainee, getTraineeAchievements);
 
 // Plan builder (Phase 6).
 coachRouter.get('/trainees/:traineeId/plans', loadCoachTrainee, getTraineePlans);

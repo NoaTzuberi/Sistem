@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DAY_NAMES, formatWeekRange, useLoad } from '@sistem/shared';
 import { AppShell } from '../../../../components/layout/AppShell/AppShell';
@@ -6,7 +7,11 @@ import { StateMessage } from '../../../../components/common/StateMessage/StateMe
 import { useAuth } from '../../../../services/auth/AuthContext';
 import { getWeek } from '../../../../services/plans/plansService';
 import { ROUTES, workoutLogPath, workoutPath, workoutSessionPath } from '../../../../app/config/routes';
-import { StreakRing } from '../../../dashboard/components/StreakRing/StreakRing';
+import { StreakRing } from '../../../achievements/components/StreakRing/StreakRing';
+import { AchievementStrip } from '../../../achievements/components/AchievementStrip/AchievementStrip';
+import { useMyAchievements } from '../../../achievements/hooks/useMyAchievements';
+import { celebrate } from '../../../achievements/celebration';
+import { ACHIEVEMENT_COPY } from '../../../achievements/data/achievementCopy';
 import { WorkoutRow } from '../../../workouts/components/WorkoutRow/WorkoutRow';
 import { WORKOUT_STATUS_LABELS, exerciseCountLabel } from '../../../workouts/data/workoutCopy';
 import { useStartWorkout } from '../../../workouts/hooks/useStartWorkout';
@@ -22,6 +27,12 @@ export function HomePage() {
   const navigate = useNavigate();
   const { data: week, error, isLoading, reload } = useLoad(getWeek, HOME_COPY.loadError);
   const starter = useStartWorkout();
+  const { data: achievements } = useMyAchievements();
+
+  // Anything not celebrated yet (a skipped summary, an unlock on another device) gets its moment here.
+  useEffect(() => {
+    if (achievements) celebrate(achievements.unlocked);
+  }, [achievements]);
 
   const firstName = user?.name?.trim().split(' ')[0] ?? '';
   const plan = week?.plan;
@@ -46,14 +57,16 @@ export function HomePage() {
               </span>
             )}
           </div>
-          {/* Streak placeholder: the real value arrives with Phase 11. */}
-          <div className="home-streak">
-            <StreakRing streak={0} compact />
-            <span className="home-streak-text">
-              <span className="home-streak-label">{HOME_COPY.streak}</span>
-              <span className="home-streak-note">{HOME_COPY.streakComingSoon}</span>
-            </span>
-          </div>
+          {/* Weekly plan streak (Phase 11): weeks in the middle, this week's workouts on the ring. */}
+          {achievements && (
+            <div className="home-streak">
+              <StreakRing streak={achievements.streak} />
+              <span className="home-streak-text">
+                <span className="home-streak-label">{ACHIEVEMENT_COPY.streak}</span>
+                <span className="home-streak-note">{ACHIEVEMENT_COPY.streakUnit(achievements.streak.current)}</span>
+              </span>
+            </div>
+          )}
         </header>
 
         {isLoading && !week && <StateMessage>{HOME_COPY.loading}</StateMessage>}
@@ -127,13 +140,7 @@ export function HomePage() {
               {HOME_COPY.intervalTimer}
             </Button>
 
-            {/* Achievements strip: empty until Phase 11 computes them. */}
-            <section aria-labelledby="home-achievements-title">
-              <h2 className="home-section-title home-section-title-ruled" id="home-achievements-title">
-                {HOME_COPY.achievements}
-              </h2>
-              <StateMessage>{HOME_COPY.noAchievements}</StateMessage>
-            </section>
+            {achievements && <AchievementStrip achievements={achievements.unlocked} titleId="home-achievements-title" />}
           </>
         )}
       </div>

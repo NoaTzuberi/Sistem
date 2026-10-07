@@ -6,20 +6,9 @@ import type { PersonalRecordType } from './personalRecord.constants';
 import { detectPersonalRecords } from './personalRecordDetection';
 import type { DetectedPersonalRecord, PrSet } from './personalRecordDetection';
 
-export interface PublicPersonalRecord {
-  id: string;
-  exercise: { id: string; slug: string; name: string };
-  type: PersonalRecordType;
-  previousValue: number;
-  newValue: number;
-  weight?: number;
-  logId: string;
-  date: Date;
-}
-
 interface PersonalRecordLeanDoc {
   _id: unknown;
-  exerciseId: { _id: unknown; slug: string; name: string } | null;
+  exerciseId: Types.ObjectId;
   logId: Types.ObjectId;
   type: PersonalRecordType;
   previousValue: number;
@@ -28,33 +17,7 @@ interface PersonalRecordLeanDoc {
   date: Date;
 }
 
-const DEFAULT_LIMIT = 10;
 const DUPLICATE_KEY_ERROR = 11000;
-
-export async function listPersonalRecords(userId: string, limit = DEFAULT_LIMIT): Promise<PublicPersonalRecord[]> {
-  const docs = await PersonalRecord.find({ userId })
-    .sort({ date: -1 })
-    .limit(limit)
-    .populate('exerciseId', 'slug name')
-    .lean<PersonalRecordLeanDoc[]>();
-
-  return docs
-    .filter((doc) => doc.exerciseId !== null)
-    .map((doc) => ({
-      id: String(doc._id),
-      exercise: {
-        id: String(doc.exerciseId!._id),
-        slug: doc.exerciseId!.slug,
-        name: doc.exerciseId!.name,
-      },
-      type: doc.type,
-      previousValue: doc.previousValue,
-      newValue: doc.newValue,
-      ...(doc.weight !== undefined && { weight: doc.weight }),
-      logId: String(doc.logId),
-      date: doc.date,
-    }));
-}
 
 /**
  * Her PRs in this workout, compared with ALL her earlier completed workouts (not only
@@ -119,7 +82,7 @@ export async function personalRecordsByLog(logIds: Types.ObjectId[]): Promise<Ma
   if (logIds.length === 0) return byLog;
   const docs = await PersonalRecord.find({ logId: { $in: logIds } })
     .sort({ _id: 1 })
-    .lean<(Omit<PersonalRecordLeanDoc, 'exerciseId'> & { exerciseId: Types.ObjectId })[]>();
+    .lean<PersonalRecordLeanDoc[]>();
   for (const doc of docs) {
     const list = byLog.get(String(doc.logId)) ?? [];
     list.push({

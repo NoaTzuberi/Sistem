@@ -7,6 +7,7 @@ import { Button } from '../../../../components/common/Button/Button';
 import { Input } from '../../../../components/common/Input/Input';
 import { Modal } from '../../../../components/common/Modal/Modal';
 import { saveBodyMetric } from '../../../../services/bodyMetrics/bodyMetricsService';
+import { celebrate } from '../../../achievements/celebration';
 import { BODY_COPY } from '../../../bodyTracking/data/bodyCopy';
 import './WeightLogSheet.css';
 
@@ -41,7 +42,9 @@ export function WeightLogSheet({ target, today, unit, onClose, onSaved }: Weight
     setError(null);
     setIsSaving(true);
     try {
-      onSaved(date, await saveBodyMetric(date, { weight: weightKg }));
+      const saved = await saveBodyMetric(date, { weight: weightKg });
+      onSaved(date, saved.metric);
+      celebrate(saved.achievementsUnlocked);
       onClose();
     } catch (caught) {
       setError(extractErrorMessage(caught, weightKg === null ? BODY_COPY.deleteError : BODY_COPY.saveError));

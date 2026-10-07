@@ -14,6 +14,7 @@ import type { LeanPlan } from '../plans/plan.service';
 import { weekStartOf } from '../plans/planWeek';
 import { todayFor } from '../plans/traineePlan.service';
 import { detectPersonalRecordsForLog, savePersonalRecords } from '../personalRecords/personalRecord.service';
+import { evaluateAchievementsSafely } from '../achievements/achievement.service';
 import { WorkoutLog } from './workoutLog.model';
 import { WorkoutLogNotFoundError, attachLogDetails, attachLogExerciseFacts, toPublicWorkoutLog } from './workoutLog.service';
 import type { WorkoutLogDocument, WorkoutLogSetFields } from './workoutLog.types';
@@ -313,6 +314,8 @@ export async function finishWorkout(
   }
   // After the conditional update: only the one finish that closed the log records PRs.
   await savePersonalRecords(log.traineeId, log._id, records, now);
+  // After the PRs, which some rules read. The summary shows what this log unlocked.
+  await evaluateAchievementsSafely(traineeId, now);
 
   emitAppEvent('workout.completed', { logId, traineeId, workoutTitle: log.workoutTitle, finishedAt: now });
 

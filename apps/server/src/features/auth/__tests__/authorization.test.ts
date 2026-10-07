@@ -137,12 +137,27 @@ describe('authorization', () => {
       expect(JSON.stringify(res.body)).not.toContain('publicId');
     });
 
-    it.each(['/plans', '/workout-logs', '/body-metrics', '/achievements'])('GET %s lists only her own items', async (path) => {
+    it.each(['/plans', '/workout-logs', '/body-metrics'])('GET %s lists only her own items', async (path) => {
       const own = await api.request('GET', path, { token: world.traineeB.token });
       expect(own.body.items).toHaveLength(1);
       const other = await api.request('GET', path, { token: world.traineeA.token });
       expect(other.status).toBe(200);
       expect(other.body.items).toEqual([]);
+    });
+
+    it('GET /achievements shows only her own achievements', async () => {
+      const own = await api.request('GET', '/achievements', { token: world.traineeB.token });
+      expect(own.body.unlocked).toHaveLength(1);
+      const other = await api.request('GET', '/achievements', { token: world.traineeA.token });
+      expect(other.status).toBe(200);
+      expect(other.body.unlocked).toEqual([]);
+    });
+
+    it('cannot mark another trainee’s achievement as seen', async () => {
+      const [achievement] = (await api.request('GET', '/achievements', { token: world.traineeB.token })).body.unlocked;
+      const res = await api.request('POST', '/achievements/seen', { token: world.traineeA.token, body: { ids: [achievement.id] } });
+      expect(res.status).toBe(204);
+      expect((await Achievement.findById(achievement.id).lean())?.seenAt).toBeNull();
     });
 
     it('onboarding answers are always the caller’s own', async () => {
@@ -164,6 +179,7 @@ describe('authorization', () => {
       '/coach/trainees/:self/plans',
       '/coach/trainees/:other/workout-logs',
       '/coach/trainees/:other/body-metrics',
+      '/coach/trainees/:other/achievements',
     ])('GET %s is 403', async (template) => {
       const path = template.replace(':self', world.traineeA.id).replace(':other', world.traineeB.id);
       const res = await api.request('GET', path, { token: world.traineeA.token });
@@ -184,7 +200,7 @@ describe('authorization', () => {
       expect(res.body.trainee.onboarding.answers.goals).toEqual(['build_muscle']);
     });
 
-    it.each(['', '/plans', '/workout-logs', '/body-metrics'])(
+    it.each(['', '/plans', '/workout-logs', '/body-metrics', '/achievements'])(
       'another coach’s trainee is 404 on /coach/trainees/:id%s',
       async (suffix) => {
         const res = await api.request('GET', `/coach/trainees/${world.traineeC.id}${suffix}`, { token: world.coachX.token });

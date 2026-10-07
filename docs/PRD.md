@@ -140,6 +140,8 @@ Initial set (extensible, data-driven definitions):
 - Streaks: consecutive weeks where all planned workouts were completed (and/or consecutive training days)
 - First Daily Pump photo, first body-measurement entry
 
+No achievements are based on body weight gain or loss — trainees have different goals and weight-based rewards can be harmful.
+
 ## 8. AI Plan Recommendation (later phase)
 
 - When a trainee completes onboarding, an AI job analyzes the answers and generates a **draft plan recommendation** for the coach.

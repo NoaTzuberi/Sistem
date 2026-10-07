@@ -11,7 +11,7 @@ import { ROUTES, workoutLogPath, workoutSessionPath } from '../../../../app/conf
 import { getWorkoutLog, updateWorkoutSummary } from '../../../../services/workoutLogs/workoutLogsService';
 import { SummaryStats } from '../../components/SummaryStats/SummaryStats';
 import { PersonalRecordList } from '../../components/PersonalRecordList/PersonalRecordList';
-import { AchievementsUnlockedSlot } from '../../components/AchievementsUnlockedSlot/AchievementsUnlockedSlot';
+import { UnlockedAchievements } from '../../../achievements/components/UnlockedAchievements/UnlockedAchievements';
 import { RatingPicker } from '../../components/RatingPicker/RatingPicker';
 import { PumpPhotoField } from '../../components/PumpPhotoField/PumpPhotoField';
 import { SUMMARY_COPY } from '../../data/workoutCopy';
@@ -26,7 +26,7 @@ export interface SummaryLocationState {
 
 /**
  * The workout summary (PRD §5.3), full screen: the server's stats and PRs, the
- * achievements slot (Phase 11), "How was it?", notes and the Daily Pump photo. Opened
+ * achievements it unlocked (Phase 11), "How was it?", notes and the Daily Pump photo. Opened
  * after Finish and again from the log page — she can change it any time.
  */
 export function WorkoutSummaryPage() {
@@ -106,7 +106,7 @@ export function WorkoutSummaryPage() {
           <>
             {log.stats && <SummaryStats stats={log.stats} />}
             <PersonalRecordList log={log} title={SUMMARY_COPY.personalRecords} />
-            <AchievementsUnlockedSlot log={log} />
+            <UnlockedAchievements achievements={log.achievements ?? []} />
 
             <section className="workout-summary-section" aria-labelledby="summary-rating">
               <h2 id="summary-rating" className="workout-summary-section-title">

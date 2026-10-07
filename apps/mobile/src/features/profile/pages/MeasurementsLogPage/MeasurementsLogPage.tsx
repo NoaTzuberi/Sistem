@@ -10,6 +10,7 @@ import { Input } from '../../../../components/common/Input/Input';
 import { StateMessage } from '../../../../components/common/StateMessage/StateMessage';
 import { ROUTES } from '../../../../app/config/routes';
 import { saveBodyMetric } from '../../../../services/bodyMetrics/bodyMetricsService';
+import { celebrate } from '../../../achievements/celebration';
 import { BODY_COPY } from '../../../bodyTracking/data/bodyCopy';
 import { SubPageHeader } from '../../components/SubPageHeader/SubPageHeader';
 import { useGoBack } from '../../hooks/useGoBack';
@@ -56,7 +57,8 @@ export function MeasurementsLogPage() {
     setFormError(null);
     setIsSaving(true);
     try {
-      await saveBodyMetric(date, { measurements });
+      const saved = await saveBodyMetric(date, { measurements });
+      celebrate(saved.achievementsUnlocked);
       goBack();
     } catch (caught) {
       setFormError(extractErrorMessage(caught, BODY_COPY.saveError));

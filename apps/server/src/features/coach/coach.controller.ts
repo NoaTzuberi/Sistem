@@ -17,6 +17,7 @@ import {
 import { validatePlanIdParam, parseCreatePlanPayload, parseSavePlanPayload } from '../plans/plan.validation';
 import { listWorkoutLogsForTrainee } from '../workoutLogs/workoutLog.service';
 import { listBodyMetricsForTrainee } from '../bodyMetrics/bodyMetric.service';
+import { getAchievementOverview } from '../achievements/achievement.service';
 import { listCoachExercises } from '../exercises/exercise.service';
 import type { ListCoachExercisesParams } from '../exercises/exercise.service';
 import { validateExerciseListQuery } from '../exercises/exercise.validation';
@@ -75,6 +76,11 @@ export async function getTraineeWorkoutLogs(req: AuthenticatedRequest, res: Resp
 /** Read-only: her weight, measurements and progress photos (signed links made for the coach). */
 export async function getTraineeBodyMetrics(req: AuthenticatedRequest, res: Response) {
   res.status(200).json(await listBodyMetricsForTrainee(req.traineeId!));
+}
+
+/** Read-only: her streak and achievements. The coach's view never marks anything seen. */
+export async function getTraineeAchievements(req: AuthenticatedRequest, res: Response) {
+  res.status(200).json(await getAchievementOverview(req.traineeId!));
 }
 
 // --- Plan builder -----------------------------------------------------------
