@@ -649,6 +649,54 @@ OK — the key naming, the file layout, and the list of screens / components aff
 
 ---
 
+## Phase 12b — AI-assisted plan builder v2 (later, after Phase 15)
+
+Owner request (2026-10-08): planned for later, scheduled after Phase 15 (Hebrew & RTL) — the numbering only says it
+builds on Phase 12. Details in PRD §8 "AI-assisted plan builder v2". Same rules as Phase 12: nothing AI-generated reaches
+the trainee without the coach publishing; every AI output is validated against the plan rules (plan.validation.ts);
+Gemini free tier, dev data only, until the PRD §14 "paid AI tier" item is done. Propose the config shape, the slot
+taxonomy and the exercise tagging before writing routes.
+
+```
+Implement PRD §8 "AI-assisted plan builder v2": turn the Phase 12 single AI draft into a guided, coach-controlled flow.
+
+1. Analysis & split recommendation: when "trainee.onboarded" fires (and on demand), the AI analyzes her answers and
+   recommends a weekly split (Full body, Upper / Lower, Push / Pull / Legs, ABC, …) with its reasoning (days per week,
+   experience, goals, recovery flags, equipment). When more than one split fits, it returns 2–3 options with pros / cons.
+   Splits come from the config (item 3) by id — the model never invents one. Stored with the AiRecommendation pipeline
+   (structured output → validation in code → retry). The coach sees it as a "Training summary" in the trainee's Plans
+   tab (dashboard).
+   Experience: onboarding has no experience question yet (PRD §14 backlog) — ask me whether to add it first or to keep
+   beginner + intermediate only, as Phase 12.
+2. The coach chooses the path:
+   a. Accept the full AI plan as-is → an editable draft in the plan builder (as Phase 12 "Use in a new plan").
+   b. Accept only the split → a new plan with one empty workout per split day, built from the split templates (item 3);
+      she fills the slots herself (item 4).
+   c. Regenerate, or pick a different split (one of the options or any split in the config) and regenerate for it.
+3. Split templates with exercise slots: each workout type has a template of slots by muscle group / movement pattern,
+   e.g. Full body: legs, back, chest, shoulders, core · Lower: squat / leg press, hip hinge, glutes, hamstrings, calves ·
+   Upper / Push / Pull: matching slots. Splits, workout types, slots and their match rules live in ONE config
+   (defaults in code + per-coach overrides, like nutrition.config.ts + NutritionSettings) the coach can edit later in a
+   dashboard settings screen. A slot keeps its id on the plan exercise, so the picker and the AI know what it is for.
+4. Slot-filtered exercise picker (plan builder): each slot offers only exercises that match it — muscle group /
+   movement pattern, equipment she has (the Phase 12 equipment map), level — with search (typo-tolerant, the shared
+   textSearch), "Recently used" and keyboard use, like the nutrition FoodPicker. A lower-body workout offers only
+   lower-body exercises, and so on; "show all" stays available to the coach. The AI may pre-fill each slot with a
+   suggestion (from the filtered candidates only) that the coach accepts or swaps in one click.
+5. Exercise library tagging: map every imported exercise to slot categories (muscle group + movement pattern), derived
+   in code from the factual fields only (body part, primary muscles, equipment, level, type — no copied Kaggle text),
+   stored on the Exercise; a script lists unclear / unmapped ones for the coach to review, and the coach can change an
+   exercise's slot categories in the dashboard.
+6. Rules: the AI never sets weights or notes (as Phase 12); its "why" stays coach-only; everything it returns is checked
+   in code (split ids from the config, exercise ids from the slot's filtered candidates, the plan publish rules); the
+   trainee sees nothing until the coach publishes. No mobile UI (coach mode keeps its light actions).
+7. Tests: split recommendation validation (unknown split, 2–3 options), the slot filter (muscle / pattern / equipment /
+   level), the tagging rules, the three coach paths, the pre-fill only from allowed candidates, and that nothing reaches
+   the trainee before publish. The LLM is mocked in tests.
+```
+
+---
+
 ## Backlog (not scheduled)
 
 - **Password reset** — not in the MVP. The ATLAS forgot/reset-password flow (server routes + Resend email + client pages) exists; before enabling it in the app it needs a deep link / universal link or a small web reset page, and a Sistem email sender.

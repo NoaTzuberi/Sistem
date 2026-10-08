@@ -239,6 +239,16 @@ No achievements are based on body weight gain or loss — trainees have differen
 - Output is a structured draft (workouts, exercises, sets/reps, rationale) that pre-fills the plan builder. **The coach always reviews and edits before publishing.** Nothing AI-generated reaches a trainee directly.
 - **Built in Phase 12 (owner decisions, 2026-10-07):** provider = Google Gemini API, **free tier, dev only** (default `gemini-3.8-flash`, fallback `gemini-3.5-flash-lite`, switchable via `AI_MODEL` / `AI_FALLBACK_MODEL`), behind one provider client so a paid provider is a contained change. Sent to the model: her onboarding answers by option id, age in years (not the birth date), rounded height / weight, her three free-text answers trimmed to 500 characters with emails and phone numbers removed — never her name, email, ids, photos, logs or body history. The AI never sets weights and never writes the exercise notes (those are what the trainee sees); its "why" per exercise is coach-only. Only beginner and intermediate exercises are offered (no experience question in onboarding yet). The AI is off in production until a paid tier is configured (see §14).
 
+### AI-assisted plan builder v2 (later — Phase 12b, after Phase 15)
+
+Owner request (2026-10-08), planned for later: turn the Phase 12 single AI draft into a guided, coach-controlled flow.
+- **Training summary & split recommendation**: after onboarding, the AI analyzes her answers and recommends a weekly split (Full body, Upper / Lower, Push / Pull / Legs, ABC, …) with reasoning (days per week, experience, goals, recovery flags, equipment). When more than one split fits, it shows 2–3 options with pros and cons. The coach sees this as a "Training summary" for the trainee.
+- **The coach chooses the path**: accept the full AI plan as-is (an editable draft, as today); accept only the split and build the workouts herself from the split templates; or regenerate — also for a different split she picks.
+- **Split templates with exercise slots**: each workout type has a template of slots by muscle group / movement pattern (e.g. Full body: legs, back, chest, shoulders, core · Lower: squat / press, hip hinge, glutes, hamstrings, calves · Upper / Push / Pull: matching slots). Templates and slot definitions live in one config the coach can edit later.
+- **Slot-filtered exercise picker**: each slot offers only matching exercises (muscle group / movement pattern / the equipment she has / level), with search and "recently used", like the nutrition food picker; a lower-body workout offers only lower-body exercises. The AI can pre-fill each slot with a suggestion the coach swaps in one click.
+- **Exercise library tagging**: every exercise is mapped to slot categories (muscle group + movement pattern) from its factual fields only; unclear ones are listed for the coach to review.
+- Same rules as Phase 12: nothing AI-generated reaches the trainee without the coach publishing; every AI output is validated against the plan rules; free tier / dev data only until the paid AI tier (§14) is in place. Experience level depends on the §14 onboarding experience-question item.
+
 ## 9. Notifications
 
 | Event | Recipient | Channel |
