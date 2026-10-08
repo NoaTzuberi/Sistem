@@ -1,0 +1,23 @@
+.nutrition-issues {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+}
+
+.nutrition-issue {
+  padding: var(--space-1) var(--space-2);
+}
+
+.nutrition-issue-error {
+  color: var(--color-error);
+  background-color: var(--color-error-soft);
+}
+
+.nutrition-issue-warning {
+  color: var(--color-primary-deep);
+  background-color: var(--color-primary-soft);
+}

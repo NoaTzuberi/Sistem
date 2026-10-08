@@ -1,5 +1,5 @@
 // The sections of the trainee screen. Placeholder labels — the owner decides the wording.
-export const TRAINEE_TABS = ['onboarding', 'plan', 'logs', 'body', 'achievements'] as const;
+export const TRAINEE_TABS = ['onboarding', 'plan', 'nutrition', 'logs', 'body', 'achievements'] as const;
 
 export type TraineeTab = (typeof TRAINEE_TABS)[number];
 
@@ -11,6 +11,7 @@ export const TRAINEE_TAB_PARAM = 'tab';
 export const TRAINEE_TAB_LABELS: Record<TraineeTab, string> = {
   onboarding: 'Onboarding',
   plan: 'Plan',
+  nutrition: 'Nutrition',
   logs: 'Logs',
   body: 'Body',
   achievements: 'Achievements',

@@ -1,0 +1,66 @@
+import type { NutritionConfig, NutritionSettingsPayload, NutritionSettingsResponse } from '@sistem/types';
+import { DEFAULT_NUTRITION_CONFIG } from './nutrition.config';
+import { NutritionSettings } from './nutritionSettings.model';
+import type { NutritionSettingsDocument } from './nutrition.types';
+
+export class NutritionSettingsConflictError extends Error {}
+
+function cloneDefaults(): NutritionConfig {
+  return {
+    groupKcal: { ...DEFAULT_NUTRITION_CONFIG.groupKcal },
+    goalAdjustments: { ...DEFAULT_NUTRITION_CONFIG.goalAdjustments },
+    activityFactors: [...DEFAULT_NUTRITION_CONFIG.activityFactors],
+    floorKcal: DEFAULT_NUTRITION_CONFIG.floorKcal,
+  };
+}
+
+/** Defaults, with each value the coach set taking its place. Vegetables always stay 0. */
+export function mergeNutritionConfig(overrides: Partial<NutritionSettingsDocument> | null): NutritionConfig {
+  const config = cloneDefaults();
+  if (!overrides) return config;
+  for (const group of ['protein', 'carb', 'fat'] as const) {
+    const value = overrides.groupKcal?.[group];
+    if (typeof value === 'number') config.groupKcal[group] = value;
+  }
+  for (const goal of Object.keys(config.goalAdjustments) as (keyof NutritionConfig['goalAdjustments'])[]) {
+    const value = overrides.goalAdjustments?.[goal];
+    if (typeof value === 'number') config.goalAdjustments[goal] = value;
+  }
+  if (overrides.activityFactors?.length === config.activityFactors.length) {
+    config.activityFactors = [...overrides.activityFactors];
+  }
+  if (typeof overrides.floorKcal === 'number') config.floorKcal = overrides.floorKcal;
+  return config;
+}
+
+export async function getEffectiveNutritionConfig(coachId: string): Promise<NutritionConfig> {
+  const overrides = await NutritionSettings.findOne({ coachId }).lean();
+  return mergeNutritionConfig(overrides);
+}
+
+export async function getNutritionSettings(coachId: string): Promise<NutritionSettingsResponse> {
+  return { config: await getEffectiveNutritionConfig(coachId), defaults: cloneDefaults() };
+}
+
+/**
+ * `foodsAboveCaps`: how many of her items carry more kcal than the new group values —
+ * a food's kcal may never exceed its group's value, so those are fixed first.
+ */
+export async function saveNutritionSettings(
+  coachId: string,
+  input: NutritionSettingsPayload,
+  foodsAboveCaps: (caps: NutritionSettingsPayload['groupKcal']) => Promise<number>,
+): Promise<NutritionSettingsResponse> {
+  const above = await foodsAboveCaps(input.groupKcal);
+  if (above > 0) {
+    throw new NutritionSettingsConflictError(
+      `${above} food item${above === 1 ? ' has' : 's have'} more calories than the new group value — lower ${above === 1 ? 'it' : 'them'} first.`,
+    );
+  }
+  await NutritionSettings.updateOne(
+    { coachId },
+    { $set: { groupKcal: input.groupKcal, goalAdjustments: input.goalAdjustments, activityFactors: input.activityFactors, floorKcal: input.floorKcal } },
+    { upsert: true },
+  );
+  return getNutritionSettings(coachId);
+}

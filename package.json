@@ -12,7 +12,7 @@
     "dev": "concurrently -k -n server,mobile -c magenta,cyan \"npm:dev:server\" \"npm:dev:mobile\"",
     "dev:all": "concurrently -k -n server,mobile,dashboard -c magenta,cyan,yellow \"npm:dev:server\" \"npm:dev:mobile\" \"npm:dev:dashboard\"",
     "dev:phone": "node scripts/dev-phone.mjs",
-    "dev:server":"npm run dev -w @sistem/server",
+    "dev:server": "npm run dev -w @sistem/server",
     "dev:mobile": "npm run dev -w @sistem/mobile",
     "dev:dashboard": "npm run dev -w @sistem/dashboard",
     "build": "npm run build --workspaces --if-present",
@@ -22,6 +22,7 @@
     "seed:knowledge": "npm run seed:knowledge -w @sistem/server",
     "promote:coach": "npm run promote:coach -w @sistem/server --",
     "seed:dev": "npm run seed:dev -w @sistem/server --",
+    "seed:nutrition": "npm run seed:nutrition -w @sistem/server --",
     "backfill:achievements": "npm run backfill:achievements -w @sistem/server --"
   },
   "devDependencies": {

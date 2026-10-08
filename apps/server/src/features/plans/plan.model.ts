@@ -17,6 +17,9 @@ const planSchema = new Schema<PlanDocument>(
     },
     status: { type: String, enum: PLAN_STATUS_IDS, required: true, default: DEFAULT_PLAN_STATUS },
     publishedAt: { type: Date, default: null },
+    // When the trainee's view of this plan last changed: publish, or a save while published
+    // (the Workouts tab dot, Phase 13a). Unset on plans from before 13a → publishedAt.
+    liveUpdatedAt: { type: Date, default: null },
     notes: { type: String, trim: true },
     workouts: { type: [planWorkoutSchema], default: [] },
     // The AI recommendation the coach loaded into this plan (Phase 12) — coach-only, so the

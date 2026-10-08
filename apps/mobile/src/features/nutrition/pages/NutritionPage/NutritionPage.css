@@ -1,0 +1,12 @@
+.nutrition-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.nutrition-page-title {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--text-2xl);
+  line-height: var(--line-height-tight);
+}

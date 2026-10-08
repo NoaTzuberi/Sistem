@@ -40,6 +40,8 @@ export interface UserDocument {
   coachId?: Types.ObjectId | null;
   pushTokens: PushToken[];
   timezone: string;
+  /** When she last opened each tab that shows an "unseen update" dot (Phase 13a). */
+  tabSeenAt?: { workouts?: Date | null; nutrition?: Date | null };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -88,6 +90,10 @@ const userSchema = new Schema<UserDocument>(
       required: true,
       default: DEFAULT_TIMEZONE,
       validate: { validator: isValidTimezone, message: 'Invalid time zone.' },
+    },
+    tabSeenAt: {
+      workouts: { type: Date, default: null },
+      nutrition: { type: Date, default: null },
     },
   },
   { timestamps: true },

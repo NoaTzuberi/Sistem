@@ -16,7 +16,8 @@
     "seed:dev": "tsx src/features/users/scripts/seedDev.ts",
     "backfill:achievements": "tsx src/features/achievements/scripts/backfillAchievements.ts",
     "media:compress": "tsx src/features/onboardingMedia/scripts/compressOnboardingVideos.ts",
-    "media:upload": "tsx src/features/onboardingMedia/scripts/uploadOnboardingMedia.ts"
+    "media:upload": "tsx src/features/onboardingMedia/scripts/uploadOnboardingMedia.ts",
+    "seed:nutrition": "tsx src/features/nutrition/scripts/seedNutrition.ts"
   },
   "keywords": [],
   "author": "",

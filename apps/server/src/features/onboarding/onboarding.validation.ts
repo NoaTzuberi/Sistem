@@ -8,6 +8,7 @@ import {
   RECOVERY_FLAG_IDS,
   GENDER_IDS,
 } from '../users/users.constants';
+import { ALLERGY_IDS, DIET_TYPE_IDS, MAX_PREFERENCE_TEXT_LENGTH } from '../nutrition/nutrition.constants';
 import {
   ONBOARDING_FIELDS,
   ONBOARDING_STEP_FIELDS,
@@ -172,6 +173,24 @@ const FIELD_VALIDATORS: Record<OnboardingField, FieldValidator> = {
     }
     if (value.notes !== undefined && typeof value.notes !== 'string') {
       return 'Recovery notes must be a string.';
+    }
+    return null;
+  },
+
+  nutritionPreferences(value) {
+    if (!isObject(value)) return 'Nutrition preferences must be an object.';
+    if (!(DIET_TYPE_IDS as readonly unknown[]).includes(value.dietType)) {
+      return 'Diet type must be none, vegetarian, vegan or pescatarian.';
+    }
+    if (typeof value.kosher !== 'boolean') return 'Kosher must be true or false.';
+    if (value.allergies !== undefined && !isStringArrayWithinSet(value.allergies, ALLERGY_IDS)) {
+      return 'Allergies contain an invalid value.';
+    }
+    for (const [field, label] of [['allergyNotes', 'Other allergies'], ['dislikes', 'Disliked foods']] as const) {
+      const text = value[field];
+      if (text !== undefined && (typeof text !== 'string' || text.length > MAX_PREFERENCE_TEXT_LENGTH)) {
+        return `${label} must be text of at most ${MAX_PREFERENCE_TEXT_LENGTH} characters.`;
+      }
     }
     return null;
   },

@@ -8,6 +8,9 @@
  *   npm run seed:dev                   (local database)
  *   npm run seed:dev -- --allow-remote (non-local dev database)
  *
+ * Also seeds the coach's food list + nutrition template when the guide data file
+ * (apps/server/data/nutrition/guide-1500.json, gitignored) exists — see seed:nutrition.
+ *
  * Re-running is safe: existing seed accounts, plans and body entries are left as they are
  * (body entries are added to an existing trainee 2 once, if she has at most one).
  * Same database guard as promote:coach.
@@ -28,6 +31,8 @@ import { BodyMetric } from '../../bodyMetrics/bodyMetric.model';
 import type { PlanSetTargetFields } from '../../plans/plan.types';
 import { Exercise } from '../../exercises/exercise.model';
 import { assertDevDatabase } from './devDatabaseGuard';
+import { existsSync } from 'node:fs';
+import { DEFAULT_NUTRITION_SEED_FILE, applyNutritionSeed, readNutritionSeedFile } from '../../nutrition/nutritionSeed';
 
 const SEED_PASSWORD = 'sistem-dev-1234';
 const SALT_ROUNDS = 12;
@@ -57,6 +62,7 @@ const TRAINEES: {
       exercisePreferences: { favoriteExerciseNotes: 'Hip thrusts', muscleFocus: ['glutes', 'legs'] },
       equipment: ['full_gym'],
       recovery: { flags: ['nothing_to_add'] },
+      nutritionPreferences: { dietType: 'none', kosher: false, allergies: [] },
     },
   },
   {
@@ -76,6 +82,7 @@ const TRAINEES: {
       exercisePreferences: { muscleFocus: ['core', 'full_body'] },
       equipment: ['dumbbells', 'resistance_bands'],
       recovery: { flags: ['prefers_low_impact'], notes: 'Knees get sore on long runs.' },
+      nutritionPreferences: { dietType: 'vegetarian', kosher: true, allergies: ['tree_nuts'], dislikes: 'Mushrooms.' },
     },
   },
 ];
@@ -198,6 +205,14 @@ async function main() {
       if (trainee.withPlan) {
         await seedPlan(user._id, coach._id, user.timezone);
       }
+    }
+
+    // The coach's food list + template (Phase 13a), when her guide data is on this machine.
+    if (existsSync(DEFAULT_NUTRITION_SEED_FILE)) {
+      const result = await applyNutritionSeed(String(coach._id), await readNutritionSeedFile(DEFAULT_NUTRITION_SEED_FILE));
+      console.log(`Nutrition: ${result.foodsCreated} food item(s) created; template ${result.templateCreated ? 'created' : 'already there'}.`);
+    } else {
+      console.log('Nutrition: no guide data file (apps/server/data/nutrition/) — skipped.');
     }
 
     const defaultCoachId = await resolveDefaultCoachId();

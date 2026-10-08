@@ -7,6 +7,9 @@ import type {
   BodyMetricResponse,
   ProgressPhotoPose,
   SaveBodyMetricPayload,
+  TabUpdates,
+  TraineeNutritionPlanResponse,
+  UpdateTab,
   TraineePlan,
   TraineePlanList,
   TraineeWeek,
@@ -167,6 +170,25 @@ export function createTraineeApi(client: AxiosInstance) {
     await client.post('/achievements/seen', { ids });
   }
 
+  // --- Nutrition (Phase 13a): her newest published version, no calorie numbers.
+
+  async function getNutritionPlan(): Promise<TraineeNutritionPlanResponse> {
+    const { data } = await client.get<TraineeNutritionPlanResponse>('/nutrition-plan');
+    return data;
+  }
+
+  // --- The "unseen update" dots on her tab bar (Phase 13a), stored on the server.
+
+  async function getTabUpdates(): Promise<TabUpdates> {
+    const { data } = await client.get<TabUpdates>('/tab-updates');
+    return data;
+  }
+
+  async function markTabSeen(tab: UpdateTab): Promise<TabUpdates> {
+    const { data } = await client.post<TabUpdates>('/tab-updates/seen', { tab });
+    return data;
+  }
+
   return {
     getWeek,
     listPlans,
@@ -190,6 +212,9 @@ export function createTraineeApi(client: AxiosInstance) {
     updatePreferences,
     getAchievements,
     markAchievementsSeen,
+    getNutritionPlan,
+    getTabUpdates,
+    markTabSeen,
   };
 }
 

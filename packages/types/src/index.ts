@@ -65,6 +65,7 @@ export type OnboardingStepId =
   | 'exercise_preferences'
   | 'recovery'
   | 'equipment'
+  | 'nutrition_preferences'
   | 'review';
 
 export type WeightUnit = 'kg' | 'lb';
@@ -103,6 +104,21 @@ export interface OnboardingAnswers {
   };
   equipment: string[];
   recovery?: { flags: string[]; notes?: string };
+  /** Phase 13a. Missing = not answered (onboarding finished before the step existed). */
+  nutritionPreferences?: NutritionPreferences;
+}
+
+export type DietType = 'none' | 'vegetarian' | 'vegan' | 'pescatarian';
+/** The common allergies — each one matches a food diet tag (free text covers the rest). */
+export type AllergyId = 'dairy' | 'eggs' | 'gluten' | 'peanuts' | 'tree_nuts' | 'sesame' | 'soy' | 'fish';
+
+/** The "Nutrition preferences" onboarding step (Phase 13a). Health data: her own + her coach's eyes only. */
+export interface NutritionPreferences {
+  dietType: DietType;
+  kosher: boolean;
+  allergies: AllergyId[];
+  allergyNotes?: string;
+  dislikes?: string;
 }
 
 /**
@@ -126,6 +142,13 @@ export interface OnboardingAnswersPayload {
   };
   equipment?: string[];
   recovery?: { flags?: string[]; notes?: string };
+  nutritionPreferences?: {
+    dietType: DietType;
+    kosher: boolean;
+    allergies?: AllergyId[];
+    allergyNotes?: string;
+    dislikes?: string;
+  };
 }
 
 export interface SaveOnboardingStepPayload {
@@ -754,7 +777,11 @@ export interface CoachTraineeResponse {
 // No wording is stored: screens build the text and the tap target from type + data.
 // ---------------------------------------------------------------------------
 
-export type NotificationType = 'trainee_onboarded' | 'plan_published' | 'workout_completed';
+export type NotificationType =
+  | 'trainee_onboarded'
+  | 'plan_published'
+  | 'workout_completed'
+  | 'nutrition_plan_published';
 
 interface NotificationBase {
   id: string;
@@ -772,6 +799,11 @@ export type AppNotification =
   | (NotificationBase & {
       type: 'workout_completed';
       data: { traineeId: string; traineeName: string; logId: string; workoutTitle: string };
+    })
+  /** To the trainee (Phase 13a): every publish of her nutrition plan; isUpdate = version > 1. */
+  | (NotificationBase & {
+      type: 'nutrition_plan_published';
+      data: { planId: string; version: number; isUpdate: boolean };
     });
 
 /** GET /notifications — newest first. */
@@ -887,4 +919,365 @@ export interface AiRecommendationLatest {
 /** Body of POST …/ai-recommendations */
 export interface CreateAiRecommendationPayload {
   type: AiRecommendationType;
+}
+
+// ---------------------------------------------------------------------------
+// Nutrition (Phase 13a, PRD §5.6) — exchange lists ("portions"). The coach builds in the
+// dashboard (/api/coach/...nutrition...); the trainee reads her latest published version
+// (/api/nutrition-plan). Calorie numbers exist only on the coach's side.
+// ---------------------------------------------------------------------------
+
+export type FoodGroup = 'protein' | 'carb' | 'fat' | 'vegetable';
+/** The groups a meal counts portions of — vegetables are free. */
+export type PortionGroup = 'protein' | 'carb' | 'fat';
+/** What a food contains, so the list can be checked against her preferences. */
+export type DietTag =
+  | 'meat'
+  | 'poultry'
+  | 'fish'
+  | 'dairy'
+  | 'eggs'
+  | 'gluten'
+  | 'peanuts'
+  | 'tree_nuts'
+  | 'sesame'
+  | 'soy';
+export type NutritionGoal = 'fat_loss' | 'recomp' | 'muscle_gain' | 'maintenance';
+/** Which Mifflin-St Jeor constant is used. */
+export type FormulaSex = 'male' | 'female';
+
+export interface FoodItem {
+  id: string;
+  group: FoodGroup;
+  /** Stored and shown as the coach wrote it. */
+  name: string;
+  /** e.g. "3 slices", "1 heaping tsp" */
+  portion: string;
+  grams: number | null;
+  /** Optional, never above the group's value. Coach-only. */
+  kcal: number | null;
+  isNew: boolean;
+  dietTags: DietTag[];
+  order: number;
+  archivedAt: string | null;
+}
+
+/** POST / PATCH /coach/nutrition/foods. On PATCH every key is optional; null clears grams / kcal. */
+export interface FoodItemPayload {
+  group?: FoodGroup;
+  name?: string;
+  portion?: string;
+  grams?: number | null;
+  kcal?: number | null;
+  isNew?: boolean;
+  dietTags?: DietTag[];
+  order?: number;
+}
+
+/** DELETE /coach/nutrition/foods/:id — an item a plan / template uses is archived instead. */
+export interface DeleteFoodItemResult {
+  outcome: 'deleted' | 'archived';
+  item: FoodItem | null;
+}
+
+/** The coach's calorie numbers: server defaults merged with her overrides (one config). */
+export interface NutritionConfig {
+  /** kcal per portion. vegetable is always 0 ("free"). */
+  groupKcal: Record<FoodGroup, number>;
+  /** Percent added to the maintenance estimate, e.g. -20 for fat loss. */
+  goalAdjustments: Record<NutritionGoal, number>;
+  /** Activity factor by training days per week: index 0 = 1 day … index 6 = 7 days. */
+  activityFactors: number[];
+  /** A target below this needs the coach's explicit confirmation. */
+  floorKcal: number;
+}
+
+/** PUT /coach/nutrition/settings — the whole tunable config (vegetable stays 0). */
+export interface NutritionSettingsPayload {
+  groupKcal: Record<PortionGroup, number>;
+  goalAdjustments: Record<NutritionGoal, number>;
+  activityFactors: number[];
+  floorKcal: number;
+}
+
+export interface NutritionSettingsResponse {
+  config: NutritionConfig;
+  defaults: NutritionConfig;
+}
+
+export type CalorieSuggestionStatus = 'ok' | 'needs_formula' | 'missing_inputs';
+export type CalorieSuggestionMissing = 'weight' | 'height' | 'birthDate' | 'trainingFrequency';
+
+/** Everything the estimate used, shown next to the number. */
+export interface CalorieSuggestionInputs {
+  weightKg: number | null;
+  weightSource: 'weigh_in' | 'onboarding' | null;
+  /** 'YYYY-MM-DD' of the weigh-in used. */
+  weightDate: string | null;
+  heightCm: number | null;
+  ageYears: number | null;
+  /** Her onboarding answer. */
+  sex: string | null;
+  /** The constants used: hers, or the coach's pick when she answered other / nothing. */
+  formulaSex: FormulaSex | null;
+  trainingDays: number | null;
+  activityFactor: number | null;
+  goal: NutritionGoal;
+  goalSource: 'onboarding' | 'coach';
+  adjustmentPct: number;
+}
+
+/** GET /coach/trainees/:id/nutrition-plan/suggestion?goal=&formula= */
+export interface CalorieSuggestion {
+  status: CalorieSuggestionStatus;
+  missing: CalorieSuggestionMissing[];
+  inputs: CalorieSuggestionInputs;
+  bmr: number | null;
+  tdee: number | null;
+  kcal: number | null;
+  floorKcal: number;
+  belowFloor: boolean;
+}
+
+export type CalorieTargetSource = 'suggested' | 'override';
+
+export interface NutritionFloorConfirmation {
+  /** The target that was confirmed — a different target needs a new confirmation. */
+  kcal: number;
+  floorKcal: number;
+  confirmedAt: string;
+}
+
+export interface NutritionCalorieTarget {
+  kcal: number | null;
+  source: CalorieTargetSource | null;
+  goal: NutritionGoal;
+  formulaSex: FormulaSex | null;
+  /** The estimate as it was when the plan was last saved. */
+  suggestion: CalorieSuggestion | null;
+  floorConfirmation: NutritionFloorConfirmation | null;
+}
+
+export interface PortionCounts {
+  protein: number;
+  carb: number;
+  fat: number;
+}
+
+/** 'recipe' belongs to the closed nutritionRecipes feature (13b). */
+export type NutritionLineKind = 'food' | 'text' | 'recipe';
+
+export interface NutritionOptionLine {
+  id: string;
+  kind: NutritionLineKind;
+  foodItemId?: string;
+  recipeId?: string;
+  /** A food line's group is its item's; a text line may have one (counted) or none. */
+  group: FoodGroup | null;
+  /** Steps of 0.5; null on an uncounted text line. */
+  portions: number | null;
+  text?: string;
+}
+
+export interface NutritionMealOption {
+  id: string;
+  label: string;
+  lines: NutritionOptionLine[];
+}
+
+export interface NutritionMeal {
+  id: string;
+  name: string;
+  portions: PortionCounts;
+  vegetablesFree: boolean;
+  options: NutritionMealOption[];
+}
+
+export interface NutritionTip {
+  id: string;
+  text: string;
+}
+
+export interface NutritionKcal {
+  meals: { mealId: string; kcal: number }[];
+  day: number;
+}
+
+export interface NutritionOptionLineInput {
+  id?: string;
+  kind: NutritionLineKind;
+  foodItemId?: string;
+  recipeId?: string;
+  group?: FoodGroup | null;
+  portions?: number | null;
+  text?: string;
+}
+
+export interface NutritionMealOptionInput {
+  id?: string;
+  label: string;
+  lines: NutritionOptionLineInput[];
+}
+
+export interface NutritionMealInput {
+  id?: string;
+  name: string;
+  portions: PortionCounts;
+  vegetablesFree: boolean;
+  options: NutritionMealOptionInput[];
+}
+
+/** PUT /coach/trainees/:id/nutrition-plan — the working copy (autosave). */
+export interface SaveNutritionPlanPayload {
+  calorieTarget: {
+    kcal: number | null;
+    source: CalorieTargetSource | null;
+    goal: NutritionGoal;
+    formulaSex: FormulaSex | null;
+    /** The coach ticked "I confirm this target" (only matters below the floor). */
+    confirmBelowFloor: boolean;
+  };
+  meals: NutritionMealInput[];
+  tips: { id?: string; text: string }[];
+  /** 13b, waterTracking only — refused while the feature is closed. */
+  waterGoalMl?: number | null;
+}
+
+export type NutritionIssueSeverity = 'error' | 'warning';
+
+/** A publish rule; errors block publishing, warnings don't. Indexes point at the row. */
+export interface NutritionIssue {
+  severity: NutritionIssueSeverity;
+  code: string;
+  message: string;
+  mealIndex?: number;
+  optionIndex?: number;
+  lineIndex?: number;
+}
+
+export interface NutritionIssuesBody extends ApiErrorBody {
+  issues: NutritionIssue[];
+}
+
+/** The closed (13b) features, decided by the server. Clients only hide / show. */
+export interface NutritionFeatures {
+  nutritionRecipes: boolean;
+  mealLogging: boolean;
+  waterTracking: boolean;
+}
+
+export interface CoachNutritionPlan {
+  id: string;
+  traineeId: string;
+  calorieTarget: NutritionCalorieTarget;
+  meals: NutritionMeal[];
+  tips: NutritionTip[];
+  waterGoalMl: number | null;
+  templateId: string | null;
+  /** 0 = never published. */
+  publishedVersion: number;
+  publishedAt: string | null;
+  /** The working copy differs from the last published version. */
+  changedSincePublish: boolean;
+  updatedAt: string;
+  kcal: NutritionKcal;
+}
+
+/** A food as the trainee sees it — no calories. */
+export interface NutritionFoodFacts {
+  id: string;
+  group: FoodGroup;
+  name: string;
+  portion: string;
+  grams: number | null;
+  isNew: boolean;
+}
+
+export interface NutritionViewLine {
+  id: string;
+  kind: NutritionLineKind;
+  group: FoodGroup | null;
+  portions: number | null;
+  text?: string;
+  food?: NutritionFoodFacts;
+}
+
+export interface NutritionViewMeal {
+  id: string;
+  name: string;
+  portions: PortionCounts;
+  vegetablesFree: boolean;
+  options: { id: string; label: string; lines: NutritionViewLine[] }[];
+}
+
+/** A published version as the trainee (and coach mode) shows it. No calorie numbers. */
+export interface NutritionPlanView {
+  version: number;
+  publishedAt: string;
+  meals: NutritionViewMeal[];
+  tips: string[];
+  /** Every active item of each group — what a portion can be swapped for. */
+  swaps: Record<FoodGroup, NutritionFoodFacts[]>;
+  /** Only while waterTracking is open (13b). */
+  waterGoalMl?: number | null;
+}
+
+/** GET /nutrition-plan (trainee). */
+export interface TraineeNutritionPlanResponse {
+  plan: NutritionPlanView | null;
+  features: NutritionFeatures;
+}
+
+/** GET /coach/trainees/:id/nutrition-plan */
+export interface CoachNutritionPlanResponse {
+  /** null until the coach first saves one. */
+  plan: CoachNutritionPlan | null;
+  /** The latest published version, as she sees it. */
+  published: NutritionPlanView | null;
+  /** null = not answered. */
+  preferences: NutritionPreferences | null;
+  /** The goal mapped from her onboarding goals — where a new plan starts. */
+  defaultGoal: NutritionGoal;
+  /** The coach's whole food list, archived items included (lines may point at them). */
+  foods: FoodItem[];
+  config: NutritionConfig;
+  issues: NutritionIssue[];
+  features: NutritionFeatures;
+}
+
+export interface NutritionTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  targetKcal: number | null;
+  meals: NutritionMeal[];
+  tips: NutritionTip[];
+  updatedAt: string;
+  kcal: NutritionKcal;
+}
+
+/** POST /coach/trainees/:id/nutrition-plan/template — saves her working copy as a template. */
+export interface CreateNutritionTemplatePayload {
+  name: string;
+  description?: string;
+}
+
+/** POST /coach/trainees/:id/nutrition-plan/from-template */
+export interface ApplyNutritionTemplatePayload {
+  templateId: string;
+}
+
+// ---------------------------------------------------------------------------
+// Tab updates (Phase 13a): a dot on the trainee's tab bar when something new was
+// published since she last opened that tab. "Last seen" is stored on the server.
+// ---------------------------------------------------------------------------
+
+export type UpdateTab = 'workouts' | 'nutrition';
+
+/** GET /tab-updates */
+export type TabUpdates = Record<UpdateTab, boolean>;
+
+/** POST /tab-updates/seen */
+export interface MarkTabSeenPayload {
+  tab: UpdateTab;
 }

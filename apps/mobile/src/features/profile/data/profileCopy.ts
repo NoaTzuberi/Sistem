@@ -9,6 +9,8 @@ export const PROFILE_COPY = {
   lastLogged: (date: string) => `Last: ${date}`,
   moreMeasurements: (count: number) => `+${count} more`,
   settings: 'Settings',
+  // Phase 13a — placeholder.
+  nutritionPreferencesTitle: 'Nutrition preferences',
 
   settingsTitle: 'Settings',
   unitsTitle: 'Units',

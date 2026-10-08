@@ -355,6 +355,12 @@ If Phase 15 (Hebrew & RTL) is already done when 13 starts, all new copy goes int
 
 ### Phase 13a — Nutrition core (open to users)
 
+Owner decisions (2026-10-08, built in 13a — details in PRD §5.6): seed data in `apps/server/data/nutrition/`
+(gitignored) via `npm run seed:nutrition`; default goal % / activity factors approved as starting points;
+"A / B" lines seed the first item; vegetablesFree true on breakfast / lunch / dinner; the 8 tagged allergens +
+free text; no trainee inbox — an "unseen update" dot on the Workouts and Nutrition tabs (last seen stored on the
+server). 13b flags: `FEATURE_NUTRITION_RECIPES` / `FEATURE_MEAL_LOGGING` / `FEATURE_WATER_TRACKING` (default off).
+
 ```
 Implement PRD §5.6 (core). Read docs/reference/nutrition-guide-1500.pdf and
 docs/reference/nutrition-guide-issues.md first (local files, gitignored — never commit or quote them in

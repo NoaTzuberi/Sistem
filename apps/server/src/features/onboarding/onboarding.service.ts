@@ -1,6 +1,7 @@
 import type { HydratedDocument } from 'mongoose';
 import type {
   MyOnboarding,
+  NutritionPreferences,
   OnboardingAnswers,
   OnboardingAnswersPayload,
   OnboardingSaveResponse,
@@ -36,6 +37,17 @@ function toPublicAnswers(answers: OnboardingAnswersFields): OnboardingAnswers {
     exercisePreferences: answers.exercisePreferences,
     equipment: answers.equipment ?? [],
     recovery: answers.recovery,
+    ...(answers.nutritionPreferences ? { nutritionPreferences: toPublicNutritionPreferences(answers.nutritionPreferences) } : {}),
+  };
+}
+
+function toPublicNutritionPreferences(preferences: NutritionPreferences): NutritionPreferences {
+  return {
+    dietType: preferences.dietType,
+    kosher: preferences.kosher,
+    allergies: preferences.allergies ?? [],
+    ...(preferences.allergyNotes ? { allergyNotes: preferences.allergyNotes } : {}),
+    ...(preferences.dislikes ? { dislikes: preferences.dislikes } : {}),
   };
 }
 
@@ -77,6 +89,16 @@ function toAnswerUpdates(payload: OnboardingAnswersPayload, weightUnit: WeightUn
   if (payload.equipment !== undefined) updates.equipment = payload.equipment;
   if (payload.recovery !== undefined) {
     updates.recovery = { flags: payload.recovery.flags ?? [], notes: payload.recovery.notes };
+  }
+  if (payload.nutritionPreferences !== undefined) {
+    const preferences = payload.nutritionPreferences;
+    updates.nutritionPreferences = {
+      dietType: preferences.dietType,
+      kosher: preferences.kosher,
+      allergies: [...new Set(preferences.allergies ?? [])],
+      allergyNotes: preferences.allergyNotes?.trim() || undefined,
+      dislikes: preferences.dislikes?.trim() || undefined,
+    };
   }
   return updates;
 }

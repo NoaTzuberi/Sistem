@@ -1,5 +1,6 @@
 import type { MyOnboarding } from '@sistem/types';
 import { formatDateTime, humanizeId, humanizeList } from './format';
+import { describeNutritionPreferences } from './nutritionDisplay';
 
 export interface OnboardingAnswerRow {
   label: string;
@@ -58,6 +59,8 @@ export function buildOnboardingSections(onboarding: MyOnboarding): OnboardingAns
       ],
     },
     { title: 'Equipment', rows: [{ label: 'Equipment', value: humanizeList(answers?.equipment) }] },
+    // Phase 13a. Trainees who finished onboarding before this step show "Not answered".
+    { title: 'Nutrition preferences', rows: describeNutritionPreferences(answers?.nutritionPreferences) },
   ];
 }
 

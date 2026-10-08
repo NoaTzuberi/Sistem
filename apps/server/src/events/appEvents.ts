@@ -28,10 +28,20 @@ export interface WorkoutCompletedEvent {
   finishedAt: Date;
 }
 
+/** Emitted by the nutrition publish service (Phase 13a) on every publish — the first and each update. */
+export interface NutritionPlanPublishedEvent {
+  planId: string;
+  traineeId: string;
+  coachId: string;
+  version: number;
+  publishedAt: Date;
+}
+
 interface AppEventMap {
   'trainee.onboarded': [TraineeOnboardedEvent];
   'plan.published': [PlanPublishedEvent];
   'workout.completed': [WorkoutCompletedEvent];
+  'nutrition_plan.published': [NutritionPlanPublishedEvent];
 }
 
 export type AppEventName = keyof AppEventMap;

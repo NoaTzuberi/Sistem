@@ -17,6 +17,8 @@ export const ROUTES = {
   // Every achievement + the streak (Phase 11) — opened from Home and Profile.
   PROFILE_ACHIEVEMENTS: '/profile/achievements',
   WORKOUTS: '/workouts',
+  // Her nutrition plan (Phase 13a, PRD §5.6).
+  NUTRITION: '/nutrition',
   ONBOARDING: '/onboarding',
   // "Your plan is being built" — onboarding done, no published plan yet (PRD §4.1).
   WAITING: '/waiting',

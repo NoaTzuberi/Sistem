@@ -1,0 +1,71 @@
+.calorie-target {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.calorie-target-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.calorie-target-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.calorie-target-field select {
+  min-height: 32px;
+  padding: 0 var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-none);
+}
+
+.calorie-target-suggestion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.calorie-target-suggested {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.calorie-target-using {
+  font-size: var(--text-sm);
+  color: var(--color-primary-deep);
+}
+
+.calorie-target-inputs {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.calorie-target-total {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.calorie-target-floor {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-error);
+  background-color: var(--color-error-soft);
+}
+
+.calorie-target-floor p {
+  margin: 0 0 var(--space-1);
+}

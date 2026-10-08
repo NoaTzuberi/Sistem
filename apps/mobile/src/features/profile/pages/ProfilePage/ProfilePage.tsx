@@ -20,7 +20,8 @@ import { ACHIEVEMENT_COPY } from '../../../achievements/data/achievementCopy';
 import { useAuth } from '../../../../services/auth/AuthContext';
 import { useStaggerReveal } from '../../../../hooks/useStaggerReveal';
 import { ROUTES, onboardingEditPath } from '../../../../app/config/routes';
-import { IconChevronRight, IconSettings, IconTrophy } from '@tabler/icons-react';
+import { IconChevronRight, IconSalad, IconSettings, IconTrophy } from '@tabler/icons-react';
+import { describeNutritionPreferences } from '@sistem/shared';
 import { BodySummary } from '../../components/BodySummary/BodySummary';
 import { PROFILE_COPY } from '../../data/profileCopy';
 import { useMyBodyMetrics, useMyUnits } from '../../hooks/useMyBody';
@@ -271,6 +272,27 @@ export function ProfilePage() {
                       editStep="equipment"
                     >
                       <BadgeList ids={profile?.profile?.equipment ?? []} labels={EQUIPMENT_LABELS} variant="neutral" />
+                    </TrainingBlock>
+
+                    <TrainingBlock
+                      icon={<IconSalad size={20} />}
+                      title={PROFILE_COPY.nutritionPreferencesTitle}
+                      accent="teal"
+                      className="training-block-nutrition"
+                      editStep="nutrition_preferences"
+                    >
+                      {profile?.profile?.nutritionPreferences ? (
+                        <dl className="training-block-rows">
+                          {describeNutritionPreferences(profile.profile.nutritionPreferences).map((row) => (
+                            <div key={row.label} className="training-block-row">
+                              <dt>{row.label}</dt>
+                              <dd dir="auto">{row.value}</dd>
+                            </div>
+                          ))}
+                        </dl>
+                      ) : (
+                        <span className="profile-summary-empty">Not set yet</span>
+                      )}
                     </TrainingBlock>
                   </div>
                 )}

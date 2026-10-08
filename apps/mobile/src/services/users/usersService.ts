@@ -1,4 +1,5 @@
 import { createTraineeApi } from '@sistem/api-client';
+import type { NutritionPreferences } from '@sistem/types';
 import { apiClient } from '../api/apiClient';
 
 export interface MyProfileResponse {
@@ -26,6 +27,8 @@ export interface MyProfileResponse {
       flags: string[];
       notes?: string;
     };
+    /** Phase 13a; missing = not answered. */
+    nutritionPreferences?: NutritionPreferences;
   };
   preferences?: {
     units?: {

@@ -1,0 +1,41 @@
+.trainee-nutrition {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.trainee-nutrition-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.trainee-nutrition-title {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.trainee-nutrition-status,
+.trainee-nutrition-note {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.trainee-nutrition-meals {
+  margin: 0;
+  padding-left: var(--space-4);
+  font-size: var(--text-sm);
+}
+
+.trainee-nutrition-open {
+  text-decoration: none;
+}
+
+@media (max-width: 960px) {
+  .trainee-nutrition {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

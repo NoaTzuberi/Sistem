@@ -22,6 +22,7 @@ const STEP_FIELDS: Record<OnboardingStepId, (keyof OnboardingAnswersPayload)[]> 
   exercise_preferences: ['exercisePreferences'],
   recovery: ['recovery'],
   equipment: ['equipment'],
+  nutrition_preferences: ['nutritionPreferences'],
   review: [],
 };
 
@@ -46,6 +47,13 @@ function toAnswersPayload(formState: OnboardingFormState): OnboardingAnswersPayl
     recovery: {
       flags: formState.recovery.flags,
       notes: formState.recovery.notes.trim() || undefined,
+    },
+    nutritionPreferences: {
+      dietType: formState.nutritionPreferences.dietType,
+      kosher: formState.nutritionPreferences.kosher,
+      allergies: formState.nutritionPreferences.allergies,
+      allergyNotes: formState.nutritionPreferences.allergyNotes.trim() || undefined,
+      dislikes: formState.nutritionPreferences.dislikes.trim() || undefined,
     },
   };
 }

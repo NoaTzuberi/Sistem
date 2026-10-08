@@ -2,7 +2,8 @@ import { createCoachApi } from '@sistem/api-client';
 import { apiClient } from '../api/apiClient';
 
 // Coach mode only reads, and publishes / duplicates plans (PRD §6): plan editing
-// stays on the web dashboard, so the other coach calls are not exposed here.
+// stays on the web dashboard, so the other coach calls are not exposed here. Nutrition
+// (Phase 13a) is read-only here too.
 export const {
   listTrainees,
   getTrainee,
@@ -12,4 +13,5 @@ export const {
   listPlans,
   createPlan,
   publishPlan,
+  getNutritionPlan,
 } = createCoachApi(apiClient);

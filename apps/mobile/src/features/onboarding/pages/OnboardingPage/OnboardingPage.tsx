@@ -13,6 +13,7 @@ import { ActivitiesStep } from '../../steps/ActivitiesStep/ActivitiesStep';
 import { ExercisePreferencesStep } from '../../steps/ExercisePreferencesStep/ExercisePreferencesStep';
 import { RecoveryStep } from '../../steps/RecoveryStep/RecoveryStep';
 import { EquipmentStep } from '../../steps/EquipmentStep/EquipmentStep';
+import { NutritionPreferencesStep } from '../../steps/NutritionPreferencesStep/NutritionPreferencesStep';
 import { ReviewStep } from '../../steps/ReviewStep/ReviewStep';
 import { INITIAL_ONBOARDING_STATE } from '../../types';
 import type { OnboardingFormState, OnboardingMedia } from '../../types';
@@ -34,7 +35,7 @@ import { usePageEnter } from '../../../../hooks/usePageEnter';
 import { useKeyboardInset } from '../../../../hooks/useKeyboardInset';
 import './OnboardingPage.css';
 
-const STEP_COUNT = 9;
+const STEP_COUNT = 10;
 const EXERCISE_PREFERENCES_STEP_INDEX = 5;
 const ACTIVITIES_STEP_INDEX = 4;
 
@@ -56,6 +57,7 @@ const STEP_IDS: OnboardingStepId[] = [
   'exercise_preferences',
   'recovery',
   'equipment',
+  'nutrition_preferences',
   'review',
 ];
 
@@ -154,6 +156,13 @@ function mapOnboardingToFormState(onboarding: MyOnboarding, fallbackName: string
     recovery: {
       flags: p?.recovery?.flags ?? [],
       notes: p?.recovery?.notes ?? '',
+    },
+    nutritionPreferences: {
+      dietType: p?.nutritionPreferences?.dietType ?? INITIAL_ONBOARDING_STATE.nutritionPreferences.dietType,
+      kosher: p?.nutritionPreferences?.kosher ?? INITIAL_ONBOARDING_STATE.nutritionPreferences.kosher,
+      allergies: p?.nutritionPreferences?.allergies ?? [],
+      allergyNotes: p?.nutritionPreferences?.allergyNotes ?? '',
+      dislikes: p?.nutritionPreferences?.dislikes ?? '',
     },
   };
 }
@@ -329,7 +338,8 @@ export function OnboardingPage() {
     />,
     <RecoveryStep key="recovery" formState={formState} updateFormState={updateFormState} />,
     <EquipmentStep key="equipment" formState={formState} updateFormState={updateFormState} />,
-    <ReviewStep key="review" />,
+    <NutritionPreferencesStep key="nutrition-preferences" formState={formState} updateFormState={updateFormState} />,
+    <ReviewStep key="review" formState={formState} />,
   ];
 
   if (isEditMode && !isValidEditStep) {

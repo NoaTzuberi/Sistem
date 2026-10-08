@@ -4,7 +4,7 @@ export { createAuthApi } from './authApi';
 export type { AuthApi } from './authApi';
 export { createNotificationsApi } from './notificationsApi';
 export type { NotificationsApi } from './notificationsApi';
-export { createCoachApi, PlanRequestError } from './coachApi';
+export { createCoachApi, NutritionRequestError, PlanRequestError } from './coachApi';
 export type { CoachApi } from './coachApi';
 export { createTraineeApi } from './traineeApi';
 export type { TraineeApi } from './traineeApi';

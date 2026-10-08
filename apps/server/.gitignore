@@ -30,3 +30,6 @@ data/repdb-preview/
 
 # Compressed onboarding videos + posters (Phase 2c) — generated locally, hosted on Cloudinary
 data/onboarding-media/
+
+# The coach's nutrition guide data for seed:nutrition (Phase 13a) — her own content, never committed
+data/nutrition/

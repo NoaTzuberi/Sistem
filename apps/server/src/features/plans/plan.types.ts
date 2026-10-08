@@ -40,6 +40,7 @@ export interface PlanDocument {
   weekStartDate: string;
   status: PlanStatus;
   publishedAt?: Date | null;
+  liveUpdatedAt?: Date | null;
   notes?: string;
   workouts: (PlanWorkoutFields & { _id: Types.ObjectId })[];
   aiRecommendationId?: Types.ObjectId | null;

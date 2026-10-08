@@ -44,3 +44,23 @@ export const RECOVERY_FLAG_OPTIONS: OnboardingOption[] = [
   { id: 'has_mobility_restrictions', label: 'I have mobility restrictions' },
   { id: 'nothing_to_add', label: 'Nothing to add' },
 ];
+
+// "Nutrition preferences" step (Phase 13a). PLACEHOLDER labels until the owner sends the
+// wording. Ids mirror DIET_TYPE_IDS / ALLERGY_IDS in the server's nutrition.constants.ts.
+export const DIET_TYPE_OPTIONS: OnboardingOption[] = [
+  { id: 'none', label: 'No restrictions' },
+  { id: 'vegetarian', label: 'Vegetarian' },
+  { id: 'vegan', label: 'Vegan' },
+  { id: 'pescatarian', label: 'Pescatarian' },
+];
+
+export const ALLERGY_OPTIONS: OnboardingOption[] = [
+  { id: 'dairy', label: 'Dairy / lactose' },
+  { id: 'eggs', label: 'Eggs' },
+  { id: 'gluten', label: 'Gluten' },
+  { id: 'peanuts', label: 'Peanuts' },
+  { id: 'tree_nuts', label: 'Tree nuts' },
+  { id: 'sesame', label: 'Sesame' },
+  { id: 'soy', label: 'Soy' },
+  { id: 'fish', label: 'Fish' },
+];

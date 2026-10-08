@@ -19,6 +19,9 @@ export function DashboardShell() {
             <NavLink className="shell-link" to={ROUTES.TRAINEES}>
               Trainees
             </NavLink>
+            <NavLink className="shell-link" to={ROUTES.NUTRITION}>
+              Nutrition
+            </NavLink>
           </nav>
         </div>
         <div className="shell-actions">

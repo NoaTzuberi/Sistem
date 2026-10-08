@@ -1,0 +1,116 @@
+.meal-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background-color: var(--color-surface);
+  border-inline-start: 3px solid var(--color-primary);
+}
+
+.meal-card-name {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--text-lg);
+  line-height: var(--line-height-tight);
+}
+
+.meal-card-portions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.meal-card-portion {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-3);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-primary-deep);
+  border-radius: var(--radius-none);
+  color: var(--color-primary-deep);
+  font-family: var(--font-family-body);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.meal-card-portion:active {
+  background-color: var(--color-primary-soft);
+}
+
+.meal-card-portion-static {
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+.meal-card-option {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.meal-card-option-label {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary-deep);
+}
+
+.meal-card-lines {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.meal-card-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--touch-target-min);
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--color-border);
+  text-align: start;
+}
+
+.meal-card-line-button {
+  background: none;
+  border-top: none;
+  border-inline: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.meal-card-line-button:active {
+  background-color: var(--color-bg);
+}
+
+/* Full width, so the coach's (Hebrew) text and its portion line up on the same edge. */
+.meal-card-line-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.meal-card-line-title {
+  overflow-wrap: anywhere;
+}
+
+.meal-card-line-detail {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.meal-card-line-icon {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}

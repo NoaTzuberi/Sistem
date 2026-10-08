@@ -1,0 +1,31 @@
+.review-step-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  text-align: start;
+}
+
+.review-step-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.review-step-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-block: var(--space-2);
+  border-block-end: 1px solid var(--color-border);
+}
+
+.review-step-row dt {
+  color: var(--color-text-muted);
+}
+
+.review-step-row dd {
+  margin: 0;
+  text-align: end;
+  overflow-wrap: anywhere;
+}

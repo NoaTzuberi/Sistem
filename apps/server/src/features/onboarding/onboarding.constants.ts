@@ -10,6 +10,7 @@ export const ONBOARDING_STEP_IDS = [
   'exercise_preferences',
   'recovery',
   'equipment',
+  'nutrition_preferences',
   'review',
 ] as const satisfies readonly OnboardingStepId[];
 
@@ -26,6 +27,7 @@ export const ONBOARDING_FIELDS = [
   'exercisePreferences',
   'equipment',
   'recovery',
+  'nutritionPreferences',
 ] as const;
 export type OnboardingField = (typeof ONBOARDING_FIELDS)[number];
 
@@ -39,6 +41,9 @@ export const ONBOARDING_STEP_FIELDS: Record<OnboardingStepId, readonly Onboardin
   exercise_preferences: ['exercisePreferences'],
   recovery: ['recovery'],
   equipment: ['equipment'],
+  // Phase 13a — owner-approved addition to the protected onboarding. Not required to
+  // complete: trainees who finished before it existed are never sent back.
+  nutrition_preferences: ['nutritionPreferences'],
   review: [],
 };
 

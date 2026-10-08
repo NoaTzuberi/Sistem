@@ -1,0 +1,22 @@
+.coach-trainee-nutrition {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.coach-trainee-nutrition-hint {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.coach-trainee-nutrition-note {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary-deep);
+  font-size: var(--text-sm);
+}

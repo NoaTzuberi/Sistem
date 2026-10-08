@@ -1,0 +1,304 @@
+SISTEM — PHASE 13a REPORT: NUTRITION CORE
+Date: 2026-10-08
+Scope: docs/BUILD_PLAN.md Phase 13a (PRD §5.6): the coach's food list, the per-coach nutrition config and calorie
+suggestion, one nutrition plan per trainee (draft → publish → versions), nutrition templates, the trainee's
+Nutrition tab with swap lists, coach mode (read-only), the new onboarding "Nutrition preferences" step, the
+publish notification, and the Phase 13b data model behind feature flags (no 13b UI or routes). Plus the owner's
+answer to "trainee notifications": an "unseen update" dot on the Workouts and Nutrition tabs. Phase 13c was NOT
+started.
+
+================================================================================
+1. SUMMARY
+================================================================================
+- Food list (coach): exchange-list items per group (protein / carb / fat / vegetable): name and portion as she
+  writes them, optional grams, optional kcal (never above the group value), a "new" tag, diet tags. Used items are
+  archived (they keep resolving), unused ones deleted. Seeded from the guide: 44 items + the "1,500" template.
+- Calorie suggestion in one pure module (calorieTarget.ts, reused by 13c): Mifflin-St Jeor (latest weigh-in, else
+  the onboarding weight) × activity factor (training days) → goal %. Sex other / missing → the coach picks the
+  formula or types the target. All numbers in ONE config (nutrition.config.ts) + the coach's own overrides
+  (Dashboard → Nutrition → Settings). Floor 1,200: below it publishing needs her explicit confirmation of that
+  exact target (stored, enforced on publish).
+- Nutrition plan: one autosaved working copy per trainee (coach-only) + a frozen version per publish; the trainee
+  always reads the newest version. Meals with portions per group in 0.5 steps, vegetables free, options (food
+  lines or free text), tips. Kcal and every publish rule are computed on the server; preference conflicts
+  (diet / allergy / kosher) are warnings next to the line.
+- Trainee: a Nutrition tab (Home · Workouts · Nutrition · Profile). Meals as portion chips; tapping a portion or
+  a food line opens every swap of that group. No calorie number reaches her (the server never sends one).
+- Onboarding: a "Nutrition preferences" step before Review (placeholder copy), saved per step, shown in Review,
+  editable from Profile; the coach sees it in both apps ("Not answered" for earlier trainees).
+- Tab dots (owner decision, instead of a trainee inbox): Workouts when a training plan was published or a
+  published one changed, Nutrition when a new nutrition version was published — since she last opened that tab.
+  "Last seen" is stored on the server, so it is the same on every device.
+
+================================================================================
+2. DECISIONS AND HOW THEY WERE BUILT
+================================================================================
+Owner answers (2026-10-08) — written into PRD §5.6 and BUILD_PLAN Phase 13a:
+1. Seed data: apps/server/data/nutrition/guide-1500.json (gitignored — apps/server/.gitignore), generated once
+   from the guide, loaded by `npm run seed:nutrition`. Committed code has no coach content; tests use a fake
+   fixture.
+2. Defaults approved as starting points: fat loss −20%, recomp −10%, muscle gain +10%, maintenance 0; activity
+   factors 1–2 days 1.375 · 3–4 days 1.55 · 5–6 days 1.725 · 7 days 1.9 (training days = the rounded middle of her
+   min–max answer, so "3–4" → 4); floor 1,200; suggestion rounded to 10 kcal.
+3. "A / B" lines: the first item is the line; the second is reached through the swap list.
+4. vegetablesFree: true on breakfast, lunch, dinner; false on the snack.
+5. Allergies: the 8 allergens that have a diet tag (dairy / lactose, eggs, gluten, peanuts, tree nuts, sesame,
+   soy, fish) + free text.
+6. No trainee inbox: tab dots instead (see §1). The nutrition notifications are stored for Phase 5b push.
+7. Diet tags proposed for the coach to review — the full table is in
+   docs/reference/nutrition-diet-tags-review.md (gitignored: it lists the guide's items, so it can't go into this
+   committed report). It also notes the points worth checking (protein powder, vegetarian burger, oats, the
+   rice / ptitim / couscous and buckwheat / barley lines tagged gluten as a whole, dark chocolate, and a possible
+   typo in one item's name as written in the guide).
+
+Schemas (as approved):
+- FoodItem: coachId, group, name, portion, grams|null, kcal|null, isNew (stored as `isNewItem` — `isNew` is a
+  reserved Mongoose path; the API field is still `isNew`), dietTags, order, archivedAt, seedKey (idempotent seed).
+- OnboardingResponse.answers.nutritionPreferences: dietType, kosher, allergies[], allergyNotes, dislikes (≤500).
+- NutritionSettings (per coach): overrides of the config; unset = default.
+- NutritionPlan (unique traineeId): calorieTarget { kcal, source suggested|override, goal, formulaSex,
+  suggestion (snapshot with inputs), floorConfirmation { kcal, floorKcal, confirmedAt } }, meals, tips,
+  waterGoalMl (13b), templateId, publishedVersion, publishedAt.
+- NutritionPlanVersion: a frozen copy per publish + the group values and kcal at that time (unique planId +
+  version). The trainee view joins the live food items (so a fixed typo shows; archived items still resolve).
+- Shared meal subschema (nutritionMeal.schema.ts): meals → options → lines { kind food|text|recipe, foodItemId,
+  recipeId, group, portions, text }, every level with a stable _id (13b meal logs point at meal ids).
+- Template: type 'nutrition_plan' + field `nutrition` { targetKcal, meals, tips } (same meal subschema). The
+  pre-validate rule per type: nutrition templates have ≥1 meal and no workouts; other types have no `nutrition`.
+- 13b (models only, no routes): Recipe, MealLog (unique traineeId + date + mealId, planned snapshot), WaterLog
+  (unique traineeId + date). Quick-add amounts in nutrition.config.ts.
+
+Feature flags (13b): apps/server/src/config/features.ts — env FEATURE_NUTRITION_RECIPES / FEATURE_MEAL_LOGGING /
+FEATURE_WATER_TRACKING, 'true' opens one, default OFF (documented in .env.example, blanked in vitest.config).
+`requireFeature(flag)` answers 404 for a closed feature (13b mounts its routes behind it). While closed, the plan
+save refuses `recipe` lines and `waterGoalMl` (400) and the trainee API leaves the water goal out. Both nutrition
+responses carry `features` so the apps hide UI by what the server says.
+
+Floor: a target below the floor keeps / gets a confirmation only when the coach ticks "I confirm this target",
+and only for that exact kcal — changing the target drops it. Publish re-checks against the floor of the coach's
+config at publish time; the confirmation is copied into the version.
+
+Things I decided inside your answers (say if you want any changed):
+- Republishing with nothing changed is refused (409) — no empty "plan updated" notifications. A change of the
+  calorie target alone counts as a change (it is part of the version) although the trainee doesn't see kcal.
+- The working copy always autosaves (1.5 s after the last change): unlike training plans, the trainee only ever
+  sees published versions, so there is no "published plan saves explicitly".
+- A new plan starts with four placeholder meals (Breakfast / Lunch / Snack / Dinner, PRD default list), the goal
+  mapped from her onboarding goals and no target; nothing is stored until the coach changes something.
+- Starting from a template replaces meals + tips (fresh ids) after a confirm; the template's target is used only
+  when her plan has no target yet (as an override).
+- Settings refuse a group value lower than a food item's kcal (409, "lower them first") — the cap rule must keep
+  holding.
+- The seed is idempotent per coach: items and the template already seeded are left as they are (the coach may have
+  edited them). seed:dev also runs it when the data file exists. The seed's dev trainees now include nutrition
+  preferences (fresh databases only — existing seed trainees keep theirs).
+- Workouts dot: Plan.liveUpdatedAt is set on publish and on every save of a published plan (older plans fall back
+  to publishedAt). Opening any /workouts or /nutrition screen clears that tab's dot.
+- Review step: it showed no answers before; it now shows the new step's answers only (placeholder heading). The
+  Profile page got a "Nutrition preferences" block with the usual edit link.
+- Preference conflicts are computed only on the server (warnings after the autosave), not marked in the food picker,
+  so the rules stay in one place.
+- The Phase 12 AI training draft never sees the nutrition preferences (its profile is an explicit allowlist).
+
+================================================================================
+3. FILES CHANGED
+================================================================================
+Added — server
+  apps/server/src/config/features.ts
+  apps/server/src/features/nutrition/
+    nutrition.constants.ts, nutrition.config.ts, nutrition.types.ts, nutrition.validation.ts,
+    nutrition.controller.ts, nutrition.routes.ts, calorieTarget.ts, nutritionPreferences.ts,
+    foodItem.model.ts, foodItem.service.ts, nutritionMeal.schema.ts, nutritionPlan.model.ts,
+    nutritionPlan.service.ts, nutritionSettings.model.ts, nutritionSettings.service.ts, nutritionMapping.ts,
+    nutritionLogs.model.ts (13b), nutritionSeed.ts, scripts/seedNutrition.ts
+    __tests__/calorieTarget.test.ts, nutritionRules.test.ts, nutritionApi.test.ts, nutritionSeed.test.ts
+  apps/server/src/features/tabUpdates/tabUpdates.{service,controller,routes}.ts, __tests__/tabUpdates.test.ts
+Modified — server
+  apps/server/.env.example (FEATURE_* flags), apps/server/.gitignore (data/nutrition/), apps/server/package.json
+  (seed:nutrition), apps/server/vitest.config.mts (flags blank in tests), src/app.ts (2 routers),
+  src/events/appEvents.ts (nutrition_plan.published), features/coach/coach.routes.ts (nutrition routes),
+  features/notifications/notification.{constants,listeners,service,types}.ts, features/onboarding/
+  onboarding.{constants,service,validation}.ts + onboardingResponse.model.ts + __tests__/onboarding.test.ts,
+  features/plans/plan.model.ts, plan.types.ts, planBuilder.service.ts (liveUpdatedAt),
+  features/templates/template.{constants,model,types}.ts, features/users/user.model.ts (tabSeenAt),
+  features/users/scripts/seedDev.ts
+Modified — root / packages
+  package.json (seed:nutrition)
+  packages/types/src/index.ts (onboarding step + preferences, nutrition contract, tab updates, notification type)
+  packages/api-client/src/coachApi.ts (+ NutritionRequestError), index.ts, traineeApi.ts
+  packages/shared/src/nutritionDisplay.ts (added), onboardingSections.ts, index.ts
+Added / modified — mobile
+  added: src/features/nutrition/ (data/nutritionCopy.ts, tabUpdates.ts, components/MealCard, NutritionPlanView,
+    SwapSheet, TabUpdateDot, pages/NutritionPage), src/services/nutrition/nutritionService.ts,
+    src/features/coach/components/TraineeNutrition/, src/features/onboarding/data/nutritionPreferencesCopy.ts,
+    src/features/onboarding/steps/NutritionPreferencesStep/
+  modified: app/config/routes.ts, app/router/AppRouter.tsx, components/layout/TabBar/TabBar.tsx,
+    features/coach/data/traineeTabs.ts, features/coach/pages/TraineeDetailPage/TraineeDetailPage.{tsx,css},
+    features/onboarding/data/options.ts, pages/OnboardingPage/OnboardingPage.tsx, steps/ReviewStep/ReviewStep.{tsx,css},
+    types.ts, features/profile/data/profileCopy.ts, pages/ProfilePage/ProfilePage.{tsx,css},
+    services/coach/coachService.ts, services/onboarding/onboardingService.ts, services/users/usersService.ts
+Added / modified — dashboard
+  added: src/features/nutrition/ (nutritionDraft.ts, data/nutritionCopy.ts, hooks/useNutritionEditor.ts,
+    components/CalorieTargetPanel, FoodForm, FoodPicker, IssueList, MealEditor, NutritionEditor, NutritionSubnav,
+    PortionStepper, PreferencesPanel, TipsEditor, TraineeNutritionTab, pages/NutritionBuilderPage, FoodListPage,
+    NutritionTemplatesPage, NutritionSettingsPage)
+  modified: app/config/routes.ts, app/router/AppRouter.tsx, components/layout/DashboardShell/DashboardShell.tsx,
+    features/trainees/pages/TraineeDetailPage/TraineeDetailPage.tsx, services/coach/coachService.ts
+Docs
+  docs/PRD.md (§5.6 owner decisions 2026-10-08), docs/BUILD_PLAN.md (Phase 13a decisions),
+  docs/phase-reports/phase-13a-nutrition-core.txt
+Local only (gitignored, never committed)
+  apps/server/data/nutrition/guide-1500.json — the guide's 44 items + template, for seed:nutrition
+  docs/reference/nutrition-diet-tags-review.md — the proposed diet-tag table for the coach
+  CLAUDE.md (updated: nutrition architecture, seed:nutrition, FEATURE_* env)
+
+================================================================================
+4. DEPENDENCIES
+================================================================================
+Added: none. Removed: none.
+New env (optional, documented in apps/server/.env.example): FEATURE_NUTRITION_RECIPES, FEATURE_MEAL_LOGGING,
+FEATURE_WATER_TRACKING (unset = closed).
+
+================================================================================
+5. HOW TO TEST
+================================================================================
+Commands (repo root):
+  npm test        -> 33 files, 477 tests pass (was 28 / 413).
+    - calorieTarget.test.ts: the formula (male / female constants), the factor table and the coach's own table,
+      training days from min–max, goal mapping, the coach's goal / percentages, sex other / missing → needs a
+      formula (and the pick never overrides a male / female answer), missing inputs, a suggestion below the floor
+      is flagged not raised, the floor follows the config, config merge.
+    - nutritionRules.test.ts: diet types / allergies / kosher conflicts; food payload + kcal cap; settings bounds;
+      publish rules (target, meals, floor confirmation for the exact target, missing / archived / wrong-group items,
+      empty options, portions mismatch = warning, preference + kosher = warnings, recipe closed); kcal from
+      portions × group values (the guide's day = 1,515); save payload (0.5 steps, normalizing, closed features).
+    - nutritionApi.test.ts: trainee 403 on every coach route; another coach 404 (trainee, items); a plan can't use
+      another coach's item; the trainee reads only her own published plan, a coach can't use her route; kcal cap;
+      delete vs archive vs restore; settings (and refusing a cap below an item); suggestion from the latest
+      weigh-in with every input, sex other; builder defaults; autosave with stable ids + warnings; the floor
+      end to end; publish → version + notification, unchanged → 409, update → version 2 with isUpdate; her view
+      has no "kcal" / "calorie" anywhere, swaps active only; templates save / list / apply / delete + coach scope;
+      template shape rules; flags closed → refused, open → accepted and sent; requireFeature 404 / pass; nothing
+      reaches her before publish.
+    - nutritionSeed.test.ts (fake fixture): items in order without kcal, the template's lines, re-run keeps her
+      edits and adds nothing; a broken file writes nothing.
+    - onboarding.test.ts (+4): the step saves (trimmed, de-duplicated) and resumes; server validation; optional on
+      completion; her coach sees it, another coach doesn't.
+    - tabUpdates.test.ts: no dots; Workouts dot on publish and on a later change of the published plan, cleared by
+      "seen"; a pre-13a plan counts; Nutrition dot per new version; seen stored on the user; trainee-only.
+  npm run build   -> passes (server tsc incl. tests, mobile, dashboard). Dashboard bundle 441 kB (was 401);
+                     mobile 567 kB (was 551; still over Vite's 500 kB warning — backlog "split the mobile bundle").
+  npm run lint    -> 0 errors; the 2 older AuthContext warnings.
+  npm run dev:all -> checked with the same workspace scripts on spare ports (API 5012, mobile 5176, dashboard 5177),
+                     because your servers were on 5002 / 5173 / 5174: /api/health 200, both apps 200, "MongoDB
+                     connected". I stopped only my own processes (by task id). Your 5002 server (nodemon) picks up
+                     the new code by itself.
+  seed:nutrition  -> run on the dev database (Atlas, `Sistem` — the guard refused without --allow-remote, as
+                     designed):
+                       npm run seed:nutrition -- coach@sistem.dev --allow-remote
+                       → "Food items: 44 created, 0 already there. Template: created."
+                     Second run → "0 created, 44 already there. Template: already there."
+
+Browser check (real API + dev database):
+  Dashboard, desktop width, coach@sistem.dev:
+    - Dev Trainee Two → Nutrition tab: "No nutrition plan yet", preferences "Not answered" → Open the builder.
+    - Builder: suggestion 1,730 kcal with its inputs (67.6 kg weigh-in 2026-10-05 · 170 cm · 36 y · female ·
+      BMR 1,398 × 1.55 (3 training days) = 2,166 · fat loss −20%).
+    - Applied the "1,500" template: Hebrew meals and options as written, target 1,500 (override), day total 1,515,
+      breakfast 360 kcal, lines with portions and group badges.
+    - Target 1,100 → red floor warning + "I confirm this target", server issue "below 1200", Publish disabled.
+    - "Use suggestion" (1,730) → Publish → "Version 1 published", then "Nothing changed since the last published
+      version", Publish update disabled.
+    - Food list: the 44 seeded items per group with their caps.
+  Mobile at 375×667 (the window couldn't be resized, so the app ran inside a 375×667 same-origin frame —
+  identical viewport), trainee2@sistem.dev:
+    - Home: four tabs fit; dots on Workouts (her published plan was never opened) and Nutrition (new version).
+    - Nutrition: the plan; the dot cleared on opening. Portion chips (1 protein / 1 carb / 1 fat, ≥44 px),
+      "vegetables free" (no vegetable items, so not tappable), options with the coach's text; "1 protein" → the
+      protein swap sheet (every active protein item, portion; no kcal).
+      Found and fixed: Hebrew titles and their portion line aligned unevenly (the text column shrank to its
+      content) — the line / sheet text column now takes the full width.
+    - Profile → Nutrition preferences edit → the new step (fits, sticky footer) → saved vegetarian + kosher + tree
+      nuts → Profile shows the new block. The coach's builder then lists warnings for chicken / salmon / tuna
+      (vegetarian) and almonds / walnuts (her allergy); no kosher warning (no option mixes meat and dairy).
+    - Coach mode (coach@sistem.dev): Trainee → Nutrition: the hint, the published plan read-only. Six tabs now:
+      the row scrolls sideways at 375 px (existing behaviour, comment updated).
+  Left in the dev database by this check (dev data): Dev Trainee Two has a published nutrition plan (version 1,
+  1,730 kcal, from the template) + its notification, and nutrition preferences (vegetarian, kosher, tree nuts).
+
+Manual (dashboard coach@sistem.dev, mobile trainee2@sistem.dev — password sistem-dev-1234):
+  1. Dashboard → Nutrition → Food list / Templates / Settings. Settings: change fat loss to −15 → Save; the
+     builder's suggestion follows.
+  2. Trainee → Nutrition → Open the builder: start from the template, edit portions (±0.5), add a food line or a
+     text line, add a tip, Save as template, Publish (a confirm).
+  3. Mobile: the Nutrition dot appears; open the tab; tap a portion → swaps. Workouts dot: publish or edit her
+     training plan in the dashboard → the dot shows until she opens Workouts.
+  4. Flags: FEATURE_WATER_TRACKING=true in apps/server/.env → the builder may send a water goal (no UI yet — 13b).
+
+================================================================================
+6. KNOWN ISSUES / TODOs
+================================================================================
+- For the coach (local file docs/reference/nutrition-diet-tags-review.md): review the proposed diet tags; the
+  open points in docs/reference/nutrition-guide-issues.md still stand (dinner 435, turkey 120 g, patties, cheese
+  slices, no vegetable items).
+- All new wording is PLACEHOLDER: onboarding step (nutritionPreferencesCopy.ts, options.ts), mobile
+  nutritionCopy.ts, dashboard nutritionCopy.ts, @sistem/shared nutritionDisplay.ts (group / diet / goal labels,
+  "1 protein", "vegetables free"). Phase 15 moves it into the translation files.
+- Hebrew coach content in the English (LTR) UI: each text uses dir="auto", so Hebrew lines align right inside
+  left-to-right screens (the dashboard food table, the builder inputs). Phase 15 (RTL) settles this.
+- The trainee still has no inbox (owner decision): nutrition / plan notifications are stored for Phase 5b push.
+- Kcal and issues in the builder are the server's as of the last autosave (1.5 s), so they lag a typed change
+  briefly (the save state shows "Unsaved changes" meanwhile).
+- A text line or tip she hasn't typed yet isn't sent; it is saved with the first save after she types.
+- Lowering a group value below an item's kcal is refused (fix the items first) — no bulk fix.
+- 13b models exist without routes or UI; MealLog / WaterLog / Recipe are wired in 13b behind the flags.
+- The mobile bundle grew to 567 kB (backlog: split the bundle by role).
+
+================================================================================
+7. SUGGESTED COMMITS (ready to paste — in order)
+================================================================================
+Note: commit 1 changes the API contract (packages/types, packages/api-client); the apps build again after
+commits 2 and 3, as in earlier phases. CLAUDE.md and the gitignored seed / reference files are never committed.
+
+# 1) server + contract: nutrition core, onboarding nutrition preferences, tab updates, 13b models behind flags
+git add -A -- \
+  package.json \
+  apps/server/.env.example \
+  apps/server/.gitignore \
+  apps/server/package.json \
+  apps/server/vitest.config.mts \
+  apps/server/src/app.ts \
+  apps/server/src/config/features.ts \
+  apps/server/src/events/appEvents.ts \
+  apps/server/src/features/nutrition \
+  apps/server/src/features/tabUpdates \
+  apps/server/src/features/coach/coach.routes.ts \
+  apps/server/src/features/notifications \
+  apps/server/src/features/onboarding \
+  apps/server/src/features/plans/plan.model.ts \
+  apps/server/src/features/plans/plan.types.ts \
+  apps/server/src/features/plans/planBuilder.service.ts \
+  apps/server/src/features/templates \
+  apps/server/src/features/users/user.model.ts \
+  apps/server/src/features/users/scripts/seedDev.ts \
+  packages/types \
+  packages/api-client
+git commit -m "feat: nutrition core on the server — coach food list, per-coach nutrition config and calorie suggestion (Mifflin-St Jeor, 1,200 kcal floor), nutrition plans with versions and publish rules, nutrition templates, onboarding nutrition preferences step, tab update dots, seed:nutrition, 13b models behind feature flags"
+
+# 2) shared + mobile: Nutrition tab with swaps, onboarding step, coach mode read-only, tab dots
+git add -A -- \
+  packages/shared \
+  apps/mobile
+git commit -m "feat: trainee Nutrition tab with portion swaps, nutrition preferences onboarding step, read-only nutrition in coach mode, unseen-update dots on the Workouts and Nutrition tabs"
+
+# 3) dashboard: nutrition builder, food list, templates, settings
+git add -A -- \
+  apps/dashboard
+git commit -m "feat: coach nutrition builder in the dashboard — calorie target suggestion and override, meals with portions and options, tips, templates, publish; food list, nutrition templates and settings pages"
+
+# 4) docs
+git add -A -- \
+  docs/PRD.md \
+  docs/BUILD_PLAN.md \
+  docs/phase-reports/phase-13a-nutrition-core.txt
+git commit -m "docs: phase 13a report; nutrition owner decisions (seed data location, default numbers, vegetables, allergies, tab dots)"

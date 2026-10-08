@@ -12,5 +12,6 @@ export * from './units';
 export * from './bodyChart';
 export * from './bodyMetricsDisplay';
 export * from './achievementDisplay';
+export * from './nutritionDisplay';
 export { useLoad } from './hooks/useLoad';
 export { useServerNow } from './hooks/useServerNow';

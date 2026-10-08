@@ -1,0 +1,23 @@
+.preferences-panel-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.preferences-panel-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.preferences-panel-row dt {
+  color: var(--color-text-muted);
+}
+
+.preferences-panel-row dd {
+  margin: 0;
+  text-align: end;
+  overflow-wrap: anywhere;
+}

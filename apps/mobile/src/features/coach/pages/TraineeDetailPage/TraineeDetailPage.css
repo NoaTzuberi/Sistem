@@ -51,7 +51,7 @@
 .coach-trainee-tabs {
   display: flex;
   border-bottom: 1px solid var(--color-border);
-  /* Five tabs: they share the width, and scroll sideways only if a label can't fit. */
+  /* Six tabs: they share the width, and scroll sideways when the labels can't all fit (375 px). */
   overflow-x: auto;
   scrollbar-width: none;
 }

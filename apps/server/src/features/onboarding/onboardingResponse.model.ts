@@ -1,6 +1,7 @@
 import { Schema, Types, model } from 'mongoose';
-import type { OnboardingStepId } from '@sistem/types';
+import type { NutritionPreferences, OnboardingStepId } from '@sistem/types';
 import { ONBOARDING_STEP_IDS } from './onboarding.constants';
+import { ALLERGY_IDS, DIET_TYPE_IDS } from '../nutrition/nutrition.constants';
 
 // The ATLAS User.profile shape, unchanged (onboarding is protected). Every field is
 // optional while onboarding is in progress; completion runs the full validation.
@@ -33,6 +34,8 @@ export interface OnboardingAnswersFields {
   exercisePreferences?: ExercisePreferences;
   equipment: string[];
   recovery?: Recovery;
+  /** Phase 13a. Health data (allergies): same privacy as the other answers. */
+  nutritionPreferences?: NutritionPreferences;
 }
 
 export interface OnboardingResponseDocument {
@@ -70,6 +73,17 @@ const recoverySchema = new Schema<Recovery>(
   { _id: false },
 );
 
+const nutritionPreferencesSchema = new Schema<NutritionPreferences>(
+  {
+    dietType: { type: String, enum: DIET_TYPE_IDS, required: true },
+    kosher: { type: Boolean, required: true },
+    allergies: { type: [{ type: String, enum: ALLERGY_IDS }], default: [] },
+    allergyNotes: { type: String, trim: true },
+    dislikes: { type: String, trim: true },
+  },
+  { _id: false },
+);
+
 const answersSchema = new Schema<OnboardingAnswersFields>(
   {
     birthDate: { type: Date },
@@ -82,6 +96,7 @@ const answersSchema = new Schema<OnboardingAnswersFields>(
     exercisePreferences: { type: exercisePreferencesSchema },
     equipment: { type: [String], default: [] },
     recovery: { type: recoverySchema },
+    nutritionPreferences: { type: nutritionPreferencesSchema },
   },
   { _id: false },
 );

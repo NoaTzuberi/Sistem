@@ -6,14 +6,27 @@ import type {
   AiRecommendationLatest,
   AiRecommendationType,
   BodyMetricList,
+  CalorieSuggestion,
+  CoachNutritionPlanResponse,
   CoachPlan,
   CoachTraineeList,
   CoachTraineeResponse,
+  CreateNutritionTemplatePayload,
   CreatePlanPayload,
+  DeleteFoodItemResult,
   ExerciseSearchParams,
   ExerciseSearchResult,
+  FoodItem,
+  FoodItemPayload,
+  FormulaSex,
+  NutritionGoal,
+  NutritionIssue,
+  NutritionSettingsPayload,
+  NutritionSettingsResponse,
+  NutritionTemplate,
   PlanIssue,
   PlanWeekOptions,
+  SaveNutritionPlanPayload,
   SavePlanPayload,
   WorkoutLog,
 } from '@sistem/types';
@@ -35,6 +48,31 @@ export class PlanRequestError extends Error {
 function toPlanRequestError(error: unknown, fallback: string): PlanRequestError {
   const issues: unknown = axios.isAxiosError(error) ? error.response?.data?.issues : undefined;
   return new PlanRequestError(extractErrorMessage(error, fallback), Array.isArray(issues) ? (issues as PlanIssue[]) : []);
+}
+
+/**
+ * A failed nutrition call. `issues` is filled when the server refused the plan's content
+ * and says which meal / option / line each problem belongs to.
+ */
+export class NutritionRequestError extends Error {
+  readonly issues: NutritionIssue[];
+  readonly status: number | undefined;
+
+  constructor(message: string, issues: NutritionIssue[] = [], status?: number) {
+    super(message);
+    this.issues = issues;
+    this.status = status;
+  }
+}
+
+function toNutritionRequestError(error: unknown, fallback: string): NutritionRequestError {
+  const response = axios.isAxiosError(error) ? error.response : undefined;
+  const issues: unknown = response?.data?.issues;
+  return new NutritionRequestError(
+    extractErrorMessage(error, fallback),
+    Array.isArray(issues) ? (issues as NutritionIssue[]) : [],
+    response?.status,
+  );
 }
 
 // The human Coach's calls (/api/coach), shared by the web dashboard and the coach
@@ -162,6 +200,95 @@ export function createCoachApi(client: AxiosInstance) {
     }
   }
 
+  // --- Nutrition (Phase 13a) ----------------------------------------------------
+
+  const nutritionPath = (traineeId: string) => `/coach/trainees/${traineeId}/nutrition-plan`;
+
+  /** Wraps a call so a refusal arrives as a NutritionRequestError with its message / issues. */
+  async function nutritionCall<T>(fallback: string, call: () => Promise<T>): Promise<T> {
+    try {
+      return await call();
+    } catch (error) {
+      throw toNutritionRequestError(error, fallback);
+    }
+  }
+
+  async function listFoods(): Promise<FoodItem[]> {
+    const { data } = await client.get<{ items: FoodItem[] }>('/coach/nutrition/foods');
+    return data.items;
+  }
+
+  function createFood(payload: FoodItemPayload): Promise<FoodItem> {
+    return nutritionCall("Couldn't add the food item.", async () => (await client.post<{ item: FoodItem }>('/coach/nutrition/foods', payload)).data.item);
+  }
+
+  function updateFood(foodId: string, payload: FoodItemPayload): Promise<FoodItem> {
+    return nutritionCall("Couldn't save the food item.", async () => (await client.patch<{ item: FoodItem }>(`/coach/nutrition/foods/${foodId}`, payload)).data.item);
+  }
+
+  /** Deleted when nothing uses it, archived otherwise. */
+  function deleteFood(foodId: string): Promise<DeleteFoodItemResult> {
+    return nutritionCall("Couldn't remove the food item.", async () => (await client.delete<DeleteFoodItemResult>(`/coach/nutrition/foods/${foodId}`)).data);
+  }
+
+  function restoreFood(foodId: string): Promise<FoodItem> {
+    return nutritionCall("Couldn't restore the food item.", async () => (await client.post<{ item: FoodItem }>(`/coach/nutrition/foods/${foodId}/restore`)).data.item);
+  }
+
+  async function getNutritionSettings(): Promise<NutritionSettingsResponse> {
+    const { data } = await client.get<NutritionSettingsResponse>('/coach/nutrition/settings');
+    return data;
+  }
+
+  function saveNutritionSettings(payload: NutritionSettingsPayload): Promise<NutritionSettingsResponse> {
+    return nutritionCall("Couldn't save the settings.", async () => (await client.put<NutritionSettingsResponse>('/coach/nutrition/settings', payload)).data);
+  }
+
+  async function listNutritionTemplates(): Promise<NutritionTemplate[]> {
+    const { data } = await client.get<{ items: NutritionTemplate[] }>('/coach/nutrition/templates');
+    return data.items;
+  }
+
+  function deleteNutritionTemplate(templateId: string): Promise<void> {
+    return nutritionCall("Couldn't delete the template.", async () => {
+      await client.delete(`/coach/nutrition/templates/${templateId}`);
+    });
+  }
+
+  /** Her working copy, the version she sees, her preferences, the coach's foods and numbers, the issues. */
+  async function getNutritionPlan(traineeId: string): Promise<CoachNutritionPlanResponse> {
+    const { data } = await client.get<CoachNutritionPlanResponse>(nutritionPath(traineeId));
+    return data;
+  }
+
+  async function getCalorieSuggestion(
+    traineeId: string,
+    params: { goal?: NutritionGoal; formula?: FormulaSex } = {},
+  ): Promise<CalorieSuggestion> {
+    const { data } = await client.get<CalorieSuggestion>(`${nutritionPath(traineeId)}/suggestion`, { params });
+    return data;
+  }
+
+  function saveNutritionPlan(traineeId: string, payload: SaveNutritionPlanPayload): Promise<CoachNutritionPlanResponse> {
+    return nutritionCall("Couldn't save the nutrition plan.", async () => (await client.put<CoachNutritionPlanResponse>(nutritionPath(traineeId), payload)).data);
+  }
+
+  function publishNutritionPlan(traineeId: string): Promise<CoachNutritionPlanResponse> {
+    return nutritionCall("Couldn't publish the nutrition plan.", async () => (await client.post<CoachNutritionPlanResponse>(`${nutritionPath(traineeId)}/publish`)).data);
+  }
+
+  function applyNutritionTemplate(traineeId: string, templateId: string): Promise<CoachNutritionPlanResponse> {
+    return nutritionCall("Couldn't start from that template.", async () =>
+      (await client.post<CoachNutritionPlanResponse>(`${nutritionPath(traineeId)}/from-template`, { templateId })).data,
+    );
+  }
+
+  function saveNutritionTemplate(traineeId: string, payload: CreateNutritionTemplatePayload): Promise<NutritionTemplate> {
+    return nutritionCall("Couldn't save the template.", async () =>
+      (await client.post<{ template: NutritionTemplate }>(`${nutritionPath(traineeId)}/template`, payload)).data.template,
+    );
+  }
+
   return {
     listTrainees,
     getTrainee,
@@ -180,6 +307,21 @@ export function createCoachApi(client: AxiosInstance) {
     getLatestAiRecommendation,
     getAiRecommendation,
     generateAiRecommendation,
+    listFoods,
+    createFood,
+    updateFood,
+    deleteFood,
+    restoreFood,
+    getNutritionSettings,
+    saveNutritionSettings,
+    listNutritionTemplates,
+    deleteNutritionTemplate,
+    getNutritionPlan,
+    getCalorieSuggestion,
+    saveNutritionPlan,
+    publishNutritionPlan,
+    applyNutritionTemplate,
+    saveNutritionTemplate,
   };
 }
 

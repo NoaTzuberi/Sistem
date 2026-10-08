@@ -11,11 +11,13 @@ import { TraineePlans } from '../../components/TraineePlans/TraineePlans';
 import { WorkoutLogList } from '../../components/WorkoutLogList/WorkoutLogList';
 import { BodyTracking } from '../../components/BodyTracking/BodyTracking';
 import { TraineeAchievements } from '../../components/TraineeAchievements/TraineeAchievements';
+import { TraineeNutritionTab } from '../../../nutrition/components/TraineeNutritionTab/TraineeNutritionTab';
 import './TraineeDetailPage.css';
 
 const TAB_LABELS: Record<TraineeTab, string> = {
   onboarding: 'Onboarding',
   plans: 'Plans',
+  nutrition: 'Nutrition',
   logs: 'Workout logs',
   metrics: 'Body',
   achievements: 'Achievements',
@@ -98,6 +100,7 @@ export function TraineeDetailPage() {
           <section className="trainee-panel" role="tabpanel" id="trainee-tab-panel" aria-labelledby={`trainee-tab-${tab}`}>
             {tab === 'onboarding' && <OnboardingAnswers onboarding={trainee.onboarding} />}
             {tab === 'plans' && <TraineePlans trainee={trainee} onPlansChanged={reload} />}
+            {tab === 'nutrition' && <TraineeNutritionTab traineeId={trainee.id} />}
             {tab === 'logs' && <WorkoutLogList traineeId={trainee.id} />}
             {tab === 'metrics' && <BodyTracking traineeId={trainee.id} timezone={trainee.timezone} />}
             {tab === 'achievements' && <TraineeAchievements traineeId={trainee.id} />}

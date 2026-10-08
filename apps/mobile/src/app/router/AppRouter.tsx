@@ -34,6 +34,7 @@ import { WorkoutLogPage } from '../../features/workouts/pages/WorkoutLogPage/Wor
 import { WorkoutSessionPage } from '../../features/workouts/pages/WorkoutSessionPage/WorkoutSessionPage';
 import { WorkoutSummaryPage } from '../../features/workouts/pages/WorkoutSummaryPage/WorkoutSummaryPage';
 import { IntervalTimerPage } from '../../features/workouts/pages/IntervalTimerPage/IntervalTimerPage';
+import { NutritionPage } from '../../features/nutrition/pages/NutritionPage/NutritionPage';
 import { InboxPage } from '../../features/coach/pages/InboxPage/InboxPage';
 import { TraineesPage } from '../../features/coach/pages/TraineesPage/TraineesPage';
 import { TraineeDetailPage } from '../../features/coach/pages/TraineeDetailPage/TraineeDetailPage';
@@ -78,6 +79,7 @@ export function AppRouter() {
             <Route path={WORKOUT_SESSION_PATH} element={<WorkoutSessionPage />} />
             <Route path={WORKOUT_SUMMARY_PATH} element={<WorkoutSummaryPage />} />
             <Route path={ROUTES.INTERVAL_TIMER} element={<IntervalTimerPage />} />
+            <Route path={ROUTES.NUTRITION} element={<NutritionPage />} />
             <Route path={ONBOARDING_EDIT_PATH} element={<OnboardingPage />} />
             <Route path={ROUTES.TRAINEE_HOME} element={<HomePage />} />
           </Route>

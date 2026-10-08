@@ -6,6 +6,10 @@ import { DashboardShell } from '../../components/layout/DashboardShell/Dashboard
 import { TraineesPage } from '../../features/trainees/pages/TraineesPage/TraineesPage';
 import { TraineeDetailPage } from '../../features/trainees/pages/TraineeDetailPage/TraineeDetailPage';
 import { PlanBuilderPage } from '../../features/planBuilder/pages/PlanBuilderPage/PlanBuilderPage';
+import { NutritionBuilderPage } from '../../features/nutrition/pages/NutritionBuilderPage/NutritionBuilderPage';
+import { FoodListPage } from '../../features/nutrition/pages/FoodListPage/FoodListPage';
+import { NutritionTemplatesPage } from '../../features/nutrition/pages/NutritionTemplatesPage/NutritionTemplatesPage';
+import { NutritionSettingsPage } from '../../features/nutrition/pages/NutritionSettingsPage/NutritionSettingsPage';
 
 export function AppRouter() {
   return (
@@ -17,6 +21,11 @@ export function AppRouter() {
           <Route path={ROUTES.TRAINEES} element={<TraineesPage />} />
           <Route path={ROUTES.TRAINEE} element={<TraineeDetailPage />} />
           <Route path={ROUTES.PLAN} element={<PlanBuilderPage />} />
+          <Route path={ROUTES.TRAINEE_NUTRITION} element={<NutritionBuilderPage />} />
+          <Route path={ROUTES.NUTRITION} element={<Navigate to={ROUTES.NUTRITION_FOODS} replace />} />
+          <Route path={ROUTES.NUTRITION_FOODS} element={<FoodListPage />} />
+          <Route path={ROUTES.NUTRITION_TEMPLATES} element={<NutritionTemplatesPage />} />
+          <Route path={ROUTES.NUTRITION_SETTINGS} element={<NutritionSettingsPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to={ROUTES.TRAINEES} replace />} />

@@ -1,3 +1,5 @@
+import type { AllergyId, DietType } from '@sistem/types';
+
 export interface OnboardingFormState {
   name: string;
   birthDate: string;
@@ -24,6 +26,14 @@ export interface OnboardingFormState {
   recovery: {
     flags: string[];
     notes: string;
+  };
+  /** Phase 13a step. Starts at "none / not kosher" — passing the step saves these. */
+  nutritionPreferences: {
+    dietType: DietType;
+    kosher: boolean;
+    allergies: AllergyId[];
+    allergyNotes: string;
+    dislikes: string;
   };
 }
 
@@ -53,6 +63,13 @@ export const INITIAL_ONBOARDING_STATE: OnboardingFormState = {
   recovery: {
     flags: [],
     notes: '',
+  },
+  nutritionPreferences: {
+    dietType: 'none',
+    kosher: false,
+    allergies: [],
+    allergyNotes: '',
+    dislikes: '',
   },
 };
 

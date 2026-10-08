@@ -1,0 +1,82 @@
+import { Schema, model } from 'mongoose';
+import { CALORIE_TARGET_SOURCE_IDS, FORMULA_SEX_IDS, NUTRITION_GOAL_IDS } from './nutrition.constants';
+import { nutritionMealSchema, nutritionTipSchema } from './nutritionMeal.schema';
+import type {
+  CalorieTargetFields,
+  FloorConfirmationFields,
+  NutritionPlanDocument,
+  NutritionPlanVersionDocument,
+} from './nutrition.types';
+
+// One current nutrition plan per trainee (not weekly, PRD §5.6). This document is the
+// coach's working copy — autosaved, never seen by the trainee. Each publish freezes a
+// NutritionPlanVersion; the trainee always reads the newest version.
+
+const floorConfirmationSchema = new Schema<FloorConfirmationFields>(
+  {
+    kcal: { type: Number, required: true },
+    floorKcal: { type: Number, required: true },
+    confirmedAt: { type: Date, required: true },
+  },
+  { _id: false },
+);
+
+const calorieTargetSchema = new Schema<CalorieTargetFields>(
+  {
+    kcal: { type: Number, min: 0, default: null },
+    source: { type: String, enum: [...CALORIE_TARGET_SOURCE_IDS, null], default: null },
+    goal: { type: String, enum: NUTRITION_GOAL_IDS, required: true },
+    formulaSex: { type: String, enum: [...FORMULA_SEX_IDS, null], default: null },
+    suggestion: { type: Schema.Types.Mixed, default: null },
+    // A target below the floor needs this, for that exact kcal (checked on publish).
+    floorConfirmation: { type: floorConfirmationSchema, default: null },
+  },
+  { _id: false },
+);
+
+const nutritionPlanSchema = new Schema<NutritionPlanDocument>(
+  {
+    traineeId: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
+    // Copied from the trainee when the plan is created.
+    coachId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    calorieTarget: { type: calorieTargetSchema, required: true },
+    meals: { type: [nutritionMealSchema], default: [] },
+    tips: { type: [nutritionTipSchema], default: [] },
+    waterGoalMl: { type: Number, min: 0, default: null },
+    templateId: { type: Schema.Types.ObjectId, ref: 'Template', default: null },
+    publishedVersion: { type: Number, min: 0, default: 0 },
+    publishedAt: { type: Date, default: null },
+  },
+  { timestamps: true },
+);
+
+nutritionPlanSchema.index({ coachId: 1, updatedAt: -1 });
+
+export const NutritionPlan = model<NutritionPlanDocument>('NutritionPlan', nutritionPlanSchema);
+
+const nutritionPlanVersionSchema = new Schema<NutritionPlanVersionDocument>(
+  {
+    planId: { type: Schema.Types.ObjectId, ref: 'NutritionPlan', required: true },
+    traineeId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    coachId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    version: { type: Number, required: true, min: 1 },
+    publishedAt: { type: Date, required: true },
+    calorieTarget: { type: calorieTargetSchema, required: true },
+    meals: { type: [nutritionMealSchema], default: [] },
+    tips: { type: [nutritionTipSchema], default: [] },
+    waterGoalMl: { type: Number, min: 0, default: null },
+    groupKcal: { type: Schema.Types.Mixed, required: true },
+    mealKcal: {
+      type: [new Schema({ mealId: Schema.Types.ObjectId, kcal: Number }, { _id: false })],
+      default: [],
+    },
+    dayKcal: { type: Number, required: true },
+  },
+  { timestamps: { createdAt: true, updatedAt: false } },
+);
+
+// The unique pair makes two publishes at once produce one version each, never a clash.
+nutritionPlanVersionSchema.index({ planId: 1, version: 1 }, { unique: true });
+nutritionPlanVersionSchema.index({ traineeId: 1, version: -1 });
+
+export const NutritionPlanVersion = model<NutritionPlanVersionDocument>('NutritionPlanVersion', nutritionPlanVersionSchema);

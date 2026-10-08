@@ -17,6 +17,9 @@ function dedupeKeyFor(payload: NotificationPayload): string {
     case 'workout_completed':
       // Per log: a log is finished only once, but a retried finish must not notify twice.
       return `workout_completed:${payload.data.logId}`;
+    case 'nutrition_plan_published':
+      // Per version: every publish (first or update) is its own notification.
+      return `nutrition_plan_published:${payload.data.planId}:${payload.data.version}`;
   }
 }
 

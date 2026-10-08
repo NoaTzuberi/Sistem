@@ -22,6 +22,23 @@ import {
   getTraineeRecommendation,
   createTraineeRecommendation,
 } from '../aiRecommendations/aiRecommendation.controller';
+import {
+  getFoods,
+  postFood,
+  patchFood,
+  deleteFood,
+  postRestoreFood,
+  getSettings,
+  putSettings,
+  getTemplates,
+  deleteTemplate,
+  getTraineeNutrition,
+  getTraineeCalorieSuggestion,
+  putTraineeNutrition,
+  postPublishTraineeNutrition,
+  postTraineeNutritionFromTemplate,
+  postTraineeNutritionTemplate,
+} from '../nutrition/nutrition.controller';
 
 // The human Coach (PRD §6) — the ATLAS AI chat that used /api/coach is gone.
 // Every route needs role=coach; every :traineeId route also needs that trainee to
@@ -52,3 +69,20 @@ coachRouter.post('/trainees/:traineeId/plans/:planId/unpublish', loadCoachTraine
 coachRouter.get('/trainees/:traineeId/ai-recommendations/latest', loadCoachTrainee, getLatestTraineeRecommendation);
 coachRouter.get('/trainees/:traineeId/ai-recommendations/:recommendationId', loadCoachTrainee, getTraineeRecommendation);
 coachRouter.post('/trainees/:traineeId/ai-recommendations', loadCoachTrainee, createTraineeRecommendation);
+
+// Nutrition (Phase 13a): her food list, numbers and templates, and each trainee's plan.
+coachRouter.get('/nutrition/foods', getFoods);
+coachRouter.post('/nutrition/foods', postFood);
+coachRouter.patch('/nutrition/foods/:foodId', patchFood);
+coachRouter.delete('/nutrition/foods/:foodId', deleteFood);
+coachRouter.post('/nutrition/foods/:foodId/restore', postRestoreFood);
+coachRouter.get('/nutrition/settings', getSettings);
+coachRouter.put('/nutrition/settings', putSettings);
+coachRouter.get('/nutrition/templates', getTemplates);
+coachRouter.delete('/nutrition/templates/:templateId', deleteTemplate);
+coachRouter.get('/trainees/:traineeId/nutrition-plan', loadCoachTrainee, getTraineeNutrition);
+coachRouter.get('/trainees/:traineeId/nutrition-plan/suggestion', loadCoachTrainee, getTraineeCalorieSuggestion);
+coachRouter.put('/trainees/:traineeId/nutrition-plan', loadCoachTrainee, putTraineeNutrition);
+coachRouter.post('/trainees/:traineeId/nutrition-plan/publish', loadCoachTrainee, postPublishTraineeNutrition);
+coachRouter.post('/trainees/:traineeId/nutrition-plan/from-template', loadCoachTrainee, postTraineeNutritionFromTemplate);
+coachRouter.post('/trainees/:traineeId/nutrition-plan/template', loadCoachTrainee, postTraineeNutritionTemplate);

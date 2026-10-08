@@ -1,0 +1,473 @@
+import type { Types } from 'mongoose';
+import type {
+  CalorieSuggestion,
+  CoachNutritionPlan,
+  CoachNutritionPlanResponse,
+  CreateNutritionTemplatePayload,
+  FoodGroup,
+  FoodItem,
+  FormulaSex,
+  NutritionConfig,
+  NutritionGoal,
+  NutritionIssue,
+  NutritionMeal,
+  NutritionPlanView,
+  NutritionPreferences,
+  NutritionTemplate,
+  SaveNutritionPlanPayload,
+} from '@sistem/types';
+import { emitAppEvent } from '../../events/appEvents';
+import { getNutritionFeatures } from '../../config/features';
+import { OnboardingResponse } from '../onboarding/onboardingResponse.model';
+import { BodyMetric } from '../bodyMetrics/bodyMetric.model';
+import { Template } from '../templates/template.model';
+import type { TemplateDocument } from '../templates/template.types';
+import { NutritionPlan, NutritionPlanVersion } from './nutritionPlan.model';
+import { Recipe } from './nutritionLogs.model';
+import { suggestCalorieTarget, goalFromOnboarding } from './calorieTarget';
+import type { CalorieInputs } from './calorieTarget';
+import { getEffectiveNutritionConfig } from './nutritionSettings.service';
+import { findCoachFoods, listCoachFoods } from './foodItem.service';
+import {
+  collectContentIds,
+  copyMeals,
+  foodIdsOf,
+  groupSwaps,
+  toFoodFacts,
+  toPublicMeals,
+  toPublicTips,
+  toStoredMeals,
+  toStoredTips,
+} from './nutritionMapping';
+import { computeNutritionKcal, findNutritionPublishIssues, hasBlockingIssues } from './nutrition.validation';
+import type { NutritionPlanDocument, NutritionPlanVersionDocument, TipFields } from './nutrition.types';
+
+// The coach's side of nutrition plans (PRD §5.6, dashboard builder). Every function
+// takes the trainee id loadCoachTrainee already checked and the calling coach's id.
+// One current plan per trainee: a working copy (autosaved, coach-only) plus a frozen
+// version per publish — the trainee only ever reads the newest version.
+
+export class NutritionPlanNotFoundError extends Error {}
+
+/** The plan breaks a rule; `issues` say where. */
+export class NutritionPlanValidationError extends Error {
+  constructor(public readonly issues: NutritionIssue[]) {
+    super(issues.find((issue) => issue.severity === 'error')?.message ?? 'The nutrition plan is not valid.');
+  }
+}
+
+export class NutritionPlanConflictError extends Error {}
+
+type LeanPlan = NutritionPlanDocument & { _id: Types.ObjectId };
+type LeanVersion = NutritionPlanVersionDocument & { _id: Types.ObjectId };
+type LeanTemplate = TemplateDocument & { _id: Types.ObjectId };
+
+// ---------------------------------------------------------------------------
+// Her data: preferences and the calorie inputs
+// ---------------------------------------------------------------------------
+
+/** Her onboarding nutrition preferences; null = not answered. */
+export async function getNutritionPreferences(traineeId: string): Promise<NutritionPreferences | null> {
+  const response = await OnboardingResponse.findOne({ userId: traineeId }).select('answers.nutritionPreferences').lean();
+  const preferences = response?.answers?.nutritionPreferences;
+  if (!preferences) return null;
+  return {
+    dietType: preferences.dietType,
+    kosher: preferences.kosher,
+    allergies: preferences.allergies ?? [],
+    ...(preferences.allergyNotes ? { allergyNotes: preferences.allergyNotes } : {}),
+    ...(preferences.dislikes ? { dislikes: preferences.dislikes } : {}),
+  };
+}
+
+/** Latest weigh-in (else the onboarding weight), height, birth date, sex, training days, goals. */
+async function loadCalorieInputs(traineeId: string): Promise<CalorieInputs> {
+  const [response, weighIn] = await Promise.all([
+    OnboardingResponse.findOne({ userId: traineeId }).select('answers').lean(),
+    BodyMetric.findOne({ traineeId, weight: { $exists: true, $ne: null } }).sort({ date: -1 }).select('date weight').lean(),
+  ]);
+  const answers = response?.answers;
+  const weight =
+    weighIn?.weight !== undefined && weighIn?.weight !== null
+      ? { kg: weighIn.weight, source: 'weigh_in' as const, date: weighIn.date }
+      : answers?.weight !== undefined
+        ? { kg: answers.weight, source: 'onboarding' as const, date: null }
+        : null;
+  return {
+    weight,
+    heightCm: answers?.height,
+    birthDate: answers?.birthDate,
+    gender: answers?.gender,
+    trainingFrequency: answers?.trainingFrequency,
+    goals: answers?.goals ?? [],
+  };
+}
+
+export async function getCalorieSuggestion(
+  traineeId: string,
+  coachId: string,
+  options: { goal?: NutritionGoal | null; formulaSex?: FormulaSex | null },
+): Promise<CalorieSuggestion> {
+  const [inputs, config] = await Promise.all([loadCalorieInputs(traineeId), getEffectiveNutritionConfig(coachId)]);
+  return suggestCalorieTarget(inputs, options, config, new Date());
+}
+
+// ---------------------------------------------------------------------------
+// Responses
+// ---------------------------------------------------------------------------
+
+/** What a version / working copy holds that the trainee can see — compared to detect changes. */
+function publishableContent(plan: Pick<NutritionPlanDocument, 'meals' | 'tips' | 'waterGoalMl'>): string {
+  return JSON.stringify({
+    meals: toPublicMeals(plan.meals),
+    tips: toPublicTips(plan.tips).map((tip) => tip.text),
+    waterGoalMl: plan.waterGoalMl ?? null,
+  });
+}
+
+async function findLatestVersion(traineeId: string): Promise<LeanVersion | null> {
+  return NutritionPlanVersion.findOne({ traineeId }).sort({ version: -1 }).lean<LeanVersion>();
+}
+
+function toCoachPlan(plan: LeanPlan, config: NutritionConfig, latest: LeanVersion | null): CoachNutritionPlan {
+  const meals = toPublicMeals(plan.meals);
+  const target = plan.calorieTarget;
+  return {
+    id: String(plan._id),
+    traineeId: String(plan.traineeId),
+    calorieTarget: {
+      kcal: target.kcal ?? null,
+      source: target.source ?? null,
+      goal: target.goal,
+      formulaSex: target.formulaSex ?? null,
+      suggestion: target.suggestion ?? null,
+      floorConfirmation: target.floorConfirmation
+        ? {
+            kcal: target.floorConfirmation.kcal,
+            floorKcal: target.floorConfirmation.floorKcal,
+            confirmedAt: target.floorConfirmation.confirmedAt.toISOString(),
+          }
+        : null,
+    },
+    meals,
+    tips: toPublicTips(plan.tips),
+    waterGoalMl: plan.waterGoalMl ?? null,
+    templateId: plan.templateId ? String(plan.templateId) : null,
+    publishedVersion: plan.publishedVersion,
+    publishedAt: plan.publishedAt ? plan.publishedAt.toISOString() : null,
+    changedSincePublish:
+      !latest ||
+      publishableContent(plan) !== publishableContent(latest) ||
+      (plan.calorieTarget.kcal ?? null) !== (latest.calorieTarget.kcal ?? null),
+    updatedAt: plan.updatedAt.toISOString(),
+    kcal: computeNutritionKcal(meals, config.groupKcal),
+  };
+}
+
+/** A published version as she sees it — no calorie numbers anywhere. */
+export function buildPlanView(version: LeanVersion, foods: Map<string, FoodItem>, includeWater: boolean): NutritionPlanView {
+  return {
+    version: version.version,
+    publishedAt: version.publishedAt.toISOString(),
+    meals: toPublicMeals(version.meals).map((meal) => ({
+      id: meal.id,
+      name: meal.name,
+      portions: meal.portions,
+      vegetablesFree: meal.vegetablesFree,
+      options: meal.options.map((option) => ({
+        id: option.id,
+        label: option.label,
+        lines: option.lines.map((line) => {
+          const food = line.foodItemId ? foods.get(line.foodItemId) : undefined;
+          return {
+            id: line.id,
+            kind: line.kind,
+            group: food?.group ?? line.group,
+            portions: line.portions,
+            ...(line.text ? { text: line.text } : {}),
+            ...(food ? { food: toFoodFacts(food) } : {}),
+          };
+        }),
+      })),
+    })),
+    tips: version.tips.map((tip: TipFields) => tip.text),
+    swaps: groupSwaps([...foods.values()]),
+    ...(includeWater ? { waterGoalMl: version.waterGoalMl ?? null } : {}),
+  };
+}
+
+async function findActiveRecipeIds(coachId: string, meals: readonly NutritionMeal[]): Promise<Set<string>> {
+  const ids = meals.flatMap((meal) => meal.options.flatMap((option) => option.lines.flatMap((line) => (line.recipeId ? [line.recipeId] : []))));
+  if (ids.length === 0) return new Set();
+  const recipes = await Recipe.find({ _id: { $in: ids }, coachId, archivedAt: null }).select('_id').lean();
+  return new Set(recipes.map((recipe) => String(recipe._id)));
+}
+
+async function findIssues(
+  plan: LeanPlan,
+  coachId: string,
+  context: { foods: Map<string, FoodItem>; config: NutritionConfig; preferences: NutritionPreferences | null },
+): Promise<NutritionIssue[]> {
+  const meals = toPublicMeals(plan.meals);
+  return findNutritionPublishIssues(
+    {
+      calorieTarget: { kcal: plan.calorieTarget.kcal ?? null, floorConfirmation: plan.calorieTarget.floorConfirmation ?? null },
+      meals,
+    },
+    { ...context, features: getNutritionFeatures(), recipeIds: await findActiveRecipeIds(coachId, meals) },
+  );
+}
+
+export async function getCoachNutritionPlan(traineeId: string, coachId: string): Promise<CoachNutritionPlanResponse> {
+  const [plan, latest, foodList, config, preferences, goal] = await Promise.all([
+    NutritionPlan.findOne({ traineeId }).lean<LeanPlan>(),
+    findLatestVersion(traineeId),
+    listCoachFoods(coachId),
+    getEffectiveNutritionConfig(coachId),
+    getNutritionPreferences(traineeId),
+    defaultGoal(traineeId),
+  ]);
+  const features = getNutritionFeatures();
+  const foods = new Map(foodList.map((food) => [food.id, food]));
+  return {
+    plan: plan ? toCoachPlan(plan, config, latest) : null,
+    published: latest ? buildPlanView(latest, foods, features.waterTracking) : null,
+    preferences,
+    defaultGoal: goal,
+    foods: foodList,
+    config,
+    issues: plan ? await findIssues(plan, coachId, { foods, config, preferences }) : [],
+    features,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Save (autosave of the working copy)
+// ---------------------------------------------------------------------------
+
+/** Food lines may only point at the coach's own items; returns each one's group. */
+async function checkFoodLines(coachId: string, meals: SaveNutritionPlanPayload['meals']): Promise<Map<string, FoodGroup>> {
+  const ids = [
+    ...new Set(meals.flatMap((meal) => meal.options.flatMap((option) => option.lines.flatMap((line) => (line.foodItemId ? [line.foodItemId] : []))))),
+  ];
+  const foods = await findCoachFoods(coachId, ids);
+  const issues: NutritionIssue[] = [];
+  meals.forEach((meal, mealIndex) =>
+    meal.options.forEach((option, optionIndex) =>
+      option.lines.forEach((line, lineIndex) => {
+        if (line.kind === 'food' && line.foodItemId && !foods.has(line.foodItemId)) {
+          issues.push({ severity: 'error', code: 'food_missing', message: 'That food item is not in your list.', mealIndex, optionIndex, lineIndex });
+        }
+      }),
+    ),
+  );
+  if (issues.length > 0) throw new NutritionPlanValidationError(issues);
+  return new Map([...foods].map(([id, food]) => [id, food.group]));
+}
+
+/**
+ * Replaces the working copy (created on the first save). Rows sent with the id they
+ * already have keep it. The suggestion is re-computed and stored with its inputs; a
+ * target below the floor keeps / gets a confirmation only for that exact kcal.
+ */
+export async function saveCoachNutritionPlan(
+  traineeId: string,
+  coachId: string,
+  input: SaveNutritionPlanPayload,
+): Promise<CoachNutritionPlanResponse> {
+  const foodGroups = await checkFoodLines(coachId, input.meals);
+  const [existing, inputs, config] = await Promise.all([
+    NutritionPlan.findOne({ traineeId }),
+    loadCalorieInputs(traineeId),
+    getEffectiveNutritionConfig(coachId),
+  ]);
+  const plan = existing ?? new NutritionPlan({ traineeId, coachId, calorieTarget: { goal: input.calorieTarget.goal } });
+
+  const { kcal, source, goal, formulaSex, confirmBelowFloor } = input.calorieTarget;
+  const suggestion = suggestCalorieTarget(inputs, { goal, formulaSex }, config, new Date());
+  const previousConfirmation = plan.calorieTarget?.floorConfirmation ?? null;
+  const floorConfirmation =
+    kcal !== null && kcal < config.floorKcal && confirmBelowFloor
+      ? previousConfirmation?.kcal === kcal
+        ? previousConfirmation
+        : { kcal, floorKcal: config.floorKcal, confirmedAt: new Date() }
+      : null;
+
+  plan.set('calorieTarget', { kcal, source, goal, formulaSex, suggestion, floorConfirmation });
+  const ids = collectContentIds(plan.meals ?? [], plan.tips ?? []);
+  plan.set('meals', toStoredMeals(input.meals, foodGroups, ids));
+  plan.set('tips', toStoredTips(input.tips, ids.tips));
+  if (input.waterGoalMl !== undefined) plan.set('waterGoalMl', input.waterGoalMl);
+  plan.markModified('calorieTarget.suggestion');
+  await plan.save();
+
+  return getCoachNutritionPlan(traineeId, coachId);
+}
+
+/** The goal a new plan starts with: mapped from her onboarding goals. */
+async function defaultGoal(traineeId: string): Promise<NutritionGoal> {
+  const response = await OnboardingResponse.findOne({ userId: traineeId }).select('answers.goals').lean();
+  return goalFromOnboarding(response?.answers?.goals ?? []);
+}
+
+// ---------------------------------------------------------------------------
+// Publish
+// ---------------------------------------------------------------------------
+
+/**
+ * Freezes the working copy as the next version and announces it
+ * ('nutrition_plan.published' → her notification and the tab dot). Refused while a
+ * publish rule fails, and when nothing changed since the last version.
+ */
+export async function publishCoachNutritionPlan(traineeId: string, coachId: string): Promise<CoachNutritionPlanResponse> {
+  const plan = await NutritionPlan.findOne({ traineeId }).lean<LeanPlan>();
+  if (!plan) throw new NutritionPlanNotFoundError('There is no nutrition plan to publish yet.');
+
+  const [config, foods, preferences, latest] = await Promise.all([
+    getEffectiveNutritionConfig(coachId),
+    findCoachFoods(coachId),
+    getNutritionPreferences(traineeId),
+    findLatestVersion(traineeId),
+  ]);
+  const issues = await findIssues(plan, coachId, { foods, config, preferences });
+  if (hasBlockingIssues(issues)) throw new NutritionPlanValidationError(issues);
+  if (latest && !toCoachPlan(plan, config, latest).changedSincePublish) {
+    throw new NutritionPlanConflictError('Nothing changed since the last published version.');
+  }
+
+  const version = plan.publishedVersion + 1;
+  const publishedAt = new Date();
+  const meals = toPublicMeals(plan.meals);
+  const kcal = computeNutritionKcal(meals, config.groupKcal);
+  try {
+    // The unique (planId, version) index lets only one of two publishes at once through.
+    await NutritionPlanVersion.create({
+      planId: plan._id,
+      traineeId: plan.traineeId,
+      coachId: plan.coachId,
+      version,
+      publishedAt,
+      calorieTarget: plan.calorieTarget,
+      meals: plan.meals,
+      tips: plan.tips,
+      waterGoalMl: plan.waterGoalMl ?? null,
+      groupKcal: config.groupKcal,
+      mealKcal: kcal.meals.map((meal) => ({ mealId: meal.mealId, kcal: meal.kcal })),
+      dayKcal: kcal.day,
+    });
+  } catch (error) {
+    if ((error as { code?: unknown }).code === 11000) {
+      throw new NutritionPlanConflictError('This plan was just published — reload to see it.');
+    }
+    throw error;
+  }
+  await NutritionPlan.updateOne({ _id: plan._id }, { $set: { publishedVersion: version, publishedAt } });
+
+  emitAppEvent('nutrition_plan.published', {
+    planId: String(plan._id),
+    traineeId,
+    coachId: String(plan.coachId),
+    version,
+    publishedAt,
+  });
+  return getCoachNutritionPlan(traineeId, coachId);
+}
+
+// ---------------------------------------------------------------------------
+// Templates
+// ---------------------------------------------------------------------------
+
+function toPublicTemplate(template: LeanTemplate, config: NutritionConfig): NutritionTemplate {
+  const meals = toPublicMeals(template.nutrition?.meals ?? []);
+  return {
+    id: String(template._id),
+    name: template.name,
+    ...(template.description ? { description: template.description } : {}),
+    targetKcal: template.nutrition?.targetKcal ?? null,
+    meals,
+    tips: toPublicTips(template.nutrition?.tips ?? []),
+    updatedAt: template.updatedAt.toISOString(),
+    kcal: computeNutritionKcal(meals, config.groupKcal),
+  };
+}
+
+export async function listNutritionTemplates(coachId: string): Promise<NutritionTemplate[]> {
+  const [templates, config] = await Promise.all([
+    Template.find({ coachId, type: 'nutrition_plan' }).sort({ updatedAt: -1 }).lean<LeanTemplate[]>(),
+    getEffectiveNutritionConfig(coachId),
+  ]);
+  return templates.map((template) => toPublicTemplate(template, config));
+}
+
+export async function deleteNutritionTemplate(coachId: string, templateId: string): Promise<void> {
+  const result = await Template.deleteOne({ _id: templateId, coachId, type: 'nutrition_plan' });
+  if (result.deletedCount === 0) throw new NutritionPlanNotFoundError('Template not found.');
+}
+
+async function foodGroupsFor(coachId: string, meals: Parameters<typeof toPublicMeals>[0]): Promise<Map<string, FoodGroup>> {
+  const foods = await findCoachFoods(coachId, foodIdsOf(toPublicMeals(meals)));
+  return new Map([...foods].map(([id, food]) => [id, food.group]));
+}
+
+/** Her working copy → a new template (no trainee data, no floor confirmation). */
+export async function createNutritionTemplateFromPlan(
+  traineeId: string,
+  coachId: string,
+  input: CreateNutritionTemplatePayload,
+): Promise<NutritionTemplate> {
+  const plan = await NutritionPlan.findOne({ traineeId }).lean<LeanPlan>();
+  if (!plan || plan.meals.length === 0) {
+    throw new NutritionPlanConflictError('Add at least one meal before saving a template.');
+  }
+  const created = await Template.create({
+    coachId,
+    type: 'nutrition_plan',
+    name: input.name,
+    description: input.description,
+    nutrition: {
+      targetKcal: plan.calorieTarget.kcal ?? null,
+      meals: copyMeals(plan.meals, await foodGroupsFor(coachId, plan.meals)),
+      tips: toStoredTips(toPublicTips(plan.tips).map(({ text }) => ({ text }))),
+    },
+  });
+  return toPublicTemplate(created.toObject() as LeanTemplate, await getEffectiveNutritionConfig(coachId));
+}
+
+/**
+ * Starts her working copy from a template: meals and tips are copied (fresh ids). Its
+ * target is used only when her plan has none yet — as the coach's override.
+ */
+export async function applyNutritionTemplate(traineeId: string, coachId: string, templateId: string): Promise<CoachNutritionPlanResponse> {
+  const template = await Template.findOne({ _id: templateId, coachId, type: 'nutrition_plan' }).lean<LeanTemplate>();
+  if (!template?.nutrition) throw new NutritionPlanNotFoundError('Template not found.');
+
+  const plan = (await NutritionPlan.findOne({ traineeId })) ??
+    new NutritionPlan({ traineeId, coachId, calorieTarget: { goal: await defaultGoal(traineeId) } });
+  if ((plan.calorieTarget.kcal ?? null) === null && template.nutrition.targetKcal) {
+    plan.set('calorieTarget.kcal', template.nutrition.targetKcal);
+    plan.set('calorieTarget.source', 'override');
+  }
+  plan.set('meals', copyMeals(template.nutrition.meals, await foodGroupsFor(coachId, template.nutrition.meals)));
+  plan.set('tips', toStoredTips(toPublicTips(template.nutrition.tips).map(({ text }) => ({ text }))));
+  plan.set('templateId', template._id);
+  await plan.save();
+  return getCoachNutritionPlan(traineeId, coachId);
+}
+
+// ---------------------------------------------------------------------------
+// Trainee
+// ---------------------------------------------------------------------------
+
+/** Her newest published version (no calories), with every active swap of each group. */
+export async function getTraineeNutritionPlan(traineeId: string): Promise<NutritionPlanView | null> {
+  const latest = await findLatestVersion(traineeId);
+  if (!latest) return null;
+  const foods = await findCoachFoods(String(latest.coachId));
+  return buildPlanView(latest, foods, getNutritionFeatures().waterTracking);
+}
+
+/** When her newest version was published (the Nutrition tab dot). */
+export async function latestNutritionPublishTime(traineeId: string): Promise<Date | null> {
+  const latest = await NutritionPlanVersion.findOne({ traineeId }).sort({ version: -1 }).select('publishedAt').lean();
+  return latest?.publishedAt ?? null;
+}

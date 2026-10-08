@@ -1,0 +1,21 @@
+/* Sits on the top-right corner of the tab's icon (the tab link is the anchor). */
+.tab-update-dot {
+  position: absolute;
+  top: var(--space-2);
+  left: calc(50% + var(--space-2));
+  width: 10px;
+  height: 10px;
+  background-color: var(--color-primary);
+  border: 2px solid var(--color-bg);
+  border-radius: var(--radius-round);
+}
+
+/* Read by screen readers only. */
+.tab-update-dot-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

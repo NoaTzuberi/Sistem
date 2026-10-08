@@ -12,6 +12,8 @@ import { bodyMetricsRouter } from './features/bodyMetrics/bodyMetric.routes';
 import { achievementsRouter } from './features/achievements/achievement.routes';
 import { coachRouter } from './features/coach/coach.routes';
 import { notificationsRouter } from './features/notifications/notification.routes';
+import { nutritionRouter } from './features/nutrition/nutrition.routes';
+import { tabUpdatesRouter } from './features/tabUpdates/tabUpdates.routes';
 import { registerNotificationListeners } from './features/notifications/notification.listeners';
 import { registerAiRecommendationListeners } from './features/aiRecommendations/aiRecommendation.listeners';
 
@@ -31,6 +33,8 @@ app.use('/api/body-metrics', bodyMetricsRouter);
 app.use('/api/achievements', achievementsRouter);
 app.use('/api/coach', coachRouter);
 app.use('/api/notifications', notificationsRouter);
+app.use('/api/nutrition-plan', nutritionRouter);
+app.use('/api/tab-updates', tabUpdatesRouter);
 
 registerNotificationListeners();
 registerAiRecommendationListeners();

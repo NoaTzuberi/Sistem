@@ -183,6 +183,8 @@ export async function saveCoachPlan(traineeId: string, planId: string, input: Sa
   );
   plan.set('notes', input.notes);
   if (input.aiRecommendationId !== undefined) plan.set('aiRecommendationId', input.aiRecommendationId ?? undefined);
+  // She sees a published plan, so its change lights the Workouts tab dot.
+  if (plan.status === 'published' && plan.isModified('workouts notes')) plan.set('liveUpdatedAt', new Date());
   await plan.save();
 
   return getCoachPlan(traineeId, planId);
@@ -208,7 +210,7 @@ export async function publishCoachPlan(traineeId: string, planId: string): Promi
   const publishedAt = new Date();
   const published = await Plan.findOneAndUpdate(
     { _id: planId, traineeId, status: 'draft' },
-    { $set: { status: 'published', publishedAt } },
+    { $set: { status: 'published', publishedAt, liveUpdatedAt: publishedAt } },
     { returnDocument: 'after' },
   ).lean<LeanPlan>();
 

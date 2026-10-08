@@ -159,6 +159,15 @@ A meal is defined as **a number of portions per group** (halves allowed, e.g. 1.
 
 **Decisions (owner, 2026-10-07).** Goal mapping, sex "other" / missing, and the nutrition preferences step: as above. The guide's gaps (dinner 435 vs ~420 kcal, lunch turkey / patties amounts, cheese slices, no vegetable items) are seeded with the food list's values and listed in `docs/reference/nutrition-guide-issues.md` for the coach. Food names and all coach content are stored and shown as written (Hebrew) — no auto-translation; the app becomes Hebrew-first in Phase 15 (§11).
 
+**Decisions (owner, 2026-10-08 — Phase 13a).**
+- The guide's data for the seed lives in `apps/server/data/nutrition/` (gitignored, generated once from the guide) and is loaded by `npm run seed:nutrition`; committed code holds no coach content, tests use a fake fixture.
+- Default numbers (starting points, all coach-tunable): fat loss −20%, toning / recomp −10%, muscle gain +10%, maintenance 0; activity factor by training days (the rounded middle of her min–max answer): 1–2 → 1.375, 3–4 → 1.55, 5–6 → 1.725, 7 → 1.9; floor 1,200.
+- "A / B" alternatives in one guide line: the first is seeded as the line, the second is reached through the swap list.
+- `vegetablesFree` per meal: seeded true on breakfast, lunch and dinner, false on the snack; the coach can change it.
+- Allergy list: the 8 allergens that have a diet tag (dairy / lactose, eggs, gluten, peanuts, tree nuts, sesame, soy, fish); everything else is free text.
+- No trainee inbox. Instead an **"unseen update" dot** on the trainee's tab bar: Nutrition when a new nutrition version was published since she last opened the tab, Workouts when a training plan was published or a published one changed. "Last seen" is stored on the server (works across devices). The stored notifications stay for Phase 5b push.
+- The proposed diet tags of the seeded items are a starting point for the coach to review.
+
 ## 6. Coach Admin — Screens
 
 **Decision:** the coach has **both**:
