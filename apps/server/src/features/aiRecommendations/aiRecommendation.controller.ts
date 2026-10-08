@@ -14,7 +14,7 @@ import { parseRecommendationType, validateRecommendationIdParam } from './aiReco
 // No trainee route reads recommendations: an AI draft reaches her only as a plan the
 // coach saved and published.
 
-const TYPE_ERROR = 'type must be one of: training_plan.';
+const TYPE_ERROR = 'type must be one of: training_plan, nutrition_plan.';
 
 export async function getLatestTraineeRecommendation(req: AuthenticatedRequest, res: Response) {
   const type = parseRecommendationType(req.query.type ?? 'training_plan');

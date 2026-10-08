@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { CoachNutritionPlanResponse, NutritionTemplate } from '@sistem/types';
+import type { AiNutritionRecommendation, CoachNutritionPlanResponse, NutritionTemplate } from '@sistem/types';
 import { formatDateTime } from '@sistem/shared';
 import { saveNutritionTemplate } from '../../../../services/coach/coachService';
 import { traineePath } from '../../../../app/config/routes';
@@ -8,6 +8,11 @@ import { Button } from '../../../../components/common/Button/Button';
 import { Badge } from '../../../../components/common/Badge/Badge';
 import { SaveIndicator } from '../../../planBuilder/components/SaveIndicator/SaveIndicator';
 import { useNutritionEditor } from '../../hooks/useNutritionEditor';
+import { useLatestAiDraft } from '../../../aiDraft/hooks/useLatestAiDraft';
+import { NutritionAiDraftCard } from '../../../aiDraft/components/NutritionAiDraftCard/NutritionAiDraftCard';
+import { NutritionAiRationale } from '../../../aiDraft/components/NutritionAiRationale/NutritionAiRationale';
+import { draftMealsFromAi } from '../../../aiDraft/aiDraftToNutrition';
+import { NUTRITION_AI_COPY } from '../../../aiDraft/data/aiDraftCopy';
 import { CalculationSummary } from '../CalculationSummary/CalculationSummary';
 import { IntroEditor } from '../IntroEditor/IntroEditor';
 import { MealEditor } from '../MealEditor/MealEditor';
@@ -29,7 +34,7 @@ interface NutritionEditorProps {
 /**
  * The nutrition plan builder (PRD §5.6): the calculation summary and target, the coach's
  * message, meals with portions per group,
- * options, tips, templates and publish. Autosaves; the server computes the kcal and the
+ * options, tips, templates, the AI draft (13c) and publish. Autosaves; the server computes the kcal and the
  * publish issues, which are shown as of the last save.
  */
 export function NutritionEditor({ traineeId, traineeName, initial, templates }: NutritionEditorProps) {
@@ -39,6 +44,7 @@ export function NutritionEditor({ traineeId, traineeName, initial, templates }: 
   const [templateName, setTemplateName] = useState('');
   const [message, setMessage] = useState<string>();
   const [isPublishing, setIsPublishing] = useState(false);
+  const ai = useLatestAiDraft(traineeId, 'nutrition_plan');
 
   const foodsById = useMemo(() => new Map(response.foods.map((food) => [food.id, food])), [response.foods]);
   const mealKcal = useMemo(
@@ -52,6 +58,24 @@ export function NutritionEditor({ traineeId, traineeName, initial, templates }: 
 
   function setTarget(patch: Partial<NutritionDraft['target']>) {
     updateDraft((current) => ({ ...current, target: { ...current.target, ...patch } }));
+  }
+
+  /**
+   * The AI draft's meals replace hers in the editable working copy (autosaved like any edit,
+   * never published by this). Target, message and tips stay; a plan without a target takes
+   * the one the draft was built for.
+   */
+  function handleLoadAiDraft(recommendation: AiNutritionRecommendation) {
+    const output = recommendation.output;
+    if (!output) return;
+    const hasContent = plan !== null || draft.meals.some((meal) => meal.options.length > 0);
+    if (hasContent && !window.confirm(NUTRITION_AI_COPY.replaceConfirm)) return;
+    updateDraft((current) => ({
+      ...current,
+      meals: draftMealsFromAi(output),
+      aiRecommendationId: recommendation.id,
+      target: current.target.kcal === undefined ? { ...current.target, kcal: output.kcal, source: 'suggested' } : current.target,
+    }));
   }
 
   async function handlePublish() {
@@ -97,6 +121,7 @@ export function NutritionEditor({ traineeId, traineeName, initial, templates }: 
               : NUTRITION_COPY.statusNever}
           </span>
           {plan && plan.publishedVersion > 0 && plan.changedSincePublish && <Badge tone="accent">{NUTRITION_COPY.statusChanged}</Badge>}
+          {draft.aiRecommendationId && <Badge tone="alert">{NUTRITION_AI_COPY.loadedBadge}</Badge>}
         </div>
         <div className="nutrition-actions">
           <SaveIndicator status={saveStatus} />
@@ -176,6 +201,10 @@ export function NutritionEditor({ traineeId, traineeName, initial, templates }: 
         </div>
 
         <aside className="nutrition-side">
+          <NutritionAiDraftCard ai={ai} onLoad={handleLoadAiDraft} loadedId={draft.aiRecommendationId} />
+          {draft.aiRecommendationId && (
+            <NutritionAiRationale traineeId={traineeId} recommendationId={draft.aiRecommendationId} recommendation={ai.latest} />
+          )}
           <PreferencesPanel preferences={response.preferences} />
 
           <section aria-labelledby="nutrition-issues-title">

@@ -90,6 +90,8 @@ export interface NutritionPlanDocument {
   /** 13b (waterTracking). */
   waterGoalMl?: number | null;
   templateId?: Types.ObjectId | null;
+  /** 13c: coach-only link to the AI draft the meals came from. */
+  aiRecommendationId?: Types.ObjectId | null;
   publishedVersion: number;
   publishedAt?: Date | null;
   createdAt: Date;

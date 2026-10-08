@@ -1,0 +1,73 @@
+.nutrition-ai-rationale {
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--color-surface);
+  border-inline-start: 3px solid var(--color-primary);
+}
+
+.nutrition-ai-rationale-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target-min);
+  cursor: pointer;
+}
+
+.nutrition-ai-rationale-title {
+  font-weight: var(--font-weight-semibold);
+}
+
+.nutrition-ai-rationale-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-bottom: var(--space-2);
+}
+
+.nutrition-ai-rationale-meal-title {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.nutrition-ai-rationale-heading {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.nutrition-ai-rationale-muted {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.nutrition-ai-rationale-list {
+  margin: var(--space-1) 0 0;
+  padding-inline-start: var(--space-4);
+  font-size: var(--text-sm);
+}
+
+.nutrition-ai-rationale-option {
+  font-weight: var(--font-weight-semibold);
+}
+
+.nutrition-ai-rationale-input > summary {
+  cursor: pointer;
+}
+
+.nutrition-ai-rationale-facts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: var(--space-2) 0;
+  font-size: var(--text-sm);
+}
+
+.nutrition-ai-rationale-fact dt {
+  color: var(--color-text-muted);
+}
+
+.nutrition-ai-rationale-fact dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}

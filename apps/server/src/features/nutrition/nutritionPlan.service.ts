@@ -33,6 +33,7 @@ import { Recipe } from './nutritionLogs.model';
 import { EMPTY_OVERRIDES, recommendPortions, suggestCalorieTarget, goalFromOnboarding } from './calorieTarget';
 import type { CalorieInputs } from './calorieTarget';
 import { getEffectiveNutritionConfig } from './nutritionSettings.service';
+import { isLinkableRecommendation } from '../aiRecommendations/aiRecommendation.service';
 import { findCoachFoods, listCoachFoods } from './foodItem.service';
 import {
   collectContentIds,
@@ -83,7 +84,7 @@ export async function getNutritionPreferences(traineeId: string): Promise<Nutrit
  * Latest weigh-in (else the onboarding weight), height, birth date, sex, training days,
  * goals, her weight goal (with the date her timeframe ends) and her today.
  */
-async function loadCalorieInputs(traineeId: string, now: Date): Promise<CalorieInputs> {
+export async function loadCalorieInputs(traineeId: string, now: Date): Promise<CalorieInputs> {
   const [response, weighIn, user] = await Promise.all([
     OnboardingResponse.findOne({ userId: traineeId }).select('answers').lean(),
     BodyMetric.findOne({ traineeId, weight: { $exists: true, $ne: null } }).sort({ date: -1 }).select('date weight').lean(),
@@ -127,7 +128,7 @@ export async function getCalorieSuggestion(
   return suggestCalorieTarget(inputs, options, config, now);
 }
 
-function storedOverrides(target: Pick<NutritionPlanDocument['calorieTarget'], 'overrides'>): CalculationOverrides {
+export function storedOverrides(target: Pick<NutritionPlanDocument['calorieTarget'], 'overrides'>): CalculationOverrides {
   const stored = target.overrides ?? {};
   return Object.fromEntries(
     (Object.keys(EMPTY_OVERRIDES) as (keyof CalculationOverrides)[]).map((key) => [key, stored[key] ?? null]),
@@ -188,6 +189,7 @@ function toCoachPlan(plan: LeanPlan, config: NutritionConfig, latest: LeanVersio
     kcal: computeNutritionKcal(meals, config.groupKcal),
     dayPortions: sumDayPortions(meals),
     targetPortions: target.kcal ? recommendPortions(target.kcal, config).portions : null,
+    aiRecommendationId: plan.aiRecommendationId ? String(plan.aiRecommendationId) : null,
   };
 }
 
@@ -338,6 +340,11 @@ export async function saveCoachNutritionPlan(
   input: SaveNutritionPlanPayload,
 ): Promise<CoachNutritionPlanResponse> {
   const foodGroups = await checkFoodLines(coachId, input.meals);
+  if (input.aiRecommendationId && !(await isLinkableRecommendation(traineeId, input.aiRecommendationId, 'nutrition_plan'))) {
+    throw new NutritionPlanValidationError([
+      { severity: 'error', code: 'ai_recommendation_missing', message: 'That AI draft is not available for this trainee.' },
+    ]);
+  }
   const now = new Date();
   const [existing, inputs, config] = await Promise.all([
     NutritionPlan.findOne({ traineeId }),
@@ -364,6 +371,7 @@ export async function saveCoachNutritionPlan(
   plan.set('meals', toStoredMeals(input.meals, foodGroups, ids));
   plan.set('tips', toStoredTips(input.tips, ids.tips));
   if (input.waterGoalMl !== undefined) plan.set('waterGoalMl', input.waterGoalMl);
+  if (input.aiRecommendationId !== undefined) plan.set('aiRecommendationId', input.aiRecommendationId);
   plan.markModified('calorieTarget.suggestion');
   await plan.save();
 
@@ -517,6 +525,8 @@ export async function applyNutritionTemplate(traineeId: string, coachId: string,
   plan.set('meals', copyMeals(template.nutrition.meals, await foodGroupsFor(coachId, template.nutrition.meals)));
   plan.set('tips', toStoredTips(toPublicTips(template.nutrition.tips).map(({ text }) => ({ text }))));
   plan.set('templateId', template._id);
+  // The meals no longer come from an AI draft.
+  plan.set('aiRecommendationId', null);
   await plan.save();
   return getCoachNutritionPlan(traineeId, coachId);
 }

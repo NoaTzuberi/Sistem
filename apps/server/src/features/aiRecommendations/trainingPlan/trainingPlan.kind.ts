@@ -75,6 +75,18 @@ export const trainingPlanKind: RecommendationKind<TrainingPlanValidationContext,
 
   validate: validateTrainingPlanReply,
 
+  // The candidate list is long and only useful for debugging: kept in the database.
+  presentInput(input): AiRecommendationInputSummary {
+    const stored = input as unknown as AiRecommendationInputSummary;
+    return {
+      profile: stored.profile,
+      guidanceSources: stored.guidanceSources,
+      guidanceNote: stored.guidanceNote,
+      candidateCount: stored.candidateCount,
+      promptVersion: stored.promptVersion,
+    };
+  },
+
   async present(output): Promise<AiTrainingPlanDraft> {
     const ids = output.workouts.flatMap((workout) => workout.exercises.map((exercise) => exercise.exerciseId));
     const facts = await getExerciseFactsByIds([...new Set(ids)]);

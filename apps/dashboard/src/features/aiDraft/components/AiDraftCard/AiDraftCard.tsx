@@ -6,7 +6,7 @@ import type { useLatestAiDraft } from '../../hooks/useLatestAiDraft';
 import './AiDraftCard.css';
 
 interface AiDraftCardProps {
-  ai: ReturnType<typeof useLatestAiDraft>;
+  ai: ReturnType<typeof useLatestAiDraft<'training_plan'>>;
   /** Opens the week picker; the new plan starts from the ready draft. */
   onUseInNewPlan: () => void;
   disabled?: boolean;

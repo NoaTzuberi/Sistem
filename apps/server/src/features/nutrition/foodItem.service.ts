@@ -28,6 +28,11 @@ export async function findCoachFoods(coachId: string, ids?: readonly string[]): 
   return new Map(items.map((item) => [String(item._id), toPublicFoodItem(item)]));
 }
 
+/** Whether the coach has any item that is not archived (the AI nutrition draft needs some). */
+export async function coachHasActiveFoods(coachId: string): Promise<boolean> {
+  return (await FoodItemModel.exists({ coachId, archivedAt: null, group: { $in: PORTION_GROUP_IDS } })) !== null;
+}
+
 async function checkKcal(coachId: string, group: FoodItem['group'], kcal: number | null | undefined): Promise<void> {
   const problem = foodKcalProblem(group, kcal, await getEffectiveNutritionConfig(coachId));
   if (problem) throw new FoodItemValidationError(problem);

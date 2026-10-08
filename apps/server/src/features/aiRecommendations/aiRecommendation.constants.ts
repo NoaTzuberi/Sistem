@@ -1,7 +1,7 @@
 import type { AiRecommendationStatus, AiRecommendationTrigger, AiRecommendationType } from '@sistem/types';
 
-// Phase 13c adds 'nutrition_plan' here (and its kind in aiRecommendation.kinds.ts).
-export const AI_RECOMMENDATION_TYPE_IDS = ['training_plan'] as const satisfies readonly AiRecommendationType[];
+// Each type has its kind in aiRecommendation.service.ts KINDS.
+export const AI_RECOMMENDATION_TYPE_IDS = ['training_plan', 'nutrition_plan'] as const satisfies readonly AiRecommendationType[];
 
 export const AI_RECOMMENDATION_STATUS_IDS = ['pending', 'running', 'ready', 'failed'] as const satisfies readonly AiRecommendationStatus[];
 

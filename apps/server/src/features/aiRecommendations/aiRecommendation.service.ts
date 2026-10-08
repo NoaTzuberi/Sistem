@@ -1,10 +1,8 @@
 import type { Types } from 'mongoose';
 import type {
   AiRecommendation as PublicAiRecommendation,
-  AiRecommendationInputSummary,
   AiRecommendationTrigger,
   AiRecommendationType,
-  AiTrainingPlanDraft,
 } from '@sistem/types';
 import { aiClient } from '../ai/ai.client';
 import { AI_CONFIG } from '../ai/ai.config';
@@ -14,6 +12,7 @@ import { RECOMMENDATION_ERROR } from './aiRecommendation.constants';
 import type { RecommendationKind } from './aiRecommendation.kind';
 import { AiRecommendation } from './aiRecommendation.model';
 import type { AiRecommendationDocument, RecommendationAttempt } from './aiRecommendation.types';
+import { nutritionPlanKind } from './nutritionPlan/nutritionPlan.kind';
 import { trainingPlanKind } from './trainingPlan/trainingPlan.kind';
 
 // The generic pipeline (PRD §8): prepare the request → ask the model for structured JSON →
@@ -22,9 +21,9 @@ import { trainingPlanKind } from './trainingPlan/trainingPlan.kind';
 
 type AnyKind = RecommendationKind<unknown, unknown>;
 
-// Phase 13c registers the nutrition kind here.
 const KINDS: Record<AiRecommendationType, AnyKind> = {
   training_plan: trainingPlanKind as AnyKind,
+  nutrition_plan: nutritionPlanKind as AnyKind,
 };
 
 type LeanRecommendation = AiRecommendationDocument & { _id: Types.ObjectId };
@@ -52,16 +51,19 @@ export interface StartedRecommendation {
 
 /** Creates a pending recommendation and runs it in the background. One active run per trainee + type. */
 export async function startRecommendation(input: StartRecommendationInput): Promise<StartedRecommendation> {
-  try {
-    const created = await AiRecommendation.create({ ...input, status: 'pending', active: true });
-    const id = String(created._id);
-    const run = new Promise<void>((resolve) => setImmediate(resolve)).then(() => runRecommendation(id));
-    return { recommendation: created.toObject() as LeanRecommendation, created: true, run };
-  } catch (error) {
-    if (!isDuplicateKeyError(error)) throw error;
-    const existing = await AiRecommendation.findOne({ traineeId: input.traineeId, type: input.type, active: true }).lean<LeanRecommendation>();
-    if (!existing) throw error;
-    return { recommendation: existing, created: false, run: null };
+  // Two tries: the active run can finish between the duplicate-key refusal and the lookup.
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      const created = await AiRecommendation.create({ ...input, status: 'pending', active: true });
+      const id = String(created._id);
+      const run = new Promise<void>((resolve) => setImmediate(resolve)).then(() => runRecommendation(id));
+      return { recommendation: created.toObject() as LeanRecommendation, created: true, run };
+    } catch (error) {
+      if (!isDuplicateKeyError(error)) throw error;
+      const existing = await AiRecommendation.findOne({ traineeId: input.traineeId, type: input.type, active: true }).lean<LeanRecommendation>();
+      if (existing) return { recommendation: existing, created: false, run: null };
+      if (attempt >= 2) throw error;
+    }
   }
 }
 
@@ -191,7 +193,7 @@ export async function runRecommendation(id: string): Promise<void> {
       model: lastModel,
       error: {
         code: RECOMMENDATION_ERROR.invalidOutput,
-        message: `The AI draft broke plan rules ${AI_CONFIG.maxAttempts} times. Last problems: ${lastIssues.slice(0, 3).join(' ')}`,
+        message: `The AI draft broke the rules ${AI_CONFIG.maxAttempts} times. Last problems: ${lastIssues.slice(0, 3).join(' ')}`,
       },
     });
   } catch (error) {
@@ -225,7 +227,8 @@ export async function failInterruptedRecommendations(): Promise<number> {
 
 async function toPublicRecommendation(doc: LeanRecommendation): Promise<PublicAiRecommendation> {
   const kind = KINDS[doc.type];
-  const input = doc.input as (AiRecommendationInputSummary & { candidates?: unknown }) | null;
+  const target = { traineeId: String(doc.traineeId), coachId: String(doc.coachId) };
+  // The input / output shapes belong to the type (the kinds build them).
   return {
     id: String(doc._id),
     traineeId: String(doc.traineeId),
@@ -237,18 +240,9 @@ async function toPublicRecommendation(doc: LeanRecommendation): Promise<PublicAi
     model: doc.model,
     attemptCount: doc.attempts.length,
     error: doc.error ? { code: doc.error.code, message: doc.error.message } : null,
-    // The candidate list is long and only useful for debugging: kept in the database.
-    input: input
-      ? {
-          profile: input.profile,
-          guidanceSources: input.guidanceSources,
-          guidanceNote: input.guidanceNote,
-          candidateCount: input.candidateCount,
-          promptVersion: input.promptVersion,
-        }
-      : null,
-    output: doc.status === 'ready' && doc.output ? ((await kind.present(doc.output)) as AiTrainingPlanDraft) : null,
-  };
+    input: doc.input ? kind.presentInput(doc.input) : null,
+    output: doc.status === 'ready' && doc.output ? await kind.present(doc.output, target) : null,
+  } as PublicAiRecommendation;
 }
 
 export async function getLatestRecommendation(traineeId: string, type: AiRecommendationType): Promise<PublicAiRecommendation | null> {
@@ -265,7 +259,11 @@ export async function presentRecommendation(doc: LeanRecommendation): Promise<Pu
   return toPublicRecommendation(doc);
 }
 
-/** For the plan save: a ready recommendation of this trainee that a plan may point at. */
-export async function isLinkableRecommendation(traineeId: string, id: string): Promise<boolean> {
-  return (await AiRecommendation.exists({ _id: id, traineeId, type: 'training_plan', status: 'ready' })) !== null;
+/** For the plan saves: a ready recommendation of this trainee (and type) that a plan may point at. */
+export async function isLinkableRecommendation(
+  traineeId: string,
+  id: string,
+  type: AiRecommendationType = 'training_plan',
+): Promise<boolean> {
+  return (await AiRecommendation.exists({ _id: id, traineeId, type, status: 'ready' })) !== null;
 }

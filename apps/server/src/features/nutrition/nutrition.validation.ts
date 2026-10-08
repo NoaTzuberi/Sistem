@@ -480,6 +480,14 @@ export function parseSaveNutritionPlanPayload(body: unknown, features: Nutrition
     }
   }
 
+  // 13c: the AI draft the meals came from (string links, null clears, omitted keeps).
+  let aiRecommendationId: string | null | undefined;
+  if (body.aiRecommendationId === null) aiRecommendationId = null;
+  else if (body.aiRecommendationId !== undefined) {
+    if (isObjectId(body.aiRecommendationId)) aiRecommendationId = body.aiRecommendationId;
+    else issues.push(invalid('Invalid AI recommendation id.'));
+  }
+
   if (issues.length > 0 || !calorieTarget) {
     return { value: null, issues: issues.length > 0 ? issues : [invalid('Invalid request body.')] };
   }
@@ -490,6 +498,7 @@ export function parseSaveNutritionPlanPayload(body: unknown, features: Nutrition
       tips,
       ...(waterGoalMl !== undefined ? { waterGoalMl } : {}),
       ...(introMessage !== undefined ? { introMessage } : {}),
+      ...(aiRecommendationId !== undefined ? { aiRecommendationId } : {}),
     },
     issues: [],
   };

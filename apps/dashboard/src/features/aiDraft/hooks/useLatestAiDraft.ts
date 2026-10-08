@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { AiRecommendation } from '@sistem/types';
+import type { AiRecommendation, AiRecommendationType } from '@sistem/types';
 import { useLoad } from '@sistem/shared';
 import { generateAiRecommendation, getLatestAiRecommendation } from '../../../services/coach/coachService';
 import { AI_DRAFT_COPY, AI_DRAFT_POLL_MS } from '../data/aiDraftCopy';
@@ -8,9 +8,9 @@ function isRunning(recommendation: AiRecommendation | null | undefined): boolean
   return recommendation?.status === 'pending' || recommendation?.status === 'running';
 }
 
-/** The trainee's newest AI training-plan draft; polls while it is being generated. */
-export function useLatestAiDraft(traineeId: string) {
-  const load = useCallback(() => getLatestAiRecommendation(traineeId), [traineeId]);
+/** The trainee's newest AI draft of that type (training plan by default); polls while it is being generated. */
+export function useLatestAiDraft<T extends AiRecommendationType = 'training_plan'>(traineeId: string, type: T = 'training_plan' as T) {
+  const load = useCallback(() => getLatestAiRecommendation(traineeId, type), [traineeId, type]);
   const { data, error, isLoading, reload } = useLoad(load, AI_DRAFT_COPY.loadError);
   const [isStarting, setIsStarting] = useState(false);
   const [startError, setStartError] = useState<string>();
@@ -28,14 +28,14 @@ export function useLatestAiDraft(traineeId: string) {
     setIsStarting(true);
     setStartError(undefined);
     try {
-      await generateAiRecommendation(traineeId);
+      await generateAiRecommendation(traineeId, type);
       reload();
     } catch (failure) {
       setStartError(failure instanceof Error ? failure.message : AI_DRAFT_COPY.loadError);
     } finally {
       setIsStarting(false);
     }
-  }, [traineeId, reload]);
+  }, [traineeId, type, reload]);
 
   return {
     latest,

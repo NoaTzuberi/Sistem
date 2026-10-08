@@ -61,6 +61,8 @@ export interface NutritionDraft {
   tips: DraftTip[];
   /** The note at the top of her Nutrition tab (13a+); '' = none. */
   introMessage: string;
+  /** The AI draft the meals were loaded from (13c, coach-only); null = none. */
+  aiRecommendationId: string | null;
 }
 
 export const NO_OVERRIDES: CalculationOverrides = {
@@ -90,6 +92,7 @@ export function emptyDraft(goal: NutritionGoal): NutritionDraft {
     meals: DEFAULT_MEALS.map((meal) => newMeal(meal.name, meal.portions)),
     tips: [],
     introMessage: '',
+    aiRecommendationId: null,
   };
 }
 
@@ -105,6 +108,7 @@ export function draftFromPlan(plan: CoachNutritionPlan): NutritionDraft {
       confirmBelowFloor: target.floorConfirmation !== null && target.floorConfirmation.kcal === target.kcal,
     },
     introMessage: plan.introMessage ?? '',
+    aiRecommendationId: plan.aiRecommendationId,
     meals: plan.meals.map((meal) => ({
       key: newKey(),
       id: meal.id,
@@ -172,6 +176,7 @@ export function toPayload(draft: NutritionDraft): SaveNutritionPlanPayload {
       })),
     })),
     tips: draft.tips.filter(isSendableTip).map((tip) => ({ id: tip.id, text: tip.text })),
+    aiRecommendationId: draft.aiRecommendationId,
   };
 }
 

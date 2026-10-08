@@ -4,6 +4,7 @@ import type {
   AchievementOverview,
   AiRecommendation,
   AiRecommendationLatest,
+  AiRecommendationOf,
   AiRecommendationType,
   BodyMetricList,
   CalculationOverrides,
@@ -179,8 +180,11 @@ export function createCoachApi(client: AxiosInstance) {
   const aiPath = (traineeId: string) => `/coach/trainees/${traineeId}/ai-recommendations`;
 
   /** The newest draft of that type (any status), and why AI is off on this server, if it is. */
-  async function getLatestAiRecommendation(traineeId: string, type: AiRecommendationType = 'training_plan'): Promise<AiRecommendationLatest> {
-    const { data } = await client.get<AiRecommendationLatest>(`${aiPath(traineeId)}/latest`, { params: { type } });
+  async function getLatestAiRecommendation<T extends AiRecommendationType = 'training_plan'>(
+    traineeId: string,
+    type: T = 'training_plan' as T,
+  ): Promise<AiRecommendationLatest<AiRecommendationOf<T>>> {
+    const { data } = await client.get<AiRecommendationLatest<AiRecommendationOf<T>>>(`${aiPath(traineeId)}/latest`, { params: { type } });
     return data;
   }
 
@@ -190,14 +194,17 @@ export function createCoachApi(client: AxiosInstance) {
   }
 
   /** Starts a new draft in the background (poll getLatestAiRecommendation for the result). */
-  async function generateAiRecommendation(traineeId: string, type: AiRecommendationType = 'training_plan'): Promise<AiRecommendation> {
+  async function generateAiRecommendation<T extends AiRecommendationType = 'training_plan'>(
+    traineeId: string,
+    type: T = 'training_plan' as T,
+  ): Promise<AiRecommendationOf<T>> {
     try {
-      const { data } = await client.post<{ recommendation: AiRecommendation }>(aiPath(traineeId), { type });
+      const { data } = await client.post<{ recommendation: AiRecommendationOf<T> }>(aiPath(traineeId), { type });
       return data.recommendation;
     } catch (error) {
       // Already running: that one is the answer.
       const running: unknown = axios.isAxiosError(error) && error.response?.status === 409 ? error.response.data?.recommendation : undefined;
-      if (running) return running as AiRecommendation;
+      if (running) return running as AiRecommendationOf<T>;
       throw new Error(extractErrorMessage(error, "Couldn't start the AI draft. Please try again."));
     }
   }

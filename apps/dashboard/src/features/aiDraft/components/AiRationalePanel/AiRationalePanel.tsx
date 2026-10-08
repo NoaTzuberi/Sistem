@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import type { AiRecommendation, AiTraineeProfile } from '@sistem/types';
+import type { AiTraineeProfile, AiTrainingRecommendation } from '@sistem/types';
 import { DAY_NAMES, humanizeId, humanizeList, useLoad } from '@sistem/shared';
 import { getAiRecommendation } from '../../../../services/coach/coachService';
 import { Badge } from '../../../../components/common/Badge/Badge';
@@ -10,7 +10,7 @@ interface AiRationalePanelProps {
   traineeId: string;
   recommendationId: string;
   /** Already loaded (the latest draft) — saves a request. */
-  recommendation?: AiRecommendation | null;
+  recommendation?: AiTrainingRecommendation | null;
 }
 
 function profileRows(profile: AiTraineeProfile): { label: string; value: string }[] {
@@ -39,7 +39,9 @@ export function AiRationalePanel({ traineeId, recommendationId, recommendation }
     () => (known ? Promise.resolve(known) : getAiRecommendation(traineeId, recommendationId)),
     [known, traineeId, recommendationId],
   );
-  const { data, error } = useLoad(load, AI_DRAFT_COPY.loadError);
+  const { data: loaded, error } = useLoad(load, AI_DRAFT_COPY.loadError);
+  // A plan only links training drafts; anything else reads as "couldn't load".
+  const data = loaded?.type === 'training_plan' ? loaded : loaded ? { ...loaded, input: null, output: null } : undefined;
   const output = data?.output;
 
   return (

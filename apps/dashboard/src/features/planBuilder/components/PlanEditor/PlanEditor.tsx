@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import type { AiRecommendation, CoachPlan, ExerciseFacts } from '@sistem/types';
+import type { AiTrainingRecommendation, CoachPlan, ExerciseFacts } from '@sistem/types';
 import { traineePath } from '../../../../app/config/routes';
 import { Badge } from '../../../../components/common/Badge/Badge';
 import { Button } from '../../../../components/common/Button/Button';
@@ -54,7 +54,7 @@ export function PlanEditor({ traineeId, traineeName, currentWeekStart, initialPl
     updateDraft((current) => ({ ...current, workouts: update(current.workouts) }));
   }
 
-  function loadAiDraft(recommendation: AiRecommendation) {
+  function loadAiDraft(recommendation: AiTrainingRecommendation) {
     if (!recommendation.output) return;
     const aiWorkouts = draftWorkoutsFromAi(recommendation.output);
     // The editor's draft is replaced; autosave stores it through the normal plan rules.

@@ -498,6 +498,12 @@ them to the clients (e.g. with the nutrition plan) so the UI stays hidden — ne
 
 ### Phase 13c — AI nutrition recommendation (after Phase 12)
 
+Owner decisions (2026-10-08) — details in PRD §5.6 "Decisions — Phase 13c": food names / portion descriptions may go to
+the Gemini free tier (dev only); `NutritionPlan.aiRecommendationId` (coach-only); the recommendation API type is split by
+kind (training | nutrition); the daily portions must match the calculation EXACTLY (replaces the ±5% tolerance in step 5).
+Meal count = her meals-per-day answer (else 4); "loves / dislikes" and every free text go to the model as data and are shown
+to the coach as "check by hand". Per-trainee food exceptions are a PRD §14 backlog item.
+
 ```
 Implement the PRD §5.6 AI draft on top of the Phase 12 AI infrastructure (same LLM provider, job runner
 and AIRecommendation model with a nutrition kind — do not add a second provider).

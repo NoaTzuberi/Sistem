@@ -851,10 +851,11 @@ export interface NotificationListParams {
 
 // ---------------------------------------------------------------------------
 // AI recommendations (/api/coach/trainees/:id/ai-recommendations) — Phase 12, PRD §8.
-// Coach-only drafts: nothing here ever reaches a trainee. Phase 13c adds 'nutrition_plan'.
+// Coach-only drafts: nothing here ever reaches a trainee. Phase 13c adds 'nutrition_plan'
+// (PRD §5.6) — the recommendation is split by type.
 // ---------------------------------------------------------------------------
 
-export type AiRecommendationType = 'training_plan';
+export type AiRecommendationType = 'training_plan' | 'nutrition_plan';
 export type AiRecommendationStatus = 'pending' | 'running' | 'ready' | 'failed';
 /** Started by the trainee finishing onboarding, or by the coach (Generate / Regenerate). */
 export type AiRecommendationTrigger = 'onboarding' | 'coach';
@@ -919,10 +920,9 @@ export interface AiRecommendationInputSummary {
   promptVersion: string;
 }
 
-export interface AiRecommendation {
+interface AiRecommendationBase {
   id: string;
   traineeId: string;
-  type: AiRecommendationType;
   status: AiRecommendationStatus;
   trigger: AiRecommendationTrigger;
   createdAt: string;
@@ -931,13 +931,127 @@ export interface AiRecommendation {
   model: string | null;
   attemptCount: number;
   error: { code: string; message: string } | null;
+}
+
+export interface AiTrainingRecommendation extends AiRecommendationBase {
+  type: 'training_plan';
   input: AiRecommendationInputSummary | null;
   output: AiTrainingPlanDraft | null;
 }
 
+export interface AiNutritionRecommendation extends AiRecommendationBase {
+  type: 'nutrition_plan';
+  input: AiNutritionInputSummary | null;
+  output: AiNutritionPlanDraft | null;
+}
+
+export type AiRecommendation = AiTrainingRecommendation | AiNutritionRecommendation;
+/** The recommendation of one type. */
+export type AiRecommendationOf<T extends AiRecommendationType> = Extract<AiRecommendation, { type: T }>;
+
+// --- Nutrition draft (Phase 13c) ---
+
+/** Her own words, sent to the model after cleaning (emails / phones removed, trimmed). */
+export interface AiNutritionFreeText {
+  /** Where it was written: 'foods_loved', 'foods_disliked', or '<section>:<item id>' (e.g. 'allergy:other'). */
+  source: string;
+  text: string;
+}
+
+/**
+ * Exactly what the model was told about her for the nutrition draft — no name, email, ids,
+ * birth date, photos, logs or body history. Restrictions are option ids (already enforced in code
+ * by filtering the food list); free text is cleaned.
+ */
+export interface AiNutritionProfile {
+  ageYears?: number;
+  heightCm?: number;
+  weightKg?: number;
+  gender?: string;
+  goals: string[];
+  trainingDays?: { min: number; max: number };
+  weightGoal?: { targetWeightKg: number; weeks: number | null };
+  /** false = she skipped the nutrition step: nothing was filtered. */
+  nutritionAnswered: boolean;
+  dietType?: DietType;
+  dietStyles: string[];
+  religious: string[];
+  intolerances: string[];
+  allergies: string[];
+  mealsPerDay: number | null;
+  freeText: AiNutritionFreeText[];
+}
+
+/** The calculation the draft was built for — computed in code (calorieTarget.ts), never by the model. */
+export interface AiNutritionCalculation {
+  /** 'plan' = the coach's own target in her working copy; 'suggestion' = the calculation's. */
+  targetSource: 'plan' | 'suggestion';
+  kcal: number;
+  bmr: number | null;
+  tdee: number | null;
+  deltaKcal: number | null;
+  method: CalorieSuggestion['method'];
+  weeklyRateKg: number | null;
+  expectedWeeks: number | null;
+  unsafePace: boolean;
+  recommendedWeeks: number | null;
+  raisedToFloor: boolean;
+  dailyPortions: PortionCounts;
+  portionsKcal: number;
+  groupKcal: Record<PortionGroup, number>;
+}
+
+export interface AiNutritionInputSummary {
+  profile: AiNutritionProfile;
+  calculation: AiNutritionCalculation | null;
+  /** The meal slots the model filled, in order. */
+  meals: string[];
+  /** Food items sent per group, and how many active items her answers filtered out. */
+  foods: Record<PortionGroup, { sent: number; filteredOut: number }>;
+  /** The diet tags her answers rule out (the filter). */
+  excludedTags: DietTag[];
+  promptVersion: string;
+}
+
+export interface AiNutritionLine {
+  foodItemId: string;
+  group: PortionGroup;
+  portions: number;
+  /** The item's facts; missing only if it left the coach's list since. */
+  food?: NutritionFoodFacts & { archived: boolean };
+}
+
+export interface AiNutritionOption {
+  /** Placeholder label set in code ("Option A"). */
+  label: string;
+  /** For the coach only. */
+  why: string;
+  lines: AiNutritionLine[];
+}
+
+export interface AiNutritionMeal {
+  /** The slot name set in code (placeholder). */
+  name: string;
+  portions: PortionCounts;
+  vegetablesFree: boolean;
+  /** For the coach only. */
+  why: string;
+  options: AiNutritionOption[];
+}
+
+/** The nutrition draft, with its summary for the coach. No calorie numbers from the model. */
+export interface AiNutritionPlanDraft {
+  summary: string;
+  considerations: string[];
+  /** The target the portions were computed for (code). */
+  kcal: number;
+  dailyPortions: PortionCounts;
+  meals: AiNutritionMeal[];
+}
+
 /** GET …/ai-recommendations/latest */
-export interface AiRecommendationLatest {
-  recommendation: AiRecommendation | null;
+export interface AiRecommendationLatest<R extends AiRecommendation = AiRecommendation> {
+  recommendation: R | null;
   /** Why AI drafts can't run on this server; null when they can. */
   unavailableReason: string | null;
 }
@@ -1261,6 +1375,8 @@ export interface SaveNutritionPlanPayload {
   introMessage?: string | null;
   /** 13b, waterTracking only — refused while the feature is closed. */
   waterGoalMl?: number | null;
+  /** Links the plan to the AI nutrition draft it was loaded from (13c); null clears; omitted keeps. */
+  aiRecommendationId?: string | null;
 }
 
 export type NutritionIssueSeverity = 'error' | 'warning';
@@ -1305,6 +1421,8 @@ export interface CoachNutritionPlan {
   dayPortions: PortionCounts;
   /** Recommended portions for the current target (null without a target). */
   targetPortions: PortionCounts | null;
+  /** The AI nutrition draft the meals were loaded from (coach-only, 13c). */
+  aiRecommendationId: string | null;
 }
 
 /** A food as the trainee sees it — no calories. */

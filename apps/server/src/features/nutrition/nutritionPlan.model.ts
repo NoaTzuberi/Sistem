@@ -61,6 +61,9 @@ const nutritionPlanSchema = new Schema<NutritionPlanDocument>(
     introMessage: { type: String, default: null },
     waterGoalMl: { type: Number, min: 0, default: null },
     templateId: { type: Schema.Types.ObjectId, ref: 'Template', default: null },
+    // The AI nutrition draft the meals were loaded from (13c). Coach-only: never copied
+    // into a version, never sent to the trainee.
+    aiRecommendationId: { type: Schema.Types.ObjectId, ref: 'AiRecommendation', default: null },
     publishedVersion: { type: Number, min: 0, default: 0 },
     publishedAt: { type: Date, default: null },
   },

@@ -1,0 +1,191 @@
+SISTEM — PHASE 13c REPORT: AI NUTRITION RECOMMENDATION FOR THE COACH
+Date: 2026-10-08
+Scope: docs/BUILD_PLAN.md "Phase 13c" (PRD §5.6 "AI nutrition draft" + "Decisions — Phase 13c"), on top of the Phase 12 AI
+infrastructure (same Gemini client, same AiRecommendation model and runner, new type nutrition_plan). Gemini free tier, dev
+data only. No other phase was started.
+
+================================================================================
+1. SUMMARY
+================================================================================
+- New recommendation kind `nutrition_plan` in the Phase 12 pipeline (prepare → structured JSON → validate in code → send the
+  problems back, max 3 attempts → ready / failed). Runs when onboarding completes (next to the training draft, only if the
+  coach has active food items) and on demand from the nutrition builder.
+- Every number is computed in code by the 13a+ calculation (with the coach's goal / formula / overrides from her working
+  copy, or the coach's own typed target). The model only spreads the FIXED daily portions over the meals, builds 1–3 options
+  per meal from the filtered food list (aliases), and writes a summary + points to check + a coach-only "why".
+- Her restrictions are enforced IN CODE before the model sees anything (the same excludedTags rules as the builder
+  warnings); archived items are never sent; snack items only when the calculation gave snack portions.
+- Validation: daily portions per group EXACT, every option = its meal, kosher meat + dairy, only foods that were sent,
+  a re-check of the food list after the reply, plus the builder's own publish rules.
+- Dashboard: an "AI nutrition draft" card in the builder (summary, "Check by hand — not checked by code" with her own
+  words, points to check, Load AI draft, Generate / Regenerate) and an "AI rationale" panel for the loaded draft.
+  `NutritionPlan.aiRecommendationId` links the working copy to the draft (coach-only). Nothing reaches the trainee until
+  the coach publishes.
+
+================================================================================
+2. DECISIONS AND HOW THEY WERE BUILT
+================================================================================
+Owner answers (2026-10-08) — written into PRD §5.6 ("Decisions — Phase 13c"), PRD §10 and BUILD_PLAN ("Phase 13c"):
+1. Food names + portion descriptions may go to the Gemini free tier — dev only, moves to the paid tier before launch.
+2. NutritionPlan.aiRecommendationId added (coach-only).
+3. The recommendation API type is split by kind (AiTrainingRecommendation | AiNutritionRecommendation).
+4. Daily portions must match the calculation exactly (replaces the ±5% kcal tolerance in the build plan).
+5. PRD §14 backlog: "Per-trainee food exceptions" (added as written).
+
+What is sent (stored on the recommendation as `input`, shown to the coach under "What the AI was given"):
+- Her: age in years, height / weight rounded (the calculation's values, overrides included), sex, goal ids, training
+  days min–max, weight goal (target rounded to 0.5 kg + weeks left), diet type / diet styles / religious / intolerances /
+  allergies as option ids, meals per day, and her own words: the details under each answer, every "other" text, foods she
+  loves / dislikes — each cleaned with the Phase 12 scrubFreeText (emails / phones removed, ≤ 500 chars), labelled by where
+  she wrote it. Never: name, email, any id, birth date, photos, workout / meal logs, body history.
+- The calculation (final, "do not recompute"): target kcal (+ whether it is the coach's or the calculation's), BMR, TDEE,
+  delta, method, weekly rate, expected weeks, unsafe pace + recommended weeks, raised to the floor, daily portions per
+  group, kcal per portion.
+- The meal slots (M1…) and the filtered food list: alias | group | category | name | portion | diet tags. Real ids never
+  leave the server; the alias → id map stays in the database (not in the coach API).
+
+Things I decided inside your answers (say if you want any changed):
+- Meal slot names are placeholders set in code, per her meals-per-day answer: 2 Breakfast · Dinner; 3 + Lunch; 4 = the
+  builder default (Breakfast · Lunch · Snack · Dinner); 5 + Afternoon snack; 6 + Evening snack. Option labels "Option A/B/C".
+  The AI never writes the intro message or tips (text she sees).
+- Target used: the coach's own kcal in the working copy when she typed one, else the calculation's suggestion. If neither
+  exists (missing weight / height / birth date / training days, or sex other / missing without a picked formula), the
+  model is not called and the coach is told what to fill in.
+- "Load AI draft" replaces the meals only (asks first when the plan already exists or has options); target, intro and tips
+  stay. A plan without a target takes the kcal the draft was built for (source "suggested"). Applying a template clears the
+  AI link (the meals no longer come from the draft). The link is never copied into a published version.
+- She skipped the nutrition step → nothing is filtered and the card says so.
+- "Check by hand" always lists all of her own words (also when the model says it handled them).
+- Vegetables: no vegetable items exist, so lines are protein / carb / fat (/ snack) items; the model sets vegetablesFree.
+- Found and fixed a race in the Phase 12 runner while testing: if the active run finished between the duplicate-key refusal
+  and the lookup, a second "Generate" answered 500. startRecommendation now tries the create once more.
+
+Schema / contract changes:
+- AiRecommendationType + 'nutrition_plan'; AiRecommendation is now a union by `type`; new AiRecommendationOf<T>,
+  AiNutritionProfile / AiNutritionCalculation / AiNutritionInputSummary / AiNutritionPlanDraft (+ meal / option / line /
+  free-text types); AiRecommendationLatest<R>.
+- NutritionPlan.aiRecommendationId (ObjectId, default null); SaveNutritionPlanPayload.aiRecommendationId (string links,
+  null clears, omitted keeps; must be a READY nutrition draft of this trainee, else 400); CoachNutritionPlan.aiRecommendationId.
+- RecommendationKind: present(output, target) and presentInput(input). GET …/ai-recommendations/latest?type=nutrition_plan;
+  POST …/ai-recommendations { type: 'nutrition_plan' }.
+- api-client getLatestAiRecommendation / generateAiRecommendation are generic over the type (default training_plan).
+
+The real run (Dev Trainee Two — vegetarian, kosher, lactose-free "ok in yogurt", tree nuts + "other: kiwi", no meals-per-day
+answer; your dev server, recommendation 6ac790e68c036ac52fea0069):
+- Ready on the first attempt, ~34 s, 5,577 input / 1,530 output / 1,956 thinking tokens. The main model (gemini-3.8-flash)
+  answered 503 "high demand", so the fallback gemini-3.5-flash-lite produced it (recorded as fallbackReason).
+- Calculation (code): her plan's target 1,620 kcal → 5 protein · 4½ carb · 3½ fat · 0 snack (1,605 kcal of portions).
+- Foods sent: protein 10 (54 filtered out), carb 64 (1), fat 19 (13), snack 0 — ruled out: meat, poultry, fish, shellfish,
+  pork, lactose, tree nuts.
+- 4 meals, 2 options each, e.g. Breakfast A: eggs + tofu ½ + oats + banana ½ + tahini; Lunch A: lentils 1½ + rice 1½ + olive
+  oil. Summary mentions vegetarian / kosher / tree nuts / kiwi; considerations: check lactose-free yogurt options, check the
+  plant protein spread. Every check passed (exact totals, options = meals, kosher, foods allowed).
+- Note: the summary quotes "1605 kcal" — a number code gave it, not one it computed.
+
+================================================================================
+3. FILES CHANGED
+================================================================================
+Added — server
+  apps/server/src/features/aiRecommendations/nutritionPlan/ (nutritionPlan.constants.ts, nutritionPlan.kind.ts,
+    nutritionPlanFoods.ts, nutritionPlanProfile.ts, nutritionPlanPrompt.ts, nutritionPlanValidation.ts)
+  apps/server/src/features/aiRecommendations/__tests__/nutritionPlanInput.test.ts
+  apps/server/src/features/aiRecommendations/__tests__/nutritionRecommendations.test.ts
+Modified — server
+  features/aiRecommendations/ (aiRecommendation.constants, .controller, .kind, .listeners, .service;
+    trainingPlan/trainingPlan.kind.ts — presentInput)
+  features/nutrition/ (foodItem.service — coachHasActiveFoods; nutrition.types; nutrition.validation — aiRecommendationId;
+    nutritionPlan.model; nutritionPlan.service — link, loadCalorieInputs / storedOverrides exported, template clears the link)
+Modified — packages
+  packages/types/src/index.ts, packages/api-client/src/coachApi.ts
+Added / modified — dashboard
+  added: features/aiDraft/aiDraftToNutrition.ts, features/aiDraft/components/NutritionAiDraftCard/ (.tsx, .css),
+    features/aiDraft/components/NutritionAiRationale/ (.tsx, .css)
+  modified: features/aiDraft/ (data/aiDraftCopy.ts, hooks/useLatestAiDraft.ts, components/AiDraftCard/AiDraftCard.tsx,
+    components/AiRationalePanel/AiRationalePanel.tsx), features/nutrition/ (nutritionDraft.ts,
+    components/NutritionEditor/NutritionEditor.tsx), features/planBuilder/components/PlanEditor/PlanEditor.tsx
+Mobile: no changes.
+Docs
+  docs/PRD.md (§5.6 "Decisions — Phase 13c", §10, §14 "Per-trainee food exceptions"), docs/BUILD_PLAN.md ("Phase 13c" owner
+  decisions), docs/phase-reports/phase-13c-ai-nutrition-recommendation.txt
+Local only (gitignored, never committed)
+  CLAUDE.md (13c architecture paragraph)
+
+================================================================================
+4. DEPENDENCIES
+================================================================================
+Added: none. Removed: none. Env: no new variables (GEMINI_API_KEY / AI_MODEL / AI_FALLBACK_MODEL / AI_PAID_TIER as in Phase 12).
+
+================================================================================
+5. HOW TO TEST
+================================================================================
+Commands (repo root):
+  npm test        -> 36 files, 544 tests pass (was 34 / 514).
+    - nutritionPlanInput.test.ts (18, pure): the food filter (archived / vegetables never sent; snack only with snack
+      portions; vegetarian / pescatarian / vegan; kosher pork + shellfish, lactose-free, allergy tags; counts; an empty
+      group), her cleaned free text, meal slots by meals per day, schema without minItems / maxItems, the validator (good
+      reply; unknown / filtered-out alias; wrong group; kosher meat + dairy; missing / reordered meal; off-target daily
+      totals; snack added; 0.5 steps, empty option, duplicate food; bad shape).
+    - nutritionRecommendations.test.ts (12, API + DB, model faked): filtered items never in the prompt and no identity in
+      it; the input / output the coach API sends; onboarding starts it next to the training draft (and not without a food
+      list); retry with the issues then ready; rejected after 3 attempts; an item archived during the run is sent back;
+      no model call for an empty group or a missing calculation; the coach's own target is used; coach-only (403 / 404);
+      202 + 409 while running; nothing reaches the trainee before publish, the link is coach-only, never in a version,
+      checked (wrong type → 400) and cleared with null.
+  npm run build   -> all apps build (the existing >500 kB mobile chunk warning only).
+  npm run lint    -> exit 0 (the two existing AuthContext warnings only).
+  npm run dev:all -> your dev stack was already running (server on 5002 via tsx watch — restarted on these changes;
+                     dashboard 5174; mobile 5173 over HTTPS from dev:phone), so I did not stop it to restart dev:all. The
+                     live server ran the real draft; the dashboard dev server serves the new modules (200).
+
+Manual checks (dashboard, coach@sistem.dev / sistem-dev-1234):
+  1. Trainees → Dev Trainee Two → Nutrition → open the builder. Side column: "AI nutrition draft" card with the ready draft
+     from the real run: summary, "Built for 1,620 kcal · 5 protein · 4½ carb · 3½ fat a day", "Check by hand" (Intolerance
+     — lactose free: "ok in yogurt"; Allergy — other: "kiwi"), "Check with her", the review note.
+  2. "Load AI draft" → confirm → the meals and options appear in the editor (autosaved); the header shows "Meals from AI
+     draft"; the "AI rationale" panel lists each meal's why, the options with the foods, and "What the AI was given".
+  3. Reload the page: the badge and the rationale stay (aiRecommendationId). The issues list has no errors.
+  4. "Regenerate" → "Generating…" → a new draft (≈ 30–60 s on the free tier).
+  5. As trainee2 in the mobile app: the Nutrition tab still shows the last PUBLISHED version only; after the coach
+     publishes, the new meals appear (no AI text anywhere).
+  6. Coach mode (mobile): unchanged — no AI UI (as in Phase 12).
+  I did not click through the dashboard in a browser this session — steps 1–3 are untested by hand.
+
+================================================================================
+6. KNOWN ISSUES / TODOs
+================================================================================
+- All copy is PLACEHOLDER (card / panel wording, meal slot names, option labels) — the owner sends final text; Phase 15
+  moves it to translations.
+- The model's summary / considerations / why are in English; food names stay as written (Hebrew). Phase 15 can ask for
+  Hebrew output.
+- Free-text allergies / intolerances (e.g. "kiwi") can't be checked by code — always shown as "Check by hand". Per-trainee
+  exceptions ("yogurt OK") are now a PRD §14 backlog item; until then, lactose-tagged yogurts are filtered for her.
+- The free-tier main model was overloaded during the real run; the fallback answered. Works, but slower / lower quality
+  is possible on busy days.
+- REQUIRED BEFORE LAUNCH (unchanged, PRD §14): paid AI tier + legal review — now also covers the coach's food list.
+
+================================================================================
+7. SUGGESTED COMMITS (Conventional Commits)
+================================================================================
+1) feat(server): AI nutrition recommendation kind (Phase 13c)
+   apps/server/src/features/aiRecommendations/ (nutritionPlan/, __tests__/nutritionPlanInput.test.ts,
+   __tests__/nutritionRecommendations.test.ts, aiRecommendation.constants.ts, aiRecommendation.controller.ts,
+   aiRecommendation.kind.ts, aiRecommendation.listeners.ts, aiRecommendation.service.ts, trainingPlan/trainingPlan.kind.ts),
+   apps/server/src/features/nutrition/ (foodItem.service.ts, nutrition.types.ts, nutrition.validation.ts,
+   nutritionPlan.model.ts, nutritionPlan.service.ts), packages/types/src/index.ts, packages/api-client/src/coachApi.ts
+2) feat(dashboard): AI nutrition draft card, load into the builder, rationale panel
+   apps/dashboard/src/features/aiDraft/, apps/dashboard/src/features/nutrition/nutritionDraft.ts,
+   apps/dashboard/src/features/nutrition/components/NutritionEditor/NutritionEditor.tsx,
+   apps/dashboard/src/features/planBuilder/components/PlanEditor/PlanEditor.tsx
+3) docs: phase 13c decisions, per-trainee food exceptions backlog, report
+   docs/PRD.md, docs/BUILD_PLAN.md, docs/phase-reports/phase-13c-ai-nutrition-recommendation.txt
+
+Ready-to-paste (run from the repo root, in order; CLAUDE.md is never included):
+
+git add -A -- apps/server/src/features/aiRecommendations apps/server/src/features/nutrition/foodItem.service.ts apps/server/src/features/nutrition/nutrition.types.ts apps/server/src/features/nutrition/nutrition.validation.ts apps/server/src/features/nutrition/nutritionPlan.model.ts apps/server/src/features/nutrition/nutritionPlan.service.ts packages/types/src/index.ts packages/api-client/src/coachApi.ts
+git commit -m "feat(server): AI nutrition recommendation kind (Phase 13c)"
+
+git add -A -- apps/dashboard/src/features/aiDraft apps/dashboard/src/features/nutrition/nutritionDraft.ts apps/dashboard/src/features/nutrition/components/NutritionEditor/NutritionEditor.tsx apps/dashboard/src/features/planBuilder/components/PlanEditor/PlanEditor.tsx
+git commit -m "feat(dashboard): AI nutrition draft card, load into the builder, rationale panel"
+
+git add -A -- docs/PRD.md docs/BUILD_PLAN.md docs/phase-reports/phase-13c-ai-nutrition-recommendation.txt
+git commit -m "docs: phase 13c decisions, per-trainee food exceptions backlog, report"
