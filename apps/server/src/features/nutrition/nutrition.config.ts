@@ -7,8 +7,10 @@ import type { NutritionConfig } from '@sistem/types';
 // Owner-approved starting values (2026-10-08); the coach tunes them. The calorie method is
 // the owner's (docs/reference/calorie-formula.md, Phase 13a+).
 export const DEFAULT_NUTRITION_CONFIG: NutritionConfig = {
-  // The guide's cap per portion. Vegetables are free and stay 0 (not tunable).
-  groupKcal: { protein: 150, carb: 120, fat: 90, vegetable: 0 },
+  // kcal per portion — the caps the coach's md food lists are written for (protein 150, carb 120, fat 90,
+  // snack ≈150). Vegetables are free and stay 0 (not tunable).
+  // Snack (13a+, owner decision): treats at ≈150 kcal, only ever added by the coach.
+  groupKcal: { protein: 150, carb: 120, fat: 90, snack: 150, vegetable: 0 },
   // Percent added to the maintenance estimate (TDEE). Fat loss = her "moderate" 15–20%,
   // aggressive = her 25% (short-term, coach's choice only).
   goalAdjustments: { fat_loss: -20, fat_loss_aggressive: -25, recomp: -10, muscle_gain: 10, maintenance: 0 },
@@ -21,8 +23,10 @@ export const DEFAULT_NUTRITION_CONFIG: NutritionConfig = {
   maxLossRatePctPerWeek: 1,
   maxGainRatePctPerWeek: 0.5,
   maxDeficitPct: 25,
-  // From the coach's 1,500 template (4.5 protein · 4 carb · 4 fat ≈ 45 / 32 / 23 %).
-  portionSplit: { protein: 45, carb: 32, fat: 23 },
+  // PLACEHOLDER for the coach to set (owner, 2026-10-08): it came from the old PDF menu, which is no longer
+  // a source. Tunable in Settings; shown there as a placeholder.
+  // Snack 0%: the calculation never adds snack portions (owner decision) — only the coach does.
+  portionSplit: { protein: 45, carb: 32, fat: 23, snack: 0 },
   ketoMaxCarbPortions: 1,
 };
 

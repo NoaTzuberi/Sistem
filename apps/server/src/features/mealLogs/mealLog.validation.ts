@@ -28,7 +28,14 @@ export function parseSaveMealLogPayload(body: unknown): { value: SaveMealLogPayl
     return { value: null, error: 'Portions go in steps of 0.5.' };
   }
   return {
-    value: { eaten: { protein: (record.protein as number) ?? 0, carb: (record.carb as number) ?? 0, fat: (record.fat as number) ?? 0 } },
+    value: {
+      eaten: {
+        protein: (record.protein as number) ?? 0,
+        carb: (record.carb as number) ?? 0,
+        fat: (record.fat as number) ?? 0,
+        snack: (record.snack as number) ?? 0,
+      },
+    },
     error: null,
   };
 }

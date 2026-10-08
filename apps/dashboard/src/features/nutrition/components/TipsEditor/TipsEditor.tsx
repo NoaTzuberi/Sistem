@@ -4,7 +4,7 @@ import { newTip } from '../../nutritionDraft';
 import type { DraftTip } from '../../nutritionDraft';
 import './TipsEditor.css';
 
-/** Free notes on the plan (e.g. the guide's protein tip and swap rule). */
+/** Free notes on the plan (e.g. a protein tip, the swap rule). */
 export function TipsEditor({ tips, onChange }: { tips: DraftTip[]; onChange: (tips: DraftTip[]) => void }) {
   return (
     <section className="tips-editor" aria-labelledby="tips-editor-title">

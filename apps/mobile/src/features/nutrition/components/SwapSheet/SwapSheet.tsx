@@ -20,7 +20,7 @@ function showGrams(food: NutritionFoodFacts): boolean {
 }
 
 /**
- * Every item of one group — any of them is one portion (the guide's swap rule, PRD §5.6).
+ * Every item of one group — any of them is one portion (the swap rule, PRD §5.6).
  * Names and portions are the coach's text, shown as written; no calories.
  */
 export function SwapSheet({ group, swaps, currentFoodId, onClose }: SwapSheetProps) {

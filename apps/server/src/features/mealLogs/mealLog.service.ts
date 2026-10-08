@@ -6,6 +6,7 @@ import { addDays, daysBetween, localDateString, weekStartOf } from '../plans/pla
 import { NutritionPlanVersion } from '../nutrition/nutritionPlan.model';
 import { PORTION_GROUP_IDS, PORTION_STEP } from '../nutrition/nutrition.constants';
 import type { NutritionPlanVersionDocument } from '../nutrition/nutrition.types';
+import { toPortionCounts } from '../nutrition/nutritionMapping';
 import { MEAL_PHOTO_FOLDER } from '../privatePhotos/privatePhoto.constants';
 import { deletePrivatePhoto, toPublicPhoto, uploadPrivatePhoto } from '../privatePhotos/privatePhoto.service';
 import { isAcceptedImage } from '../privatePhotos/privatePhoto.validation';
@@ -27,7 +28,7 @@ type LeanVersion = Pick<NutritionPlanVersionDocument, 'planId' | 'coachId' | 've
 };
 type LeanMealLog = MealLogDocument & { _id: Types.ObjectId };
 
-const ZERO: PortionCounts = { protein: 0, carb: 0, fat: 0 };
+const ZERO: PortionCounts = { protein: 0, carb: 0, fat: 0, snack: 0 };
 
 async function traineeTimezone(traineeId: string): Promise<string> {
   const user = await User.findById(traineeId).select('timezone').lean();
@@ -89,11 +90,11 @@ function versionForDay(
 
 function toDay(date: string, today: string, log: LeanMealLog | null, version: LeanVersion | null): MealLogDay {
   // Today follows the newest version; a past log keeps its own snapshot.
-  const planned = date === today && version ? plannedOf(version) : (log?.planned ?? (version ? plannedOf(version) : { ...ZERO }));
+  const planned = date === today && version ? plannedOf(version) : log ? toPortionCounts(log.planned) : version ? plannedOf(version) : { ...ZERO };
   return {
     date,
     planned,
-    eaten: log ? clampEaten(log.eaten, planned) : { ...ZERO },
+    eaten: log ? clampEaten(toPortionCounts(log.eaten), planned) : { ...ZERO },
     photos: (log?.photos ?? []).map(toPublicMealPhoto),
     planVersion: date === today ? (version?.version ?? null) : (log?.planVersion ?? version?.version ?? null),
     editable: isEditable(date, today),
@@ -152,7 +153,7 @@ export async function saveMyMealLog(traineeId: string, date: string, eaten: Port
   const context = await loadEditableDay(traineeId, date, now);
   const { version, log } = context;
   // Today is saved against the newest version; a past day keeps its snapshot.
-  const planned = date === context.today || !log ? plannedOf(version) : log.planned;
+  const planned = date === context.today || !log ? plannedOf(version) : toPortionCounts(log.planned);
   const marks = clampEaten(eaten, planned);
   const empty = PORTION_GROUP_IDS.every((group) => marks[group] === 0);
 
@@ -198,7 +199,7 @@ export async function setMyMealPhoto(
   let replaced: MealPhotoFields | undefined;
   try {
     const { version } = context;
-    const planned = date === context.today || !context.log ? plannedOf(version) : context.log.planned;
+    const planned = date === context.today || !context.log ? plannedOf(version) : toPortionCounts(context.log.planned);
     await MealLog.updateOne(
       { traineeId, date },
       {
@@ -238,6 +239,8 @@ export async function removeMyMealPhoto(traineeId: string, date: string, mealId:
     'eaten.protein': 0,
     'eaten.carb': 0,
     'eaten.fat': 0,
+    // Logs from before snacks (13a+) have no snack field: null matches a missing one.
+    'eaten.snack': { $in: [0, null] },
   });
   return dayResponse(traineeId, date, context);
 }

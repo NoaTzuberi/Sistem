@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import type { NutritionConfig, NutritionGoal, NutritionSettingsPayload } from '@sistem/types';
+import type { NutritionConfig, NutritionGoal, NutritionSettingsPayload, PortionGroup } from '@sistem/types';
 import { FOOD_GROUP_LABELS, NUTRITION_GOAL_LABELS, PORTION_GROUPS, useLoad } from '@sistem/shared';
 import { getNutritionSettings, saveNutritionSettings } from '../../../../services/coach/coachService';
 import { Button } from '../../../../components/common/Button/Button';
@@ -21,7 +21,7 @@ const SAFETY_FIELDS = [
 
 /** The form's numbers; an emptied field is undefined until she types again. */
 type Form = {
-  groupKcal: Record<'protein' | 'carb' | 'fat', number | undefined>;
+  groupKcal: Record<PortionGroup, number | undefined>;
   goalAdjustments: Record<NutritionGoal, number | undefined>;
   activityFactors: (number | undefined)[];
   floorKcal: number | undefined;
@@ -29,13 +29,13 @@ type Form = {
   maxLossRatePctPerWeek: number | undefined;
   maxGainRatePctPerWeek: number | undefined;
   maxDeficitPct: number | undefined;
-  portionSplit: Record<'protein' | 'carb' | 'fat', number | undefined>;
+  portionSplit: Record<PortionGroup, number | undefined>;
   ketoMaxCarbPortions: number | undefined;
 };
 
 function toForm(config: NutritionConfig): Form {
   return {
-    groupKcal: { protein: config.groupKcal.protein, carb: config.groupKcal.carb, fat: config.groupKcal.fat },
+    groupKcal: { protein: config.groupKcal.protein, carb: config.groupKcal.carb, fat: config.groupKcal.fat, snack: config.groupKcal.snack },
     goalAdjustments: { ...config.goalAdjustments },
     activityFactors: [...config.activityFactors],
     floorKcal: config.floorKcal,
@@ -172,6 +172,7 @@ export function NutritionSettingsPage() {
 
           <fieldset className="nutrition-settings-group">
             <legend>{NUTRITION_COPY.portionSplit}</legend>
+            <p className="nutrition-settings-note">{NUTRITION_COPY.portionSplitPlaceholder}</p>
             {PORTION_GROUPS.map((group) => (
               <NumberField
                 key={group}

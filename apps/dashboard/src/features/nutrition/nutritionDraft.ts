@@ -7,6 +7,7 @@ import type {
   NutritionGoal,
   NutritionLineKind,
   PortionCounts,
+  PortionGroup,
   SaveNutritionPlanPayload,
 } from '@sistem/types';
 
@@ -77,10 +78,10 @@ export function newKey(): string {
 
 // Placeholder meal names for a new plan (PRD §5.6 default list) — she renames them.
 const DEFAULT_MEALS: { name: string; portions: PortionCounts }[] = [
-  { name: 'Breakfast', portions: { protein: 1, carb: 1, fat: 1 } },
-  { name: 'Lunch', portions: { protein: 1, carb: 1, fat: 1 } },
-  { name: 'Snack', portions: { protein: 0, carb: 1, fat: 1 } },
-  { name: 'Dinner', portions: { protein: 1, carb: 1, fat: 1 } },
+  { name: 'Breakfast', portions: { protein: 1, carb: 1, fat: 1, snack: 0 } },
+  { name: 'Lunch', portions: { protein: 1, carb: 1, fat: 1, snack: 0 } },
+  { name: 'Snack', portions: { protein: 0, carb: 1, fat: 1, snack: 0 } },
+  { name: 'Dinner', portions: { protein: 1, carb: 1, fat: 1, snack: 0 } },
 ];
 
 export function emptyDraft(goal: NutritionGoal): NutritionDraft {
@@ -229,7 +230,7 @@ export function assignSavedIds(draft: NutritionDraft, sent: SentKeys, saved: Coa
   };
 }
 
-export function newMeal(name: string, portions: PortionCounts = { protein: 1, carb: 1, fat: 1 }): DraftMeal {
+export function newMeal(name: string, portions: PortionCounts = { protein: 1, carb: 1, fat: 1, snack: 0 }): DraftMeal {
   return { key: newKey(), name, portions, vegetablesFree: false, options: [] };
 }
 
@@ -247,6 +248,23 @@ export function newTextLine(): DraftLine {
 
 export function newTip(): DraftTip {
   return { key: newKey(), text: '' };
+}
+
+/**
+ * The group a "+ Food item" in this option should open on: the first group the option's lines don't cover yet
+ * (fewer portions than the meal plans), else the meal's first group with portions, else protein.
+ */
+export function neededGroup(meal: Pick<DraftMeal, 'portions'>, option: Pick<DraftOption, 'lines'>): PortionGroup {
+  const covered = { protein: 0, carb: 0, fat: 0, snack: 0 } as Record<PortionGroup, number>;
+  for (const line of option.lines) {
+    if (line.group && line.group !== 'vegetable' && line.portions) covered[line.group] += line.portions;
+  }
+  const groups: PortionGroup[] = ['protein', 'carb', 'fat', 'snack'];
+  return (
+    groups.find((group) => meal.portions[group] > covered[group]) ??
+    groups.find((group) => meal.portions[group] > 0) ??
+    'protein'
+  );
 }
 
 /** Moves one item of a list up (-1) or down (+1). */

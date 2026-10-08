@@ -73,9 +73,10 @@ describe('preference conflicts', () => {
     expect(findFoodConflicts(tags('gluten'), both)).toEqual([{ kind: 'allergy', tag: 'gluten', source: 'gluten' }]);
   });
 
-  it('keto: more carb portions a day than the limit', () => {
-    expect(hasKetoConflict({ protein: 5, carb: 1, fat: 5 }, 1)).toBe(false);
-    expect(hasKetoConflict({ protein: 5, carb: 1.5, fat: 5 }, 1)).toBe(true);
+  it('keto: more carb (+ snack) portions a day than the limit', () => {
+    expect(hasKetoConflict({ protein: 5, carb: 1, fat: 5, snack: 0 }, 1)).toBe(false);
+    expect(hasKetoConflict({ protein: 5, carb: 1, fat: 5, snack: 1 }, 1)).toBe(true);
+    expect(hasKetoConflict({ protein: 5, carb: 1.5, fat: 5, snack: 0 }, 1)).toBe(true);
   });
 
   it('kosher: meat or poultry with dairy in one option', () => {
@@ -110,7 +111,7 @@ describe('food items', () => {
 
 describe('settings payload', () => {
   const valid = {
-    groupKcal: { protein: 150, carb: 120, fat: 90 },
+    groupKcal: { protein: 150, carb: 120, fat: 90, snack: 150 },
     goalAdjustments: { fat_loss: -20, fat_loss_aggressive: -25, recomp: -10, muscle_gain: 10, maintenance: 0 },
     activityFactors: [1.375, 1.375, 1.55, 1.55, 1.55, 1.725, 1.725],
     floorKcal: 1200,
@@ -118,7 +119,7 @@ describe('settings payload', () => {
     maxLossRatePctPerWeek: 1,
     maxGainRatePctPerWeek: 0.5,
     maxDeficitPct: 25,
-    portionSplit: { protein: 45, carb: 32, fat: 23 },
+    portionSplit: { protein: 45, carb: 32, fat: 23, snack: 0 },
     ketoMaxCarbPortions: 1,
   };
 
@@ -129,7 +130,7 @@ describe('settings payload', () => {
     expect(parseNutritionSettingsPayload({ ...valid, goalAdjustments: { ...valid.goalAdjustments, fat_loss: -60 } }).error).toMatch(/Goal/);
     expect(parseNutritionSettingsPayload({ ...valid, maxLossRatePctPerWeek: 5 }).error).toMatch(/loss rate/);
     expect(parseNutritionSettingsPayload({ ...valid, maxDeficitPct: 60 }).error).toMatch(/deficit/);
-    expect(parseNutritionSettingsPayload({ ...valid, portionSplit: { protein: 50, carb: 30, fat: 30 } }).error).toMatch(/100/);
+    expect(parseNutritionSettingsPayload({ ...valid, portionSplit: { protein: 50, carb: 30, fat: 30, snack: 0 } }).error).toMatch(/100/);
   });
 });
 
@@ -137,7 +138,7 @@ function meal(overrides: Partial<NutritionMeal> = {}): NutritionMeal {
   return {
     id: ID(1),
     name: 'Breakfast',
-    portions: { protein: 1, carb: 1, fat: 1 },
+    portions: { protein: 1, carb: 1, fat: 1, snack: 0 },
     vegetablesFree: true,
     options: [
       {
@@ -214,7 +215,7 @@ describe('publish rules', () => {
 
   it('an option whose portions differ from its meal is a warning; counted text lines count', () => {
     const plan = meal({
-      portions: { protein: 2, carb: 1, fat: 1 },
+      portions: { protein: 2, carb: 1, fat: 1, snack: 0 },
       options: [
         {
           id: ID(2),
@@ -268,10 +269,10 @@ describe('publish rules', () => {
 describe('kcal', () => {
   it("comes from portions × the group values, never from foods (the guide's day = 1,515)", () => {
     const meals = [
-      { id: 'b', portions: { protein: 1, carb: 1, fat: 1 } },
-      { id: 'l', portions: { protein: 2, carb: 1, fat: 1 } },
-      { id: 's', portions: { protein: 0, carb: 1, fat: 1 } },
-      { id: 'd', portions: { protein: 1.5, carb: 1, fat: 1 } },
+      { id: 'b', portions: { protein: 1, carb: 1, fat: 1, snack: 0 } },
+      { id: 'l', portions: { protein: 2, carb: 1, fat: 1, snack: 0 } },
+      { id: 's', portions: { protein: 0, carb: 1, fat: 1, snack: 0 } },
+      { id: 'd', portions: { protein: 1.5, carb: 1, fat: 1, snack: 0 } },
     ];
     expect(computeNutritionKcal(meals, DEFAULT_NUTRITION_CONFIG.groupKcal)).toEqual({
       meals: [
@@ -318,7 +319,7 @@ describe('save payload', () => {
         {
           id: undefined,
           name: 'Breakfast',
-          portions: { protein: 1.5, carb: 1, fat: 0 },
+          portions: { protein: 1.5, carb: 1, fat: 0, snack: 0 },
           vegetablesFree: true,
           options: [
             {

@@ -4,6 +4,7 @@ import type {
   CalorieSuggestion,
   CalorieTargetSource,
   DietTag,
+  FoodCategory,
   FoodGroup,
   FormulaSex,
   NutritionGoal,
@@ -20,6 +21,7 @@ export interface FoodItemDocument {
   kcal?: number | null;
   isNewItem: boolean;
   dietTags: DietTag[];
+  category?: FoodCategory | null;
   order: number;
   archivedAt?: Date | null;
   /** Set by seed:nutrition so re-running it never duplicates an item. */
@@ -124,7 +126,6 @@ export interface NutritionSettingsDocument {
   maxDeficitPct?: number;
   portionSplit?: Partial<PortionCountsFields>;
   ketoMaxCarbPortions?: number;
-  appliedTagBackfills?: string[];
   createdAt: Date;
   updatedAt: Date;
 }

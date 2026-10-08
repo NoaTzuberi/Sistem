@@ -12,6 +12,7 @@ const portionCountsSchema = new Schema<PortionCounts>(
     protein: { type: Number, min: 0, default: 0 },
     carb: { type: Number, min: 0, default: 0 },
     fat: { type: Number, min: 0, default: 0 },
+    snack: { type: Number, min: 0, default: 0 },
   },
   { _id: false },
 );

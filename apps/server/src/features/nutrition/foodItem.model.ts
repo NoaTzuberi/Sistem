@@ -15,9 +15,11 @@ const foodItemSchema = new Schema<FoodItemDocument>(
     grams: { type: Number, min: 0, default: null },
     // Optional; never above the group's value (checked in the service — the cap is per coach).
     kcal: { type: Number, min: 0, default: null },
-    // The guide's "new" tag (API: isNew — a reserved Mongoose path name).
+    // The coach's "new" tag (API: isNew — a reserved Mongoose path name).
     isNewItem: { type: Boolean, default: false },
     dietTags: { type: [{ type: String, enum: DIET_TAG_IDS }], default: [] },
+    // One of the group's categories (FOOD_CATEGORY_IDS — checked in the service), or none.
+    category: { type: String, default: null },
     order: { type: Number, default: 0 },
     archivedAt: { type: Date, default: null },
     seedKey: { type: String, default: undefined },

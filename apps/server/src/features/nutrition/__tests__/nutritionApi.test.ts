@@ -51,7 +51,7 @@ function target(kcal: number | null, confirmBelowFloor = false) {
 function breakfast(overrides: Record<string, unknown> = {}) {
   return {
     name: 'Breakfast',
-    portions: { protein: 1, carb: 1, fat: 1 },
+    portions: { protein: 1, carb: 1, fat: 1, snack: 0 },
     vegetablesFree: true,
     options: [
       {
@@ -208,7 +208,7 @@ describe('nutrition (API)', () => {
 
   describe('settings', () => {
     const settings = {
-      groupKcal: { protein: 140, carb: 120, fat: 90 },
+      groupKcal: { protein: 140, carb: 120, fat: 90, snack: 150 },
       goalAdjustments: { fat_loss: -15, fat_loss_aggressive: -25, recomp: -10, muscle_gain: 10, maintenance: 0 },
       activityFactors: [1.375, 1.375, 1.55, 1.55, 1.55, 1.725, 1.725],
       floorKcal: 1300,
@@ -216,7 +216,7 @@ describe('nutrition (API)', () => {
       maxLossRatePctPerWeek: 1,
       maxGainRatePctPerWeek: 0.5,
       maxDeficitPct: 25,
-      portionSplit: { protein: 45, carb: 32, fat: 23 },
+      portionSplit: { protein: 45, carb: 32, fat: 23, snack: 0 },
       ketoMaxCarbPortions: 1,
     };
 
@@ -225,7 +225,7 @@ describe('nutrition (API)', () => {
       expect(initial.body.config.floorKcal).toBe(1200);
       const saved = await api.request('PUT', '/coach/nutrition/settings', { token: coach.token, body: settings });
       expect(saved.status).toBe(200);
-      expect(saved.body.config.groupKcal).toEqual({ protein: 140, carb: 120, fat: 90, vegetable: 0 });
+      expect(saved.body.config.groupKcal).toEqual({ protein: 140, carb: 120, fat: 90, snack: 150, vegetable: 0 });
       expect(saved.body.defaults.floorKcal).toBe(1200);
       // Another coach still has the defaults.
       expect((await api.request('GET', '/coach/nutrition/settings', { token: otherCoach.token })).body.config.floorKcal).toBe(1200);
@@ -234,7 +234,7 @@ describe('nutrition (API)', () => {
     it('refuses a group value below a food item that has kcal', async () => {
       const res = await api.request('PUT', '/coach/nutrition/settings', {
         token: coach.token,
-        body: { ...settings, groupKcal: { protein: 150, carb: 120, fat: 80 } },
+        body: { ...settings, groupKcal: { protein: 150, carb: 120, fat: 80, snack: 150 } },
       });
       expect(res.status).toBe(409);
     });
@@ -364,7 +364,7 @@ describe('nutrition (API)', () => {
       const view = res.body.plan;
       expect(JSON.stringify(res.body)).not.toMatch(/kcal|calorie/i);
       expect(view.tips).toEqual(['Swap within a group']);
-      expect(view.meals[0].portions).toEqual({ protein: 1, carb: 1, fat: 1 });
+      expect(view.meals[0].portions).toEqual({ protein: 1, carb: 1, fat: 1, snack: 0 });
       expect(view.meals[0].options[0].lines[2].food).toEqual({ id: fat.id, group: 'fat', name: 'Almonds', portion: '10 pcs', grams: null, isNew: true });
       expect(view.meals[0].options[0].lines[3]).toMatchObject({ kind: 'text', text: 'Cut vegetables — free', group: 'vegetable' });
       expect(view.swaps.fat.map((food: { id: string }) => food.id)).toEqual([fat.id, unusedFat.id]);
@@ -489,8 +489,8 @@ describe('nutrition (API)', () => {
       // Omitted on the next save = kept.
       const kept = await savePlan({ calorieTarget: target(1500), meals: [breakfast()] });
       expect(kept.body.plan.calorieTarget.overrides).toEqual(overrides);
-      expect(kept.body.plan.dayPortions).toEqual({ protein: 1, carb: 1, fat: 1 });
-      expect(kept.body.plan.targetPortions).toEqual({ protein: 4.5, carb: 4, fat: 4 });
+      expect(kept.body.plan.dayPortions).toEqual({ protein: 1, carb: 1, fat: 1, snack: 0 });
+      expect(kept.body.plan.targetPortions).toEqual({ protein: 4.5, carb: 4, fat: 4, snack: 0 });
       const bad = await savePlan({ calorieTarget: { ...target(1500), overrides: { ...overrides, activityFactor: 9 } }, meals: [breakfast()] });
       expect(bad.status).toBe(400);
     });
@@ -502,7 +502,7 @@ describe('nutrition (API)', () => {
 
       const first = await api.request('GET', '/nutrition-plan', { token: trainee.token });
       expect(first.body.plan.intro).toBe('Hi Maya!\nSmall steps.\n\nYou got this.');
-      expect(first.body.plan.dayPortions).toEqual({ protein: 2, carb: 2, fat: 2 });
+      expect(first.body.plan.dayPortions).toEqual({ protein: 2, carb: 2, fat: 2, snack: 0 });
       expect(first.body.introUnseen).toBe(true);
 
       expect((await api.request('POST', '/nutrition-plan/intro-seen', { token: trainee.token, body: { version: 1 } })).status).toBe(204);
@@ -530,6 +530,66 @@ describe('nutrition (API)', () => {
       const cleared = await api.request('GET', '/nutrition-plan', { token: trainee.token });
       expect(cleared.body.plan.intro).toBeNull();
       expect(cleared.body.introUnseen).toBe(false);
+    });
+  });
+
+  describe('snack group (13a+)', () => {
+    it('snack items are capped at 150; a meal with a snack portion counts it, she sees it as a group with its own swaps', async () => {
+      const tooMuch = await api.request('POST', '/coach/nutrition/foods', { token: coach.token, body: { group: 'snack', name: 'Bamba', portion: '28 g', kcal: 160 } });
+      expect(tooMuch.status).toBe(400);
+      const bamba = await createFood({ group: 'snack', name: 'Bamba', portion: '28 g', dietTags: ['peanuts'] });
+      const snackMeal = {
+        name: 'Treat',
+        portions: { protein: 0, carb: 0, fat: 0, snack: 1 },
+        vegetablesFree: false,
+        options: [{ label: 'A', lines: [{ kind: 'food', foodItemId: bamba.id, portions: 1 }] }],
+      };
+      const saved = await savePlan({ calorieTarget: target(1500), meals: [breakfast(), snackMeal] });
+      expect(saved.status).toBe(200);
+      expect(saved.body.plan.kcal.day).toBe(360 + 150);
+      expect(saved.body.plan.dayPortions).toEqual({ protein: 1, carb: 1, fat: 1, snack: 1 });
+      // The recommendation never adds snack portions.
+      expect(saved.body.plan.targetPortions.snack).toBe(0);
+      expect(saved.body.issues.map((issue: { code: string }) => issue.code)).not.toContain('option_portions_mismatch');
+      await publish();
+      const view = (await api.request('GET', '/nutrition-plan', { token: trainee.token })).body.plan;
+      expect(view.dayPortions.snack).toBe(1);
+      expect(view.swaps.snack.map((food: { name: string }) => food.name)).toEqual(['Bamba']);
+      expect(JSON.stringify(view)).not.toMatch(/kcal|calorie/i);
+    });
+  });
+
+  describe('food categories and recently used (13a+)', () => {
+    it('a category must belong to the group; moving to another group clears one that no longer fits', async () => {
+      const wrong = await api.request('POST', '/coach/nutrition/foods', { token: coach.token, body: { group: 'protein', name: 'Bread', portion: '1', category: 'bread_crackers' } });
+      expect(wrong.status).toBe(400);
+      expect((await api.request('POST', '/coach/nutrition/foods', { token: coach.token, body: { group: 'protein', name: 'X', portion: '1', category: 'nope' } })).status).toBe(400);
+      const cottage = await api.request('POST', '/coach/nutrition/foods', { token: coach.token, body: { group: 'protein', name: 'Cottage', portion: '150 g', category: 'dairy' } });
+      expect(cottage.body.item.category).toBe('dairy');
+      const moved = await api.request('PATCH', `/coach/nutrition/foods/${cottage.body.item.id}`, { token: coach.token, body: { group: 'snack' } });
+      expect(moved.body.item).toMatchObject({ group: 'snack', category: null });
+      const set = await api.request('PATCH', `/coach/nutrition/foods/${cottage.body.item.id}`, { token: coach.token, body: { category: 'salty' } });
+      expect(set.body.item.category).toBe('salty');
+      const cleared = await api.request('PATCH', `/coach/nutrition/foods/${cottage.body.item.id}`, { token: coach.token, body: { category: null } });
+      expect(cleared.body.item.category).toBeNull();
+    });
+
+    it('recently used: her items per group from her plans, newest plan first, distinct', async () => {
+      const other = await createFood({ group: 'protein', name: 'Tofu', portion: '100 g' });
+      await savePlan({ calorieTarget: target(1500), meals: [breakfast()] });
+      // A plan of another of her trainees, saved later: its items come first.
+      const secondTrainee = await createTestUser('noa@example.com', { coachId: coach.user._id, onboardingStatus: 'completed', onboardingCompletedAt: new Date() });
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      await savePlan(
+        { calorieTarget: target(1500), meals: [breakfast({ options: [{ label: 'A', lines: [{ kind: 'food', foodItemId: other.id, portions: 1 }, { kind: 'food', foodItemId: protein.id, portions: 1 }] }] })] },
+        secondTrainee.id,
+      );
+      const res = await api.request('GET', planPath(), { token: coach.token });
+      expect(res.body.recentFoodIds.protein).toEqual([other.id, protein.id]);
+      expect(res.body.recentFoodIds.carb).toEqual([carb.id]);
+      expect(res.body.recentFoodIds.snack).toEqual([]);
+      // Another coach sees only hers.
+      expect((await api.request('GET', planPath(otherTrainee.id), { token: otherCoach.token })).body.recentFoodIds.protein).toEqual([]);
     });
   });
 });

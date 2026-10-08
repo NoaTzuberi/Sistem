@@ -6,11 +6,11 @@ import { FoodItem } from '../foodItem.model';
 import { applyNutritionSeed, validateNutritionSeed } from '../nutritionSeed';
 import type { NutritionSeedData } from '../nutritionSeed';
 
-// seed:nutrition with a FAKE fixture — the coach's real guide data is never committed.
+// seed:nutrition with a FAKE fixture — the coach's real food lists are never committed.
 
 function fixture(): NutritionSeedData {
   return {
-    seedKeyPrefix: 'test-guide',
+    seedKeyPrefix: 'test-lists-a',
     foods: [
       { key: 'p1', group: 'protein', name: 'Fake protein', portion: '100 g', grams: 100, isNew: false, dietTags: ['dairy'] },
       { key: 'p2', group: 'protein', name: 'Fake eggs', portion: '2 units', grams: null, isNew: true, dietTags: ['eggs'] },
@@ -57,7 +57,7 @@ describe('nutrition seed', () => {
   });
 
   it('creates the items (no kcal, in order) and the template; re-running changes nothing', async () => {
-    expect(await applyNutritionSeed(coachId, fixture())).toEqual({ foodsCreated: 4, foodsKept: 0, templateCreated: true, lactoseTagged: 1 });
+    expect(await applyNutritionSeed(coachId, fixture())).toEqual({ foodsCreated: 4, foodsKept: 0, categoriesFilled: 0, templateCreated: true });
 
     const items = await FoodItem.find({ coachId }).sort({ group: 1, order: 1 }).lean();
     expect(items.map((item) => [item.group, item.name, item.order, item.kcal, item.isNewItem])).toEqual([
@@ -81,28 +81,59 @@ describe('nutrition seed', () => {
 
     // The coach edits an item; a re-run keeps her edit and adds nothing.
     await FoodItem.updateOne({ coachId, name: 'Fake oil' }, { $set: { name: 'Olive oil' } });
-    expect(await applyNutritionSeed(coachId, fixture())).toEqual({ foodsCreated: 0, foodsKept: 4, templateCreated: false, lactoseTagged: 0 });
+    expect(await applyNutritionSeed(coachId, fixture())).toEqual({ foodsCreated: 0, foodsKept: 4, categoriesFilled: 0, templateCreated: false });
     expect(await FoodItem.countDocuments({ coachId })).toBe(4);
     expect(await FoodItem.exists({ coachId, name: 'Olive oil' })).not.toBeNull();
     expect(await Template.countDocuments({ coachId })).toBe(1);
   });
 
-  it('adds the lactose tag to dairy items once per coach — a tag she removes stays removed', async () => {
+  it('a food-list file (13a+): no template, snack items, archived items, appended after her items; a re-run adds only missing ones', async () => {
     await applyNutritionSeed(coachId, fixture());
-    const dairy = await FoodItem.findOne({ coachId, name: 'Fake protein' }).lean();
-    expect(dairy?.dietTags).toEqual(['dairy', 'lactose']);
-    expect((await FoodItem.findOne({ coachId, name: 'Fake eggs' }).lean())?.dietTags).toEqual(['eggs']);
+    const lists = (foods: NutritionSeedData['foods']): NutritionSeedData => ({ seedKeyPrefix: 'test-lists', foods });
+    const first: NutritionSeedData['foods'] = [
+      { key: 'protein:fish', group: 'protein', name: 'Fake fish', portion: '100 g', grams: 100, isNew: false, dietTags: ['fish'] },
+      { key: 'protein:almond-milk', group: 'protein', name: 'Fake almond milk', portion: '1 l', grams: null, isNew: false, dietTags: ['tree_nuts'], archived: true },
+      { key: 'snack:bamba', group: 'snack', name: 'Fake bamba', portion: '28 g', grams: 28, isNew: false, dietTags: ['peanuts'] },
+    ];
+    expect(await applyNutritionSeed(coachId, lists(first))).toMatchObject({ foodsCreated: 3, foodsKept: 0, templateCreated: null });
 
-    await FoodItem.updateOne({ _id: dairy!._id }, { $set: { dietTags: ['dairy'] } });
-    expect((await applyNutritionSeed(coachId, fixture())).lactoseTagged).toBe(0);
-    expect((await FoodItem.findById(dairy!._id).lean())?.dietTags).toEqual(['dairy']);
+    const fish = await FoodItem.findOne({ coachId, name: 'Fake fish' }).lean();
+    expect(fish?.order).toBe(2); // after the first file's two protein items (orders 0, 1)
+    expect((await FoodItem.findOne({ coachId, name: 'Fake almond milk' }).lean())?.archivedAt).toBeInstanceOf(Date);
+    expect((await FoodItem.findOne({ coachId, name: 'Fake bamba' }).lean())).toMatchObject({ group: 'snack', order: 0, archivedAt: null });
+
+    // The coach restores the archived item; the full file later adds one more — nothing else changes.
+    await FoodItem.updateOne({ coachId, name: 'Fake almond milk' }, { $set: { archivedAt: null } });
+    const more = [...first, { key: 'protein:chicken', group: 'protein' as const, name: 'Fake chicken', portion: '90 g', grams: 90, isNew: false, dietTags: ['poultry' as const] }];
+    expect(await applyNutritionSeed(coachId, lists(more))).toMatchObject({ foodsCreated: 1, foodsKept: 3 });
+    expect((await FoodItem.findOne({ coachId, name: 'Fake almond milk' }).lean())?.archivedAt).toBeNull();
+    expect((await FoodItem.findOne({ coachId, name: 'Fake chicken' }).lean())?.order).toBe(4);
+    expect(await Template.countDocuments({ coachId })).toBe(1);
+  });
+
+  it('categories (13a+): set on new items; an existing item gets one only while it has none', async () => {
+    const lists = (foods: NutritionSeedData['foods']): NutritionSeedData => ({ seedKeyPrefix: 'test-cat', foods });
+    const plain: NutritionSeedData['foods'] = [
+      { key: 'a', group: 'protein', name: 'Fake A', portion: '1', grams: null, isNew: false, dietTags: [] },
+      { key: 'b', group: 'protein', name: 'Fake B', portion: '1', grams: null, isNew: false, dietTags: [] },
+    ];
+    await applyNutritionSeed(coachId, lists(plain));
+    await FoodItem.updateOne({ coachId, name: 'Fake B' }, { $set: { category: 'meat' } }); // her own choice
+    const withCategories = plain.map((food) => ({ ...food, category: 'dairy' as const }));
+    expect(await applyNutritionSeed(coachId, lists(withCategories))).toMatchObject({ foodsCreated: 0, categoriesFilled: 1 });
+    expect((await FoodItem.findOne({ coachId, name: 'Fake A' }).lean())?.category).toBe('dairy');
+    expect((await FoodItem.findOne({ coachId, name: 'Fake B' }).lean())?.category).toBe('meat');
+    expect((await applyNutritionSeed(coachId, lists(withCategories))).categoriesFilled).toBe(0);
+    expect(validateNutritionSeed(lists([{ ...plain[0], category: 'fruits' }])).join(' ')).toMatch(/not in the protein group/);
   });
 
   it('refuses a broken file before writing anything', async () => {
     const broken = fixture();
-    broken.template.meals[0].options[0].lines.push({ food: 'missing', portions: 1 });
+    broken.template!.meals[0].options[0].lines.push({ food: 'missing', portions: 1 });
     broken.foods[0].dietTags = ['bacon' as never];
-    expect(validateNutritionSeed(broken)).toHaveLength(2);
+    broken.foods[1].portion = "2 units (one = 70 קלוריות)";
+    expect(validateNutritionSeed(broken)).toHaveLength(3);
+    expect(validateNutritionSeed(broken).join(' ')).toMatch(/mention calories/);
     await expect(applyNutritionSeed(coachId, broken)).rejects.toThrow(/not valid/);
     expect(await FoodItem.countDocuments()).toBe(0);
   });

@@ -10,6 +10,7 @@ const nutritionSettingsSchema = new Schema<NutritionSettingsDocument>(
       protein: { type: Number },
       carb: { type: Number },
       fat: { type: Number },
+      snack: { type: Number },
     },
     goalAdjustments: {
       fat_loss: { type: Number },
@@ -28,11 +29,9 @@ const nutritionSettingsSchema = new Schema<NutritionSettingsDocument>(
       protein: { type: Number },
       carb: { type: Number },
       fat: { type: Number },
+      snack: { type: Number },
     },
     ketoMaxCarbPortions: { type: Number },
-    // One-time tag updates already applied to her food list (e.g. 'lactose_from_dairy'),
-    // so re-running the seed never undoes her own edits.
-    appliedTagBackfills: { type: [String], default: [] },
   },
   { timestamps: true },
 );

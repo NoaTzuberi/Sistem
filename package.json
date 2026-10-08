@@ -23,6 +23,7 @@
     "promote:coach": "npm run promote:coach -w @sistem/server --",
     "seed:dev": "npm run seed:dev -w @sistem/server --",
     "seed:nutrition": "npm run seed:nutrition -w @sistem/server --",
+    "reset:nutrition": "npm run reset:nutrition -w @sistem/server --",
     "backfill:achievements": "npm run backfill:achievements -w @sistem/server --"
   },
   "devDependencies": {

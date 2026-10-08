@@ -100,7 +100,7 @@ describe('suggestCalorieTarget', () => {
       weeklyRateKg: -0.39,
       raisedToFloor: false,
       floorKcal: 1200,
-      portions: { protein: 5, carb: 4.5, fat: 5 },
+      portions: { protein: 5, carb: 4.5, fat: 5, snack: 0 },
       portionsKcal: 1740,
       inputs: {
         weightKg: 68,
@@ -286,12 +286,16 @@ describe('timeline (target weight + timeframe)', () => {
 });
 
 describe('recommended portions', () => {
-  it("splits the kcal by the coach's shares, in halves, closest total (1,500 → the guide's 4.5 · 4 · 4)", () => {
-    expect(recommendPortions(1500, DEFAULT_NUTRITION_CONFIG)).toEqual({ portions: { protein: 4.5, carb: 4, fat: 4 }, kcal: 1515 });
+  it("splits the kcal by the (placeholder) default shares, in halves, closest total (1,500 → 4.5 · 4 · 4)", () => {
+    expect(recommendPortions(1500, DEFAULT_NUTRITION_CONFIG)).toEqual({ portions: { protein: 4.5, carb: 4, fat: 4, snack: 0 }, kcal: 1515 });
+  });
+
+  it('never adds snack portions (0% share by default) — only the coach does', () => {
+    for (const kcal of [1200, 1500, 1730, 2500]) expect(recommendPortions(kcal, DEFAULT_NUTRITION_CONFIG).portions.snack).toBe(0);
   });
 
   it('follows her own split and group values', () => {
-    const config = mergeNutritionConfig({ portionSplit: { protein: 50, carb: 30, fat: 20 }, groupKcal: { protein: 100 } });
+    const config = mergeNutritionConfig({ portionSplit: { protein: 50, carb: 30, fat: 20, snack: 0 }, groupKcal: { protein: 100 } });
     const { portions, kcal } = recommendPortions(1600, config);
     expect(portions.protein).toBe(8);
     expect(Math.abs(kcal - 1600)).toBeLessThanOrEqual(60);
@@ -310,14 +314,14 @@ describe('floor', () => {
 describe('mergeNutritionConfig', () => {
   it('fills what the coach did not set from the defaults; vegetables stay free', () => {
     const config = mergeNutritionConfig({ groupKcal: { protein: 140 } });
-    expect(config.groupKcal).toEqual({ protein: 140, carb: 120, fat: 90, vegetable: 0 });
+    expect(config.groupKcal).toEqual({ protein: 140, carb: 120, fat: 90, snack: 150, vegetable: 0 });
     expect(config.goalAdjustments).toEqual({ fat_loss: -20, fat_loss_aggressive: -25, recomp: -10, muscle_gain: 10, maintenance: 0 });
     expect(config.floorKcal).toBe(1200);
     expect(config).toMatchObject({ kcalPerKg: 7700, maxLossRatePctPerWeek: 1, maxGainRatePctPerWeek: 0.5, maxDeficitPct: 25, ketoMaxCarbPortions: 1 });
-    expect(config.portionSplit).toEqual({ protein: 45, carb: 32, fat: 23 });
+    expect(config.portionSplit).toEqual({ protein: 45, carb: 32, fat: 23, snack: 0 });
   });
 
   it('takes a split only as a whole', () => {
-    expect(mergeNutritionConfig({ portionSplit: { protein: 60 } }).portionSplit).toEqual({ protein: 45, carb: 32, fat: 23 });
+    expect(mergeNutritionConfig({ portionSplit: { protein: 60 } }).portionSplit).toEqual({ protein: 45, carb: 32, fat: 23, snack: 0 });
   });
 });

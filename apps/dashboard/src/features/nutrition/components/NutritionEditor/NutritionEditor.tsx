@@ -158,6 +158,7 @@ export function NutritionEditor({ traineeId, traineeName, initial, templates }: 
                 index={index}
                 count={draft.meals.length}
                 foods={response.foods}
+                recentFoodIds={response.recentFoodIds}
                 foodsById={foodsById}
                 kcal={meal.id ? mealKcal.get(meal.id) : undefined}
                 issues={response.issues.filter((issue) => issue.mealIndex === index)}

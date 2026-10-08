@@ -21,6 +21,7 @@ import type {
 import {
   CALORIE_TARGET_SOURCE_IDS,
   DIET_TAG_IDS,
+  FOOD_CATEGORY_IDS,
   FOOD_GROUP_IDS,
   FORMULA_SEX_IDS,
   LINE_KIND_IDS,
@@ -148,6 +149,12 @@ export function parseFoodItemPayload(body: unknown, partial: boolean): FoodItemP
     }
     value.dietTags = [...new Set(body.dietTags as DietTag[])];
   }
+  if (body.category !== undefined) {
+    // Which group it must belong to is checked in the service (the group may come from the item).
+    const known = Object.values(FOOD_CATEGORY_IDS).some((ids) => (ids as readonly unknown[]).includes(body.category));
+    if (body.category !== null && !known) return { value: null, error: 'Unknown category.' };
+    value.category = body.category as FoodItemPayload['category'];
+  }
   if (body.order !== undefined) {
     if (typeof body.order !== 'number' || !Number.isInteger(body.order) || body.order < 0) {
       return { value: null, error: 'Order must be a whole number of at least 0.' };
@@ -178,6 +185,11 @@ type SettingsParse = { value: NutritionSettingsPayload; error: null } | { value:
 
 function inRange(value: unknown, { min, max }: { min: number; max: number }): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max;
+}
+
+/** One number per portion group (already checked). */
+function countsOf(record: Record<string, unknown>): PortionCounts {
+  return Object.fromEntries(PORTION_GROUP_IDS.map((group) => [group, record[group] as number])) as unknown as PortionCounts;
 }
 
 export function parseNutritionSettingsPayload(body: unknown): SettingsParse {
@@ -229,7 +241,7 @@ export function parseNutritionSettingsPayload(body: unknown): SettingsParse {
   }
   return {
     value: {
-      groupKcal: { protein: groupKcal.protein as number, carb: groupKcal.carb as number, fat: groupKcal.fat as number },
+      groupKcal: countsOf(groupKcal),
       goalAdjustments: Object.fromEntries(NUTRITION_GOAL_IDS.map((goal) => [goal, goalAdjustments[goal] as number])) as NutritionSettingsPayload['goalAdjustments'],
       activityFactors: activityFactors as number[],
       floorKcal,
@@ -237,7 +249,7 @@ export function parseNutritionSettingsPayload(body: unknown): SettingsParse {
       maxLossRatePctPerWeek: body.maxLossRatePctPerWeek as number,
       maxGainRatePctPerWeek: body.maxGainRatePctPerWeek as number,
       maxDeficitPct: body.maxDeficitPct as number,
-      portionSplit: { protein: portionSplit.protein as number, carb: portionSplit.carb as number, fat: portionSplit.fat as number },
+      portionSplit: countsOf(portionSplit),
       ketoMaxCarbPortions: body.ketoMaxCarbPortions as number,
     },
     error: null,
@@ -529,7 +541,7 @@ function describeConflict(reason: FoodConflictReason): string {
 
 /** The meals' portions summed over the day. */
 export function sumDayPortions(meals: readonly Pick<NutritionMeal, 'portions'>[]): PortionCounts {
-  const total: PortionCounts = { protein: 0, carb: 0, fat: 0 };
+  const total: PortionCounts = { protein: 0, carb: 0, fat: 0, snack: 0 };
   for (const meal of meals) for (const group of PORTION_GROUP_IDS) total[group] += meal.portions[group];
   return total;
 }
@@ -569,7 +581,7 @@ export function findNutritionPublishIssues(plan: PublishCheckInput, context: Pub
         return;
       }
 
-      const totals: PortionCounts = { protein: 0, carb: 0, fat: 0 };
+      const totals: PortionCounts = { protein: 0, carb: 0, fat: 0, snack: 0 };
       const optionTags: DietTag[][] = [];
       option.lines.forEach((line, lineIndex) => {
         const at = { mealIndex, optionIndex, lineIndex };
@@ -625,7 +637,9 @@ export function findNutritionPublishIssues(plan: PublishCheckInput, context: Pub
       }
       const differs = PORTION_GROUP_IDS.filter((group) => totals[group] !== meal.portions[group]);
       if (differs.length > 0) {
-        const describe = (counts: PortionCounts) => PORTION_GROUP_IDS.map((group) => `${counts[group]} ${group}`).join(' · ');
+        // Snack only when either side has some (most meals have none).
+        const shown = PORTION_GROUP_IDS.filter((group) => group !== 'snack' || totals.snack > 0 || meal.portions.snack > 0);
+        const describe = (counts: PortionCounts) => shown.map((group) => `${counts[group]} ${group}`).join(' · ');
         issues.push({
           severity: 'warning',
           code: 'option_portions_mismatch',
@@ -642,7 +656,7 @@ export function findNutritionPublishIssues(plan: PublishCheckInput, context: Pub
     issues.push({
       severity: 'warning',
       code: 'keto_conflict',
-      message: `${dayPortions.carb} carb portions a day — she eats keto / low-carb (your limit: ${config.ketoMaxCarbPortions}).`,
+      message: `${dayPortions.carb + dayPortions.snack} carb / snack portions a day — she eats keto / low-carb (your limit: ${config.ketoMaxCarbPortions}).`,
     });
   }
 

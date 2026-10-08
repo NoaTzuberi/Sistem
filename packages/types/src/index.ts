@@ -953,9 +953,20 @@ export interface CreateAiRecommendationPayload {
 // (/api/nutrition-plan). Calorie numbers exist only on the coach's side.
 // ---------------------------------------------------------------------------
 
-export type FoodGroup = 'protein' | 'carb' | 'fat' | 'vegetable';
+/** `snack` (13a+): treats, ≈150 kcal per portion, only ever added by the coach. */
+export type FoodGroup = 'protein' | 'carb' | 'fat' | 'snack' | 'vegetable';
 /** The groups a meal counts portions of — vegetables are free. */
-export type PortionGroup = 'protein' | 'carb' | 'fat';
+export type PortionGroup = 'protein' | 'carb' | 'fat' | 'snack';
+
+/**
+ * Food categories per group (13a+ food picker / list filters), derived from the section headings of the coach's md
+ * lists. Vegetables have none. An item may have no category (shown under "All" / "Other").
+ */
+export type ProteinCategory = 'dairy' | 'poultry' | 'meat' | 'fish_seafood' | 'eggs' | 'plant_based' | 'supplements';
+export type CarbCategory = 'grains_cereals' | 'bread_crackers' | 'fruits' | 'legumes' | 'starchy_vegetables';
+export type FatCategory = 'oils' | 'nuts_seeds' | 'spreads' | 'other';
+export type SnackCategory = 'sweet_cereals' | 'chocolate' | 'cookies_pastries' | 'ice_cream' | 'candy' | 'salty' | 'fast_food';
+export type FoodCategory = ProteinCategory | CarbCategory | FatCategory | SnackCategory;
 /** What a food contains, so the list can be checked against her preferences. */
 export type DietTag =
   | 'meat'
@@ -990,6 +1001,8 @@ export interface FoodItem {
   kcal: number | null;
   isNew: boolean;
   dietTags: DietTag[];
+  /** Must belong to the item's group; null = none. */
+  category: FoodCategory | null;
   order: number;
   archivedAt: string | null;
 }
@@ -1003,6 +1016,8 @@ export interface FoodItemPayload {
   kcal?: number | null;
   isNew?: boolean;
   dietTags?: DietTag[];
+  /** null clears; on a group change an unfitting category is cleared. */
+  category?: FoodCategory | null;
   order?: number;
 }
 
@@ -1161,6 +1176,8 @@ export interface PortionCounts {
   protein: number;
   carb: number;
   fat: number;
+  /** 13a+; stored data from before it reads as 0. */
+  snack: number;
 }
 
 /** 'recipe' belongs to the closed nutritionRecipes feature (13b). */
@@ -1358,6 +1375,8 @@ export interface CoachNutritionPlanResponse {
   defaultGoal: NutritionGoal;
   /** The coach's whole food list, archived items included (lines may point at them). */
   foods: FoodItem[];
+  /** Her most recently used items per group across her nutrition plans (newest first, ≤ 8 each; may include archived ids). */
+  recentFoodIds: Record<FoodGroup, string[]>;
   config: NutritionConfig;
   issues: NutritionIssue[];
   features: NutritionFeatures;

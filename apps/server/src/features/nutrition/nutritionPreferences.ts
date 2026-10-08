@@ -63,7 +63,7 @@ export function hasKosherConflict(optionTags: readonly (readonly DietTag[])[]): 
   return KOSHER_MEAT_TAGS.some((tag) => tags.has(tag)) && KOSHER_DAIRY_TAGS.some((tag) => tags.has(tag));
 }
 
-/** Keto / low-carb: more carb portions over the day than the coach's config allows. */
+/** Keto / low-carb: more carb (+ snack — treats are mostly sugar) portions over the day than the config allows. */
 export function hasKetoConflict(dayPortions: PortionCounts, ketoMaxCarbPortions: number): boolean {
-  return dayPortions.carb > ketoMaxCarbPortions;
+  return dayPortions.carb + dayPortions.snack > ketoMaxCarbPortions;
 }

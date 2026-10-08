@@ -1,5 +1,6 @@
 import type { NutritionConfig, NutritionSettingsPayload, NutritionSettingsResponse } from '@sistem/types';
 import { DEFAULT_NUTRITION_CONFIG } from './nutrition.config';
+import { PORTION_GROUP_IDS } from './nutrition.constants';
 import { NutritionSettings } from './nutritionSettings.model';
 import type { NutritionSettingsDocument } from './nutrition.types';
 
@@ -33,7 +34,7 @@ const SCALAR_SETTINGS = [
 export function mergeNutritionConfig(overrides: Partial<NutritionSettingsDocument> | null): NutritionConfig {
   const config = cloneDefaults();
   if (!overrides) return config;
-  for (const group of ['protein', 'carb', 'fat'] as const) {
+  for (const group of PORTION_GROUP_IDS) {
     const value = overrides.groupKcal?.[group];
     if (typeof value === 'number') config.groupKcal[group] = value;
   }
@@ -45,9 +46,10 @@ export function mergeNutritionConfig(overrides: Partial<NutritionSettingsDocumen
     config.activityFactors = [...overrides.activityFactors];
   }
   // The split is one choice (it sums to 100): taken whole or not at all.
+  // A split saved before snacks existed (13a+) has no snack share: it was 0.
   const split = overrides.portionSplit;
   if (split && (['protein', 'carb', 'fat'] as const).every((group) => typeof split[group] === 'number')) {
-    config.portionSplit = { protein: split.protein!, carb: split.carb!, fat: split.fat! };
+    config.portionSplit = { protein: split.protein!, carb: split.carb!, fat: split.fat!, snack: split.snack ?? 0 };
   }
   for (const key of SCALAR_SETTINGS) {
     const value = overrides[key];

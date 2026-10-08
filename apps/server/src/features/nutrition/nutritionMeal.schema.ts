@@ -11,6 +11,8 @@ const portionCountsSchema = new Schema<PortionCountsFields>(
     protein: { type: Number, min: 0, default: 0 },
     carb: { type: Number, min: 0, default: 0 },
     fat: { type: Number, min: 0, default: 0 },
+    // 13a+ (owner decision): treats, only ever added by the coach.
+    snack: { type: Number, min: 0, default: 0 },
   },
   { _id: false },
 );

@@ -3,6 +3,7 @@ import type {
   DietStyleId,
   DietTag,
   DietType,
+  FoodCategory,
   FoodGroup,
   IntoleranceId,
   MealLogDay,
@@ -24,18 +25,60 @@ import { formatWeight } from './units';
 // copy (Phase 15 moves it into the translation files). Coach content (food names,
 // portions, meal names, tips) is always shown exactly as she wrote it.
 
-export const PORTION_GROUPS: readonly PortionGroup[] = ['protein', 'carb', 'fat'];
-export const FOOD_GROUPS: readonly FoodGroup[] = ['protein', 'carb', 'fat', 'vegetable'];
+export const PORTION_GROUPS: readonly PortionGroup[] = ['protein', 'carb', 'fat', 'snack'];
+export const FOOD_GROUPS: readonly FoodGroup[] = ['protein', 'carb', 'fat', 'snack', 'vegetable'];
 
 export const FOOD_GROUP_LABELS: Record<FoodGroup, string> = {
   protein: 'Protein',
   carb: 'Carb',
   fat: 'Fat',
+  snack: 'Snack',
   vegetable: 'Vegetables',
 };
 
 /** The word after a count: "1 protein", "1½ carb". */
-const PORTION_WORDS: Record<PortionGroup, string> = { protein: 'protein', carb: 'carb', fat: 'fat' };
+const PORTION_WORDS: Record<PortionGroup, string> = { protein: 'protein', carb: 'carb', fat: 'fat', snack: 'snack' };
+
+/**
+ * Food categories per group, in display order (13a+: picker chips, food list filters) — mirrors the server's
+ * FOOD_CATEGORY_IDS. Labels are PLACEHOLDERS (Phase 15 translations).
+ */
+export const FOOD_CATEGORIES: Record<FoodGroup, readonly FoodCategory[]> = {
+  protein: ['dairy', 'poultry', 'meat', 'fish_seafood', 'eggs', 'plant_based', 'supplements'],
+  carb: ['grains_cereals', 'bread_crackers', 'fruits', 'legumes', 'starchy_vegetables'],
+  fat: ['oils', 'nuts_seeds', 'spreads', 'other'],
+  snack: ['sweet_cereals', 'chocolate', 'cookies_pastries', 'ice_cream', 'candy', 'salty', 'fast_food'],
+  vegetable: [],
+};
+
+export const FOOD_CATEGORY_LABELS: Record<FoodCategory, string> = {
+  dairy: 'Dairy',
+  poultry: 'Poultry',
+  meat: 'Meat',
+  fish_seafood: 'Fish & seafood',
+  eggs: 'Eggs',
+  plant_based: 'Plant-based',
+  supplements: 'Supplements',
+  grains_cereals: 'Grains & cereals',
+  bread_crackers: 'Bread & crackers',
+  fruits: 'Fruits',
+  legumes: 'Legumes',
+  starchy_vegetables: 'Starchy vegetables',
+  oils: 'Oils',
+  nuts_seeds: 'Nuts & seeds',
+  spreads: 'Spreads',
+  other: 'Other',
+  sweet_cereals: 'Sweet cereals',
+  chocolate: 'Chocolate',
+  cookies_pastries: 'Cookies & pastries',
+  ice_cream: 'Ice cream & popsicles',
+  candy: 'Candy',
+  salty: 'Salty',
+  fast_food: 'Fast food & frozen',
+};
+
+/** Label for "no category" in filters. */
+export const NO_CATEGORY_LABEL = 'No category';
 
 export const VEGETABLES_FREE_LABEL = 'vegetables free';
 

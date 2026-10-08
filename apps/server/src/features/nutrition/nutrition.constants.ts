@@ -3,6 +3,7 @@ import type {
   DietStyleId,
   DietTag,
   DietType,
+  FoodCategory,
   FoodGroup,
   FormulaSex,
   IntoleranceId,
@@ -12,9 +13,25 @@ import type {
   ReligiousId,
 } from '@sistem/types';
 
-export const FOOD_GROUP_IDS = ['protein', 'carb', 'fat', 'vegetable'] as const satisfies readonly FoodGroup[];
+export const FOOD_GROUP_IDS = ['protein', 'carb', 'fat', 'snack', 'vegetable'] as const satisfies readonly FoodGroup[];
+/**
+ * Food categories per group (13a+, the picker / list filters) — derived from the section headings of the coach's md
+ * lists. THE list of ids (labels and order for the apps: @sistem/shared nutritionDisplay.ts — placeholders).
+ */
+export const FOOD_CATEGORY_IDS = {
+  protein: ['dairy', 'poultry', 'meat', 'fish_seafood', 'eggs', 'plant_based', 'supplements'],
+  carb: ['grains_cereals', 'bread_crackers', 'fruits', 'legumes', 'starchy_vegetables'],
+  fat: ['oils', 'nuts_seeds', 'spreads', 'other'],
+  snack: ['sweet_cereals', 'chocolate', 'cookies_pastries', 'ice_cream', 'candy', 'salty', 'fast_food'],
+  vegetable: [],
+} as const satisfies Record<FoodGroup, readonly FoodCategory[]>;
+
+export function isCategoryOf(group: FoodGroup, category: unknown): category is FoodCategory {
+  return (FOOD_CATEGORY_IDS[group] as readonly unknown[]).includes(category);
+}
+
 /** The groups a meal counts — vegetables are free (PRD §5.6). */
-export const PORTION_GROUP_IDS = ['protein', 'carb', 'fat'] as const satisfies readonly PortionGroup[];
+export const PORTION_GROUP_IDS = ['protein', 'carb', 'fat', 'snack'] as const satisfies readonly PortionGroup[];
 
 export const DIET_TAG_IDS = [
   'meat',

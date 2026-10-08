@@ -1,4 +1,5 @@
-import type { DeleteFoodItemResult, FoodItem, FoodItemPayload } from '@sistem/types';
+import type { DeleteFoodItemResult, FoodItem, FoodItemPayload, PortionGroup } from '@sistem/types';
+import { PORTION_GROUP_IDS, isCategoryOf } from './nutrition.constants';
 import { Template } from '../templates/template.model';
 import { FoodItem as FoodItemModel } from './foodItem.model';
 import { NutritionPlan, NutritionPlanVersion } from './nutritionPlan.model';
@@ -35,6 +36,8 @@ async function checkKcal(coachId: string, group: FoodItem['group'], kcal: number
 export async function createCoachFood(coachId: string, input: FoodItemPayload): Promise<FoodItem> {
   const group = input.group!;
   await checkKcal(coachId, group, input.kcal);
+  const category = input.category ?? null;
+  if (category !== null && !isCategoryOf(group, category)) throw new FoodItemValidationError('That category is not in this group.');
   // New items go to the end of their group unless an order was given.
   const order =
     input.order ??
@@ -48,6 +51,7 @@ export async function createCoachFood(coachId: string, input: FoodItemPayload): 
     kcal: input.kcal ?? null,
     isNewItem: input.isNew ?? false,
     dietTags: input.dietTags ?? [],
+    category,
     order,
   });
   return toPublicFoodItem(created.toObject() as LeanFoodItem);
@@ -67,6 +71,15 @@ export async function updateCoachFood(coachId: string, foodId: string, input: Fo
   if (input.isNew !== undefined) item.isNewItem = input.isNew;
   if (input.dietTags !== undefined) item.dietTags = input.dietTags;
   if (input.order !== undefined) item.order = input.order;
+  if (input.category !== undefined) {
+    if (input.category !== null && !isCategoryOf(group, input.category)) {
+      throw new FoodItemValidationError('That category is not in this group.');
+    }
+    item.category = input.category;
+  } else if (item.category && !isCategoryOf(group, item.category)) {
+    // Moved to another group without a new category: the old one no longer fits.
+    item.category = null;
+  }
   await item.save();
   return toPublicFoodItem(item.toObject() as LeanFoodItem);
 }
@@ -108,9 +121,9 @@ export async function restoreCoachFood(coachId: string, foodId: string): Promise
 }
 
 /** How many of her items would be above a new group value (the settings screen refuses those). */
-export async function countFoodsAboveCaps(coachId: string, caps: Record<'protein' | 'carb' | 'fat', number>): Promise<number> {
+export async function countFoodsAboveCaps(coachId: string, caps: Record<PortionGroup, number>): Promise<number> {
   return FoodItemModel.countDocuments({
     coachId,
-    $or: (['protein', 'carb', 'fat'] as const).map((group) => ({ group, kcal: { $gt: caps[group] } })),
+    $or: PORTION_GROUP_IDS.map((group) => ({ group, kcal: { $gt: caps[group] } })),
   });
 }

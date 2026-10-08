@@ -115,12 +115,12 @@ describe('portion tracking (meal logs)', () => {
 
   it('marks today against the newest plan — clamped to what is planned, in halves', async () => {
     await publishPlan(2);
-    const res = await mark(today, { protein: 1.5, carb: 5, fat: 0 });
+    const res = await mark(today, { protein: 1.5, carb: 5, fat: 0, snack: 0 });
     expect(res.status).toBe(200);
     expect(res.body.day).toMatchObject({
       date: today,
-      planned: { protein: 2, carb: 2, fat: 2 },
-      eaten: { protein: 1.5, carb: 2, fat: 0 },
+      planned: { protein: 2, carb: 2, fat: 2, snack: 0 },
+      eaten: { protein: 1.5, carb: 2, fat: 0, snack: 0 },
       planVersion: 1,
       editable: true,
       logged: true,
@@ -132,8 +132,19 @@ describe('portion tracking (meal logs)', () => {
     expect((await api.request('PUT', `/meal-logs/${today}`, { token: trainee.token, body: {} })).status).toBe(400);
 
     // Back to nothing = no log at all.
-    await mark(today, { protein: 0, carb: 0, fat: 0 });
+    await mark(today, { protein: 0, carb: 0, fat: 0, snack: 0 });
     expect(await MealLog.countDocuments()).toBe(0);
+  });
+
+  it('snack portions are tracked like any group; a log saved before snacks existed reads as 0', async () => {
+    await publishPlan(1);
+    await NutritionPlanVersion.updateOne({ version: 1 }, { $set: { 'meals.0.portions.snack': 1 } });
+    const res = await mark(today, { protein: 1, snack: 1 });
+    expect(res.body.day).toMatchObject({ planned: { protein: 1, carb: 1, fat: 1, snack: 1 }, eaten: { protein: 1, carb: 0, fat: 0, snack: 1 } });
+    // A day stored before 13a+ snacks (no snack fields).
+    await MealLog.collection.updateOne({ date: today }, { $unset: { 'eaten.snack': '', 'planned.snack': '' } });
+    const day = (await days()).days.find((candidate) => candidate.date === today)!;
+    expect(day.eaten).toEqual({ protein: 1, carb: 0, fat: 0, snack: 0 });
   });
 
   it('only today and the 6 days before can be changed', async () => {
@@ -150,17 +161,17 @@ describe('portion tracking (meal logs)', () => {
     // Version 1 has been live for 10 days.
     await NutritionPlanVersion.updateOne({ version: 1 }, { $set: { publishedAt: new Date(Date.now() - 10 * DAY_MS) } });
     const yesterday = addDays(today, -1);
-    expect((await mark(yesterday, { protein: 1, carb: 1 })).body.day.planned).toEqual({ protein: 1, carb: 1, fat: 1 });
+    expect((await mark(yesterday, { protein: 1, carb: 1 })).body.day.planned).toEqual({ protein: 1, carb: 1, fat: 1, snack: 0 });
 
     // Version 2 (today): more protein.
     await publishPlan(1, 2);
     const window = await days();
     const byDate = new Map(window.days.map((day) => [day.date, day]));
-    expect(byDate.get(yesterday)).toMatchObject({ planned: { protein: 1, carb: 1, fat: 1 }, eaten: { protein: 1, carb: 1, fat: 0 }, planVersion: 1 });
-    expect(byDate.get(addDays(today, -2))).toMatchObject({ planned: { protein: 1, carb: 1, fat: 1 }, logged: false, planVersion: 1 });
-    expect(byDate.get(today)).toMatchObject({ planned: { protein: 3, carb: 1, fat: 1 }, planVersion: 2 });
+    expect(byDate.get(yesterday)).toMatchObject({ planned: { protein: 1, carb: 1, fat: 1, snack: 0 }, eaten: { protein: 1, carb: 1, fat: 0, snack: 0 }, planVersion: 1 });
+    expect(byDate.get(addDays(today, -2))).toMatchObject({ planned: { protein: 1, carb: 1, fat: 1, snack: 0 }, logged: false, planVersion: 1 });
+    expect(byDate.get(today)).toMatchObject({ planned: { protein: 3, carb: 1, fat: 1, snack: 0 }, planVersion: 2 });
     // Correcting yesterday keeps its own plan.
-    expect((await mark(yesterday, { protein: 3 })).body.day).toMatchObject({ planned: { protein: 1, carb: 1, fat: 1 }, eaten: { protein: 1 } });
+    expect((await mark(yesterday, { protein: 3 })).body.day).toMatchObject({ planned: { protein: 1, carb: 1, fat: 1, snack: 0 }, eaten: { protein: 1 } });
   });
 
   it('a meal photo per meal per day: private, replaced and removed (the old one deleted)', async () => {
@@ -173,7 +184,7 @@ describe('portion tracking (meal logs)', () => {
       expect.objectContaining({ mealId: breakfast.id, mealName: 'Meal 1', url: expect.stringContaining('sistem/meal-photos/') }),
     ]);
     expect(storage.upload.mock.calls[0][1]).toBe(`sistem/meal-photos/${trainee.id}`);
-    expect(first.body.day.eaten).toEqual({ protein: 0, carb: 0, fat: 0 });
+    expect(first.body.day.eaten).toEqual({ protein: 0, carb: 0, fat: 0, snack: 0 });
 
     const replaced = await uploadPhoto(today, breakfast.id);
     expect(replaced.body.day.photos).toHaveLength(1);
@@ -203,9 +214,9 @@ describe('portion tracking (meal logs)', () => {
     expect(res.body.weekStart).toBe(weekStartOf(today));
     expect(res.body.days).toHaveLength(7);
     const todayRow = res.body.days.find((day: { date: string }) => day.date === today);
-    expect(todayRow).toMatchObject({ planned: { protein: 2, carb: 2, fat: 2 }, eaten: { protein: 1, carb: 2, fat: 0 }, logged: true });
+    expect(todayRow).toMatchObject({ planned: { protein: 2, carb: 2, fat: 2, snack: 0 }, eaten: { protein: 1, carb: 2, fat: 0, snack: 0 }, logged: true });
     const pastDays = res.body.days.filter((day: { date: string }) => day.date <= today).length;
-    expect(res.body.totals).toEqual({ planned: { protein: 2 * pastDays, carb: 2 * pastDays, fat: 2 * pastDays }, eaten: { protein: 1, carb: 2, fat: 0 } });
+    expect(res.body.totals).toEqual({ planned: { protein: 2 * pastDays, carb: 2 * pastDays, fat: 2 * pastDays, snack: 0 }, eaten: { protein: 1, carb: 2, fat: 0, snack: 0 } });
 
     const lastWeek = await api.request('GET', `${path}?weekStart=${addDays(weekStartOf(today), -7)}`, { token: coach.token });
     expect(lastWeek.body.days[0].date).toBe(addDays(weekStartOf(today), -7));

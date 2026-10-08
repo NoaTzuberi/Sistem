@@ -17,7 +17,8 @@
     "backfill:achievements": "tsx src/features/achievements/scripts/backfillAchievements.ts",
     "media:compress": "tsx src/features/onboardingMedia/scripts/compressOnboardingVideos.ts",
     "media:upload": "tsx src/features/onboardingMedia/scripts/uploadOnboardingMedia.ts",
-    "seed:nutrition": "tsx src/features/nutrition/scripts/seedNutrition.ts"
+    "seed:nutrition": "tsx src/features/nutrition/scripts/seedNutrition.ts",
+    "reset:nutrition": "tsx src/features/nutrition/scripts/resetNutrition.ts"
   },
   "keywords": [],
   "author": "",

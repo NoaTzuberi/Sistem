@@ -24,6 +24,7 @@ import { toPublicNutritionPreferences } from '../onboarding/onboarding.service';
 import { User } from '../users/user.model';
 import { DEFAULT_TIMEZONE } from '../users/users.constants';
 import { addDays, localDateString } from '../plans/planWeek';
+import { FOOD_GROUP_IDS } from './nutrition.constants';
 import { BodyMetric } from '../bodyMetrics/bodyMetric.model';
 import { Template } from '../templates/template.model';
 import type { TemplateDocument } from '../templates/template.types';
@@ -247,14 +248,45 @@ async function findIssues(
   );
 }
 
+const RECENT_FOODS_PER_GROUP = 8;
+const RECENT_PLANS_SCANNED = 30;
+
+/**
+ * The coach's recently used items per group (the builder's "Recently used" row): her plans' working copies, most
+ * recently saved first, each plan's lines in order; distinct, at most 8 per group. Archived ids may be in it — the
+ * picker never shows archived items.
+ */
+export async function findRecentFoodIds(coachId: string): Promise<Record<FoodGroup, string[]>> {
+  const plans = await NutritionPlan.find({ coachId })
+    .sort({ updatedAt: -1 })
+    .limit(RECENT_PLANS_SCANNED)
+    .select('meals')
+    .lean<Pick<LeanPlan, 'meals'>[]>();
+  const recent = Object.fromEntries(FOOD_GROUP_IDS.map((group) => [group, [] as string[]])) as Record<FoodGroup, string[]>;
+  for (const plan of plans) {
+    for (const meal of plan.meals) {
+      for (const option of meal.options) {
+        for (const line of option.lines) {
+          if (line.kind !== 'food' || !line.foodItemId || !line.group) continue;
+          const list = recent[line.group];
+          const id = String(line.foodItemId);
+          if (list.length < RECENT_FOODS_PER_GROUP && !list.includes(id)) list.push(id);
+        }
+      }
+    }
+  }
+  return recent;
+}
+
 export async function getCoachNutritionPlan(traineeId: string, coachId: string): Promise<CoachNutritionPlanResponse> {
-  const [plan, latest, foodList, config, preferences, goal] = await Promise.all([
+  const [plan, latest, foodList, config, preferences, goal, recentFoodIds] = await Promise.all([
     NutritionPlan.findOne({ traineeId }).lean<LeanPlan>(),
     findLatestVersion(traineeId),
     listCoachFoods(coachId),
     getEffectiveNutritionConfig(coachId),
     getNutritionPreferences(traineeId),
     defaultGoal(traineeId),
+    findRecentFoodIds(coachId),
   ]);
   const features = getNutritionFeatures();
   const foods = new Map(foodList.map((food) => [food.id, food]));
@@ -264,6 +296,7 @@ export async function getCoachNutritionPlan(traineeId: string, coachId: string):
     preferences,
     defaultGoal: goal,
     foods: foodList,
+    recentFoodIds,
     config,
     issues: plan ? await findIssues(plan, coachId, { foods, config, preferences }) : [],
     features,

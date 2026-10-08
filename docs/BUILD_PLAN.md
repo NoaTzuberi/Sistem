@@ -344,25 +344,27 @@ Implement PRD §8.
 
 ## Phase 13 (later) — Nutrition
 
-Owner decision (2026-10-07): nutrition follows the coach's guide `docs/reference/nutrition-guide-1500.pdf` —
+Owner decision (2026-10-07; source updated 2026-10-08): nutrition follows the coach's md food lists in
+`docs/reference/` — `150-dairy.md`, `protien.md`, `carbohydrates_and_fruits_guide_120_calories.md`,
+`fats_spreads_nuts_90_calories.md`, `snacks.md` — the ONLY source (an earlier PDF menu is no longer used) —
 an exchange-list ("portions") method: food groups with a calorie cap per portion (protein ≤ 150 kcal, carb
-≤ 120, fat ≤ 90, vegetables free), each meal = a number of portions per group, any portion swappable for
+≤ 120, fat ≤ 90, snack ≤ 150 (13a+), vegetables free), each meal = a number of portions per group, any portion swappable for
 another item from the same group. Split into 13a (core, open to users), 13b (built behind feature flags,
 closed) and 13c (AI draft, after Phase 12). 13a designs the data model for 13b so nothing needs reworking.
-Read PRD §5.6 (including the owner decisions) before each sub-phase. The guide and its review list
-(`docs/reference/nutrition-guide-issues.md`) are local only — `docs/reference/` is gitignored.
+Read PRD §5.6 (including the owner decisions) before each sub-phase. The md lists and their review lists
+(`docs/reference/nutrition-guide-issues.md`, `nutrition-diet-tags-review.md`) are local only — `docs/reference/` is gitignored.
 If Phase 15 (Hebrew & RTL) is already done when 13 starts, all new copy goes into the translation files.
 
 ### Phase 13a — Nutrition core (open to users)
 
 Owner decisions (2026-10-08, built in 13a — details in PRD §5.6): seed data in `apps/server/data/nutrition/`
 (gitignored) via `npm run seed:nutrition`; default goal % / activity factors approved as starting points;
-"A / B" lines seed the first item; vegetablesFree true on breakfast / lunch / dinner; the 8 tagged allergens +
+the 8 tagged allergens +
 free text; no trainee inbox — an "unseen update" dot on the Workouts and Nutrition tabs (last seen stored on the
 server). 13b flags: `FEATURE_NUTRITION_RECIPES` / `FEATURE_MEAL_LOGGING` / `FEATURE_WATER_TRACKING` (default off).
 
 ```
-Implement PRD §5.6 (core). Read docs/reference/nutrition-guide-1500.pdf and
+Implement PRD §5.6 (core). Read the coach's md food lists in docs/reference/ and
 docs/reference/nutrition-guide-issues.md first (local files, gitignored — never commit or quote them in
 committed files beyond what PRD §5.6 says). Propose the schemas (13a AND the 13b models — see Phase 13b),
 the onboarding step and the calorie config before writing routes.
@@ -383,13 +385,11 @@ the onboarding step and the calorie config before writing routes.
    profile (both apps, via the shared onboarding answer sections in @sistem/shared) and in the nutrition
    builder, which warns when an option line uses an item that conflicts with them (diet type / allergy
    tags / kosher = meat + dairy in one option).
-3. Seed script (idempotent, per coach, DEV + first setup): the guide's 44 food items verbatim (20 protein,
-   12 carb, 12 fat, with the "new" tags; diet tags proposed for the coach to review), the two tips
-   (protein tip, swap rule), and one template "1,500 kcal" (breakfast 1P+1C+1F, lunch 2P+1C+1F, snack
-   1C+1F, dinner 1.5P+1C+1F, with the guide's options). The food list's values win: option lines use the
-   list's amounts, meal kcal is computed (dinner 435, day 1,515), and each gap is seeded exactly as written
-   in nutrition-guide-issues.md (patties = free-text line, etc.). Never invent values the guide doesn't
-   give: no per-item kcal, no vegetable items.
+3. Seed script (idempotent, per coach, DEV + first setup): the coach's food items verbatim from her md lists
+   (apps/server/data/nutrition/food-lists.json, gitignored; diet tags proposed for the coach to review). No
+   template is seeded (the lists have none). Never invent values the lists don't give: no per-item kcal, no
+   vegetable items. *(Updated 2026-10-08: built first from a PDF menu — 44 items + a "1,500" template —
+   which the owner then replaced with the md lists as the only source.)*
 4. Calorie target (one pure module, reused by 13c): BMR Mifflin-St Jeor (latest weigh-in, else the
    onboarding weight; height; age from birthDate; sex) × an activity factor from her training frequency
    (table in config) → goal adjustment. Goal mapping (owner-approved): "lose weight" → fat-loss deficit;
@@ -444,7 +444,7 @@ Owner decisions (2026-10-08) — details in PRD §5.6 "Decisions — Phase 13a+"
    answers.nutritionPreferences v2 (old answers mapped on read) + answers.weightGoal { targetWeightKg,
    timeframe weeks | date, setAt }. Review, Profile and the coach's onboarding sections show them.
 2. Diet tags + shellfish, pork, lactose, alcohol, high_fodmap; every option mapped to tags (PRD table);
-   keto → carb-portion warning; seed:nutrition backfills lactose on dairy items (idempotent).
+   keto → carb-portion warning. Seeded dairy items carry lactose (the coach removes it where it doesn't apply).
 3. Calorie calculation per the owner's method (calorieTarget.ts, pure): new activity table, fat_loss_aggressive,
    timeline method with safety caps (1%/week loss, 0.5%/week gain, 25% max deficit, floor), raised to the
    floor, recommended portions per group. New config fields (kcalPerKg, maxLossRatePctPerWeek,
@@ -462,6 +462,15 @@ Owner decisions (2026-10-08) — details in PRD §5.6 "Decisions — Phase 13a+"
    PUT /api/meal-logs/:date, PUT|DELETE /api/meal-logs/:date/photos/:mealId; coach GET
    /api/coach/trainees/:id/meal-logs?weekStart=. Coach adherence: dashboard Nutrition → Tracking and coach
    mode ?tab=tracking (read-only), marked / planned per day and group, no judgment wording, no calories.
+7. The coach's md food lists are the ONLY source (owner, 2026-10-08): `apps/server/data/nutrition/food-lists.json`
+   (gitignored, 219 items; PDF-derived items and template removed), idempotent seed (items only, appended after hers; a
+   re-run adds only missing items); 8 low-protein dairy items seeded archived for the coach to decide. New portion group
+   `snack` (150 kcal, Settings; split 0% = never added by the calculation) through the whole stack. The default portion
+   split is a placeholder for the coach. Food categories per group (ids in nutrition.constants FOOD_CATEGORY_IDS,
+   labels in @sistem/shared), seeded from the md headings (a re-run only fills items without one); dashboard picker with
+   group tabs, category chips, typo-tolerant search, "Recently used" (GET builder response `recentFoodIds`) and
+   keyboard; food list group / category filters. DEV ONLY `npm run reset:nutrition -- <coachEmail> [--allow-remote] [--yes]`
+   (counts; with --yes deletes the coach's food items, nutrition templates, plans, versions and meal logs).
 ```
 
 ### Phase 13b — Recipes, meal logging, water (built behind feature flags, closed)
@@ -506,7 +515,11 @@ and AIRecommendation model with a nutrition kind — do not add a second provide
    the model as text and shown to the coach next to the draft. If the filtered list leaves a group empty,
    do not call the model — tell the coach.
 4. Model input: the computed target, the group values, the meal list (from the coach's default template),
-   relevant onboarding answers, and the FILTERED food list as ids grouped by group (active items only).
+   relevant onboarding answers, and the FILTERED food list as ids grouped by group (active items only — archived items,
+   e.g. the 8 low-protein dairy items, are never sent).
+   Snack group (13a+): the model NEVER adds snack portions. Snack items are sent only when the meal structure it is given
+   already has snack portions (the coach's template / settings), and it may only fill those portions with snack items;
+   a meal's snack count in the output must equal the input's (validated in code, step 5).
    Model output (structured JSON): portions per group per meal, options per meal (lines = food item id +
    portions), a short rationale for the coach. Nothing else — no calorie numbers from the model.
 5. Validation in code: schema; every food id exists, belongs to the coach, is not archived, was in the

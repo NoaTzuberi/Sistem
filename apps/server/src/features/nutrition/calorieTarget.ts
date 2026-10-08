@@ -141,7 +141,8 @@ function safeDailyLimit(kind: 'loss' | 'gain', weightKg: number, tdee: number, c
 
 /**
  * Portions per group for a daily kcal: the coach's split ÷ the group values, in steps of
- * 0.5, then nudged half a portion at a time while that brings the total closer.
+ * 0.5, then nudged half a portion at a time while that brings the total closer. A group
+ * with a 0% share (snack by default — only the coach adds treats) never gets a portion.
  */
 export function recommendPortions(kcal: number, config: NutritionConfig): { portions: PortionCounts; kcal: number } {
   const portions = {} as PortionCounts;
@@ -152,7 +153,7 @@ export function recommendPortions(kcal: number, config: NutritionConfig): { port
   for (let step = 0; step < 20; step += 1) {
     const gap = kcal - total();
     let best: { group: (typeof PORTION_GROUP_IDS)[number]; change: number; gap: number } | null = null;
-    for (const group of PORTION_GROUP_IDS) {
+    for (const group of PORTION_GROUP_IDS.filter((candidate) => config.portionSplit[candidate] > 0)) {
       for (const change of [PORTION_STEP, -PORTION_STEP]) {
         if (portions[group] + change < 0) continue;
         const next = Math.abs(gap - change * config.groupKcal[group]);

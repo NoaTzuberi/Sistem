@@ -8,8 +8,8 @@
  *   npm run seed:dev                   (local database)
  *   npm run seed:dev -- --allow-remote (non-local dev database)
  *
- * Also seeds the coach's food list + nutrition template when the guide data file
- * (apps/server/data/nutrition/guide-1500.json, gitignored) exists — see seed:nutrition.
+ * Also seeds the coach's food list when its data file (apps/server/data/nutrition/food-lists.json,
+ * made from the coach's md lists in docs/reference/, gitignored) exists — see seed:nutrition.
  *
  * Re-running is safe: existing seed accounts, plans and body entries are left as they are
  * (body entries are added to an existing trainee 2 once, if she has at most one).
@@ -32,7 +32,7 @@ import type { PlanSetTargetFields } from '../../plans/plan.types';
 import { Exercise } from '../../exercises/exercise.model';
 import { assertDevDatabase } from './devDatabaseGuard';
 import { existsSync } from 'node:fs';
-import { DEFAULT_NUTRITION_SEED_FILE, applyNutritionSeed, readNutritionSeedFile } from '../../nutrition/nutritionSeed';
+import { NUTRITION_SEED_FILES, applyNutritionSeed, readNutritionSeedFile } from '../../nutrition/nutritionSeed';
 
 const SEED_PASSWORD = 'sistem-dev-1234';
 const SALT_ROUNDS = 12;
@@ -216,12 +216,12 @@ async function main() {
       }
     }
 
-    // The coach's food list + template (Phase 13a), when her guide data is on this machine.
-    if (existsSync(DEFAULT_NUTRITION_SEED_FILE)) {
-      const result = await applyNutritionSeed(String(coach._id), await readNutritionSeedFile(DEFAULT_NUTRITION_SEED_FILE));
-      console.log(`Nutrition: ${result.foodsCreated} food item(s) created; template ${result.templateCreated ? 'created' : 'already there'}.`);
-    } else {
-      console.log('Nutrition: no guide data file (apps/server/data/nutrition/) — skipped.');
+    // The coach's food lists + template (Phase 13a / 13a+), when her data is on this machine.
+    const nutritionFiles = NUTRITION_SEED_FILES.filter((file) => existsSync(file));
+    if (nutritionFiles.length === 0) console.log('Nutrition: no food list data file (apps/server/data/nutrition/) — skipped.');
+    for (const file of nutritionFiles) {
+      const result = await applyNutritionSeed(String(coach._id), await readNutritionSeedFile(file));
+      console.log(`Nutrition (${file.split('/').pop()}): ${result.foodsCreated} food item(s) created.`);
     }
 
     const defaultCoachId = await resolveDefaultCoachId();

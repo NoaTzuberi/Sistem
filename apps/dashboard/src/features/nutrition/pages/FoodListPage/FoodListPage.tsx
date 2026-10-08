@@ -1,11 +1,15 @@
 import { useState } from 'react';
-import type { FoodItem, FoodItemPayload } from '@sistem/types';
-import { DIET_TAG_LABELS, FOOD_GROUPS, FOOD_GROUP_LABELS, useLoad } from '@sistem/shared';
+import type { FoodGroup, FoodItem, FoodItemPayload } from '@sistem/types';
+import { DIET_TAG_LABELS, FOOD_CATEGORY_LABELS, FOOD_GROUPS, FOOD_GROUP_LABELS, useLoad } from '@sistem/shared';
 import { createFood, deleteFood, getNutritionSettings, listFoods, restoreFood, updateFood } from '../../../../services/coach/coachService';
 import { Button } from '../../../../components/common/Button/Button';
 import { Badge } from '../../../../components/common/Badge/Badge';
 import { NutritionSubnav } from '../../components/NutritionSubnav/NutritionSubnav';
 import { FoodForm } from '../../components/FoodForm/FoodForm';
+import { GroupTabs } from '../../components/GroupTabs/GroupTabs';
+import { CategoryChips } from '../../components/CategoryChips/CategoryChips';
+import { matchesCategory } from '../../data/foodFilters';
+import type { CategoryFilter } from '../../data/foodFilters';
 import { NUTRITION_COPY } from '../../data/nutritionCopy';
 import './FoodListPage.css';
 
@@ -19,6 +23,9 @@ export function FoodListPage() {
   const { data, error, isLoading, reload } = useLoad(loadFoods, "Couldn't load the food list.");
   const [editingId, setEditingId] = useState<string>();
   const [showArchived, setShowArchived] = useState(false);
+  // Filters (13a+): one group (or all), then a category of that group.
+  const [groupFilter, setGroupFilter] = useState<FoodGroup | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>(null);
   const [message, setMessage] = useState<string>();
 
   async function run(action: () => Promise<string | void>): Promise<boolean> {
@@ -60,9 +67,29 @@ export function FoodListPage() {
           {message}
         </p>
       )}
-      <label className="food-list-archived">
-        <input type="checkbox" checked={showArchived} onChange={(event) => setShowArchived(event.target.checked)} /> {NUTRITION_COPY.showArchived}
-      </label>
+      <div className="food-list-filters">
+        <GroupTabs
+          groups={[null, ...FOOD_GROUPS]}
+          value={groupFilter}
+          onChange={(next) => {
+            setGroupFilter(next);
+            setCategoryFilter(null);
+          }}
+          label={NUTRITION_COPY.groupFilter}
+          allLabel={NUTRITION_COPY.groupAll}
+        />
+        {data && groupFilter && (
+          <CategoryChips
+            group={groupFilter}
+            items={data.foods.filter((food) => food.group === groupFilter && (showArchived || !food.archivedAt))}
+            value={categoryFilter}
+            onChange={setCategoryFilter}
+          />
+        )}
+        <label className="food-list-archived">
+          <input type="checkbox" checked={showArchived} onChange={(event) => setShowArchived(event.target.checked)} /> {NUTRITION_COPY.showArchived}
+        </label>
+      </div>
 
       {isLoading && !data && <p>Loading…</p>}
       {error && !data && (
@@ -72,8 +99,10 @@ export function FoodListPage() {
       )}
 
       {data &&
-        FOOD_GROUPS.map((group) => {
-          const items = data.foods.filter((food) => food.group === group && (showArchived || !food.archivedAt));
+        FOOD_GROUPS.filter((group) => groupFilter === null || group === groupFilter).map((group) => {
+          const items = data.foods.filter(
+            (food) => food.group === group && (showArchived || !food.archivedAt) && matchesCategory(food, categoryFilter),
+          );
           const cap = data.config.groupKcal[group];
           return (
             <section key={group} className="food-list-group" aria-labelledby={`food-group-${group}`}>
@@ -87,6 +116,7 @@ export function FoodListPage() {
                   <thead>
                     <tr>
                       <th>{NUTRITION_COPY.name}</th>
+                      <th>{NUTRITION_COPY.category}</th>
                       <th>{NUTRITION_COPY.portion}</th>
                       <th>{NUTRITION_COPY.grams}</th>
                       <th>{NUTRITION_COPY.kcal}</th>
@@ -100,7 +130,7 @@ export function FoodListPage() {
                     {items.map((item) =>
                       editingId === item.id ? (
                         <tr key={item.id}>
-                          <td colSpan={6}>
+                          <td colSpan={7}>
                             <FoodForm item={item} onSubmit={(payload) => save(item, payload)} onCancel={() => setEditingId(undefined)} />
                           </td>
                         </tr>
@@ -110,6 +140,7 @@ export function FoodListPage() {
                             {item.name} {item.isNew && <Badge tone="accent">{NUTRITION_COPY.isNew}</Badge>}{' '}
                             {item.archivedAt && <Badge tone="alert">{NUTRITION_COPY.archived}</Badge>}
                           </td>
+                          <td>{item.category ? FOOD_CATEGORY_LABELS[item.category] : '—'}</td>
                           <td dir="auto">{item.portion}</td>
                           <td>{item.grams ?? '—'}</td>
                           <td>{item.kcal ?? '—'}</td>

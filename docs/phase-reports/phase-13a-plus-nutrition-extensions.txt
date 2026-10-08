@@ -264,3 +264,171 @@ git add -A -- \
   docs/BUILD_PLAN.md \
   docs/phase-reports/phase-13a-plus-nutrition-extensions.txt
 git commit -m "docs: phase 13a+ report; nutrition extensions decisions (preferences, calorie method, timeline, intro, portion tracking), extra portions backlog"
+
+
+================================================================================
+FOLLOW-UP (2026-10-08) — THE COACH'S MD FOOD LISTS AS THE ONLY SOURCE, SNACK GROUP
+================================================================================
+Written after the commits above (9d4ca0c). Owner requests: seed the coach's md food lists (docs/reference/: 150-dairy,
+protien — the full file, carbohydrates_and_fruits_guide_120_calories, fats_spreads_nuts_90_calories, snacks); a new
+"Snack" portion group; then "the md files are the ONLY source — do not use the old PDF for anything".
+
+1. SUMMARY
+- Seed = ONLY the md lists: apps/server/data/nutrition/food-lists.json (gitignored), 219 items — protein 72 (26 dairy +
+  45 protein-file), carb 65, fat 32, snack 50 — names and amounts as written. The PDF-derived items and the "1,500" template
+  are gone from the seed (the old generated guide-1500.json was moved out of the repo folder, not used). The PDF file itself
+  was left alone.
+- 8 low-protein dairy items (sour cream 9%, oat milk, almond milk, labaneh, Hemed, Greek yogurt 7–10%, cow's milk 3%, plain
+  yogurt 3%) are seeded ARCHIVED — in the food list under "Show archived", not in the builder or the swap lists — for the coach
+  to decide their group (carb / fat / snack / remove).
+- New portion group "snack": 150 kcal per portion (Settings), default share 0% — the calculation never adds snack portions;
+  only the coach does. Through the whole stack: types, config + settings, food list, plan builder (4th stepper), kcal and
+  publish rules, keto (carb + snack), trainee day header / tracker (a snack row only when planned), swap lists, meal logs,
+  coach tracking (both apps). Data saved before snacks existed reads as 0 snack (no migration).
+- The default portion split (45 / 32 / 23, snack 0) came from the PDF menu: kept as a tunable default and labelled a
+  PLACEHOLDER (config comment, Settings note, calculation summary note).
+- Seed: several files supported (only food-lists.json today), items-only files (no template), new items appended after the
+  coach's own order, `archived` per item, idempotent (a re-run adds only missing items). The one-time "lactose backfill" was
+  removed (it existed only for the PDF items; the md items carry lactose already).
+- Found and fixed in the 375×667 check: 20 portion texts in the md lists contain calorie notes (e.g. "one bar = ~122
+  קלוריות"), which reached the trainee's swap lists. They are left out of the seeded text (only that bracket; listed for the
+  coach in nutrition-guide-issues.md §6), and the seed now refuses any name / portion that mentions calories.
+- New DEV ONLY script: npm run reset:nutrition -- <coachEmail> [--allow-remote] [--yes] — prints the coach's food items,
+  nutrition templates, plans, versions and meal logs; with --yes deletes them (meal photos included) and resets her
+  trainees' "intro read" marker, then prints the counts again.
+- 13c AI rules (BUILD_PLAN): archived items are never sent; the model never adds snack portions — snack items are sent only
+  when the given meal structure has snack portions, and the output's snack counts must equal the input's.
+- Docs: PRD §5.6, BUILD_PLAN (Phase 13 intro, 13a, 13a+ item 7, 13c) and CLAUDE.md now name the md lists as the single
+  source; the review files docs/reference/nutrition-guide-issues.md and nutrition-diet-tags-review.md were rewritten to cover
+  only the md lists (gitignored).
+- Your message ended at "tests use a fake" — read as: tests use a fake fixture (they do), then the 375×667 check, report, stop.
+
+2. DECISIONS (owner answers) AND WHAT I DECIDED INSIDE THEM
+- Owner: snack group, 150, 0% share; dairy → protein except the 8 (archived); md values win; the md lists are the only source;
+  reset and reseed the dev data; recreate a plan for Dev Trainee Two; the split is a placeholder.
+- "Greek yogurt 0%" in the owner's list: the dairy file has no 0% Greek yogurt — the 7–10% one is the archived one.
+- Low-protein items in the protein file (hot dogs, kebab, merguez, cervelat, corn schnitzel, entrecote) are seeded ACTIVE
+  (the archive rule was for dairy) and listed for the coach (issues §4).
+- Shrimp, mussels, calamari → tag Shellfish. Gummies (gelatin) and cervelat are not tagged Pork — noted for the coach.
+- Lentils and beans are in both the carb and the protein lists — both seeded (different groups and amounts), noted (§5).
+- The removed calorie notes: only the bracket with the calorie number was left out; the coach's other wording stays.
+
+3. FILES CHANGED (since 9d4ca0c)
+Added: apps/server/src/features/nutrition/scripts/resetNutrition.ts
+Modified — server: package.json (root: reset:nutrition), apps/server/package.json (reset:nutrition),
+  features/nutrition/ (calorieTarget, foodItem.model, foodItem.service, nutrition.config, nutrition.constants, nutrition.types,
+  nutrition.validation, nutritionMapping, nutritionMeal.schema, nutritionPreferences, nutritionSeed, nutritionSettings.model,
+  nutritionSettings.service, scripts/seedNutrition; __tests__/calorieTarget, nutritionApi, nutritionRules, nutritionSeed),
+  features/mealLogs/ (mealLog.model, mealLog.service, mealLog.validation, __tests__/mealLogs.test.ts),
+  features/users/scripts/seedDev.ts
+Modified — packages: packages/types/src/index.ts, packages/shared/src/nutritionDisplay.ts
+Modified — dashboard: features/nutrition/ (nutritionDraft.ts, data/nutritionCopy.ts, components/CalculationSummary,
+  components/MealEditor, components/TipsEditor, pages/NutritionSettingsPage)
+Modified — mobile: features/nutrition/components/SwapSheet/SwapSheet.tsx (comment only — the snack group needed no other
+  mobile change: every list follows the shared group list)
+Docs: docs/PRD.md, docs/BUILD_PLAN.md, this report
+Local only (gitignored): apps/server/data/nutrition/food-lists.json (new seed), docs/reference/nutrition-guide-issues.md and
+  nutrition-diet-tags-review.md (rewritten), CLAUDE.md. guide-1500.json was moved out of apps/server/data/nutrition/.
+
+4. DEPENDENCIES: none added or removed. No env changes.
+
+5. HOW TO TEST
+  npm test        -> 34 files, 511 tests pass (was 508). New / changed: the recommendation never adds snack portions; keto
+                     counts snack; settings carry the snack value and share; a snack item is capped at 150, a snack portion
+                     counts 150 kcal, her view has a snack group + swaps and no calorie text; snack portions tracked, a meal
+                     log saved before snacks reads as 0; the seed: items-only file, archived item, appended order, a re-run
+                     adds only missing items, a restored item stays restored; the seed refuses calorie words in name / portion.
+                     The old lactose-backfill test was removed with the backfill.
+  npm run build   -> passes (dashboard 454 kB, mobile 592 kB).
+  npm run lint    -> 0 errors; the 2 older AuthContext warnings.
+  npm run dev:all -> as before: your API on 5002 (already running the new code — the snack plan saved through it); mobile and
+                     dashboard started with the workspace scripts on spare ports 5175 / 5177 (yours hold 5173 / 5174), both
+                     200; I stopped only my own processes.
+  Dev database (Atlas `Sistem`, coach@sistem.dev, --allow-remote):
+    reset:nutrition dry run — Before: 217 food items (44 PDF + 173 md), 1 template, 1 plan, 2 versions, 1 meal log.
+    reset --yes → After: 0 / 0 / 0 / 0 / 0. seed:nutrition → 219 created; second run → 0 created, 219 already there.
+    (After the calorie-note fix: reset again — Before 219 / 0 / 1 / 1 / 1 → After all 0 — and reseeded: 219.)
+    Dev Trainee Two: a new plan from the md list, published as version 1 — breakfast (eggs / light bread / avocado, or
+    protein yogurt / oats / chia), lunch (tofu ×2 / rice / olive oil), snack (apple / peanut butter / Bamba = 1 snack
+    portion), dinner (lentils ×1.5 / sweet potato / raw tahini), target 1,620 (override), day 1,665, an intro message. One
+    expected warning: protein yogurt vs her lactose-free answer. Final counts: 219 items, 0 templates, 1 plan, 1 version,
+    1 meal log (today: 2 protein · 1 carb · 1 fat · 1 snack, from the check).
+  Browser (real API + dev data; mobile at 375×667 in a same-origin frame — the window can't be resized):
+    - Trainee: tracker rows 4½ protein (5 circles) · 4 carb · 4 fat · 1 snack (1 circle); tapping the snack circle saves
+      snack 1; "1 snack" opens "Snack swaps" (the 50 snack items); the intro opens; no calorie words anywhere in her full
+      plan response (all swap lists); archived items are not in her swaps; no sideways scroll.
+    - Coach mode: Tracking "Snack 1 of 1" in the day and week lines.
+    - Dashboard: food list sections Protein 150 / Carb 120 / Fat 90 / Snack 150 / Vegetables; 211 items shown, 219 with
+      "Show archived" (the 8 dairy items marked archived); Settings has Snack in the group values and the split, with "The
+      default split is a placeholder — set your own."; the builder has a Snack stepper per meal, "Plan now … · 1 snack =
+      1,665 kcal", and "Split from Settings (default is a placeholder)" next to the recommended portions; Publish is
+      disabled with "Nothing changed since the last published version".
+
+6. KNOWN ISSUES / TODOs
+- For the coach (docs/reference/nutrition-guide-issues.md): the 8 archived dairy items' group; snack amounts above 150 (Oreo,
+  ice pop, La Frutta); the low-protein meat / substitute items; lentils / beans in two lists; the 20 removed calorie notes;
+  light mayo / prepared tahini amounts; set the portion split; review the seeded tags (nutrition-diet-tags-review.md).
+- No template and no vegetable items exist now (the md lists have none).
+- A coach can still type a calorie number into a portion in the dashboard food list; only the seed refuses it. Worth a warning
+  in the food form later.
+- Old nutrition notifications of the dev trainees point at deleted plans (dev data only; she has no inbox yet).
+- Labels "Snack" / "1 snack" are placeholder copy.
+
+7. FOOD CATEGORIES AND THE FILTERED FOOD PICKER (owner request, 2026-10-08)
+- FoodItem.category — one of its group's categories (ids: FOOD_CATEGORY_IDS in nutrition.constants; order + placeholder
+  labels: FOOD_CATEGORIES / FOOD_CATEGORY_LABELS in @sistem/shared), derived from the md section headings (owner-approved,
+  incl. 7 snack categories after the coach's own headings):
+    protein: Dairy 22 · Poultry 9 · Meat 9 · Fish & seafood 18 · Eggs 1 · Plant-based 11 · Supplements 2
+    carb:    Grains & cereals 20 · Bread & crackers 14 · Fruits 23 · Legumes 3 · Starchy vegetables 5
+    fat:     Oils 5 · Nuts & seeds 12 · Spreads 13 · Other 2
+    snack:   Sweet cereals 6 · Chocolate 15 · Cookies & pastries 8 · Ice cream & popsicles 7 · Candy 4 · Salty 8 · Fast food 2
+  Items placed by judgment are listed for the coach in docs/reference/nutrition-diet-tags-review.md ("Food categories").
+- Server: a category must belong to the item's group (400 otherwise); moving an item to another group clears a category
+  that no longer fits; the seed sets categories on new items and fills them on existing items only while they have none
+  (her choice is never overwritten; a re-run fills 0). The builder response carries `recentFoodIds` — her most recently
+  used items per group across her plans (newest plan first, distinct, ≤ 8; archived ids are filtered out by the picker).
+- Dashboard "+ Food item…" picker: opens on the group the option still needs (its lines cover fewer portions than the meal
+  plans; else the meal's first group, else protein), group tabs (groups with active items only), "All" + category chips
+  (categories that have items), a typo-tolerant search inside the selected group and category (@sistem/shared
+  `searchByText` — the exercise search's scoring + Hebrew geresh / gershayim / maqaf folding), "Recently used" row (hidden
+  while searching or filtering), keyboard: type, ↑ / ↓, Enter adds, Esc closes. Archived items never appear.
+- Food list: group tabs ("All groups" + each group), category chips for the chosen group, a Category column, and a Category
+  select in the add / edit form (only the group's categories; a group change clears an unfitting one).
+- Dev database: seed:nutrition (--allow-remote) → "0 created, 219 already there (219 got a category)"; second run → 0.
+- Tests (514, was 511): category per group via the API (wrong group / unknown refused, cleared on a group change, set and
+  cleared), recently used (newest plan first, distinct, per group, per coach), seed categories (set on new, filled only when
+  missing, never overwrite, wrong group refused).
+- Browser (dashboard, coach@sistem.dev, Dev Trainee Two's builder): the snack meal's picker opened on Carb (no protein
+  planned), 5 carb chips, focus in the search box, 5 recently used carbs; Fruits + "בננא" (typo) → "בננה"; cleared, ↓ ↓
+  Enter → added the 3rd fruit (apple) and closed (the test line was removed again; the plan is unchanged since publish);
+  Protein tab: 64 items (72 minus the 8 archived), none of the archived names, 7 chips; Esc closes. No Vegetables tab (no
+  vegetable items). Food list: 211 active items; Snack → 50 with 7 chips; Salty → 8; Protein · Dairy → 16, with archived
+  22; Edit → Category lists only protein's categories, a change saves (set back afterwards).
+- Copy (placeholders): picker / filter labels in the dashboard nutritionCopy.ts; category labels in @sistem/shared.
+- New files: packages/shared/src/textSearch.ts; dashboard components CategoryChips/, GroupTabs/; data/foodFilters.ts.
+
+8. SUGGESTED COMMITS (ready to paste — in order; everything since 9d4ca0c: the md-lists / snack follow-up + categories)
+
+# 1) server + contract: snack group, md food lists as the only seed source, food categories, recently used, reset:nutrition
+git add -A -- \
+  package.json \
+  apps/server/package.json \
+  apps/server/src/features/nutrition \
+  apps/server/src/features/mealLogs \
+  apps/server/src/features/users/scripts/seedDev.ts \
+  packages/types
+git commit -m "feat: snack portion group; seed only from the coach's md food lists (archived items, no calorie text); food categories per group with seeded defaults; recently used foods per group; dev reset:nutrition script"
+
+# 2) shared + apps: snack group in the apps, filtered food picker, food list filters, placeholder split label
+git add -A -- \
+  packages/shared \
+  apps/dashboard \
+  apps/mobile
+git commit -m "feat: food picker with group tabs, category chips, typo-tolerant search, recently used and keyboard; food list group and category filters; snack group in the builder, settings and tracking; portion split labelled as a placeholder"
+
+# 3) docs
+git add -A -- \
+  docs/PRD.md \
+  docs/BUILD_PLAN.md \
+  docs/phase-reports/phase-13a-plus-nutrition-extensions.txt
+git commit -m "docs: the coach's md food lists are the single nutrition source; snack group, food categories and picker; 13c AI rules; phase 13a+ follow-up report"

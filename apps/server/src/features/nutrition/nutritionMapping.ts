@@ -1,5 +1,6 @@
 import { Types } from 'mongoose';
 import type {
+  PortionCounts,
   FoodGroup,
   FoodItem,
   NutritionFoodFacts,
@@ -25,6 +26,7 @@ export function toPublicFoodItem(item: LeanFoodItem): FoodItem {
     kcal: item.kcal ?? null,
     isNew: item.isNewItem === true,
     dietTags: item.dietTags ?? [],
+    category: item.category ?? null,
     order: item.order ?? 0,
     archivedAt: item.archivedAt ? item.archivedAt.toISOString() : null,
   };
@@ -51,11 +53,16 @@ export function groupSwaps(foods: readonly FoodItem[]): Record<FoodGroup, Nutrit
   return swaps;
 }
 
+/** Stored counts → API counts; data saved before snacks existed (13a+) reads as 0 snack. */
+export function toPortionCounts(counts: Partial<PortionCounts> | null | undefined): PortionCounts {
+  return { protein: counts?.protein ?? 0, carb: counts?.carb ?? 0, fat: counts?.fat ?? 0, snack: counts?.snack ?? 0 };
+}
+
 export function toPublicMeals(meals: readonly MealFields[]): NutritionMeal[] {
   return meals.map((meal) => ({
     id: String(meal._id),
     name: meal.name,
-    portions: { protein: meal.portions?.protein ?? 0, carb: meal.portions?.carb ?? 0, fat: meal.portions?.fat ?? 0 },
+    portions: toPortionCounts(meal.portions),
     vegetablesFree: meal.vegetablesFree === true,
     options: meal.options.map((option) => ({
       id: String(option._id),

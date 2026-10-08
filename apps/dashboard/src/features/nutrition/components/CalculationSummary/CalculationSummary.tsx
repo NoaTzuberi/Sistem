@@ -219,6 +219,7 @@ export function CalculationSummary({ traineeId, target, onChange, floorKcal, day
                 <p className="calculation-summary-line">
                   {NUTRITION_COPY.portionsPerDay} <strong>{describeMealPortions(suggestion.portions, false)}</strong>
                   {suggestion.portionsKcal !== null && <span className="calculation-summary-muted"> (≈ {formatKcal(suggestion.portionsKcal)})</span>}
+                  <span className="calculation-summary-muted">· {NUTRITION_COPY.portionsPlaceholderNote}</span>
                 </p>
               )}
             </div>

@@ -6,7 +6,7 @@ import { PortionStepper } from '../PortionStepper/PortionStepper';
 import { FoodPicker } from '../FoodPicker/FoodPicker';
 import { IssueList } from '../IssueList/IssueList';
 import { NUTRITION_COPY } from '../../data/nutritionCopy';
-import { move, newFoodLine, newOption, newTextLine } from '../../nutritionDraft';
+import { move, neededGroup, newFoodLine, newOption, newTextLine } from '../../nutritionDraft';
 import type { DraftLine, DraftMeal, DraftOption } from '../../nutritionDraft';
 import './MealEditor.css';
 
@@ -15,6 +15,8 @@ interface MealEditorProps {
   index: number;
   count: number;
   foods: FoodItem[];
+  /** Her recently used items per group (the picker's "Recently used" row). */
+  recentFoodIds: Partial<Record<FoodGroup, string[]>>;
   foodsById: Map<string, FoodItem>;
   /** The meal's kcal as the server last computed it. */
   kcal: number | undefined;
@@ -25,7 +27,7 @@ interface MealEditorProps {
   onMove: (offset: -1 | 1) => void;
 }
 
-const TEXT_GROUPS: (FoodGroup | '')[] = ['', 'vegetable', 'protein', 'carb', 'fat'];
+const TEXT_GROUPS: (FoodGroup | '')[] = ['', 'vegetable', 'protein', 'carb', 'fat', 'snack'];
 
 // Placeholder labels for new options — she renames them ("Option A", "Classic combo", …).
 function nextOptionLabel(count: number): string {
@@ -104,7 +106,7 @@ function LineRow({
 }
 
 /** One meal: name, portions per group (vegetables free), kcal, and the coach's options. */
-export function MealEditor({ meal, index, count, foods, foodsById, kcal, issues, onChange, onRemove, onMove }: MealEditorProps) {
+export function MealEditor({ meal, index, count, foods, recentFoodIds, foodsById, kcal, issues, onChange, onRemove, onMove }: MealEditorProps) {
   function updateOption(optionIndex: number, option: DraftOption) {
     onChange({ ...meal, options: meal.options.map((current, i) => (i === optionIndex ? option : current)) });
   }
@@ -192,6 +194,8 @@ export function MealEditor({ meal, index, count, foods, foodsById, kcal, issues,
             <div className="meal-option-add">
               <FoodPicker
                 foods={foods}
+                recentFoodIds={recentFoodIds}
+                initialGroup={neededGroup(meal, option)}
                 onPick={(food) => updateOption(optionIndex, { ...option, lines: [...option.lines, newFoodLine(food.id, food.group)] })}
               />
               <Button size="sm" onClick={() => updateOption(optionIndex, { ...option, lines: [...option.lines, newTextLine()] })}>
