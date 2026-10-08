@@ -4,20 +4,19 @@ import type { NutritionFeatures } from '@sistem/types';
 // Feature flags for built-but-closed features (Phase 13b). One server-wide switch per
 // feature, read from the environment, default OFF. The server enforces them (a closed
 // feature's routes answer 404, its payload fields are refused) and sends them to the
-// clients, which only hide / show — never client-only hiding.
+// clients, which only hide / show — never client-only hiding. (Meal logging was a flag
+// until the owner opened it in Phase 13a+ as portion tracking.)
 
 export type FeatureFlag = keyof NutritionFeatures;
 
 const FLAG_ENV: Record<FeatureFlag, string> = {
   nutritionRecipes: 'FEATURE_NUTRITION_RECIPES',
-  mealLogging: 'FEATURE_MEAL_LOGGING',
   waterTracking: 'FEATURE_WATER_TRACKING',
 };
 
 function readFlags(): NutritionFeatures {
   return {
     nutritionRecipes: process.env[FLAG_ENV.nutritionRecipes] === 'true',
-    mealLogging: process.env[FLAG_ENV.mealLogging] === 'true',
     waterTracking: process.env[FLAG_ENV.waterTracking] === 'true',
   };
 }

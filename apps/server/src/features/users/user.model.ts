@@ -42,6 +42,8 @@ export interface UserDocument {
   timezone: string;
   /** When she last opened each tab that shows an "unseen update" dot (Phase 13a). */
   tabSeenAt?: { workouts?: Date | null; nutrition?: Date | null };
+  /** The newest nutrition version whose intro she has read (Phase 13a+; 0 = none). */
+  nutritionIntroSeenVersion?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -95,6 +97,7 @@ const userSchema = new Schema<UserDocument>(
       workouts: { type: Date, default: null },
       nutrition: { type: Date, default: null },
     },
+    nutritionIntroSeenVersion: { type: Number, default: 0 },
   },
   { timestamps: true },
 );

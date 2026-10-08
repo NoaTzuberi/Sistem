@@ -6,7 +6,9 @@ import type {
   AiRecommendationLatest,
   AiRecommendationType,
   BodyMetricList,
+  CalculationOverrides,
   CalorieSuggestion,
+  CoachMealLogWeek,
   CoachNutritionPlanResponse,
   CoachPlan,
   CoachTraineeList,
@@ -261,11 +263,18 @@ export function createCoachApi(client: AxiosInstance) {
     return data;
   }
 
+  /** The calculation summary; `params` also carries the coach's live overrides (13a+). */
   async function getCalorieSuggestion(
     traineeId: string,
-    params: { goal?: NutritionGoal; formula?: FormulaSex } = {},
+    params: { goal?: NutritionGoal; formula?: FormulaSex } & Partial<Record<keyof CalculationOverrides, number>> = {},
   ): Promise<CalorieSuggestion> {
     const { data } = await client.get<CalorieSuggestion>(`${nutritionPath(traineeId)}/suggestion`, { params });
+    return data;
+  }
+
+  /** Portion tracking (13a+): one Sunday week of hers, read-only (none = her current week). */
+  async function getTraineeMealLogs(traineeId: string, weekStart?: string): Promise<CoachMealLogWeek> {
+    const { data } = await client.get<CoachMealLogWeek>(`/coach/trainees/${traineeId}/meal-logs`, { params: weekStart ? { weekStart } : {} });
     return data;
   }
 
@@ -318,6 +327,7 @@ export function createCoachApi(client: AxiosInstance) {
     deleteNutritionTemplate,
     getNutritionPlan,
     getCalorieSuggestion,
+    getTraineeMealLogs,
     saveNutritionPlan,
     publishNutritionPlan,
     applyNutritionTemplate,

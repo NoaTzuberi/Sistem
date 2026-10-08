@@ -10,9 +10,24 @@ function cloneDefaults(): NutritionConfig {
     groupKcal: { ...DEFAULT_NUTRITION_CONFIG.groupKcal },
     goalAdjustments: { ...DEFAULT_NUTRITION_CONFIG.goalAdjustments },
     activityFactors: [...DEFAULT_NUTRITION_CONFIG.activityFactors],
+    portionSplit: { ...DEFAULT_NUTRITION_CONFIG.portionSplit },
     floorKcal: DEFAULT_NUTRITION_CONFIG.floorKcal,
+    kcalPerKg: DEFAULT_NUTRITION_CONFIG.kcalPerKg,
+    maxLossRatePctPerWeek: DEFAULT_NUTRITION_CONFIG.maxLossRatePctPerWeek,
+    maxGainRatePctPerWeek: DEFAULT_NUTRITION_CONFIG.maxGainRatePctPerWeek,
+    maxDeficitPct: DEFAULT_NUTRITION_CONFIG.maxDeficitPct,
+    ketoMaxCarbPortions: DEFAULT_NUTRITION_CONFIG.ketoMaxCarbPortions,
   };
 }
+
+const SCALAR_SETTINGS = [
+  'floorKcal',
+  'kcalPerKg',
+  'maxLossRatePctPerWeek',
+  'maxGainRatePctPerWeek',
+  'maxDeficitPct',
+  'ketoMaxCarbPortions',
+] as const;
 
 /** Defaults, with each value the coach set taking its place. Vegetables always stay 0. */
 export function mergeNutritionConfig(overrides: Partial<NutritionSettingsDocument> | null): NutritionConfig {
@@ -29,7 +44,15 @@ export function mergeNutritionConfig(overrides: Partial<NutritionSettingsDocumen
   if (overrides.activityFactors?.length === config.activityFactors.length) {
     config.activityFactors = [...overrides.activityFactors];
   }
-  if (typeof overrides.floorKcal === 'number') config.floorKcal = overrides.floorKcal;
+  // The split is one choice (it sums to 100): taken whole or not at all.
+  const split = overrides.portionSplit;
+  if (split && (['protein', 'carb', 'fat'] as const).every((group) => typeof split[group] === 'number')) {
+    config.portionSplit = { protein: split.protein!, carb: split.carb!, fat: split.fat! };
+  }
+  for (const key of SCALAR_SETTINGS) {
+    const value = overrides[key];
+    if (typeof value === 'number') config[key] = value;
+  }
   return config;
 }
 
@@ -59,7 +82,15 @@ export async function saveNutritionSettings(
   }
   await NutritionSettings.updateOne(
     { coachId },
-    { $set: { groupKcal: input.groupKcal, goalAdjustments: input.goalAdjustments, activityFactors: input.activityFactors, floorKcal: input.floorKcal } },
+    {
+      $set: {
+        groupKcal: input.groupKcal,
+        goalAdjustments: input.goalAdjustments,
+        activityFactors: input.activityFactors,
+        portionSplit: input.portionSplit,
+        ...Object.fromEntries(SCALAR_SETTINGS.map((key) => [key, input[key]])),
+      },
+    },
     { upsert: true },
   );
   return getNutritionSettings(coachId);

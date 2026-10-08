@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import type {
   ApplyNutritionTemplatePayload,
+  CalculationOverrides,
   CreateNutritionTemplatePayload,
   DietTag,
   FoodGroup,
@@ -26,6 +27,7 @@ import {
   MAX_FOOD_GRAMS,
   MAX_FOOD_NAME_LENGTH,
   MAX_FOOD_PORTION_LENGTH,
+  MAX_INTRO_MESSAGE_LENGTH,
   MAX_LINE_PORTIONS,
   MAX_LINE_TEXT_LENGTH,
   MAX_MEALS,
@@ -44,9 +46,11 @@ import {
   NUTRITION_GOAL_IDS,
   PORTION_GROUP_IDS,
   PORTION_STEP,
+  WEIGHT_GOAL_WEEKS_RANGE,
 } from './nutrition.constants';
 import { NUTRITION_SETTING_BOUNDS } from './nutrition.config';
-import { findFoodConflicts, hasKosherConflict } from './nutritionPreferences';
+import { findFoodConflicts, followsKeto, hasKetoConflict, hasKosherConflict, keepsKosher } from './nutritionPreferences';
+import type { FoodConflictReason } from './nutritionPreferences';
 
 // Nutrition plan rules live only here, on the server (like plan.validation.ts): the
 // dashboard shows `issues` next to the meal / option / line they point at and never
@@ -178,7 +182,7 @@ function inRange(value: unknown, { min, max }: { min: number; max: number }): va
 
 export function parseNutritionSettingsPayload(body: unknown): SettingsParse {
   if (!isRecord(body)) return { value: null, error: 'Invalid request body.' };
-  const { groupKcal, goalAdjustments, activityFactors, floorKcal } = body;
+  const { groupKcal, goalAdjustments, activityFactors, floorKcal, portionSplit } = body;
   const bounds = NUTRITION_SETTING_BOUNDS;
 
   if (!isRecord(groupKcal) || !PORTION_GROUP_IDS.every((group) => inRange(groupKcal[group], bounds.groupKcal))) {
@@ -206,17 +210,35 @@ export function parseNutritionSettingsPayload(body: unknown): SettingsParse {
   if (!inRange(floorKcal, bounds.floorKcal) || !Number.isInteger(floorKcal)) {
     return { value: null, error: `The floor must be a whole number between ${bounds.floorKcal.min} and ${bounds.floorKcal.max} kcal.` };
   }
+  const scalars = [
+    ['kcalPerKg', bounds.kcalPerKg, 'kcal per kg'],
+    ['maxLossRatePctPerWeek', bounds.lossRatePct, 'The safe loss rate (% per week)'],
+    ['maxGainRatePctPerWeek', bounds.gainRatePct, 'The safe gain rate (% per week)'],
+    ['maxDeficitPct', bounds.maxDeficitPct, 'The largest deficit (%)'],
+    ['ketoMaxCarbPortions', bounds.ketoMaxCarbPortions, 'Keto carb portions'],
+  ] as const;
+  for (const [key, range, label] of scalars) {
+    if (!inRange(body[key], range)) return { value: null, error: `${label} must be between ${range.min} and ${range.max}.` };
+  }
+  if (
+    !isRecord(portionSplit) ||
+    !PORTION_GROUP_IDS.every((group) => inRange(portionSplit[group], bounds.portionSplitPct)) ||
+    Math.abs(PORTION_GROUP_IDS.reduce((sum, group) => sum + (portionSplit[group] as number), 0) - 100) > 0.01
+  ) {
+    return { value: null, error: 'The portion split is a % per group and adds up to 100.' };
+  }
   return {
     value: {
       groupKcal: { protein: groupKcal.protein as number, carb: groupKcal.carb as number, fat: groupKcal.fat as number },
-      goalAdjustments: {
-        fat_loss: goalAdjustments.fat_loss as number,
-        recomp: goalAdjustments.recomp as number,
-        muscle_gain: goalAdjustments.muscle_gain as number,
-        maintenance: goalAdjustments.maintenance as number,
-      },
+      goalAdjustments: Object.fromEntries(NUTRITION_GOAL_IDS.map((goal) => [goal, goalAdjustments[goal] as number])) as NutritionSettingsPayload['goalAdjustments'],
       activityFactors: activityFactors as number[],
       floorKcal,
+      kcalPerKg: body.kcalPerKg as number,
+      maxLossRatePctPerWeek: body.maxLossRatePctPerWeek as number,
+      maxGainRatePctPerWeek: body.maxGainRatePctPerWeek as number,
+      maxDeficitPct: body.maxDeficitPct as number,
+      portionSplit: { protein: portionSplit.protein as number, carb: portionSplit.carb as number, fat: portionSplit.fat as number },
+      ketoMaxCarbPortions: body.ketoMaxCarbPortions as number,
     },
     error: null,
   };
@@ -230,6 +252,30 @@ type PlanParse = { value: SaveNutritionPlanPayload; issues: [] } | { value: null
 
 function invalid(message: string, at: Partial<Pick<NutritionIssue, 'mealIndex' | 'optionIndex' | 'lineIndex'>> = {}): NutritionIssue {
   return { severity: 'error', code: 'invalid', message, ...at };
+}
+
+// The coach's values in the calculation summary — wide limits, like her onboarding answers.
+const OVERRIDE_BOUNDS: Record<keyof CalculationOverrides, { min: number; max: number; integer?: boolean; label: string }> = {
+  weightKg: { min: 20, max: 400, label: 'Weight (kg)' },
+  heightCm: { min: 50, max: 300, label: 'Height (cm)' },
+  ageYears: { min: 5, max: 120, integer: true, label: 'Age' },
+  activityFactor: { ...NUTRITION_SETTING_BOUNDS.activityFactor, label: 'The activity factor' },
+  targetWeightKg: { min: 20, max: 400, label: 'Target weight (kg)' },
+  timelineWeeks: { ...WEIGHT_GOAL_WEEKS_RANGE, integer: true, label: 'The timeframe (weeks)' },
+};
+
+/** Each override a number in its range, or null (her data). Missing keys = null. */
+export function parseCalculationOverrides(value: unknown): { value: CalculationOverrides; error: null } | { value: null; error: string } {
+  if (!isRecord(value)) return { value: null, error: 'Invalid calculation overrides.' };
+  const overrides = {} as CalculationOverrides;
+  for (const [key, bounds] of Object.entries(OVERRIDE_BOUNDS) as [keyof CalculationOverrides, (typeof OVERRIDE_BOUNDS)[keyof CalculationOverrides]][]) {
+    const raw = value[key] ?? null;
+    if (raw !== null && (!inRange(raw, bounds) || (bounds.integer && !Number.isInteger(raw)))) {
+      return { value: null, error: `${bounds.label} must be between ${bounds.min} and ${bounds.max}.` };
+    }
+    overrides[key] = raw as number | null;
+  }
+  return { value: overrides, error: null };
 }
 
 function parsePortionCounts(value: unknown): PortionCounts | null {
@@ -260,18 +306,23 @@ export function parseSaveNutritionPlanPayload(body: unknown, features: Nutrition
     const kcal = target.kcal ?? null;
     const source = target.source ?? null;
     const formulaSex = target.formulaSex ?? null;
+    // Omitted = keep the stored ones.
+    const overrides = target.overrides !== undefined ? parseCalculationOverrides(target.overrides) : null;
     if (kcal !== null && !(typeof kcal === 'number' && Number.isInteger(kcal) && kcal >= MIN_TARGET_KCAL && kcal <= MAX_TARGET_KCAL)) {
       issues.push(invalid(`The target must be a whole number between ${MIN_TARGET_KCAL} and ${MAX_TARGET_KCAL} kcal.`));
     } else if (source !== null && !isOneOf(source, CALORIE_TARGET_SOURCE_IDS)) {
       issues.push(invalid('The target source must be suggested or override.'));
     } else if (!isOneOf(target.goal, NUTRITION_GOAL_IDS)) {
-      issues.push(invalid('The goal must be fat loss, recomp, muscle gain or maintenance.'));
+      issues.push(invalid('The goal must be fat loss, aggressive fat loss, recomp, muscle gain or maintenance.'));
     } else if (formulaSex !== null && !isOneOf(formulaSex, FORMULA_SEX_IDS)) {
       issues.push(invalid('The formula must be male or female.'));
     } else if (target.confirmBelowFloor !== undefined && typeof target.confirmBelowFloor !== 'boolean') {
       issues.push(invalid('confirmBelowFloor must be true or false.'));
+    } else if (overrides?.error) {
+      issues.push(invalid(overrides.error));
     } else {
       calorieTarget = {
+        ...(overrides?.value ? { overrides: overrides.value } : {}),
         kcal: kcal as number | null,
         // A target without a number has no source.
         source: kcal === null ? null : ((source ?? 'override') as 'suggested' | 'override'),
@@ -406,10 +457,30 @@ export function parseSaveNutritionPlanPayload(body: unknown, features: Nutrition
     }
   }
 
+  // The coach's intro: plain text, line breaks kept (only the ends are trimmed).
+  let introMessage: string | null | undefined;
+  if (body.introMessage !== undefined) {
+    if (body.introMessage === null) introMessage = null;
+    else if (typeof body.introMessage !== 'string' || body.introMessage.trim().length > MAX_INTRO_MESSAGE_LENGTH) {
+      issues.push(invalid(`The intro message is text of at most ${MAX_INTRO_MESSAGE_LENGTH} characters.`));
+    } else {
+      introMessage = body.introMessage.replace(/\r\n/g, '\n').trim() || null;
+    }
+  }
+
   if (issues.length > 0 || !calorieTarget) {
     return { value: null, issues: issues.length > 0 ? issues : [invalid('Invalid request body.')] };
   }
-  return { value: { calorieTarget, meals, tips, ...(waterGoalMl !== undefined ? { waterGoalMl } : {}) }, issues: [] };
+  return {
+    value: {
+      calorieTarget,
+      meals,
+      tips,
+      ...(waterGoalMl !== undefined ? { waterGoalMl } : {}),
+      ...(introMessage !== undefined ? { introMessage } : {}),
+    },
+    issues: [],
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -443,11 +514,24 @@ export interface PublishCheckContext {
   recipeIds: Set<string>;
 }
 
-const ALLERGY_CONFLICT_LABEL = 'allergy';
+// Coach-facing wording for the answer behind a conflict (placeholder, like the rest).
+const CONFLICT_SOURCE_LABELS: Record<string, string> = {
+  lactose_free: 'lactose-free',
+  gluten_free: 'gluten-free',
+  low_fodmap: 'low-FODMAP',
+};
 
-function describeConflict(reason: ReturnType<typeof findFoodConflicts>[number], preferences: NutritionPreferences): string {
+function describeConflict(reason: FoodConflictReason): string {
   const tag = reason.tag.replace('_', ' ');
-  return reason.kind === ALLERGY_CONFLICT_LABEL ? `contains ${tag} (her allergy)` : `contains ${tag} (${preferences.dietType})`;
+  if (reason.kind === 'allergy') return `contains ${tag} (her allergy)`;
+  return `contains ${tag} (${CONFLICT_SOURCE_LABELS[reason.source] ?? reason.source.replace('_', ' ')})`;
+}
+
+/** The meals' portions summed over the day. */
+export function sumDayPortions(meals: readonly Pick<NutritionMeal, 'portions'>[]): PortionCounts {
+  const total: PortionCounts = { protein: 0, carb: 0, fat: 0 };
+  for (const meal of meals) for (const group of PORTION_GROUP_IDS) total[group] += meal.portions[group];
+  return total;
 }
 
 /**
@@ -523,14 +607,14 @@ export function findNutritionPublishIssues(plan: PublishCheckInput, context: Pub
             issues.push({
               severity: 'warning',
               code: 'preference_conflict',
-              message: `${where}: "${food.name}" ${conflicts.map((reason) => describeConflict(reason, preferences)).join(', ')}.`,
+              message: `${where}: "${food.name}" ${conflicts.map(describeConflict).join(', ')}.`,
               ...at,
             });
           }
         }
       });
 
-      if (preferences?.kosher && hasKosherConflict(optionTags)) {
+      if (keepsKosher(preferences) && hasKosherConflict(optionTags)) {
         issues.push({
           severity: 'warning',
           code: 'kosher_conflict',
@@ -552,6 +636,15 @@ export function findNutritionPublishIssues(plan: PublishCheckInput, context: Pub
       }
     });
   });
+
+  const dayPortions = sumDayPortions(plan.meals);
+  if (followsKeto(preferences) && hasKetoConflict(dayPortions, config.ketoMaxCarbPortions)) {
+    issues.push({
+      severity: 'warning',
+      code: 'keto_conflict',
+      message: `${dayPortions.carb} carb portions a day — she eats keto / low-carb (your limit: ${config.ketoMaxCarbPortions}).`,
+    });
+  }
 
   return issues;
 }

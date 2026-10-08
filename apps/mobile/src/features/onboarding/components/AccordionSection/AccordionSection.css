@@ -1,0 +1,74 @@
+.accordion-section {
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg);
+  /* Leaves room for the progress bar when scrolled into view. */
+  scroll-margin-top: var(--space-6);
+}
+
+.accordion-section-open {
+  border-color: var(--color-primary);
+}
+
+.accordion-section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--touch-target-min);
+  padding: var(--space-3);
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font-family: var(--font-family-body);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--transition-fast) var(--ease-standard);
+}
+
+.accordion-section-header:active {
+  background-color: var(--color-surface);
+}
+
+.accordion-section-heading {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.accordion-section-title {
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+.accordion-section-summary {
+  overflow: hidden;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accordion-section-chevron {
+  flex-shrink: 0;
+  color: var(--color-primary-deep);
+  transition: transform var(--transition-fast) var(--ease-standard);
+}
+
+.accordion-section-open .accordion-section-chevron {
+  transform: rotate(180deg);
+}
+
+.accordion-section-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: 0 var(--space-3) var(--space-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .accordion-section-chevron {
+    transition: none;
+  }
+}

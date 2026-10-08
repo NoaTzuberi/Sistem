@@ -30,6 +30,11 @@ export function addDays(dateString: string, days: number): string {
   return formatUtcDate(new Date(toUtcMidnight(dateString).getTime() + days * DAY_MS));
 }
 
+/** Whole days from `from` to `to` ('YYYY-MM-DD'); negative when `to` is earlier. */
+export function daysBetween(from: string, to: string): number {
+  return Math.round((toUtcMidnight(to).getTime() - toUtcMidnight(from).getTime()) / DAY_MS);
+}
+
 /** The calendar date of `instant` in `timezone`, e.g. '2026-10-04'. */
 export function localDateString(instant: Date, timezone: string): string {
   const parts = new Intl.DateTimeFormat('en-US', {

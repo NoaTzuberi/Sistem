@@ -62,7 +62,7 @@ const TRAINEES: {
       exercisePreferences: { favoriteExerciseNotes: 'Hip thrusts', muscleFocus: ['glutes', 'legs'] },
       equipment: ['full_gym'],
       recovery: { flags: ['nothing_to_add'] },
-      nutritionPreferences: { dietType: 'none', kosher: false, allergies: [] },
+      nutritionPreferences: { dietType: 'none', dietStyles: [], religious: [], intolerances: [], allergies: [], mealsPerDay: null },
     },
   },
   {
@@ -82,7 +82,16 @@ const TRAINEES: {
       exercisePreferences: { muscleFocus: ['core', 'full_body'] },
       equipment: ['dumbbells', 'resistance_bands'],
       recovery: { flags: ['prefers_low_impact'], notes: 'Knees get sore on long runs.' },
-      nutritionPreferences: { dietType: 'vegetarian', kosher: true, allergies: ['tree_nuts'], dislikes: 'Mushrooms.' },
+      nutritionPreferences: {
+        dietType: 'vegetarian',
+        dietStyles: [],
+        religious: [{ id: 'kosher' }],
+        intolerances: [{ id: 'lactose_free', details: 'Lactose ok in yogurt.' }],
+        allergies: [{ id: 'tree_nuts' }],
+        foodsDisliked: 'Mushrooms.',
+        mealsPerDay: 4,
+      },
+      weightGoal: { targetWeight: 62, timeframe: { kind: 'weeks', weeks: 12 } },
     },
   },
 ];

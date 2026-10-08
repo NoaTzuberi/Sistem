@@ -21,7 +21,7 @@ import { useAuth } from '../../../../services/auth/AuthContext';
 import { useStaggerReveal } from '../../../../hooks/useStaggerReveal';
 import { ROUTES, onboardingEditPath } from '../../../../app/config/routes';
 import { IconChevronRight, IconSalad, IconSettings, IconTrophy } from '@tabler/icons-react';
-import { describeNutritionPreferences } from '@sistem/shared';
+import { describeNutritionPreferences, describeWeightGoal } from '@sistem/shared';
 import { BodySummary } from '../../components/BodySummary/BodySummary';
 import { PROFILE_COPY } from '../../data/profileCopy';
 import { useMyBodyMetrics, useMyUnits } from '../../hooks/useMyBody';
@@ -281,9 +281,14 @@ export function ProfilePage() {
                       className="training-block-nutrition"
                       editStep="nutrition_preferences"
                     >
-                      {profile?.profile?.nutritionPreferences ? (
+                      {profile?.profile?.nutritionPreferences || profile?.profile?.weightGoal ? (
                         <dl className="training-block-rows">
-                          {describeNutritionPreferences(profile.profile.nutritionPreferences).map((row) => (
+                          {[
+                            ...(profile.profile.weightGoal
+                              ? [{ label: PROFILE_COPY.weightGoalLabel, value: describeWeightGoal(profile.profile.weightGoal, units.weight) }]
+                              : []),
+                            ...(profile.profile.nutritionPreferences ? describeNutritionPreferences(profile.profile.nutritionPreferences) : []),
+                          ].map((row) => (
                             <div key={row.label} className="training-block-row">
                               <dt>{row.label}</dt>
                               <dd dir="auto">{row.value}</dd>

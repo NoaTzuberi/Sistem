@@ -39,3 +39,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.trainee-nutrition-tracking {
+  grid-column: 1 / -1;
+}

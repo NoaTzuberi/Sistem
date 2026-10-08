@@ -90,7 +90,7 @@ describe('nutrition (API)', () => {
 
   beforeEach(async () => {
     await clearTestDatabase();
-    setFeatureFlagsForTests({ nutritionRecipes: false, mealLogging: false, waterTracking: false });
+    setFeatureFlagsForTests({ nutritionRecipes: false, waterTracking: false });
     coach = await createTestUser('coach@example.com', { role: 'coach' });
     otherCoach = await createTestUser('other-coach@example.com', { role: 'coach' });
     const onboarded = { onboardingStatus: 'completed' as const, onboardingCompletedAt: new Date() };
@@ -108,7 +108,15 @@ describe('nutrition (API)', () => {
         trainingFrequency: { minDays: 3, maxDays: 4, flexibleSchedule: false },
         preferredActivities: ['running'],
         equipment: ['full_gym'],
-        nutritionPreferences: { dietType: 'vegetarian', kosher: true, allergies: ['tree_nuts'], dislikes: 'Mushrooms' },
+        nutritionPreferences: {
+          dietType: 'vegetarian',
+          dietStyles: [],
+          religious: [{ id: 'kosher' }],
+          intolerances: [],
+          allergies: [{ id: 'tree_nuts' }],
+          foodsDisliked: 'Mushrooms',
+          mealsPerDay: null,
+        },
       },
     });
     protein = await createFood({ group: 'protein', name: 'Chicken breast', portion: '130 g', grams: 130, dietTags: ['poultry'] });
@@ -201,9 +209,15 @@ describe('nutrition (API)', () => {
   describe('settings', () => {
     const settings = {
       groupKcal: { protein: 140, carb: 120, fat: 90 },
-      goalAdjustments: { fat_loss: -15, recomp: -10, muscle_gain: 10, maintenance: 0 },
-      activityFactors: [1.375, 1.375, 1.55, 1.55, 1.725, 1.725, 1.9],
+      goalAdjustments: { fat_loss: -15, fat_loss_aggressive: -25, recomp: -10, muscle_gain: 10, maintenance: 0 },
+      activityFactors: [1.375, 1.375, 1.55, 1.55, 1.55, 1.725, 1.725],
       floorKcal: 1300,
+      kcalPerKg: 7700,
+      maxLossRatePctPerWeek: 1,
+      maxGainRatePctPerWeek: 0.5,
+      maxDeficitPct: 25,
+      portionSplit: { protein: 45, carb: 32, fat: 23 },
+      ketoMaxCarbPortions: 1,
     };
 
     it('starts from the defaults and saves her own numbers (vegetables stay free)', async () => {
@@ -258,9 +272,17 @@ describe('nutrition (API)', () => {
         plan: null,
         published: null,
         defaultGoal: 'fat_loss',
-        preferences: { dietType: 'vegetarian', kosher: true, allergies: ['tree_nuts'], dislikes: 'Mushrooms' },
+        preferences: {
+          dietType: 'vegetarian',
+          dietStyles: [],
+          religious: [{ id: 'kosher' }],
+          intolerances: [],
+          allergies: [{ id: 'tree_nuts' }],
+          foodsDisliked: 'Mushrooms',
+          mealsPerDay: null,
+        },
         config: { floorKcal: 1200 },
-        features: { nutritionRecipes: false, mealLogging: false, waterTracking: false },
+        features: { nutritionRecipes: false, waterTracking: false },
       });
       expect(res.body.foods).toHaveLength(3);
     });
@@ -348,7 +370,7 @@ describe('nutrition (API)', () => {
       expect(view.swaps.fat.map((food: { id: string }) => food.id)).toEqual([fat.id, unusedFat.id]);
       expect(view.swaps.vegetable).toEqual([]);
       expect(view).not.toHaveProperty('waterGoalMl');
-      expect(res.body.features).toEqual({ nutritionRecipes: false, mealLogging: false, waterTracking: false });
+      expect(res.body.features).toEqual({ nutritionRecipes: false, waterTracking: false });
     });
   });
 
@@ -418,11 +440,11 @@ describe('nutrition (API)', () => {
         let status = 0;
         let passed = false;
         const res = { status: (code: number) => ({ json: () => { status = code; } }) } as unknown as Response;
-        requireFeature('mealLogging')({} as Request, res, () => { passed = true; });
+        requireFeature('waterTracking')({} as Request, res, () => { passed = true; });
         return { status, passed };
       };
       expect(run()).toEqual({ status: 404, passed: false });
-      setFeatureFlagsForTests({ mealLogging: true });
+      setFeatureFlagsForTests({ waterTracking: true });
       expect(run()).toEqual({ status: 0, passed: true });
     });
   });
@@ -432,5 +454,82 @@ describe('nutrition (API)', () => {
     expect((await api.request('GET', '/nutrition-plan', { token: trainee.token })).body.plan).toBeNull();
     expect(await NutritionPlan.countDocuments()).toBe(1);
     expect(await Notification.countDocuments({ userId: trainee.user._id })).toBe(0);
+  });
+
+  describe('calculation summary and intro (Phase 13a+)', () => {
+    it("uses her weight goal: an unsafe pace is capped and the coach sees the recommended timeline", async () => {
+      // 70 → 60 kg "in 4 weeks" (set today).
+      await OnboardingResponse.updateOne(
+        { userId: trainee.user._id },
+        { $set: { 'answers.weightGoal': { targetWeightKg: 60, timeframe: { kind: 'weeks', weeks: 4 }, setAt: new Date() } } },
+      );
+      const res = await api.request('GET', `${planPath()}/suggestion`, { token: coach.token });
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({
+        method: 'timeline',
+        inputs: { targetWeightKg: 60, timelineWeeks: 4 },
+        timeline: { requestedWeeks: 4, unsafe: true, limitedBy: 'max_deficit' },
+      });
+      expect(res.body.timeline.recommendedWeeks).toBeGreaterThan(4);
+      expect(res.body.kcal).toBeGreaterThanOrEqual(1200);
+      expect(res.body.portions).toEqual(expect.objectContaining({ protein: expect.any(Number), carb: expect.any(Number), fat: expect.any(Number) }));
+    });
+
+    it("takes the coach's overrides from the query and stores them with the plan", async () => {
+      const live = await api.request('GET', `${planPath()}/suggestion?weightKg=80&timelineWeeks=40&targetWeightKg=72`, { token: coach.token });
+      expect(live.body.inputs).toMatchObject({ weightKg: 80, weightSource: 'coach', targetWeightKg: 72, timelineWeeks: 40 });
+      expect(live.body.inputs.overridden).toEqual(['weightKg', 'targetWeightKg', 'timelineWeeks']);
+      expect((await api.request('GET', `${planPath()}/suggestion?ageYears=2`, { token: coach.token })).status).toBe(400);
+
+      const overrides = { weightKg: 80, heightCm: null, ageYears: null, activityFactor: 1.2, targetWeightKg: null, timelineWeeks: null };
+      const saved = await savePlan({ calorieTarget: { ...target(1500), overrides }, meals: [breakfast()] });
+      expect(saved.status).toBe(200);
+      expect(saved.body.plan.calorieTarget.overrides).toEqual(overrides);
+      expect(saved.body.plan.calorieTarget.suggestion.inputs).toMatchObject({ weightKg: 80, activityFactor: 1.2 });
+      // Omitted on the next save = kept.
+      const kept = await savePlan({ calorieTarget: target(1500), meals: [breakfast()] });
+      expect(kept.body.plan.calorieTarget.overrides).toEqual(overrides);
+      expect(kept.body.plan.dayPortions).toEqual({ protein: 1, carb: 1, fat: 1 });
+      expect(kept.body.plan.targetPortions).toEqual({ protein: 4.5, carb: 4, fat: 4 });
+      const bad = await savePlan({ calorieTarget: { ...target(1500), overrides: { ...overrides, activityFactor: 9 } }, meals: [breakfast()] });
+      expect(bad.status).toBe(400);
+    });
+
+    it('the intro is saved per version, counts as a change, and opens until she has read it', async () => {
+      const intro = '  Hi Maya!\r\nSmall steps.\n\nYou got this.  ';
+      await savePlan({ calorieTarget: target(1500), meals: [breakfast(), breakfast({ name: 'Lunch' })], introMessage: intro });
+      expect((await publish()).status).toBe(200);
+
+      const first = await api.request('GET', '/nutrition-plan', { token: trainee.token });
+      expect(first.body.plan.intro).toBe('Hi Maya!\nSmall steps.\n\nYou got this.');
+      expect(first.body.plan.dayPortions).toEqual({ protein: 2, carb: 2, fat: 2 });
+      expect(first.body.introUnseen).toBe(true);
+
+      expect((await api.request('POST', '/nutrition-plan/intro-seen', { token: trainee.token, body: { version: 1 } })).status).toBe(204);
+      expect((await api.request('GET', '/nutrition-plan', { token: trainee.token })).body.introUnseen).toBe(false);
+      expect((await api.request('POST', '/nutrition-plan/intro-seen', { token: trainee.token, body: { version: 'x' } })).status).toBe(400);
+
+      // Omitted keeps it; a changed intro alone is a new version, unseen again.
+      const sameMeals = (await api.request('GET', planPath(), { token: coach.token })).body.plan.meals;
+      await savePlan({ calorieTarget: target(1500), meals: sameMeals });
+      expect((await publish()).status).toBe(409);
+      await savePlan({ calorieTarget: target(1500), meals: sameMeals, introMessage: 'New week!' });
+      expect((await publish()).status).toBe(200);
+      const second = await api.request('GET', '/nutrition-plan', { token: trainee.token });
+      expect(second.body.plan).toMatchObject({ version: 2, intro: 'New week!' });
+      expect(second.body.introUnseen).toBe(true);
+      // Never moves backwards.
+      await api.request('POST', '/nutrition-plan/intro-seen', { token: trainee.token, body: { version: 2 } });
+      await api.request('POST', '/nutrition-plan/intro-seen', { token: trainee.token, body: { version: 1 } });
+      expect((await api.request('GET', '/nutrition-plan', { token: trainee.token })).body.introUnseen).toBe(false);
+
+      expect((await savePlan({ calorieTarget: target(1500), meals: [breakfast()], introMessage: 'x'.repeat(1501) })).status).toBe(400);
+      // Cleared: no intro, nothing to open.
+      await savePlan({ calorieTarget: target(1500), meals: [breakfast()], introMessage: '' });
+      await publish();
+      const cleared = await api.request('GET', '/nutrition-plan', { token: trainee.token });
+      expect(cleared.body.plan.intro).toBeNull();
+      expect(cleared.body.introUnseen).toBe(false);
+    });
   });
 });

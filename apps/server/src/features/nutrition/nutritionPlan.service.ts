@@ -1,5 +1,6 @@
 import type { Types } from 'mongoose';
 import type {
+  CalculationOverrides,
   CalorieSuggestion,
   CoachNutritionPlan,
   CoachNutritionPlanResponse,
@@ -19,12 +20,16 @@ import type {
 import { emitAppEvent } from '../../events/appEvents';
 import { getNutritionFeatures } from '../../config/features';
 import { OnboardingResponse } from '../onboarding/onboardingResponse.model';
+import { toPublicNutritionPreferences } from '../onboarding/onboarding.service';
+import { User } from '../users/user.model';
+import { DEFAULT_TIMEZONE } from '../users/users.constants';
+import { addDays, localDateString } from '../plans/planWeek';
 import { BodyMetric } from '../bodyMetrics/bodyMetric.model';
 import { Template } from '../templates/template.model';
 import type { TemplateDocument } from '../templates/template.types';
 import { NutritionPlan, NutritionPlanVersion } from './nutritionPlan.model';
 import { Recipe } from './nutritionLogs.model';
-import { suggestCalorieTarget, goalFromOnboarding } from './calorieTarget';
+import { EMPTY_OVERRIDES, recommendPortions, suggestCalorieTarget, goalFromOnboarding } from './calorieTarget';
 import type { CalorieInputs } from './calorieTarget';
 import { getEffectiveNutritionConfig } from './nutritionSettings.service';
 import { findCoachFoods, listCoachFoods } from './foodItem.service';
@@ -39,7 +44,7 @@ import {
   toStoredMeals,
   toStoredTips,
 } from './nutritionMapping';
-import { computeNutritionKcal, findNutritionPublishIssues, hasBlockingIssues } from './nutrition.validation';
+import { computeNutritionKcal, findNutritionPublishIssues, hasBlockingIssues, sumDayPortions } from './nutrition.validation';
 import type { NutritionPlanDocument, NutritionPlanVersionDocument, TipFields } from './nutrition.types';
 
 // The coach's side of nutrition plans (PRD §5.6, dashboard builder). Every function
@@ -70,23 +75,29 @@ type LeanTemplate = TemplateDocument & { _id: Types.ObjectId };
 export async function getNutritionPreferences(traineeId: string): Promise<NutritionPreferences | null> {
   const response = await OnboardingResponse.findOne({ userId: traineeId }).select('answers.nutritionPreferences').lean();
   const preferences = response?.answers?.nutritionPreferences;
-  if (!preferences) return null;
-  return {
-    dietType: preferences.dietType,
-    kosher: preferences.kosher,
-    allergies: preferences.allergies ?? [],
-    ...(preferences.allergyNotes ? { allergyNotes: preferences.allergyNotes } : {}),
-    ...(preferences.dislikes ? { dislikes: preferences.dislikes } : {}),
-  };
+  return preferences ? toPublicNutritionPreferences(preferences) : null;
 }
 
-/** Latest weigh-in (else the onboarding weight), height, birth date, sex, training days, goals. */
-async function loadCalorieInputs(traineeId: string): Promise<CalorieInputs> {
-  const [response, weighIn] = await Promise.all([
+/**
+ * Latest weigh-in (else the onboarding weight), height, birth date, sex, training days,
+ * goals, her weight goal (with the date her timeframe ends) and her today.
+ */
+async function loadCalorieInputs(traineeId: string, now: Date): Promise<CalorieInputs> {
+  const [response, weighIn, user] = await Promise.all([
     OnboardingResponse.findOne({ userId: traineeId }).select('answers').lean(),
     BodyMetric.findOne({ traineeId, weight: { $exists: true, $ne: null } }).sort({ date: -1 }).select('date weight').lean(),
+    User.findById(traineeId).select('timezone').lean(),
   ]);
   const answers = response?.answers;
+  const timezone = user?.timezone ?? DEFAULT_TIMEZONE;
+  const goal = answers?.weightGoal;
+  const timeframe = goal?.timeframe ?? null;
+  const targetDate =
+    !goal || !timeframe
+      ? null
+      : timeframe.kind === 'date'
+        ? timeframe.date
+        : addDays(localDateString(goal.setAt, timezone), timeframe.weeks * 7);
   const weight =
     weighIn?.weight !== undefined && weighIn?.weight !== null
       ? { kg: weighIn.weight, source: 'weigh_in' as const, date: weighIn.date }
@@ -100,16 +111,26 @@ async function loadCalorieInputs(traineeId: string): Promise<CalorieInputs> {
     gender: answers?.gender,
     trainingFrequency: answers?.trainingFrequency,
     goals: answers?.goals ?? [],
+    weightGoal: goal ? { targetWeightKg: goal.targetWeightKg, targetDate } : null,
+    today: localDateString(now, timezone),
   };
 }
 
 export async function getCalorieSuggestion(
   traineeId: string,
   coachId: string,
-  options: { goal?: NutritionGoal | null; formulaSex?: FormulaSex | null },
+  options: { goal?: NutritionGoal | null; formulaSex?: FormulaSex | null; overrides?: Partial<CalculationOverrides> | null },
 ): Promise<CalorieSuggestion> {
-  const [inputs, config] = await Promise.all([loadCalorieInputs(traineeId), getEffectiveNutritionConfig(coachId)]);
-  return suggestCalorieTarget(inputs, options, config, new Date());
+  const now = new Date();
+  const [inputs, config] = await Promise.all([loadCalorieInputs(traineeId, now), getEffectiveNutritionConfig(coachId)]);
+  return suggestCalorieTarget(inputs, options, config, now);
+}
+
+function storedOverrides(target: Pick<NutritionPlanDocument['calorieTarget'], 'overrides'>): CalculationOverrides {
+  const stored = target.overrides ?? {};
+  return Object.fromEntries(
+    (Object.keys(EMPTY_OVERRIDES) as (keyof CalculationOverrides)[]).map((key) => [key, stored[key] ?? null]),
+  ) as unknown as CalculationOverrides;
 }
 
 // ---------------------------------------------------------------------------
@@ -117,10 +138,11 @@ export async function getCalorieSuggestion(
 // ---------------------------------------------------------------------------
 
 /** What a version / working copy holds that the trainee can see — compared to detect changes. */
-function publishableContent(plan: Pick<NutritionPlanDocument, 'meals' | 'tips' | 'waterGoalMl'>): string {
+function publishableContent(plan: Pick<NutritionPlanDocument, 'meals' | 'tips' | 'waterGoalMl' | 'introMessage'>): string {
   return JSON.stringify({
     meals: toPublicMeals(plan.meals),
     tips: toPublicTips(plan.tips).map((tip) => tip.text),
+    intro: plan.introMessage ?? null,
     waterGoalMl: plan.waterGoalMl ?? null,
   });
 }
@@ -140,6 +162,7 @@ function toCoachPlan(plan: LeanPlan, config: NutritionConfig, latest: LeanVersio
       source: target.source ?? null,
       goal: target.goal,
       formulaSex: target.formulaSex ?? null,
+      overrides: storedOverrides(target),
       suggestion: target.suggestion ?? null,
       floorConfirmation: target.floorConfirmation
         ? {
@@ -151,6 +174,7 @@ function toCoachPlan(plan: LeanPlan, config: NutritionConfig, latest: LeanVersio
     },
     meals,
     tips: toPublicTips(plan.tips),
+    introMessage: plan.introMessage ?? null,
     waterGoalMl: plan.waterGoalMl ?? null,
     templateId: plan.templateId ? String(plan.templateId) : null,
     publishedVersion: plan.publishedVersion,
@@ -161,15 +185,18 @@ function toCoachPlan(plan: LeanPlan, config: NutritionConfig, latest: LeanVersio
       (plan.calorieTarget.kcal ?? null) !== (latest.calorieTarget.kcal ?? null),
     updatedAt: plan.updatedAt.toISOString(),
     kcal: computeNutritionKcal(meals, config.groupKcal),
+    dayPortions: sumDayPortions(meals),
+    targetPortions: target.kcal ? recommendPortions(target.kcal, config).portions : null,
   };
 }
 
 /** A published version as she sees it — no calorie numbers anywhere. */
 export function buildPlanView(version: LeanVersion, foods: Map<string, FoodItem>, includeWater: boolean): NutritionPlanView {
+  const meals = toPublicMeals(version.meals);
   return {
     version: version.version,
     publishedAt: version.publishedAt.toISOString(),
-    meals: toPublicMeals(version.meals).map((meal) => ({
+    meals: meals.map((meal) => ({
       id: meal.id,
       name: meal.name,
       portions: meal.portions,
@@ -191,6 +218,8 @@ export function buildPlanView(version: LeanVersion, foods: Map<string, FoodItem>
       })),
     })),
     tips: version.tips.map((tip: TipFields) => tip.text),
+    intro: version.introMessage ?? null,
+    dayPortions: sumDayPortions(meals),
     swaps: groupSwaps([...foods.values()]),
     ...(includeWater ? { waterGoalMl: version.waterGoalMl ?? null } : {}),
   };
@@ -276,15 +305,18 @@ export async function saveCoachNutritionPlan(
   input: SaveNutritionPlanPayload,
 ): Promise<CoachNutritionPlanResponse> {
   const foodGroups = await checkFoodLines(coachId, input.meals);
+  const now = new Date();
   const [existing, inputs, config] = await Promise.all([
     NutritionPlan.findOne({ traineeId }),
-    loadCalorieInputs(traineeId),
+    loadCalorieInputs(traineeId, now),
     getEffectiveNutritionConfig(coachId),
   ]);
   const plan = existing ?? new NutritionPlan({ traineeId, coachId, calorieTarget: { goal: input.calorieTarget.goal } });
 
   const { kcal, source, goal, formulaSex, confirmBelowFloor } = input.calorieTarget;
-  const suggestion = suggestCalorieTarget(inputs, { goal, formulaSex }, config, new Date());
+  // Omitted = the overrides she set before stay.
+  const overrides = input.calorieTarget.overrides ?? storedOverrides(plan.calorieTarget ?? {});
+  const suggestion = suggestCalorieTarget(inputs, { goal, formulaSex, overrides }, config, now);
   const previousConfirmation = plan.calorieTarget?.floorConfirmation ?? null;
   const floorConfirmation =
     kcal !== null && kcal < config.floorKcal && confirmBelowFloor
@@ -293,7 +325,8 @@ export async function saveCoachNutritionPlan(
         : { kcal, floorKcal: config.floorKcal, confirmedAt: new Date() }
       : null;
 
-  plan.set('calorieTarget', { kcal, source, goal, formulaSex, suggestion, floorConfirmation });
+  plan.set('calorieTarget', { kcal, source, goal, formulaSex, overrides, suggestion, floorConfirmation });
+  if (input.introMessage !== undefined) plan.set('introMessage', input.introMessage || null);
   const ids = collectContentIds(plan.meals ?? [], plan.tips ?? []);
   plan.set('meals', toStoredMeals(input.meals, foodGroups, ids));
   plan.set('tips', toStoredTips(input.tips, ids.tips));
@@ -350,6 +383,7 @@ export async function publishCoachNutritionPlan(traineeId: string, coachId: stri
       calorieTarget: plan.calorieTarget,
       meals: plan.meals,
       tips: plan.tips,
+      introMessage: plan.introMessage ?? null,
       waterGoalMl: plan.waterGoalMl ?? null,
       groupKcal: config.groupKcal,
       mealKcal: kcal.meals.map((meal) => ({ mealId: meal.mealId, kcal: meal.kcal })),
@@ -458,12 +492,27 @@ export async function applyNutritionTemplate(traineeId: string, coachId: string,
 // Trainee
 // ---------------------------------------------------------------------------
 
-/** Her newest published version (no calories), with every active swap of each group. */
-export async function getTraineeNutritionPlan(traineeId: string): Promise<NutritionPlanView | null> {
+/**
+ * Her newest published version (no calories), with every active swap of each group, and
+ * whether she has read this version's intro yet (it opens until she has).
+ */
+export async function getTraineeNutritionPlan(traineeId: string): Promise<{ plan: NutritionPlanView | null; introUnseen: boolean }> {
   const latest = await findLatestVersion(traineeId);
-  if (!latest) return null;
-  const foods = await findCoachFoods(String(latest.coachId));
-  return buildPlanView(latest, foods, getNutritionFeatures().waterTracking);
+  if (!latest) return { plan: null, introUnseen: false };
+  const [foods, user] = await Promise.all([
+    findCoachFoods(String(latest.coachId)),
+    User.findById(traineeId).select('nutritionIntroSeenVersion').lean(),
+  ]);
+  const plan = buildPlanView(latest, foods, getNutritionFeatures().waterTracking);
+  return { plan, introUnseen: plan.intro !== null && (user?.nutritionIntroSeenVersion ?? 0) < latest.version };
+}
+
+/** She has read the intro of this version (never moves backwards). */
+export async function markNutritionIntroSeen(traineeId: string, version: number): Promise<void> {
+  await User.updateOne(
+    { _id: traineeId, $or: [{ nutritionIntroSeenVersion: { $lt: version } }, { nutritionIntroSeenVersion: { $exists: false } }] },
+    { $set: { nutritionIntroSeenVersion: version } },
+  );
 }
 
 /** When her newest version was published (the Nutrition tab dot). */

@@ -8,6 +8,7 @@ import type {
 import { extractErrorMessage } from '@sistem/api-client';
 import { apiClient } from '../api/apiClient';
 import type { OnboardingFormState } from '../../features/onboarding/types';
+import { asksWeightGoal, toPreferencesPayload, toWeightGoalPayload } from '../../features/onboarding/data/nutritionForm';
 
 // Answers live in the server's OnboardingResponse collection (Phase 3). `name` and
 // `units` are saved on the user; the server handles that split.
@@ -22,7 +23,7 @@ const STEP_FIELDS: Record<OnboardingStepId, (keyof OnboardingAnswersPayload)[]> 
   exercise_preferences: ['exercisePreferences'],
   recovery: ['recovery'],
   equipment: ['equipment'],
-  nutrition_preferences: ['nutritionPreferences'],
+  nutrition_preferences: ['nutritionPreferences', 'weightGoal'],
   review: [],
 };
 
@@ -48,13 +49,9 @@ function toAnswersPayload(formState: OnboardingFormState): OnboardingAnswersPayl
       flags: formState.recovery.flags,
       notes: formState.recovery.notes.trim() || undefined,
     },
-    nutritionPreferences: {
-      dietType: formState.nutritionPreferences.dietType,
-      kosher: formState.nutritionPreferences.kosher,
-      allergies: formState.nutritionPreferences.allergies,
-      allergyNotes: formState.nutritionPreferences.allergyNotes.trim() || undefined,
-      dislikes: formState.nutritionPreferences.dislikes.trim() || undefined,
-    },
+    nutritionPreferences: toPreferencesPayload(formState.nutritionPreferences),
+    // Sent only when "My goal" is asked; otherwise a saved goal stays as it is.
+    ...(asksWeightGoal(formState.goals) ? { weightGoal: toWeightGoalPayload(formState.weightGoal) } : {}),
   };
 }
 
@@ -63,7 +60,7 @@ function pickStepAnswers(step: OnboardingStepId, formState: OnboardingFormState)
   const answers: OnboardingAnswersPayload = {};
   for (const field of STEP_FIELDS[step]) {
     // Assigning through a widened record: each field keeps its own type from `all`.
-    (answers as Record<string, unknown>)[field] = all[field];
+    if (all[field] !== undefined) (answers as Record<string, unknown>)[field] = all[field];
   }
   return answers;
 }
@@ -91,10 +88,29 @@ export async function saveOnboardingStep(
   }
 }
 
-/** Final submit: every answer; the server stamps the completion time. */
-export async function completeOnboarding(formState: OnboardingFormState): Promise<OnboardingSaveResponse> {
+/**
+ * "Skip" on an optional step: records the step as passed (resume moves past it) without
+ * saving any of its answers — what she saved there before stays.
+ */
+export async function skipOnboardingStep(step: OnboardingStepId): Promise<OnboardingSaveResponse> {
+  const payload: SaveOnboardingStepPayload = { step, answers: {} };
   try {
-    const { data } = await apiClient.post<OnboardingSaveResponse>('/onboarding/complete', toAnswersPayload(formState));
+    const { data } = await apiClient.patch<OnboardingSaveResponse>('/onboarding', payload);
+    return data;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Could not save your answers. Please try again.'));
+  }
+}
+
+/**
+ * Final submit: every answer; the server stamps the completion time. The optional
+ * "Nutrition & goal" answers are left out — that step saved them itself, and a skipped
+ * step must stay unanswered.
+ */
+export async function completeOnboarding(formState: OnboardingFormState): Promise<OnboardingSaveResponse> {
+  const { nutritionPreferences: _preferences, weightGoal: _weightGoal, ...answers } = toAnswersPayload(formState);
+  try {
+    const { data } = await apiClient.post<OnboardingSaveResponse>('/onboarding/complete', answers);
     return data;
   } catch (error) {
     throw new Error(extractErrorMessage(error, 'Could not save your profile. Please try again.'));

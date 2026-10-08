@@ -24,7 +24,10 @@ import {
   completeOnboarding,
   getMyOnboarding,
   saveOnboardingStep,
+  skipOnboardingStep,
 } from '../../../../services/onboarding/onboardingService';
+import { fromAnswers, isNutritionStepValid } from '../../data/nutritionForm';
+import { NUTRITION_PREFERENCES_COPY } from '../../data/nutritionPreferencesCopy';
 import { useAuth } from '../../../../services/auth/AuthContext';
 import { ROUTES } from '../../../../app/config/routes';
 import { landingPath } from '../../../../app/router/landingPath';
@@ -38,6 +41,7 @@ import './OnboardingPage.css';
 const STEP_COUNT = 10;
 const EXERCISE_PREFERENCES_STEP_INDEX = 5;
 const ACTIVITIES_STEP_INDEX = 4;
+const NUTRITION_STEP_INDEX = 8;
 
 // Each step is its own browser-history entry, so the system back gesture / Android
 // back button goes to the previous step instead of leaving onboarding.
@@ -76,6 +80,8 @@ function isStepValid(index: number, state: OnboardingFormState): boolean {
       return state.preferredActivities.length > 0;
     case 7:
       return state.equipment.length > 0;
+    case NUTRITION_STEP_INDEX:
+      return isNutritionStepValid(state);
     default:
       return true;
   }
@@ -157,13 +163,7 @@ function mapOnboardingToFormState(onboarding: MyOnboarding, fallbackName: string
       flags: p?.recovery?.flags ?? [],
       notes: p?.recovery?.notes ?? '',
     },
-    nutritionPreferences: {
-      dietType: p?.nutritionPreferences?.dietType ?? INITIAL_ONBOARDING_STATE.nutritionPreferences.dietType,
-      kosher: p?.nutritionPreferences?.kosher ?? INITIAL_ONBOARDING_STATE.nutritionPreferences.kosher,
-      allergies: p?.nutritionPreferences?.allergies ?? [],
-      allergyNotes: p?.nutritionPreferences?.allergyNotes ?? '',
-      dislikes: p?.nutritionPreferences?.dislikes ?? '',
-    },
+    ...fromAnswers(p, weightUnit),
   };
 }
 
@@ -301,6 +301,21 @@ export function OnboardingPage() {
     void handleContinue();
   }
 
+  // "Nutrition & goal" is optional as a whole: Skip saves none of it (only that she passed it).
+  async function handleSkipNutrition() {
+    setSubmitError(undefined);
+    setIsSubmitting(true);
+    try {
+      const { user: savedUser } = await skipOnboardingStep(currentStepId);
+      updateUser(savedUser);
+      goToStep(stepIndex + 1);
+    } catch (error) {
+      setSubmitError(extractErrorMessage(error, 'Could not save your answers. Please try again.'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   function handleCancelEdit() {
     navigate(ROUTES.PROFILE);
   }
@@ -421,6 +436,11 @@ export function OnboardingPage() {
           {showSkip && (
             <Button variant="ghost" onClick={handleSkip} disabled={isSubmitting}>
               Skip for now
+            </Button>
+          )}
+          {stepIndex === NUTRITION_STEP_INDEX && (
+            <Button variant="ghost" onClick={handleSkipNutrition} disabled={isSubmitting}>
+              {NUTRITION_PREFERENCES_COPY.skip}
             </Button>
           )}
           <Button

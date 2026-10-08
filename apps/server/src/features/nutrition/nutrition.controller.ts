@@ -24,11 +24,13 @@ import {
   getCoachNutritionPlan,
   getTraineeNutritionPlan,
   listNutritionTemplates,
+  markNutritionIntroSeen,
   publishCoachNutritionPlan,
   saveCoachNutritionPlan,
 } from './nutritionPlan.service';
 import {
   parseApplyNutritionTemplatePayload,
+  parseCalculationOverrides,
   parseCreateNutritionTemplatePayload,
   parseFoodItemPayload,
   parseNutritionSettingsPayload,
@@ -165,6 +167,8 @@ export async function getTraineeNutrition(req: AuthenticatedRequest, res: Respon
   res.status(200).json(await getCoachNutritionPlan(req.traineeId!, req.userId!));
 }
 
+const OVERRIDE_QUERY_KEYS = ['weightKg', 'heightCm', 'ageYears', 'activityFactor', 'targetWeightKg', 'timelineWeeks'] as const;
+
 export async function getTraineeCalorieSuggestion(req: AuthenticatedRequest, res: Response) {
   const { goal, formula } = req.query;
   if (goal !== undefined && !(NUTRITION_GOAL_IDS as readonly unknown[]).includes(goal)) {
@@ -175,10 +179,20 @@ export async function getTraineeCalorieSuggestion(req: AuthenticatedRequest, res
     res.status(400).json({ message: 'The formula must be male or female.' });
     return;
   }
+  // The calculation summary's live values: ?weightKg=…&timelineWeeks=… (absent = her data).
+  const rawOverrides = Object.fromEntries(
+    OVERRIDE_QUERY_KEYS.flatMap((key) => (typeof req.query[key] === 'string' && req.query[key] !== '' ? [[key, Number(req.query[key])]] : [])),
+  );
+  const overrides = parseCalculationOverrides(rawOverrides);
+  if (!overrides.value) {
+    res.status(400).json({ message: overrides.error });
+    return;
+  }
   res.status(200).json(
     await getCalorieSuggestion(req.traineeId!, req.userId!, {
       goal: (goal as NutritionGoal | undefined) ?? null,
       formulaSex: (formula as FormulaSex | undefined) ?? null,
+      overrides: overrides.value,
     }),
   );
 }
@@ -235,5 +249,17 @@ export async function postTraineeNutritionTemplate(req: AuthenticatedRequest, re
 
 /** Her newest published version — no calorie numbers. */
 export async function getMyNutritionPlan(req: AuthenticatedRequest, res: Response) {
-  res.status(200).json({ plan: await getTraineeNutritionPlan(req.userId!), features: getNutritionFeatures() });
+  const { plan, introUnseen } = await getTraineeNutritionPlan(req.userId!);
+  res.status(200).json({ plan, introUnseen, features: getNutritionFeatures() });
+}
+
+/** She has read the coach's intro of this version — it starts collapsed from now on. */
+export async function postMyNutritionIntroSeen(req: AuthenticatedRequest, res: Response) {
+  const version = (req.body as { version?: unknown } | undefined)?.version;
+  if (typeof version !== 'number' || !Number.isInteger(version) || version < 1) {
+    res.status(400).json({ message: 'Invalid version.' });
+    return;
+  }
+  await markNutritionIntroSeen(req.userId!, version);
+  res.status(204).end();
 }

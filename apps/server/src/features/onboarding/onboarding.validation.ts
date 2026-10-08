@@ -8,7 +8,19 @@ import {
   RECOVERY_FLAG_IDS,
   GENDER_IDS,
 } from '../users/users.constants';
-import { ALLERGY_IDS, DIET_TYPE_IDS, MAX_PREFERENCE_TEXT_LENGTH } from '../nutrition/nutrition.constants';
+import {
+  ALLERGY_IDS,
+  DIET_STYLE_IDS,
+  DIET_TYPE_IDS,
+  INTOLERANCE_IDS,
+  MAX_PREFERENCE_DETAILS_LENGTH,
+  MAX_PREFERENCE_TEXT_LENGTH,
+  MEALS_PER_DAY_RANGE,
+  RELIGIOUS_IDS,
+  WEIGHT_GOAL_MAX_DAYS_AHEAD,
+  WEIGHT_GOAL_WEEKS_RANGE,
+} from '../nutrition/nutrition.constants';
+import { daysBetween, isDateString } from '../plans/planWeek';
 import {
   ONBOARDING_FIELDS,
   ONBOARDING_STEP_FIELDS,
@@ -182,19 +194,83 @@ const FIELD_VALIDATORS: Record<OnboardingField, FieldValidator> = {
     if (!(DIET_TYPE_IDS as readonly unknown[]).includes(value.dietType)) {
       return 'Diet type must be none, vegetarian, vegan or pescatarian.';
     }
-    if (typeof value.kosher !== 'boolean') return 'Kosher must be true or false.';
-    if (value.allergies !== undefined && !isStringArrayWithinSet(value.allergies, ALLERGY_IDS)) {
-      return 'Allergies contain an invalid value.';
+    if (!isOptionalText(value.dietTypeDetails, MAX_PREFERENCE_DETAILS_LENGTH)) {
+      return `Details are text of at most ${MAX_PREFERENCE_DETAILS_LENGTH} characters.`;
     }
-    for (const [field, label] of [['allergyNotes', 'Other allergies'], ['dislikes', 'Disliked foods']] as const) {
-      const text = value[field];
-      if (text !== undefined && (typeof text !== 'string' || text.length > MAX_PREFERENCE_TEXT_LENGTH)) {
+    const lists = [
+      ['dietStyles', DIET_STYLE_IDS, 'Diet styles'],
+      ['religious', RELIGIOUS_IDS, 'Religious preferences'],
+      ['intolerances', INTOLERANCE_IDS, 'Intolerances'],
+      ['allergies', ALLERGY_IDS, 'Allergies'],
+    ] as const;
+    for (const [field, ids, label] of lists) {
+      const error = preferenceItemsError(value[field], ids, label);
+      if (error) return error;
+    }
+    for (const [field, label] of [['foodsLoved', 'Foods you love'], ['foodsDisliked', 'Foods you dislike']] as const) {
+      if (!isOptionalText(value[field], MAX_PREFERENCE_TEXT_LENGTH)) {
         return `${label} must be text of at most ${MAX_PREFERENCE_TEXT_LENGTH} characters.`;
       }
     }
+    const meals = value.mealsPerDay;
+    if (
+      meals !== undefined &&
+      meals !== null &&
+      !(Number.isInteger(meals) && isNumberInRange(meals, MEALS_PER_DAY_RANGE.min, MEALS_PER_DAY_RANGE.max))
+    ) {
+      return `Meals per day must be between ${MEALS_PER_DAY_RANGE.min} and ${MEALS_PER_DAY_RANGE.max}, or no preference.`;
+    }
     return null;
   },
+
+  weightGoal(value, { weightUnit }) {
+    // null clears her goal.
+    if (value === null) return null;
+    if (!isObject(value)) return 'The weight goal must be an object.';
+    // The same limits as her weight, in the unit she typed.
+    const targetError = FIELD_VALIDATORS.weight(value.targetWeight, { weightUnit });
+    if (targetError) return `Target ${targetError.charAt(0).toLowerCase()}${targetError.slice(1)}`;
+    const timeframe = value.timeframe;
+    if (timeframe === null || timeframe === undefined) return null;
+    if (!isObject(timeframe)) return 'The timeframe must be weeks or a date.';
+    if (timeframe.kind === 'weeks') {
+      const { min, max } = WEIGHT_GOAL_WEEKS_RANGE;
+      return Number.isInteger(timeframe.weeks) && isNumberInRange(timeframe.weeks, min, max)
+        ? null
+        : `The timeframe must be between ${min} and ${max} weeks.`;
+    }
+    if (timeframe.kind === 'date') {
+      if (!isDateString(timeframe.date)) return 'The target date must be a date.';
+      // Her zone isn't known here: a day of slack around "today" (UTC).
+      const today = new Date().toISOString().slice(0, 10);
+      const ahead = daysBetween(today, timeframe.date);
+      return ahead >= 0 && ahead <= WEIGHT_GOAL_MAX_DAYS_AHEAD ? null : 'The target date must be in the next two years.';
+    }
+    return 'The timeframe must be weeks or a date.';
+  },
 };
+
+function isOptionalText(value: unknown, maxLength: number): boolean {
+  return value === undefined || (typeof value === 'string' && value.length <= maxLength);
+}
+
+/** [{ id, details? }] with known ids (a repeat is dropped on save); "other" needs its text. */
+function preferenceItemsError(value: unknown, ids: readonly string[], label: string): string | null {
+  if (value === undefined) return null;
+  if (!Array.isArray(value)) return `${label} must be a list.`;
+  for (const item of value) {
+    if (!isObject(item) || typeof item.id !== 'string' || !ids.includes(item.id)) {
+      return `${label} contain an invalid value.`;
+    }
+    if (!isOptionalText(item.details, MAX_PREFERENCE_DETAILS_LENGTH)) {
+      return `Details are text of at most ${MAX_PREFERENCE_DETAILS_LENGTH} characters.`;
+    }
+    if (item.id === 'other' && !(typeof item.details === 'string' && item.details.trim().length > 0)) {
+      return `${label}: describe "other".`;
+    }
+  }
+  return null;
+}
 
 /**
  * POST /onboarding/complete — every required answer, same rules as the ATLAS submit.

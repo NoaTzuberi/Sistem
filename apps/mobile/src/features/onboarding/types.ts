@@ -1,4 +1,4 @@
-import type { AllergyId, DietType } from '@sistem/types';
+import type { AllergyId, DietStyleId, DietType, IntoleranceId, ReligiousId } from '@sistem/types';
 
 export interface OnboardingFormState {
   name: string;
@@ -27,14 +27,31 @@ export interface OnboardingFormState {
     flags: string[];
     notes: string;
   };
-  /** Phase 13a step. Starts at "none / not kosher" — passing the step saves these. */
+  /** "Nutrition & goal" step (Phase 13a, v2 in 13a+). Starts empty — Continue saves these. */
   nutritionPreferences: {
     dietType: DietType;
-    kosher: boolean;
-    allergies: AllergyId[];
-    allergyNotes: string;
-    dislikes: string;
+    dietTypeDetails: string;
+    dietStyles: FormPreferenceItem<DietStyleId>[];
+    religious: FormPreferenceItem<ReligiousId>[];
+    intolerances: FormPreferenceItem<IntoleranceId>[];
+    allergies: FormPreferenceItem<AllergyId>[];
+    foodsLoved: string;
+    foodsDisliked: string;
+    mealsPerDay: number | null;
   };
+  /** "My goal" (13a+), typed in her weight unit. Asked only for weight loss / gain goals. */
+  weightGoal: {
+    targetWeight: string;
+    timeframeKind: 'weeks' | 'date' | null;
+    weeks: string;
+    date: string;
+  };
+}
+
+/** A chosen option with her own words (an empty string = no details). */
+export interface FormPreferenceItem<T extends string> {
+  id: T;
+  details: string;
 }
 
 export const INITIAL_ONBOARDING_STATE: OnboardingFormState = {
@@ -66,10 +83,20 @@ export const INITIAL_ONBOARDING_STATE: OnboardingFormState = {
   },
   nutritionPreferences: {
     dietType: 'none',
-    kosher: false,
+    dietTypeDetails: '',
+    dietStyles: [],
+    religious: [],
+    intolerances: [],
     allergies: [],
-    allergyNotes: '',
-    dislikes: '',
+    foodsLoved: '',
+    foodsDisliked: '',
+    mealsPerDay: null,
+  },
+  weightGoal: {
+    targetWeight: '',
+    timeframeKind: null,
+    weeks: '',
+    date: '',
   },
 };
 

@@ -28,6 +28,7 @@ export const ONBOARDING_FIELDS = [
   'equipment',
   'recovery',
   'nutritionPreferences',
+  'weightGoal',
 ] as const;
 export type OnboardingField = (typeof ONBOARDING_FIELDS)[number];
 
@@ -41,9 +42,10 @@ export const ONBOARDING_STEP_FIELDS: Record<OnboardingStepId, readonly Onboardin
   exercise_preferences: ['exercisePreferences'],
   recovery: ['recovery'],
   equipment: ['equipment'],
-  // Phase 13a — owner-approved addition to the protected onboarding. Not required to
-  // complete: trainees who finished before it existed are never sent back.
-  nutrition_preferences: ['nutritionPreferences'],
+  // Phase 13a — owner-approved addition to the protected onboarding ("Nutrition & goal"
+  // since 13a+: preferences + the weight goal on one screen). Not required to complete:
+  // trainees who finished before it existed are never sent back.
+  nutrition_preferences: ['nutritionPreferences', 'weightGoal'],
   review: [],
 };
 

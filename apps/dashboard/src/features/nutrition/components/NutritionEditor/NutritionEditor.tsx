@@ -8,7 +8,8 @@ import { Button } from '../../../../components/common/Button/Button';
 import { Badge } from '../../../../components/common/Badge/Badge';
 import { SaveIndicator } from '../../../planBuilder/components/SaveIndicator/SaveIndicator';
 import { useNutritionEditor } from '../../hooks/useNutritionEditor';
-import { CalorieTargetPanel } from '../CalorieTargetPanel/CalorieTargetPanel';
+import { CalculationSummary } from '../CalculationSummary/CalculationSummary';
+import { IntroEditor } from '../IntroEditor/IntroEditor';
 import { MealEditor } from '../MealEditor/MealEditor';
 import { TipsEditor } from '../TipsEditor/TipsEditor';
 import { PreferencesPanel } from '../PreferencesPanel/PreferencesPanel';
@@ -26,7 +27,8 @@ interface NutritionEditorProps {
 }
 
 /**
- * The nutrition plan builder (PRD §5.6): calorie target, meals with portions per group,
+ * The nutrition plan builder (PRD §5.6): the calculation summary and target, the coach's
+ * message, meals with portions per group,
  * options, tips, templates and publish. Autosaves; the server computes the kcal and the
  * publish issues, which are shown as of the last save.
  */
@@ -119,13 +121,16 @@ export function NutritionEditor({ traineeId, traineeName, initial, templates }: 
 
       <div className="nutrition-layout">
         <div className="nutrition-main">
-          <CalorieTargetPanel
+          <CalculationSummary
             traineeId={traineeId}
             target={draft.target}
             onChange={setTarget}
             floorKcal={response.config.floorKcal}
             dayKcal={plan?.kcal.day ?? null}
+            dayPortions={plan?.dayPortions ?? null}
           />
+
+          <IntroEditor value={draft.introMessage} onChange={(introMessage) => updateDraft((current) => ({ ...current, introMessage }))} />
 
           <section className="nutrition-templates" aria-label={NUTRITION_COPY.templateTitle}>
             <select className="nutrition-select" value={templateId} onChange={(event) => setTemplateId(event.target.value)} aria-label={NUTRITION_COPY.templatePick}>

@@ -106,19 +106,49 @@ export interface OnboardingAnswers {
   recovery?: { flags: string[]; notes?: string };
   /** Phase 13a. Missing = not answered (onboarding finished before the step existed). */
   nutritionPreferences?: NutritionPreferences;
+  /** Phase 13a+ ("My goal"). Missing = not answered / not asked. */
+  weightGoal?: WeightGoal;
 }
 
 export type DietType = 'none' | 'vegetarian' | 'vegan' | 'pescatarian';
-/** The common allergies — each one matches a food diet tag (free text covers the rest). */
-export type AllergyId = 'dairy' | 'eggs' | 'gluten' | 'peanuts' | 'tree_nuts' | 'sesame' | 'soy' | 'fish';
+/** Combinable with the diet type. */
+export type DietStyleId = 'keto_low_carb' | 'intermittent_fasting' | 'other';
+export type ReligiousId = 'kosher' | 'halal';
+export type IntoleranceId = 'lactose_free' | 'gluten_free' | 'celiac' | 'low_fodmap' | 'other';
+/** Each one (except other) matches a food diet tag; "gluten" = gluten / wheat. */
+export type AllergyId = 'dairy' | 'eggs' | 'peanuts' | 'tree_nuts' | 'sesame' | 'soy' | 'gluten' | 'fish' | 'shellfish' | 'other';
 
-/** The "Nutrition preferences" onboarding step (Phase 13a). Health data: her own + her coach's eyes only. */
+/** A selected option with her own words about it ("lactose ok in yogurt"). "other" always has details. */
+export interface PreferenceItem<T extends string> {
+  id: T;
+  details?: string;
+}
+
+/**
+ * The "Nutrition & goal" onboarding step (Phase 13a, v2 in 13a+). Health data: her own +
+ * her coach's eyes only.
+ */
 export interface NutritionPreferences {
   dietType: DietType;
-  kosher: boolean;
-  allergies: AllergyId[];
-  allergyNotes?: string;
-  dislikes?: string;
+  dietTypeDetails?: string;
+  dietStyles: PreferenceItem<DietStyleId>[];
+  religious: PreferenceItem<ReligiousId>[];
+  intolerances: PreferenceItem<IntoleranceId>[];
+  allergies: PreferenceItem<AllergyId>[];
+  foodsLoved?: string;
+  foodsDisliked?: string;
+  /** 2–6; null = no preference. Information only. */
+  mealsPerDay: number | null;
+}
+
+export type WeightGoalTimeframe = { kind: 'weeks'; weeks: number } | { kind: 'date'; date: string };
+
+/** Her target weight (always kg) and when she'd like to get there. */
+export interface WeightGoal {
+  targetWeightKg: number;
+  timeframe: WeightGoalTimeframe | null;
+  /** When she set it — "in 12 weeks" counts from here. */
+  setAt: string;
 }
 
 /**
@@ -142,13 +172,9 @@ export interface OnboardingAnswersPayload {
   };
   equipment?: string[];
   recovery?: { flags?: string[]; notes?: string };
-  nutritionPreferences?: {
-    dietType: DietType;
-    kosher: boolean;
-    allergies?: AllergyId[];
-    allergyNotes?: string;
-    dislikes?: string;
-  };
+  nutritionPreferences?: NutritionPreferences;
+  /** Target weight in her weight unit (stored in kg); null clears the goal. */
+  weightGoal?: { targetWeight: number; timeframe: WeightGoalTimeframe | null } | null;
 }
 
 export interface SaveOnboardingStepPayload {
@@ -941,8 +967,14 @@ export type DietTag =
   | 'peanuts'
   | 'tree_nuts'
   | 'sesame'
-  | 'soy';
-export type NutritionGoal = 'fat_loss' | 'recomp' | 'muscle_gain' | 'maintenance';
+  | 'soy'
+  | 'shellfish'
+  | 'pork'
+  | 'lactose'
+  | 'alcohol'
+  | 'high_fodmap';
+/** fat_loss_aggressive (13a+) is only ever the coach's choice. */
+export type NutritionGoal = 'fat_loss' | 'fat_loss_aggressive' | 'recomp' | 'muscle_gain' | 'maintenance';
 /** Which Mifflin-St Jeor constant is used. */
 export type FormulaSex = 'male' | 'female';
 
@@ -988,16 +1020,25 @@ export interface NutritionConfig {
   goalAdjustments: Record<NutritionGoal, number>;
   /** Activity factor by training days per week: index 0 = 1 day … index 6 = 7 days. */
   activityFactors: number[];
-  /** A target below this needs the coach's explicit confirmation. */
+  /** The recommendation is never below this; a lower target needs the coach's explicit confirmation. */
   floorKcal: number;
+  /** kcal per kg of body weight change (timeline math). */
+  kcalPerKg: number;
+  /** Safe maximum loss, % of body weight per week. */
+  maxLossRatePctPerWeek: number;
+  /** Safe maximum gain, % of body weight per week. */
+  maxGainRatePctPerWeek: number;
+  /** The largest daily deficit, % of TDEE. */
+  maxDeficitPct: number;
+  /** How the daily kcal is split into portions, % per group (sums to 100). */
+  portionSplit: Record<PortionGroup, number>;
+  /** Keto / low-carb: more carb portions a day than this is a warning. */
+  ketoMaxCarbPortions: number;
 }
 
 /** PUT /coach/nutrition/settings — the whole tunable config (vegetable stays 0). */
-export interface NutritionSettingsPayload {
+export interface NutritionSettingsPayload extends Omit<NutritionConfig, 'groupKcal'> {
   groupKcal: Record<PortionGroup, number>;
-  goalAdjustments: Record<NutritionGoal, number>;
-  activityFactors: number[];
-  floorKcal: number;
 }
 
 export interface NutritionSettingsResponse {
@@ -1008,10 +1049,23 @@ export interface NutritionSettingsResponse {
 export type CalorieSuggestionStatus = 'ok' | 'needs_formula' | 'missing_inputs';
 export type CalorieSuggestionMissing = 'weight' | 'height' | 'birthDate' | 'trainingFrequency';
 
+/** The coach's own values for the calculation; null = her data. Stored on the plan. */
+export interface CalculationOverrides {
+  weightKg: number | null;
+  heightCm: number | null;
+  ageYears: number | null;
+  activityFactor: number | null;
+  targetWeightKg: number | null;
+  /** Weeks from today. */
+  timelineWeeks: number | null;
+}
+
+export type CalculationOverrideField = keyof CalculationOverrides;
+
 /** Everything the estimate used, shown next to the number. */
 export interface CalorieSuggestionInputs {
   weightKg: number | null;
-  weightSource: 'weigh_in' | 'onboarding' | null;
+  weightSource: 'weigh_in' | 'onboarding' | 'coach' | null;
   /** 'YYYY-MM-DD' of the weigh-in used. */
   weightDate: string | null;
   heightCm: number | null;
@@ -1025,18 +1079,62 @@ export interface CalorieSuggestionInputs {
   goal: NutritionGoal;
   goalSource: 'onboarding' | 'coach';
   adjustmentPct: number;
+  /** Her target (or the coach's). */
+  targetWeightKg: number | null;
+  /** Weeks left to her timeframe (or the coach's weeks); null = no timeframe. */
+  timelineWeeks: number | null;
+  /** 'YYYY-MM-DD' her timeframe ends (null for the coach's weeks or none). */
+  targetDate: string | null;
+  /** Which inputs are the coach's values. */
+  overridden: CalculationOverrideField[];
 }
 
-/** GET /coach/trainees/:id/nutrition-plan/suggestion?goal=&formula= */
+/** Why her target / timeframe was not used. */
+export type TimelineNote = 'wrong_direction' | 'date_passed' | 'target_reached' | 'goal_not_weight';
+/** The cap that limited a requested pace. */
+export type TimelineLimit = 'rate' | 'max_deficit' | 'floor';
+
+export interface CalorieTimeline {
+  requestedWeeks: number;
+  /** kcal / day her pace would need (positive). */
+  requiredDailyKcal: number;
+  /** kg / week her pace would need (positive). */
+  requiredRateKg: number;
+  /** The safe maximum, kg / week (positive). */
+  safeRateKg: number;
+  unsafe: boolean;
+  limitedBy: TimelineLimit | null;
+  /** Weeks at the safe pace — set only when her pace is unsafe. */
+  recommendedWeeks: number | null;
+}
+
+/** GET /coach/trainees/:id/nutrition-plan/suggestion (the calculation summary). */
 export interface CalorieSuggestion {
   status: CalorieSuggestionStatus;
   missing: CalorieSuggestionMissing[];
   inputs: CalorieSuggestionInputs;
+  /** 'timeline' = from her target weight + timeframe; 'goal_percent' = the goal %. */
+  method: 'goal_percent' | 'timeline' | null;
   bmr: number | null;
   tdee: number | null;
+  /** The recommended daily kcal (never below the floor). */
   kcal: number | null;
+  /** kcal / day vs TDEE: negative = deficit, positive = surplus. */
+  deltaKcal: number | null;
+  /** deltaKcal as % of TDEE. */
+  deltaPct: number | null;
+  /** Expected kg / week (negative = loss). */
+  weeklyRateKg: number | null;
+  /** Weeks to her target at that rate; null without a usable target. */
+  expectedWeeks: number | null;
+  timeline: CalorieTimeline | null;
+  timelineNote: TimelineNote | null;
   floorKcal: number;
-  belowFloor: boolean;
+  /** The calculation fell below the floor and was raised to it. */
+  raisedToFloor: boolean;
+  /** Recommended portions per group for `kcal`, and what they add up to. */
+  portions: PortionCounts | null;
+  portionsKcal: number | null;
 }
 
 export type CalorieTargetSource = 'suggested' | 'override';
@@ -1053,6 +1151,7 @@ export interface NutritionCalorieTarget {
   source: CalorieTargetSource | null;
   goal: NutritionGoal;
   formulaSex: FormulaSex | null;
+  overrides: CalculationOverrides;
   /** The estimate as it was when the plan was last saved. */
   suggestion: CalorieSuggestion | null;
   floorConfirmation: NutritionFloorConfirmation | null;
@@ -1134,11 +1233,15 @@ export interface SaveNutritionPlanPayload {
     source: CalorieTargetSource | null;
     goal: NutritionGoal;
     formulaSex: FormulaSex | null;
+    /** Omitted = keep the stored ones. */
+    overrides?: CalculationOverrides;
     /** The coach ticked "I confirm this target" (only matters below the floor). */
     confirmBelowFloor: boolean;
   };
   meals: NutritionMealInput[];
   tips: { id?: string; text: string }[];
+  /** Plain text, ≤ 1,500 chars, line breaks kept; '' / null = none. Omitted = keep. */
+  introMessage?: string | null;
   /** 13b, waterTracking only — refused while the feature is closed. */
   waterGoalMl?: number | null;
 }
@@ -1162,7 +1265,6 @@ export interface NutritionIssuesBody extends ApiErrorBody {
 /** The closed (13b) features, decided by the server. Clients only hide / show. */
 export interface NutritionFeatures {
   nutritionRecipes: boolean;
-  mealLogging: boolean;
   waterTracking: boolean;
 }
 
@@ -1172,6 +1274,7 @@ export interface CoachNutritionPlan {
   calorieTarget: NutritionCalorieTarget;
   meals: NutritionMeal[];
   tips: NutritionTip[];
+  introMessage: string | null;
   waterGoalMl: number | null;
   templateId: string | null;
   /** 0 = never published. */
@@ -1181,6 +1284,10 @@ export interface CoachNutritionPlan {
   changedSincePublish: boolean;
   updatedAt: string;
   kcal: NutritionKcal;
+  /** The meals' portions summed over the day. */
+  dayPortions: PortionCounts;
+  /** Recommended portions for the current target (null without a target). */
+  targetPortions: PortionCounts | null;
 }
 
 /** A food as the trainee sees it — no calories. */
@@ -1216,6 +1323,10 @@ export interface NutritionPlanView {
   publishedAt: string;
   meals: NutritionViewMeal[];
   tips: string[];
+  /** The coach's note at the top of the tab (plain text, line breaks kept). */
+  intro: string | null;
+  /** The meals' portions summed over the day (the day header / tracker). */
+  dayPortions: PortionCounts;
   /** Every active item of each group — what a portion can be swapped for. */
   swaps: Record<FoodGroup, NutritionFoodFacts[]>;
   /** Only while waterTracking is open (13b). */
@@ -1225,7 +1336,14 @@ export interface NutritionPlanView {
 /** GET /nutrition-plan (trainee). */
 export interface TraineeNutritionPlanResponse {
   plan: NutritionPlanView | null;
+  /** She hasn't read this version's intro yet (open it; POST /nutrition-plan/intro-seen after). */
+  introUnseen: boolean;
   features: NutritionFeatures;
+}
+
+/** POST /nutrition-plan/intro-seen */
+export interface MarkNutritionIntroSeenPayload {
+  version: number;
 }
 
 /** GET /coach/trainees/:id/nutrition-plan */
@@ -1265,6 +1383,55 @@ export interface CreateNutritionTemplatePayload {
 /** POST /coach/trainees/:id/nutrition-plan/from-template */
 export interface ApplyNutritionTemplatePayload {
   templateId: string;
+}
+
+// ---------------------------------------------------------------------------
+// Portion tracking (Phase 13a+, PRD §5.6): one MealLog per trainee and day — marked
+// portions per group against the day's plan, and optional private meal photos. No
+// calorie numbers anywhere.
+// ---------------------------------------------------------------------------
+
+export interface MealPhoto extends PrivatePhoto {
+  mealId: string;
+  /** The meal's name when the photo was added. */
+  mealName: string;
+}
+
+export interface MealLogDay {
+  /** 'YYYY-MM-DD' in her time zone. */
+  date: string;
+  /** The day's planned portions (the plan version live that day). */
+  planned: PortionCounts;
+  eaten: PortionCounts;
+  photos: MealPhoto[];
+  /** Plan version used; null when nothing was logged and no plan was live. */
+  planVersion: number | null;
+  /** She can still change this day (today and the 6 days before). */
+  editable: boolean;
+  /** Anything stored for this day. */
+  logged: boolean;
+  /** The meals of that version, for the photo slots (id + name). */
+  meals: { id: string; name: string }[];
+}
+
+/** GET /meal-logs?from=&to= (trainee; at most the editable window). */
+export interface MealLogDaysResponse {
+  today: string;
+  days: MealLogDay[];
+}
+
+/** PUT /meal-logs/:date — the whole day's marks (last write wins). */
+export interface SaveMealLogPayload {
+  eaten: PortionCounts;
+}
+
+/** GET /coach/trainees/:id/meal-logs?weekStart= — Sunday week, read-only. */
+export interface CoachMealLogWeek {
+  weekStart: string;
+  today: string;
+  /** Sun → Sat; a day without a live plan has planned 0s and logged false. */
+  days: MealLogDay[];
+  totals: { planned: PortionCounts; eaten: PortionCounts };
 }
 
 // ---------------------------------------------------------------------------

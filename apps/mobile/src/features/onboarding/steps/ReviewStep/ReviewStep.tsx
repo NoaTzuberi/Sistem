@@ -1,5 +1,6 @@
-import { describeNutritionPreferences } from '@sistem/shared';
+import { describeNutritionPreferences, describeWeightGoal, toKg } from '@sistem/shared';
 import { NUTRITION_PREFERENCES_COPY } from '../../data/nutritionPreferencesCopy';
+import { asksWeightGoal, toPreferencesPayload, toWeightGoalPayload } from '../../data/nutritionForm';
 import type { OnboardingFormState } from '../../types';
 import './ReviewStep.css';
 
@@ -8,15 +9,15 @@ interface ReviewStepProps {
 }
 
 export function ReviewStep({ formState }: ReviewStepProps) {
-  const { nutritionPreferences } = formState;
-  // Phase 13a: the new step's answers, so she can check them before finishing.
-  const nutritionRows = describeNutritionPreferences({
-    dietType: nutritionPreferences.dietType,
-    kosher: nutritionPreferences.kosher,
-    allergies: nutritionPreferences.allergies,
-    allergyNotes: nutritionPreferences.allergyNotes.trim() || undefined,
-    dislikes: nutritionPreferences.dislikes.trim() || undefined,
-  });
+  // Phase 13a: the "Nutrition & goal" answers, so she can check them before finishing.
+  const unit = formState.units.weight;
+  const goal = asksWeightGoal(formState.goals) ? toWeightGoalPayload(formState.weightGoal) : null;
+  const nutritionRows = [
+    ...(goal
+      ? [{ label: NUTRITION_PREFERENCES_COPY.goalTitle, value: describeWeightGoal({ targetWeightKg: toKg(goal.targetWeight, unit), timeframe: goal.timeframe }, unit) }]
+      : []),
+    ...describeNutritionPreferences(toPreferencesPayload(formState.nutritionPreferences)),
+  ];
 
   return (
     <div className="onboarding-step review-step">

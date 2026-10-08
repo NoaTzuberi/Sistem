@@ -10,7 +10,8 @@ export const PROFILE_COPY = {
   moreMeasurements: (count: number) => `+${count} more`,
   settings: 'Settings',
   // Phase 13a — placeholder.
-  nutritionPreferencesTitle: 'Nutrition preferences',
+  nutritionPreferencesTitle: 'Nutrition & goal',
+  weightGoalLabel: 'My goal',
 
   settingsTitle: 'Settings',
   unitsTitle: 'Units',

@@ -39,6 +39,7 @@ import {
   postTraineeNutritionFromTemplate,
   postTraineeNutritionTemplate,
 } from '../nutrition/nutrition.controller';
+import { getTraineeMealLogs } from '../mealLogs/mealLog.controller';
 
 // The human Coach (PRD §6) — the ATLAS AI chat that used /api/coach is gone.
 // Every route needs role=coach; every :traineeId route also needs that trainee to
@@ -86,3 +87,5 @@ coachRouter.put('/trainees/:traineeId/nutrition-plan', loadCoachTrainee, putTrai
 coachRouter.post('/trainees/:traineeId/nutrition-plan/publish', loadCoachTrainee, postPublishTraineeNutrition);
 coachRouter.post('/trainees/:traineeId/nutrition-plan/from-template', loadCoachTrainee, postTraineeNutritionFromTemplate);
 coachRouter.post('/trainees/:traineeId/nutrition-plan/template', loadCoachTrainee, postTraineeNutritionTemplate);
+// Portion tracking (Phase 13a+): her week, read-only.
+coachRouter.get('/trainees/:traineeId/meal-logs', loadCoachTrainee, getTraineeMealLogs);

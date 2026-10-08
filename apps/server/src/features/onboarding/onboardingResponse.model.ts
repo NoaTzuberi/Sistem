@@ -1,7 +1,13 @@
 import { Schema, Types, model } from 'mongoose';
-import type { NutritionPreferences, OnboardingStepId } from '@sistem/types';
+import type { NutritionPreferences, OnboardingStepId, WeightGoalTimeframe } from '@sistem/types';
 import { ONBOARDING_STEP_IDS } from './onboarding.constants';
-import { ALLERGY_IDS, DIET_TYPE_IDS } from '../nutrition/nutrition.constants';
+import {
+  ALLERGY_IDS,
+  DIET_STYLE_IDS,
+  DIET_TYPE_IDS,
+  INTOLERANCE_IDS,
+  RELIGIOUS_IDS,
+} from '../nutrition/nutrition.constants';
 
 // The ATLAS User.profile shape, unchanged (onboarding is protected). Every field is
 // optional while onboarding is in progress; completion runs the full validation.
@@ -34,8 +40,16 @@ export interface OnboardingAnswersFields {
   exercisePreferences?: ExercisePreferences;
   equipment: string[];
   recovery?: Recovery;
-  /** Phase 13a. Health data (allergies): same privacy as the other answers. */
+  /** Phase 13a (v2 in 13a+). Health data (allergies): same privacy as the other answers. */
   nutritionPreferences?: NutritionPreferences;
+  /** Phase 13a+ ("My goal"). */
+  weightGoal?: WeightGoalFields;
+}
+
+export interface WeightGoalFields {
+  targetWeightKg: number;
+  timeframe: WeightGoalTimeframe | null;
+  setAt: Date;
 }
 
 export interface OnboardingResponseDocument {
@@ -73,13 +87,37 @@ const recoverySchema = new Schema<Recovery>(
   { _id: false },
 );
 
+function preferenceItemSchema(ids: readonly string[]) {
+  return new Schema(
+    {
+      id: { type: String, enum: ids, required: true },
+      details: { type: String, trim: true },
+    },
+    { _id: false },
+  );
+}
+
 const nutritionPreferencesSchema = new Schema<NutritionPreferences>(
   {
     dietType: { type: String, enum: DIET_TYPE_IDS, required: true },
-    kosher: { type: Boolean, required: true },
-    allergies: { type: [{ type: String, enum: ALLERGY_IDS }], default: [] },
-    allergyNotes: { type: String, trim: true },
-    dislikes: { type: String, trim: true },
+    dietTypeDetails: { type: String, trim: true },
+    dietStyles: { type: [preferenceItemSchema(DIET_STYLE_IDS)], default: [] },
+    religious: { type: [preferenceItemSchema(RELIGIOUS_IDS)], default: [] },
+    intolerances: { type: [preferenceItemSchema(INTOLERANCE_IDS)], default: [] },
+    allergies: { type: [preferenceItemSchema(ALLERGY_IDS)], default: [] },
+    foodsLoved: { type: String, trim: true },
+    foodsDisliked: { type: String, trim: true },
+    mealsPerDay: { type: Number, min: 2, max: 6, default: null },
+  },
+  { _id: false },
+);
+
+const weightGoalSchema = new Schema<WeightGoalFields>(
+  {
+    targetWeightKg: { type: Number, required: true },
+    // { kind: 'weeks', weeks } | { kind: 'date', date } — checked by the validator.
+    timeframe: { type: Schema.Types.Mixed, default: null },
+    setAt: { type: Date, required: true },
   },
   { _id: false },
 );
@@ -97,6 +135,7 @@ const answersSchema = new Schema<OnboardingAnswersFields>(
     equipment: { type: [String], default: [] },
     recovery: { type: recoverySchema },
     nutritionPreferences: { type: nutritionPreferencesSchema },
+    weightGoal: { type: weightGoalSchema },
   },
   { _id: false },
 );

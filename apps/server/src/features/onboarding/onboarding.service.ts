@@ -6,7 +6,9 @@ import type {
   OnboardingAnswersPayload,
   OnboardingSaveResponse,
   OnboardingStepId,
+  PreferenceItem,
   WaitingStatus,
+  WeightGoal,
   WeightUnit,
 } from '@sistem/types';
 import { User } from '../users/user.model';
@@ -19,7 +21,7 @@ import { localDateString } from '../plans/planWeek';
 import { recordOnboardingWeight } from '../bodyMetrics/bodyMetric.service';
 import { PLAN_WAIT_MS } from './onboarding.constants';
 import { OnboardingResponse } from './onboardingResponse.model';
-import type { OnboardingAnswersFields, OnboardingResponseDocument } from './onboardingResponse.model';
+import type { OnboardingAnswersFields, OnboardingResponseDocument, WeightGoalFields } from './onboardingResponse.model';
 
 export class OnboardingUserNotFoundError extends Error {}
 
@@ -38,17 +40,42 @@ function toPublicAnswers(answers: OnboardingAnswersFields): OnboardingAnswers {
     equipment: answers.equipment ?? [],
     recovery: answers.recovery,
     ...(answers.nutritionPreferences ? { nutritionPreferences: toPublicNutritionPreferences(answers.nutritionPreferences) } : {}),
+    ...(answers.weightGoal ? { weightGoal: toPublicWeightGoal(answers.weightGoal) } : {}),
   };
 }
 
-function toPublicNutritionPreferences(preferences: NutritionPreferences): NutritionPreferences {
+function toPublicItems<T extends string>(items: readonly PreferenceItem<T>[] | undefined): PreferenceItem<T>[] {
+  return (items ?? []).map((item) => ({ id: item.id, ...(item.details ? { details: item.details } : {}) }));
+}
+
+/** Her nutrition preferences as the API sends them (also read by the nutrition builder). */
+export function toPublicNutritionPreferences(preferences: NutritionPreferences): NutritionPreferences {
   return {
     dietType: preferences.dietType,
-    kosher: preferences.kosher,
-    allergies: preferences.allergies ?? [],
-    ...(preferences.allergyNotes ? { allergyNotes: preferences.allergyNotes } : {}),
-    ...(preferences.dislikes ? { dislikes: preferences.dislikes } : {}),
+    ...(preferences.dietTypeDetails ? { dietTypeDetails: preferences.dietTypeDetails } : {}),
+    dietStyles: toPublicItems(preferences.dietStyles),
+    religious: toPublicItems(preferences.religious),
+    intolerances: toPublicItems(preferences.intolerances),
+    allergies: toPublicItems(preferences.allergies),
+    ...(preferences.foodsLoved ? { foodsLoved: preferences.foodsLoved } : {}),
+    ...(preferences.foodsDisliked ? { foodsDisliked: preferences.foodsDisliked } : {}),
+    mealsPerDay: preferences.mealsPerDay ?? null,
   };
+}
+
+export function toPublicWeightGoal(goal: WeightGoalFields): WeightGoal {
+  return { targetWeightKg: goal.targetWeightKg, timeframe: goal.timeframe ?? null, setAt: goal.setAt.toISOString() };
+}
+
+/** Trimmed details, empty ones dropped, each id once. */
+function toStoredItems<T extends string>(items: readonly PreferenceItem<T>[] | undefined): PreferenceItem<T>[] {
+  const seen = new Set<T>();
+  return (items ?? []).flatMap((item) => {
+    if (seen.has(item.id)) return [];
+    seen.add(item.id);
+    const details = item.details?.trim();
+    return [{ id: item.id, ...(details ? { details } : {}) }];
+  });
 }
 
 export function toMyOnboarding(
@@ -70,7 +97,12 @@ export function toMyOnboarding(
  * The weight is typed in her chosen unit and always stored in kg (a 140 lb answer used
  * to be stored as 140 kg). The height field is in cm whatever she chose — stored as is.
  */
-function toAnswerUpdates(payload: OnboardingAnswersPayload, weightUnit: WeightUnit): Record<string, unknown> {
+function toAnswerUpdates(
+  payload: OnboardingAnswersPayload,
+  weightUnit: WeightUnit,
+  previousGoal: WeightGoalFields | undefined,
+  now: Date,
+): Record<string, unknown> {
   const updates: Record<string, unknown> = {};
   if (payload.birthDate !== undefined) updates.birthDate = new Date(payload.birthDate);
   if (payload.height !== undefined) updates.height = payload.height;
@@ -94,11 +126,30 @@ function toAnswerUpdates(payload: OnboardingAnswersPayload, weightUnit: WeightUn
     const preferences = payload.nutritionPreferences;
     updates.nutritionPreferences = {
       dietType: preferences.dietType,
-      kosher: preferences.kosher,
-      allergies: [...new Set(preferences.allergies ?? [])],
-      allergyNotes: preferences.allergyNotes?.trim() || undefined,
-      dislikes: preferences.dislikes?.trim() || undefined,
+      dietTypeDetails: preferences.dietType !== 'none' ? preferences.dietTypeDetails?.trim() || undefined : undefined,
+      dietStyles: toStoredItems(preferences.dietStyles),
+      religious: toStoredItems(preferences.religious),
+      intolerances: toStoredItems(preferences.intolerances),
+      allergies: toStoredItems(preferences.allergies),
+      foodsLoved: preferences.foodsLoved?.trim() || undefined,
+      foodsDisliked: preferences.foodsDisliked?.trim() || undefined,
+      mealsPerDay: preferences.mealsPerDay ?? null,
     };
+  }
+  if (payload.weightGoal !== undefined) {
+    const goal = payload.weightGoal;
+    if (goal === null) {
+      updates.weightGoal = undefined;
+    } else {
+      const targetWeightKg = weightUnit === 'lb' ? lbToKg(goal.targetWeight) : goal.targetWeight;
+      const timeframe = goal.timeframe ?? null;
+      // "In 12 weeks" counts from when she said it: re-saving the same goal keeps that moment.
+      const unchanged =
+        previousGoal !== undefined &&
+        previousGoal.targetWeightKg === targetWeightKg &&
+        JSON.stringify(previousGoal.timeframe ?? null) === JSON.stringify(timeframe);
+      updates.weightGoal = { targetWeightKg, timeframe, setAt: unchanged ? previousGoal.setAt : now };
+    }
   }
   return updates;
 }
@@ -117,7 +168,8 @@ async function saveAnswers(user: UserDoc, payload: OnboardingAnswersPayload, ste
 
   // The unit sent with the weight (same step), else the one she chose earlier.
   const weightUnit = payload.units?.weight ?? user.preferences?.units?.weight ?? 'kg';
-  for (const [field, value] of Object.entries(toAnswerUpdates(payload, weightUnit))) {
+  const updates = toAnswerUpdates(payload, weightUnit, response.answers?.weightGoal ?? undefined, new Date());
+  for (const [field, value] of Object.entries(updates)) {
     response.set(`answers.${field}`, value);
   }
   response.lastStep = step;

@@ -1,4 +1,4 @@
-// Private photos (Daily Pump, Phase 9; progress photos, Phase 10) — PRD §11: personal
+// Private photos (Daily Pump, Phase 9; progress photos, Phase 10; meal photos, Phase 13a+) — PRD §11: personal
 // data, never a public URL.
 
 // Signed links are made per request, after the access check, and expire after this.
@@ -14,3 +14,4 @@ export const MAX_STORED_PHOTO_EDGE_PX = 2000;
 
 export const PUMP_PHOTO_FOLDER = 'sistem/pump-photos';
 export const PROGRESS_PHOTO_FOLDER = 'sistem/progress-photos';
+export const MEAL_PHOTO_FOLDER = 'sistem/meal-photos';

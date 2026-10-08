@@ -30,6 +30,7 @@ export const {
   deleteNutritionTemplate,
   getNutritionPlan,
   getCalorieSuggestion,
+  getTraineeMealLogs,
   saveNutritionPlan,
   publishNutritionPlan,
   applyNutritionTemplate,

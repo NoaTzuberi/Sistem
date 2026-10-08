@@ -57,7 +57,7 @@ describe('nutrition seed', () => {
   });
 
   it('creates the items (no kcal, in order) and the template; re-running changes nothing', async () => {
-    expect(await applyNutritionSeed(coachId, fixture())).toEqual({ foodsCreated: 4, foodsKept: 0, templateCreated: true });
+    expect(await applyNutritionSeed(coachId, fixture())).toEqual({ foodsCreated: 4, foodsKept: 0, templateCreated: true, lactoseTagged: 1 });
 
     const items = await FoodItem.find({ coachId }).sort({ group: 1, order: 1 }).lean();
     expect(items.map((item) => [item.group, item.name, item.order, item.kcal, item.isNewItem])).toEqual([
@@ -81,10 +81,21 @@ describe('nutrition seed', () => {
 
     // The coach edits an item; a re-run keeps her edit and adds nothing.
     await FoodItem.updateOne({ coachId, name: 'Fake oil' }, { $set: { name: 'Olive oil' } });
-    expect(await applyNutritionSeed(coachId, fixture())).toEqual({ foodsCreated: 0, foodsKept: 4, templateCreated: false });
+    expect(await applyNutritionSeed(coachId, fixture())).toEqual({ foodsCreated: 0, foodsKept: 4, templateCreated: false, lactoseTagged: 0 });
     expect(await FoodItem.countDocuments({ coachId })).toBe(4);
     expect(await FoodItem.exists({ coachId, name: 'Olive oil' })).not.toBeNull();
     expect(await Template.countDocuments({ coachId })).toBe(1);
+  });
+
+  it('adds the lactose tag to dairy items once per coach — a tag she removes stays removed', async () => {
+    await applyNutritionSeed(coachId, fixture());
+    const dairy = await FoodItem.findOne({ coachId, name: 'Fake protein' }).lean();
+    expect(dairy?.dietTags).toEqual(['dairy', 'lactose']);
+    expect((await FoodItem.findOne({ coachId, name: 'Fake eggs' }).lean())?.dietTags).toEqual(['eggs']);
+
+    await FoodItem.updateOne({ _id: dairy!._id }, { $set: { dietTags: ['dairy'] } });
+    expect((await applyNutritionSeed(coachId, fixture())).lactoseTagged).toBe(0);
+    expect((await FoodItem.findById(dairy!._id).lean())?.dietTags).toEqual(['dairy']);
   });
 
   it('refuses a broken file before writing anything', async () => {

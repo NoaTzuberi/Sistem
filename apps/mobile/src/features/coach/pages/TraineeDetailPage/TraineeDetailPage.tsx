@@ -21,6 +21,7 @@ import { WorkoutLogList } from '../../components/WorkoutLogList/WorkoutLogList';
 import { TraineeBodyTracking } from '../../components/TraineeBodyTracking/TraineeBodyTracking';
 import { TraineeAchievements } from '../../components/TraineeAchievements/TraineeAchievements';
 import { TraineeNutrition } from '../../components/TraineeNutrition/TraineeNutrition';
+import { TraineeTracking } from '../../components/TraineeTracking/TraineeTracking';
 import './TraineeDetailPage.css';
 
 // Coach mode: one trainee (PRD §6). The server answers 404 for a trainee who is not
@@ -83,6 +84,7 @@ export function TraineeDetailPage() {
               {tab === 'onboarding' && <OnboardingAnswers onboarding={trainee.onboarding} />}
               {tab === 'plan' && <TraineePlan trainee={trainee} onPlansChanged={reload} />}
               {tab === 'nutrition' && <TraineeNutrition traineeId={trainee.id} />}
+              {tab === 'tracking' && <TraineeTracking traineeId={trainee.id} />}
               {tab === 'logs' && <WorkoutLogList traineeId={trainee.id} />}
               {tab === 'body' && <TraineeBodyTracking traineeId={trainee.id} timezone={trainee.timezone} />}
               {tab === 'achievements' && <TraineeAchievements traineeId={trainee.id} />}

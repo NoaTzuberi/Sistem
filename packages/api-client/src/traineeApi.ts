@@ -5,6 +5,9 @@ import type {
   BodyMetric,
   BodyMetricList,
   BodyMetricResponse,
+  MealLogDay,
+  MealLogDaysResponse,
+  PortionCounts,
   ProgressPhotoPose,
   SaveBodyMetricPayload,
   TabUpdates,
@@ -23,6 +26,8 @@ import type {
 // The trainee's own plans and workout logs (/api/plans, /api/workout-logs). The
 // server scopes every call to the signed-in trainee and computes each workout's
 // status in her time zone.
+const MEAL_LOG_SAVE_TIMEOUT_MS = 15_000;
+
 export function createTraineeApi(client: AxiosInstance) {
   /** This week's plan, the status of each workout and the workout to start next. */
   async function getWeek(): Promise<TraineeWeek> {
@@ -177,6 +182,43 @@ export function createTraineeApi(client: AxiosInstance) {
     return data;
   }
 
+  /** She read the coach's intro of this version (13a+) — it opens collapsed from now on. */
+  async function markNutritionIntroSeen(version: number): Promise<void> {
+    await client.post('/nutrition-plan/intro-seen', { version });
+  }
+
+  // --- Portion tracking (Phase 13a+): her last 7 days, marks per group, meal photos.
+
+  async function getMealLogs(): Promise<MealLogDaysResponse> {
+    const { data } = await client.get<MealLogDaysResponse>('/meal-logs');
+    return data;
+  }
+
+  /**
+   * The whole day's marks (last write wins). A time limit, so a hung connection counts as
+   * offline and the phone retries instead of waiting forever.
+   */
+  async function saveMealLog(date: string, eaten: PortionCounts): Promise<MealLogDay> {
+    const { data } = await client.put<{ day: MealLogDay }>(`/meal-logs/${date}`, { eaten }, { timeout: MEAL_LOG_SAVE_TIMEOUT_MS });
+    return data.day;
+  }
+
+  /** Sends the (already compressed) image as the raw body; replaces that meal's photo. */
+  async function uploadMealPhoto(date: string, mealId: string, photo: Blob, onProgress?: (fraction: number) => void): Promise<MealLogDay> {
+    const { data } = await client.put<{ day: MealLogDay }>(`/meal-logs/${date}/photos/${mealId}`, photo, {
+      headers: { 'Content-Type': photo.type || 'image/jpeg' },
+      onUploadProgress: (event) => {
+        if (onProgress && event.total) onProgress(event.loaded / event.total);
+      },
+    });
+    return data.day;
+  }
+
+  async function removeMealPhoto(date: string, mealId: string): Promise<MealLogDay> {
+    const { data } = await client.delete<{ day: MealLogDay }>(`/meal-logs/${date}/photos/${mealId}`);
+    return data.day;
+  }
+
   // --- The "unseen update" dots on her tab bar (Phase 13a), stored on the server.
 
   async function getTabUpdates(): Promise<TabUpdates> {
@@ -213,6 +255,11 @@ export function createTraineeApi(client: AxiosInstance) {
     getAchievements,
     markAchievementsSeen,
     getNutritionPlan,
+    markNutritionIntroSeen,
+    getMealLogs,
+    saveMealLog,
+    uploadMealPhoto,
+    removeMealPhoto,
     getTabUpdates,
     markTabSeen,
   };

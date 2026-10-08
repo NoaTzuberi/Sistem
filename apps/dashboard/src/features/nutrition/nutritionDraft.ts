@@ -1,4 +1,5 @@
 import type {
+  CalculationOverrides,
   CalorieTargetSource,
   CoachNutritionPlan,
   FoodGroup,
@@ -51,11 +52,24 @@ export interface NutritionDraft {
     source: CalorieTargetSource | null;
     goal: NutritionGoal;
     formulaSex: FormulaSex | null;
+    /** The coach's own values in the calculation summary (13a+); null = her data. */
+    overrides: CalculationOverrides;
     confirmBelowFloor: boolean;
   };
   meals: DraftMeal[];
   tips: DraftTip[];
+  /** The note at the top of her Nutrition tab (13a+); '' = none. */
+  introMessage: string;
 }
+
+export const NO_OVERRIDES: CalculationOverrides = {
+  weightKg: null,
+  heightCm: null,
+  ageYears: null,
+  activityFactor: null,
+  targetWeightKg: null,
+  timelineWeeks: null,
+};
 
 export function newKey(): string {
   return crypto.randomUUID();
@@ -71,9 +85,10 @@ const DEFAULT_MEALS: { name: string; portions: PortionCounts }[] = [
 
 export function emptyDraft(goal: NutritionGoal): NutritionDraft {
   return {
-    target: { kcal: undefined, source: null, goal, formulaSex: null, confirmBelowFloor: false },
+    target: { kcal: undefined, source: null, goal, formulaSex: null, overrides: { ...NO_OVERRIDES }, confirmBelowFloor: false },
     meals: DEFAULT_MEALS.map((meal) => newMeal(meal.name, meal.portions)),
     tips: [],
+    introMessage: '',
   };
 }
 
@@ -85,8 +100,10 @@ export function draftFromPlan(plan: CoachNutritionPlan): NutritionDraft {
       source: target.source,
       goal: target.goal,
       formulaSex: target.formulaSex,
+      overrides: { ...NO_OVERRIDES, ...target.overrides },
       confirmBelowFloor: target.floorConfirmation !== null && target.floorConfirmation.kcal === target.kcal,
     },
+    introMessage: plan.introMessage ?? '',
     meals: plan.meals.map((meal) => ({
       key: newKey(),
       id: meal.id,
@@ -132,8 +149,10 @@ export function toPayload(draft: NutritionDraft): SaveNutritionPlanPayload {
       source: kcal === null ? null : (draft.target.source ?? 'override'),
       goal: draft.target.goal,
       formulaSex: draft.target.formulaSex,
+      overrides: draft.target.overrides,
       confirmBelowFloor: draft.target.confirmBelowFloor,
     },
+    introMessage: draft.introMessage.trim() ? draft.introMessage : null,
     meals: draft.meals.map((meal) => ({
       id: meal.id,
       name: meal.name,

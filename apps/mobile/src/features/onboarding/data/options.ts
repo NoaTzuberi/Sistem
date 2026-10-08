@@ -1,3 +1,6 @@
+import type { AllergyId, DietStyleId, DietType, IntoleranceId, ReligiousId } from '@sistem/types';
+import { ALLERGY_LABELS, DIET_STYLE_LABELS, DIET_TYPE_LABELS, INTOLERANCE_LABELS, RELIGIOUS_LABELS } from '@sistem/shared';
+
 export interface OnboardingOption {
   id: string;
   label: string;
@@ -45,22 +48,24 @@ export const RECOVERY_FLAG_OPTIONS: OnboardingOption[] = [
   { id: 'nothing_to_add', label: 'Nothing to add' },
 ];
 
-// "Nutrition preferences" step (Phase 13a). PLACEHOLDER labels until the owner sends the
-// wording. Ids mirror DIET_TYPE_IDS / ALLERGY_IDS in the server's nutrition.constants.ts.
-export const DIET_TYPE_OPTIONS: OnboardingOption[] = [
-  { id: 'none', label: 'No restrictions' },
-  { id: 'vegetarian', label: 'Vegetarian' },
-  { id: 'vegan', label: 'Vegan' },
-  { id: 'pescatarian', label: 'Pescatarian' },
-];
-
-export const ALLERGY_OPTIONS: OnboardingOption[] = [
-  { id: 'dairy', label: 'Dairy / lactose' },
-  { id: 'eggs', label: 'Eggs' },
-  { id: 'gluten', label: 'Gluten' },
-  { id: 'peanuts', label: 'Peanuts' },
-  { id: 'tree_nuts', label: 'Tree nuts' },
-  { id: 'sesame', label: 'Sesame' },
-  { id: 'soy', label: 'Soy' },
-  { id: 'fish', label: 'Fish' },
-];
+// "Nutrition & goal" step (Phase 13a, v2 in 13a+). PLACEHOLDER labels (shared with the coach's
+// view in @sistem/shared) until the owner sends the wording. Ids mirror the server's
+// nutrition.constants.ts.
+export const DIET_TYPE_OPTIONS: { id: Exclude<DietType, 'none'>; label: string }[] = (['vegetarian', 'vegan', 'pescatarian'] as const).map(
+  (id) => ({ id, label: DIET_TYPE_LABELS[id] }),
+);
+export const DIET_STYLE_OPTIONS: { id: DietStyleId; label: string }[] = (['keto_low_carb', 'intermittent_fasting', 'other'] as const).map(
+  (id) => ({ id, label: DIET_STYLE_LABELS[id] }),
+);
+export const RELIGIOUS_OPTIONS: { id: ReligiousId; label: string }[] = (['kosher', 'halal'] as const).map((id) => ({
+  id,
+  label: RELIGIOUS_LABELS[id],
+}));
+export const INTOLERANCE_OPTIONS: { id: IntoleranceId; label: string }[] = (
+  ['lactose_free', 'gluten_free', 'celiac', 'low_fodmap', 'other'] as const
+).map((id) => ({ id, label: INTOLERANCE_LABELS[id] }));
+export const ALLERGY_OPTIONS: { id: AllergyId; label: string }[] = (
+  ['dairy', 'eggs', 'peanuts', 'tree_nuts', 'sesame', 'soy', 'gluten', 'fish', 'shellfish', 'other'] as const
+).map((id) => ({ id, label: ALLERGY_LABELS[id] }));
+/** Preferred meals per day; null = no preference. */
+export const MEALS_PER_DAY_OPTIONS = [2, 3, 4, 5, 6] as const;

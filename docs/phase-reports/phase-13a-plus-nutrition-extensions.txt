@@ -1,0 +1,266 @@
+SISTEM — PHASE 13a+ REPORT: NUTRITION EXTENSIONS (before 13c)
+Date: 2026-10-08
+Scope: docs/BUILD_PLAN.md "Phase 13a+" (PRD §5.6 "Decisions — Phase 13a+"): owner requests 1–5, change A (one combined
+"Nutrition & goal" onboarding step) and item 6 (portion tracking — the meal-logging part of 13b, opened now), plus the
+PRD §14 backlog item "Extra portions". Phase 13c was NOT started.
+
+================================================================================
+1. SUMMARY
+================================================================================
+- Onboarding: the "Nutrition preferences" step became ONE "Nutrition & goal" screen (same step id — onboarding still has
+  10 steps): accordion sections "My goal" (only for lose weight / build muscle goals, open by default), "How I eat",
+  "Intolerances & allergies" (collapsed, each with a one-line summary). Chips; a details field only under a chosen item;
+  "Other" needs its text. One Skip that saves nothing. Full preference list (diet styles, kosher / halal, intolerances,
+  allergies incl. shellfish, loves / dislikes, meals per day) + weight goal (target + weeks or a date).
+- Every option maps to diet tags (5 new tags: shellfish, pork, lactose, alcohol, high_fodmap); the builder warns on
+  conflicts; keto warns on carb portions.
+- Calorie calculation = the owner's method in calorieTarget.ts (pure code, never the AI): new activity table, aggressive
+  fat loss −25%, a timeline method with safety caps (1%/week loss, 0.5%/week gain, 25% of TDEE, the floor), never below
+  1,200, recommended portions per group. All numbers in the coach-tunable config.
+- Dashboard: a "Calculation summary" card (her data, BMR, TDEE, deficit / surplus, weekly rate, expected timeline, unsafe
+  pace + recommended timeline, recommended kcal + portions); the coach can override every input. A "Message to her" field.
+- Trainee Nutrition tab: the coach's note (open until read, then collapsed), the day header with per-group totals (each
+  opens its swap list) that is also the portion tracker (circles, ½, last 7 days, works offline), and an optional private
+  photo per meal. No calorie numbers anywhere on her side.
+- Coach: her week of tracking (marked / planned per group, photos) in the dashboard and read-only in coach mode.
+
+================================================================================
+2. DECISIONS AND HOW THEY WERE BUILT
+================================================================================
+Owner answers (2026-10-08) — written into PRD §5.6 ("Decisions — Phase 13a+") and BUILD_PLAN ("Phase 13a+"):
+1. Gain cap 0.5% of body weight / week; 3 training days = 1.55; an unsafe pace is shown to the coach only; meals per day is
+   information only (new plans still start with 4 meals).
+2. Change A: one "Nutrition & goal" step (accordion), no new step ids.
+3. Item 6 as designed: one MealLog per trainee + day; the mealLogging flag removed; recipes / water still flagged.
+4. PRD §14 backlog: "Extra portions — optional neutral '+ extra portion' marking beyond the plan, shown to the coach as a
+   plain number (ask the coach whether she wants it)."
+
+The calculation (differences from 13a):
+- Activity factors by training days: 1–2 → 1.375, 3–5 → 1.55, 6–7 → 1.725 (13a had 5 → 1.725 and 7 → 1.9; the owner's
+  method has no 1.9). Sedentary 1.2 only as the coach's pick in the card.
+- Goal %: fat loss −20% (top of her "moderate 15–20%"), NEW fat loss (aggressive) −25% (coach-only), recomp −10%,
+  muscle gain +10%, maintenance 0 — unchanged otherwise.
+- Timeline method (target + timeframe, goal fat loss / muscle gain): required kcal/day = |Δkg| × 7,700 ÷ days; capped at the
+  safe limit (loss: the smallest of 1% of body weight/week, 25% of TDEE, TDEE − floor; gain: 0.5%/week). The same caps
+  also apply to the goal-% method. Unsafe → "Requested pace is unsafe; recommended timeline: N weeks".
+- The recommendation is RAISED to the floor (13a only flagged it); a lower target still needs the coach's confirmation.
+- Dev Trainee Two in the browser (67.6 kg, 170 cm, 36, female, 2–3 days → 3 → ×1.55; target 60 kg in 8 weeks): BMR 1,398,
+  TDEE 2,166, deficit −546/day, unsafe (0.95 kg/week asked, 0.49 safe — the 25% limit), recommended 1,620 kcal, 16 weeks,
+  portions 5 protein · 4½ carb · 3½ fat — the numbers of the approved proposal.
+
+Things I decided inside your answers (say if you want any changed):
+- Old (13a) preference answers are rewritten to v2 once at server start (only dev data had them): kosher → religious,
+  allergy notes → an "other" allergy, dislikes → foods disliked. The dev database was migrated by your running server.
+- "In 12 weeks" counts from when she saved it (setAt); re-saving the same goal keeps that moment.
+- Onboarding completion no longer sends the nutrition answers (the step saves them itself) — so a skipped step stays
+  "not answered".
+- The lactose tag is added to every dairy item ONCE per coach (a marker on her settings), so removing it from e.g.
+  lactose-free milk is never undone by a re-run. Run on the dev database: 9 dairy items tagged; second run: 0.
+- Coach overrides are saved with the plan (`calorieTarget.overrides`) and also sent live with the summary request, so the
+  card updates while she types (an in-between value the server refuses keeps the last good numbers and shows the reason).
+- "Apply" for the recommended portions was not built: the card shows them next to "Plan now"; meals stay hers to edit.
+- Intro "read": stored on the server per version (User.nutritionIntroSeenVersion) — open while unseen, collapsed after,
+  on every device. Changing only the intro counts as a change (a new version).
+- Tracker: per group one circle per planned portion (a planned half = a small circle); marks fill from the start; ½ adds /
+  takes back a half; never more than planned (server clamps). Today follows the newest version; a past day keeps the
+  version it was logged with (or the one live that day). An un-marked day without photos is no document at all.
+- Offline: the whole day is saved (debounced 0.8 s, last write wins), cached on the phone, retried on reconnect /
+  foreground / every 15 s; a save that hangs times out after 15 s and is retried. A refused day (outside the window) is
+  dropped from the queue. The last plan is cached too, so the tab opens offline.
+- Meal photos: one per meal per day, only for meals in that day's plan, private (authenticated Cloudinary assets, 1-hour
+  signed links, folder sistem/meal-photos/<traineeId>), replace / remove delete the old asset. Photos need a connection.
+- Coach views are neutral: "2 of 4½", "Nothing marked", "Not yet", "No plan"; a thin bar in Cherry Rose on grey (no red /
+  green, no %). Coach mode has a new "Tracking" tab; its Nutrition tab shows the note (collapsed) and "Daily portions".
+
+Schema / contract changes:
+- OnboardingResponse.answers.nutritionPreferences v2: dietType (+dietTypeDetails), dietStyles / religious / intolerances /
+  allergies = [{ id, details? }], foodsLoved, foodsDisliked, mealsPerDay. answers.weightGoal { targetWeightKg, timeframe
+  { kind: weeks, weeks } | { kind: date, date } | null, setAt }. ONBOARDING_FIELDS + weightGoal (step nutrition_preferences).
+- DietTag + shellfish, pork, lactose, alcohol, high_fodmap. NutritionGoal + fat_loss_aggressive.
+- NutritionConfig / NutritionSettings + kcalPerKg, maxLossRatePctPerWeek, maxGainRatePctPerWeek, maxDeficitPct, portionSplit,
+  ketoMaxCarbPortions (+ appliedTagBackfills on the settings document).
+- NutritionPlan.calorieTarget.overrides; NutritionPlan / NutritionPlanVersion.introMessage; CalorieSuggestion extended
+  (method, delta, rate, timeline, timelineNote, raisedToFloor, portions; `belowFloor` removed); CoachNutritionPlan
+  dayPortions / targetPortions / introMessage; NutritionPlanView intro / dayPortions; trainee response introUnseen.
+- User.nutritionIntroSeenVersion.
+- MealLog moved to features/mealLogs and became one document per trainee + date (planned snapshot, eaten, planId / version,
+  photos [{ mealId, mealName, publicId, uploadedAt }]); the old per-meal index is dropped by syncIndexes at server start
+  (the collection had no routes, so no data).
+- NutritionFeatures: mealLogging removed (FEATURE_MEAL_LOGGING removed from .env.example and vitest.config).
+- New routes: GET /api/meal-logs, PUT /api/meal-logs/:date, PUT|DELETE /api/meal-logs/:date/photos/:mealId,
+  POST /api/nutrition-plan/intro-seen, GET /api/coach/trainees/:id/meal-logs?weekStart=; the suggestion route takes the
+  overrides as query params.
+
+================================================================================
+3. FILES CHANGED
+================================================================================
+Added — server
+  apps/server/src/features/mealLogs/ (mealLog.constants, controller, model, routes, service, types, validation .ts;
+    __tests__/mealLogs.test.ts)
+  apps/server/src/features/onboarding/nutritionPreferencesMigration.ts
+Modified — server
+  .env.example, vitest.config.mts, src/app.ts, src/server.ts, src/config/features.ts, features/coach/coach.routes.ts,
+  features/nutrition/ (calorieTarget, nutrition.config, nutrition.constants, nutrition.controller, nutrition.routes,
+    nutrition.types, nutrition.validation, nutritionLogs.model, nutritionPlan.model, nutritionPlan.service,
+    nutritionPreferences, nutritionSeed, nutritionSettings.model, nutritionSettings.service, scripts/seedNutrition;
+    __tests__/calorieTarget, nutritionApi, nutritionRules, nutritionSeed),
+  features/onboarding/ (onboarding.constants, onboarding.service, onboarding.validation, onboardingResponse.model,
+    __tests__/onboarding.test.ts),
+  features/plans/planWeek.ts (daysBetween), features/privatePhotos/privatePhoto.constants.ts (MEAL_PHOTO_FOLDER),
+  features/users/user.model.ts, features/users/scripts/seedDev.ts
+Modified — packages
+  packages/types/src/index.ts, packages/api-client/src/coachApi.ts + traineeApi.ts,
+  packages/shared/src/nutritionDisplay.ts + onboardingSections.ts
+Added / modified — mobile
+  added: features/onboarding/components/AccordionSection/, PreferenceItemsField/, data/nutritionForm.ts;
+    features/nutrition/components/CoachIntro/, DayTotals/, MealPhotoField/, PortionTracker/, data/nutritionCache.ts,
+    data/portionCircles.ts, hooks/useMealTracker.ts; features/coach/components/TraineeTracking/
+  modified: features/onboarding/ (types.ts, data/options.ts, data/nutritionPreferencesCopy.ts,
+    pages/OnboardingPage/OnboardingPage.tsx, steps/NutritionPreferencesStep/*, steps/ReviewStep/ReviewStep.tsx),
+    features/nutrition/ (components/MealCard, components/NutritionPlanView, data/nutritionCopy.ts, pages/NutritionPage),
+    features/profile/ (data/profileCopy.ts, pages/ProfilePage/ProfilePage.tsx), features/coach/data/traineeTabs.ts,
+    features/coach/pages/TraineeDetailPage/TraineeDetailPage.tsx, services/coach/coachService.ts,
+    services/nutrition/nutritionService.ts, services/onboarding/onboardingService.ts, services/users/usersService.ts
+Added / modified / deleted — dashboard
+  added: features/nutrition/components/CalculationSummary/, IntroEditor/, TrackingWeek/
+  deleted: features/nutrition/components/CalorieTargetPanel/ (replaced by CalculationSummary)
+  modified: features/nutrition/ (nutritionDraft.ts, data/nutritionCopy.ts, components/NutritionEditor,
+    components/TraineeNutritionTab, pages/NutritionSettingsPage), services/coach/coachService.ts
+Docs
+  docs/PRD.md (§5.6 "Decisions — Phase 13a+", 13b meal-logging note, §14 "Extra portions"),
+  docs/BUILD_PLAN.md ("Phase 13a+", 13b meal logging marked done early),
+  docs/phase-reports/phase-13a-plus-nutrition-extensions.txt
+Local only (gitignored, never committed)
+  CLAUDE.md (13a+ architecture paragraph)
+
+================================================================================
+4. DEPENDENCIES
+================================================================================
+Added: none. Removed: none.
+Env: FEATURE_MEAL_LOGGING removed (meal logging is open). No new variables.
+
+================================================================================
+5. HOW TO TEST
+================================================================================
+Commands (repo root):
+  npm test        -> 34 files, 508 tests pass (was 33 / 477).
+    - calorieTarget.test.ts: the owner's activity table; goal % incl. aggressive; every input shown; overrides listed;
+      timeline: unsafe capped by the 25% deficit (Dev Trainee Two's numbers), a safe pace followed, the 1%/week cap, the
+      0.5%/week gain cap, the floor as a limit, target only → expected weeks, wrong direction / passed date / reached /
+      goal without weight change; raised to the floor; recommended portions (1,500 → the guide's 4½ · 4 · 4); config merge.
+    - nutritionRules.test.ts: every new tag rule (vegetarian / vegan shellfish, kosher pork + shellfish, halal pork +
+      alcohol, lactose-free → lactose not dairy, gluten-free / celiac, low-FODMAP, "other" = text only, strongest reason
+      wins), keto warning, settings bounds for the new fields.
+    - nutritionApi.test.ts: the summary from her weight goal (unsafe → recommended weeks), overrides from the query and
+      stored with the plan (kept when omitted, refused out of range), intro saved per version / a change on its own /
+      unseen → seen / never backwards / cleared.
+    - nutritionSeed.test.ts: lactose backfill once per coach, a removed tag stays removed.
+    - onboarding.test.ts: v2 save (trimmed, de-duplicated), validation, weight goal in kg from lb, setAt kept for the same
+      goal, null clears, timeframe rules, optional on completion, the v1 → v2 migration (once), the coach sees both.
+    - mealLogs.test.ts: the 7-day window, no plan → 409, clamped halves, empty day = no document, the window enforced,
+      past day keeps its version while today follows the new one, meal photo upload / replace / remove (old asset deleted),
+      the coach's Sunday week + totals, authorization (other coach 404, trainee / coach role 403).
+  npm run build   -> passes. Dashboard bundle 453 kB (was 441); mobile 592 kB (was 567; over Vite's 500 kB warning —
+                     backlog "split the mobile bundle").
+  npm run lint    -> 0 errors; the 2 older AuthContext warnings.
+  npm run dev:all -> checked with the same workspace scripts on spare ports (API 5012, mobile 5175, dashboard 5177) because
+                     your servers were on 5002 / 5173 / 5174: API health 200 ("MongoDB connected"), both apps 200. I stopped
+                     only my own processes. Your 5002 server already serves the new routes (it restarted on the changes and
+                     ran the preference migration). Note: your mobile dev server on 5173 did not answer during the check
+                     (empty response) — restart it if you see the same.
+  seed:nutrition  -> npm run seed:nutrition -- coach@sistem.dev --allow-remote → "Lactose tag added to 9 dairy item(s)";
+                     second run → 0.
+
+Browser check (real API, dev database, real Cloudinary):
+  Dashboard (desktop), coach@sistem.dev, Dev Trainee Two → Nutrition builder:
+    - Calculation summary with her data; target 60 kg / 8 weeks typed → the numbers in §2 and the unsafe notice.
+      Found and fixed: typing "60" briefly sent "6" (refused by the server), which emptied the field and the next key
+      saved a 0 — the fields now keep the coach's own value while she types and show the server's reason inline.
+    - "Message to her" with a blank line → published as version 2 (line breaks kept).
+    - After her answers changed: warnings for lactose (lactose-free), tree nuts (allergy), poultry / fish (vegetarian).
+  Mobile at 375×667 (the window can't be resized, so the app ran inside a 375×667 same-origin frame — identical viewport):
+    - trainee2: Nutrition tab — the note open (first view), the tracker: 4 + ½ circles for 4½ protein; taps, ½, undo;
+      saved to the server (2 · 1 · 2 against version 2). Offline (requests failing): the tap shows at once, "Saved on this
+      phone — will sync", kept in the phone cache; back online → synced, nothing pending. Reload → the note collapsed.
+      Yesterday → "No plan on this day" (version 1 was published this morning). "4½ protein" → the protein swap sheet.
+      No "kcal" / "calorie" anywhere on her screens; no sideways scroll.
+    - Meal photo: a generated test image uploaded through the API → authenticated asset, signed expiring link (200
+      image/jpeg), shown as a 3:4 thumbnail with Camera / Gallery / Remove and "Visible only to you and your coach".
+      Removed again afterwards (the asset was deleted).
+    - Profile → edit "Nutrition & goal": the migrated answers in the summaries ("Vegetarian · Kosher", "Tree nuts");
+      "My goal" open; 62 kg · 12 weeks; Intolerances opened and scrolled into view; Lactose-free + details; "Other"
+      allergy → Save disabled with "Describe 'other' to continue." until typed; saved as expected.
+    - Coach mode (coach@sistem.dev): Tracking tab (Sunday week, "2 of 4½ · …", Not yet / No plan, week line), Nutrition tab
+      (note collapsed, "Daily portions" totals, no tracker). Found and fixed: the coach-mode header said "Your day".
+  Dashboard trainee Nutrition tab: the Tracking table (marked / planned per group, neutral bars, the photo, week totals).
+  Left in the dev database by this check (dev data): Dev Trainee Two — nutrition plan version 2 (with the intro and the
+  coach overrides target 60 kg / 8 weeks), today's marks 2 protein · 1 carb · 2 fat, her answers (vegetarian, kosher,
+  lactose-free "ok in yogurt", tree nuts + other "kiwi", goal 62 kg in 12 weeks), intro seen; the coach's 9 dairy items
+  now also tagged lactose.
+
+Manual (dashboard coach@sistem.dev, mobile trainee2@sistem.dev — password sistem-dev-1234):
+  1. Dashboard → Nutrition → Settings: the new "Pace and safety", "Portion split" and keto fields; change and save.
+  2. Trainee → Nutrition builder: edit the summary inputs ("•" = your value, "Reset to her data"), use the recommendation,
+     write a message, publish.
+  3. Mobile: the note, the tracker (tap / ½ / undo, other days), a meal photo from the camera / gallery; airplane mode →
+     tap → back online.
+  4. Sign up a new trainee: the "Nutrition & goal" step (My goal only with lose weight / build muscle), Skip, resume.
+
+================================================================================
+6. KNOWN ISSUES / TODOs
+================================================================================
+- All new wording is PLACEHOLDER (mobile nutritionPreferencesCopy.ts, nutritionCopy.ts, profileCopy.ts; dashboard
+  nutritionCopy.ts; shared nutritionDisplay.ts labels). Phase 15 moves it into the translation files.
+- For the coach: review the lactose tags (9 dairy items got it — remove it where the item is lactose-free) and tag
+  high-FODMAP items if low-FODMAP trainees are expected (no item has that tag yet, so that rule finds nothing).
+- 7,700 kcal per kg vs the method doc's "300–500 kcal ≈ 0.5 kg/week" (0.5 kg/week = 550 kcal/day at 7,700) — tunable.
+- The deficit % in the card can read slightly over 25% (e.g. −25.2%) because the kcal is rounded to 10.
+- A past day's photo of a meal that is no longer in the current plan is stored and shown to the coach, but the trainee's
+  tab shows photo slots only for meals of the current plan.
+- If the same day is changed on two phones offline, the last save wins (by design).
+- The workout session's saves have no request timeout (the tracker's day save now has one, 15 s) — worth adding there too.
+- Extra portions beyond the plan: backlog (PRD §14), ask the coach.
+- The mobile bundle grew to 592 kB (backlog: split the bundle by role).
+
+================================================================================
+7. SUGGESTED COMMITS (ready to paste — in order)
+================================================================================
+Note: commit 1 changes the API contract (packages/types, packages/api-client); the apps build again after commits 2 and 3,
+as in earlier phases. CLAUDE.md is never committed.
+
+# 1) server + contract: preferences v2 + weight goal, the owner's calorie method, intro message, portion tracking
+git add -A -- \
+  apps/server/.env.example \
+  apps/server/vitest.config.mts \
+  apps/server/src/app.ts \
+  apps/server/src/server.ts \
+  apps/server/src/config/features.ts \
+  apps/server/src/features/coach/coach.routes.ts \
+  apps/server/src/features/mealLogs \
+  apps/server/src/features/nutrition \
+  apps/server/src/features/onboarding \
+  apps/server/src/features/plans/planWeek.ts \
+  apps/server/src/features/privatePhotos/privatePhoto.constants.ts \
+  apps/server/src/features/users/user.model.ts \
+  apps/server/src/features/users/scripts/seedDev.ts \
+  packages/types \
+  packages/api-client
+git commit -m "feat: nutrition 13a+ on the server — full nutrition preferences and weight goal in onboarding, the owner's calorie method with safety caps and timeline, calculation overrides, coach intro message per version, portion tracking with private meal photos (meal logs), lactose backfill"
+
+# 2) shared + mobile: combined Nutrition & goal step, tracker, intro, meal photos, coach-mode tracking
+git add -A -- \
+  packages/shared \
+  apps/mobile
+git commit -m "feat: combined Nutrition & goal onboarding step, Nutrition tab day tracker with offline sync, coach intro and meal photos, read-only tracking in coach mode"
+
+# 3) dashboard: calculation summary, intro editor, settings, tracking view
+git add -A -- \
+  apps/dashboard
+git commit -m "feat: dashboard calculation summary with overrides and unsafe-pace notice, message to the trainee, new nutrition settings, weekly portion tracking view"
+
+# 4) docs
+git add -A -- \
+  docs/PRD.md \
+  docs/BUILD_PLAN.md \
+  docs/phase-reports/phase-13a-plus-nutrition-extensions.txt
+git commit -m "docs: phase 13a+ report; nutrition extensions decisions (preferences, calorie method, timeline, intro, portion tracking), extra portions backlog"

@@ -4,6 +4,7 @@ import { Types } from 'mongoose';
 import type { DietTag, FoodGroup, PortionCounts } from '@sistem/types';
 import { Template } from '../templates/template.model';
 import { FoodItem } from './foodItem.model';
+import { NutritionSettings } from './nutritionSettings.model';
 import { DIET_TAG_IDS, FOOD_GROUP_IDS } from './nutrition.constants';
 import { isPortionCount } from './nutrition.validation';
 import type { MealFields } from './nutrition.types';
@@ -51,6 +52,8 @@ export interface NutritionSeedResult {
   foodsCreated: number;
   foodsKept: number;
   templateCreated: boolean;
+  /** Items that got the `lactose` tag from the one-time 13a+ backfill. */
+  lactoseTagged: number;
 }
 
 /** Checks the file before anything is written: a bad reference must never half-seed. */
@@ -93,6 +96,32 @@ export async function readNutritionSeedFile(path: string): Promise<NutritionSeed
   return JSON.parse(await readFile(path, 'utf8')) as NutritionSeedData;
 }
 
+const LACTOSE_BACKFILL = 'lactose_from_dairy';
+
+/**
+ * Phase 13a+: the new `lactose` tag goes on every item tagged dairy — once per coach (she
+ * removes it where it doesn't apply, e.g. lactose-free milk, and a re-run never puts it
+ * back). Returns how many items got it.
+ */
+export async function backfillLactoseTags(coachId: string): Promise<number> {
+  const claimed = await NutritionSettings.updateOne(
+    { coachId, appliedTagBackfills: { $ne: LACTOSE_BACKFILL } },
+    { $addToSet: { appliedTagBackfills: LACTOSE_BACKFILL } },
+    { upsert: false },
+  );
+  if (claimed.matchedCount === 0) {
+    // No settings yet (create them with the marker) or already applied.
+    const created = await NutritionSettings.updateOne(
+      { coachId },
+      { $setOnInsert: { coachId, appliedTagBackfills: [LACTOSE_BACKFILL] } },
+      { upsert: true },
+    );
+    if (created.upsertedCount === 0) return 0;
+  }
+  const result = await FoodItem.updateMany({ coachId, dietTags: 'dairy' }, { $addToSet: { dietTags: 'lactose' } });
+  return result.modifiedCount;
+}
+
 export async function applyNutritionSeed(coachId: string, data: NutritionSeedData): Promise<NutritionSeedResult> {
   const problems = validateNutritionSeed(data);
   if (problems.length > 0) throw new Error(`The nutrition seed file is not valid:\n- ${problems.join('\n- ')}`);
@@ -127,7 +156,7 @@ export async function applyNutritionSeed(coachId: string, data: NutritionSeedDat
 
   const templateKey = seedKey(data.template.key);
   if (await Template.exists({ coachId, seedKey: templateKey })) {
-    return { foodsCreated, foodsKept: data.foods.length - foodsCreated, templateCreated: false };
+    return { foodsCreated, foodsKept: data.foods.length - foodsCreated, templateCreated: false, lactoseTagged: await backfillLactoseTags(coachId) };
   }
 
   const items = await FoodItem.find({ coachId, seedKey: { $in: data.foods.map((food) => seedKey(food.key)) } })
@@ -166,5 +195,5 @@ export async function applyNutritionSeed(coachId: string, data: NutritionSeedDat
       tips: data.template.tips.map((text) => ({ _id: new Types.ObjectId(), text: text.trim() })),
     },
   });
-  return { foodsCreated, foodsKept: data.foods.length - foodsCreated, templateCreated: true };
+  return { foodsCreated, foodsKept: data.foods.length - foodsCreated, templateCreated: true, lactoseTagged: await backfillLactoseTags(coachId) };
 }

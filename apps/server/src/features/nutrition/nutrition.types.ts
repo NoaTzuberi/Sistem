@@ -1,5 +1,6 @@
 import type { Types } from 'mongoose';
 import type {
+  CalculationOverrides,
   CalorieSuggestion,
   CalorieTargetSource,
   DietTag,
@@ -64,11 +65,14 @@ export interface FloorConfirmationFields {
   confirmedAt: Date;
 }
 
+export type CalculationOverridesFields = Partial<CalculationOverrides>;
+
 export interface CalorieTargetFields {
   kcal?: number | null;
   source?: CalorieTargetSource | null;
   goal: NutritionGoal;
   formulaSex?: FormulaSex | null;
+  overrides?: CalculationOverridesFields | null;
   /** The estimate when last saved (inputs included) — Mixed, shape = CalorieSuggestion. */
   suggestion?: CalorieSuggestion | null;
   floorConfirmation?: FloorConfirmationFields | null;
@@ -80,6 +84,7 @@ export interface NutritionPlanDocument {
   calorieTarget: CalorieTargetFields;
   meals: MealFields[];
   tips: TipFields[];
+  introMessage?: string | null;
   /** 13b (waterTracking). */
   waterGoalMl?: number | null;
   templateId?: Types.ObjectId | null;
@@ -98,6 +103,7 @@ export interface NutritionPlanVersionDocument {
   calorieTarget: CalorieTargetFields;
   meals: MealFields[];
   tips: TipFields[];
+  introMessage?: string | null;
   waterGoalMl?: number | null;
   /** The group values and kcal at publish time, so a later config change never rewrites history. */
   groupKcal: Record<FoodGroup, number>;
@@ -112,11 +118,19 @@ export interface NutritionSettingsDocument {
   goalAdjustments?: Partial<Record<NutritionGoal, number>>;
   activityFactors?: number[];
   floorKcal?: number;
+  kcalPerKg?: number;
+  maxLossRatePctPerWeek?: number;
+  maxGainRatePctPerWeek?: number;
+  maxDeficitPct?: number;
+  portionSplit?: Partial<PortionCountsFields>;
+  ketoMaxCarbPortions?: number;
+  appliedTagBackfills?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
 
-// --- 13b (closed behind feature flags; designed in 13a, used from 13b) -------------
+// --- 13b (closed behind feature flags; designed in 13a, used from 13b). The MealLog moved
+// to features/mealLogs when portion tracking opened (13a+). -----------------------
 
 export interface RecipeIngredientFields {
   _id: Types.ObjectId;
@@ -134,22 +148,6 @@ export interface RecipeDocument {
   steps: string[];
   notes?: string;
   archivedAt?: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface MealLogDocument {
-  traineeId: Types.ObjectId;
-  coachId: Types.ObjectId;
-  /** 'YYYY-MM-DD' in her time zone. */
-  date: string;
-  planId: Types.ObjectId;
-  planVersion: number;
-  mealId: Types.ObjectId;
-  optionId?: Types.ObjectId | null;
-  eaten: PortionCountsFields;
-  /** The meal's portions in that version — an edited plan never rewrites history. */
-  planned: PortionCountsFields;
   createdAt: Date;
   updatedAt: Date;
 }

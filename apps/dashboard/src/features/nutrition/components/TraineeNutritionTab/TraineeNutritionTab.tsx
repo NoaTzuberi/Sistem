@@ -6,10 +6,11 @@ import { nutritionBuilderPath } from '../../../../app/config/routes';
 import { Button } from '../../../../components/common/Button/Button';
 import { Badge } from '../../../../components/common/Badge/Badge';
 import { PreferencesPanel } from '../PreferencesPanel/PreferencesPanel';
+import { TrackingWeek } from '../TrackingWeek/TrackingWeek';
 import { NUTRITION_COPY } from '../../data/nutritionCopy';
 import './TraineeNutritionTab.css';
 
-/** The trainee page's Nutrition tab: where her plan stands, and the way into the builder. */
+/** The trainee page's Nutrition tab: where her plan stands, the way into the builder, and her portion tracking (13a+). */
 export function TraineeNutritionTab({ traineeId }: { traineeId: string }) {
   const load = useCallback(() => getNutritionPlan(traineeId), [traineeId]);
   const { data, error, isLoading, reload } = useLoad(load, NUTRITION_COPY.loadError);
@@ -58,6 +59,11 @@ export function TraineeNutritionTab({ traineeId }: { traineeId: string }) {
         </Link>
       </div>
       <PreferencesPanel preferences={data.preferences} />
+      {data.published && (
+        <div className="trainee-nutrition-tracking">
+          <TrackingWeek traineeId={traineeId} />
+        </div>
+      )}
     </div>
   );
 }

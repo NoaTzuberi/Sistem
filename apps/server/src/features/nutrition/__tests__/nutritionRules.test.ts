@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { DietTag, FoodItem, NutritionFeatures, NutritionMeal, NutritionPreferences } from '@sistem/types';
 import { DEFAULT_NUTRITION_CONFIG } from '../nutrition.config';
-import { findFoodConflicts, hasKosherConflict } from '../nutritionPreferences';
+import { findFoodConflicts, hasKetoConflict, hasKosherConflict } from '../nutritionPreferences';
 import {
   computeNutritionKcal,
   findNutritionPublishIssues,
@@ -15,20 +15,21 @@ import type { PublishCheckContext } from '../nutrition.validation';
 // Phase 13a: preference checks, the save payload rules and the publish rules — pure, so
 // they are tested without the API (the API tests cover the wiring).
 
-const CLOSED: NutritionFeatures = { nutritionRecipes: false, mealLogging: false, waterTracking: false };
+const CLOSED: NutritionFeatures = { nutritionRecipes: false, waterTracking: false };
 const ID = (n: number) => n.toString(16).padStart(24, '0');
 
 function prefs(overrides: Partial<NutritionPreferences> = {}): NutritionPreferences {
-  return { dietType: 'none', kosher: false, allergies: [], ...overrides };
+  return { dietType: 'none', dietStyles: [], religious: [], intolerances: [], allergies: [], mealsPerDay: null, ...overrides };
 }
 
 describe('preference conflicts', () => {
   const tags = (...list: DietTag[]) => list;
 
-  it('vegetarian rules out meat, poultry and fish', () => {
+  it('vegetarian rules out meat, poultry, fish and shellfish', () => {
     const vegetarian = prefs({ dietType: 'vegetarian' });
-    expect(findFoodConflicts(tags('poultry'), vegetarian)).toEqual([{ kind: 'diet', tag: 'poultry' }]);
+    expect(findFoodConflicts(tags('poultry'), vegetarian)).toEqual([{ kind: 'diet', tag: 'poultry', source: 'vegetarian' }]);
     expect(findFoodConflicts(tags('fish'), vegetarian)).toHaveLength(1);
+    expect(findFoodConflicts(tags('shellfish'), vegetarian)).toHaveLength(1);
     expect(findFoodConflicts(tags('dairy', 'eggs'), vegetarian)).toEqual([]);
   });
 
@@ -39,11 +40,42 @@ describe('preference conflicts', () => {
     expect(findFoodConflicts(tags('eggs'), prefs({ dietType: 'vegan' }))).toHaveLength(1);
   });
 
-  it('an allergy matches its diet tag (and is the reason shown)', () => {
-    const allergic = prefs({ dietType: 'vegan', allergies: ['dairy', 'tree_nuts'] });
-    expect(findFoodConflicts(tags('tree_nuts'), allergic)).toEqual([{ kind: 'allergy', tag: 'tree_nuts' }]);
-    expect(findFoodConflicts(tags('dairy'), allergic)).toEqual([{ kind: 'allergy', tag: 'dairy' }]);
+  it('an allergy matches its diet tag (and is the reason shown); "other" is text only', () => {
+    const allergic = prefs({ dietType: 'vegan', allergies: [{ id: 'dairy' }, { id: 'tree_nuts' }, { id: 'other', details: 'kiwi' }] });
+    expect(findFoodConflicts(tags('tree_nuts'), allergic)).toEqual([{ kind: 'allergy', tag: 'tree_nuts', source: 'tree_nuts' }]);
+    expect(findFoodConflicts(tags('dairy'), allergic)).toEqual([{ kind: 'allergy', tag: 'dairy', source: 'dairy' }]);
     expect(findFoodConflicts(tags('gluten'), allergic)).toEqual([]);
+    expect(findFoodConflicts(tags('shellfish'), prefs({ allergies: [{ id: 'shellfish' }] }))).toHaveLength(1);
+  });
+
+  it('religious: kosher rules out pork and shellfish, halal pork and alcohol', () => {
+    const kosher = prefs({ religious: [{ id: 'kosher' }] });
+    expect(findFoodConflicts(tags('pork', 'shellfish', 'fish'), kosher).map((reason) => reason.tag)).toEqual(['pork', 'shellfish']);
+    const halal = prefs({ religious: [{ id: 'halal', details: 'halal meat only' }] });
+    expect(findFoodConflicts(tags('pork', 'alcohol', 'meat'), halal)).toEqual([
+      { kind: 'religious', tag: 'pork', source: 'halal' },
+      { kind: 'religious', tag: 'alcohol', source: 'halal' },
+    ]);
+  });
+
+  it('intolerances: lactose-free → lactose (dairy itself is fine), gluten-free / celiac → gluten, low-FODMAP → high_fodmap', () => {
+    const lactose = prefs({ intolerances: [{ id: 'lactose_free', details: 'ok in yogurt' }] });
+    expect(findFoodConflicts(tags('dairy', 'lactose'), lactose)).toEqual([{ kind: 'intolerance', tag: 'lactose', source: 'lactose_free' }]);
+    expect(findFoodConflicts(tags('dairy'), lactose)).toEqual([]);
+    expect(findFoodConflicts(tags('gluten'), prefs({ intolerances: [{ id: 'celiac' }] }))).toHaveLength(1);
+    expect(findFoodConflicts(tags('gluten'), prefs({ intolerances: [{ id: 'gluten_free' }] }))).toHaveLength(1);
+    expect(findFoodConflicts(tags('high_fodmap'), prefs({ intolerances: [{ id: 'low_fodmap' }] }))).toHaveLength(1);
+    expect(findFoodConflicts(tags('gluten'), prefs({ intolerances: [{ id: 'other', details: 'histamine' }] }))).toEqual([]);
+  });
+
+  it('the strongest reason wins: allergy > intolerance > religious > diet', () => {
+    const both = prefs({ intolerances: [{ id: 'celiac' }], allergies: [{ id: 'gluten' }] });
+    expect(findFoodConflicts(tags('gluten'), both)).toEqual([{ kind: 'allergy', tag: 'gluten', source: 'gluten' }]);
+  });
+
+  it('keto: more carb portions a day than the limit', () => {
+    expect(hasKetoConflict({ protein: 5, carb: 1, fat: 5 }, 1)).toBe(false);
+    expect(hasKetoConflict({ protein: 5, carb: 1.5, fat: 5 }, 1)).toBe(true);
   });
 
   it('kosher: meat or poultry with dairy in one option', () => {
@@ -79,9 +111,15 @@ describe('food items', () => {
 describe('settings payload', () => {
   const valid = {
     groupKcal: { protein: 150, carb: 120, fat: 90 },
-    goalAdjustments: { fat_loss: -20, recomp: -10, muscle_gain: 10, maintenance: 0 },
-    activityFactors: [1.375, 1.375, 1.55, 1.55, 1.725, 1.725, 1.9],
+    goalAdjustments: { fat_loss: -20, fat_loss_aggressive: -25, recomp: -10, muscle_gain: 10, maintenance: 0 },
+    activityFactors: [1.375, 1.375, 1.55, 1.55, 1.55, 1.725, 1.725],
     floorKcal: 1200,
+    kcalPerKg: 7700,
+    maxLossRatePctPerWeek: 1,
+    maxGainRatePctPerWeek: 0.5,
+    maxDeficitPct: 25,
+    portionSplit: { protein: 45, carb: 32, fat: 23 },
+    ketoMaxCarbPortions: 1,
   };
 
   it('accepts the whole config and refuses values out of bounds', () => {
@@ -89,6 +127,9 @@ describe('settings payload', () => {
     expect(parseNutritionSettingsPayload({ ...valid, floorKcal: 500 }).error).toMatch(/floor/);
     expect(parseNutritionSettingsPayload({ ...valid, activityFactors: [1.5] }).error).toMatch(/Activity/);
     expect(parseNutritionSettingsPayload({ ...valid, goalAdjustments: { ...valid.goalAdjustments, fat_loss: -60 } }).error).toMatch(/Goal/);
+    expect(parseNutritionSettingsPayload({ ...valid, maxLossRatePctPerWeek: 5 }).error).toMatch(/loss rate/);
+    expect(parseNutritionSettingsPayload({ ...valid, maxDeficitPct: 60 }).error).toMatch(/deficit/);
+    expect(parseNutritionSettingsPayload({ ...valid, portionSplit: { protein: 50, carb: 30, fat: 30 } }).error).toMatch(/100/);
   });
 });
 
@@ -195,7 +236,7 @@ describe('publish rules', () => {
   it('warns (never blocks) on diet, allergy and kosher conflicts', () => {
     const issues = findNutritionPublishIssues(
       { calorieTarget: TARGET, meals: [meal()] },
-      context({ preferences: prefs({ dietType: 'vegetarian', kosher: true, allergies: ['gluten'] }) }),
+      context({ preferences: prefs({ dietType: 'vegetarian', religious: [{ id: 'kosher' }], allergies: [{ id: 'gluten' }] }) }),
     );
     expect(issues.every((issue) => issue.severity === 'warning')).toBe(true);
     expect(issues.map((issue) => [issue.code, issue.lineIndex])).toEqual([
@@ -203,7 +244,16 @@ describe('publish rules', () => {
       ['preference_conflict', 1],
       ['kosher_conflict', undefined],
     ]);
+    expect(issues[0].message).toMatch(/\(vegetarian\)/);
     expect(issues[1].message).toMatch(/her allergy/);
+  });
+
+  it('warns when a keto / low-carb trainee has more carb portions a day than the limit', () => {
+    const keto = prefs({ dietStyles: [{ id: 'keto_low_carb' }] });
+    const issues = findNutritionPublishIssues({ calorieTarget: TARGET, meals: [meal(), meal({ id: ID(90) })] }, context({ preferences: keto }));
+    expect(issues).toContainEqual(expect.objectContaining({ severity: 'warning', code: 'keto_conflict' }));
+    const without = findNutritionPublishIssues({ calorieTarget: TARGET, meals: [meal()] }, context());
+    expect(without.map((issue) => issue.code)).not.toContain('keto_conflict');
   });
 
   it('a recipe line is not publishable while recipes are closed', () => {

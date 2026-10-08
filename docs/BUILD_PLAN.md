@@ -431,6 +431,39 @@ the onboarding step and the calorie config before writing routes.
     the rules, the calorie module, the preferences step validation and the publish validation.
 ```
 
+### Phase 13a+ — Nutrition extensions (owner requests, before 13c)
+
+Owner decisions (2026-10-08) — details in PRD §5.6 "Decisions — Phase 13a+". Read
+`docs/reference/calorie-formula.md` (the owner's method, gitignored) first.
+
+```
+1. Onboarding: ONE step "Nutrition & goal" (step id nutrition_preferences, no new step ids) with accordion
+   sections "My goal" (only for lose weight / build muscle goals, open by default), "How I eat",
+   "Intolerances & allergies"; chips, a details field only under a selected item, a summary per collapsed
+   section, one Skip, sticky Continue above the keyboard, the open section scrolls into view. Data:
+   answers.nutritionPreferences v2 (old answers mapped on read) + answers.weightGoal { targetWeightKg,
+   timeframe weeks | date, setAt }. Review, Profile and the coach's onboarding sections show them.
+2. Diet tags + shellfish, pork, lactose, alcohol, high_fodmap; every option mapped to tags (PRD table);
+   keto → carb-portion warning; seed:nutrition backfills lactose on dairy items (idempotent).
+3. Calorie calculation per the owner's method (calorieTarget.ts, pure): new activity table, fat_loss_aggressive,
+   timeline method with safety caps (1%/week loss, 0.5%/week gain, 25% max deficit, floor), raised to the
+   floor, recommended portions per group. New config fields (kcalPerKg, maxLossRatePctPerWeek,
+   maxGainRatePctPerWeek, maxDeficitPct, portionSplit, ketoMaxCarbPortions) in nutrition.config.ts + Settings.
+   Unit tests for every cap, the missing-data cases and the portion split.
+4. Dashboard "Calculation summary" card (replaces the target panel): inputs editable (overrides stored on
+   the plan: calorieTarget.calculationOverrides), unsafe-pace notice, recommended kcal + portions.
+5. Trainee Nutrition tab: day header with per-group totals (buttons → swap list); coach intro message
+   (NutritionPlan.introMessage ≤ 1,500, copied into each version; open while unseen, collapsible).
+6. Portion tracking (the 13b meal-logging part, opened now; the mealLogging flag is removed): circles per group
+   in the day header (tap / undo, ½ button, ≤ planned), last 7 days editable (server-enforced, her zone),
+   offline cache + debounced full-day PUT; optional private meal photo per meal per day (privatePhotos,
+   folder sistem/meal-photos/<traineeId>). MealLog = one doc per trainee + date (planned snapshot, eaten,
+   planId / version, photos [{ mealId, mealName, publicId, uploadedAt }]). API: GET /api/meal-logs?from&to,
+   PUT /api/meal-logs/:date, PUT|DELETE /api/meal-logs/:date/photos/:mealId; coach GET
+   /api/coach/trainees/:id/meal-logs?weekStart=. Coach adherence: dashboard Nutrition → Tracking and coach
+   mode ?tab=tracking (read-only), marked / planned per day and group, no judgment wording, no calories.
+```
+
 ### Phase 13b — Recipes, meal logging, water (built behind feature flags, closed)
 
 The models below are designed (and their schemas approved) in Phase 13a. The routes and UI are built in
@@ -445,7 +478,8 @@ them to the clients (e.g. with the nutrition plan) so the UI stays hidden — ne
 1. Recipes & menu suggestions (coach, dashboard): Recipe — coachId, name, ingredients (food item +
    portions, or free text), steps / notes, computed portions per group. A meal option line may point to
    a recipe. Trainee sees recipes inside her meal options.
-2. Meal logging (trainee): MealLog — traineeId, date ('YYYY-MM-DD' in her zone), planId, plan version,
+2. [DONE EARLY in Phase 13a+ as per-day portion tracking — see 13a+ item 6; not behind a flag]
+   Meal logging (trainee): MealLog — traineeId, date ('YYYY-MM-DD' in her zone), planId, plan version,
    mealId, portions eaten per group, optional option id, and a snapshot of the planned portions (so an
    edited plan never rewrites history); unique traineeId + date + mealId. The coach sees adherence per day.
 3. Water tracking: daily goal on the nutrition plan (ml, set by the coach) + WaterLog — traineeId, date,

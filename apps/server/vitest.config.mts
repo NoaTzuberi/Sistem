@@ -14,7 +14,6 @@ export default defineConfig({
       AI_FALLBACK_MODEL: '',
       VOYAGE_API_KEY: '',
       FEATURE_NUTRITION_RECIPES: '',
-      FEATURE_MEAL_LOGGING: '',
       FEATURE_WATER_TRACKING: '',
     },
   },

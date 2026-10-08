@@ -13,12 +13,26 @@ const nutritionSettingsSchema = new Schema<NutritionSettingsDocument>(
     },
     goalAdjustments: {
       fat_loss: { type: Number },
+      fat_loss_aggressive: { type: Number },
       recomp: { type: Number },
       muscle_gain: { type: Number },
       maintenance: { type: Number },
     },
     activityFactors: { type: [Number], default: undefined },
     floorKcal: { type: Number },
+    kcalPerKg: { type: Number },
+    maxLossRatePctPerWeek: { type: Number },
+    maxGainRatePctPerWeek: { type: Number },
+    maxDeficitPct: { type: Number },
+    portionSplit: {
+      protein: { type: Number },
+      carb: { type: Number },
+      fat: { type: Number },
+    },
+    ketoMaxCarbPortions: { type: Number },
+    // One-time tag updates already applied to her food list (e.g. 'lactose_from_dairy'),
+    // so re-running the seed never undoes her own edits.
+    appliedTagBackfills: { type: [String], default: [] },
   },
   { timestamps: true },
 );

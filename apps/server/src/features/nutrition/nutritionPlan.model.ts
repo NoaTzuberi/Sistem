@@ -2,6 +2,7 @@ import { Schema, model } from 'mongoose';
 import { CALORIE_TARGET_SOURCE_IDS, FORMULA_SEX_IDS, NUTRITION_GOAL_IDS } from './nutrition.constants';
 import { nutritionMealSchema, nutritionTipSchema } from './nutritionMeal.schema';
 import type {
+  CalculationOverridesFields,
   CalorieTargetFields,
   FloorConfirmationFields,
   NutritionPlanDocument,
@@ -21,12 +22,26 @@ const floorConfirmationSchema = new Schema<FloorConfirmationFields>(
   { _id: false },
 );
 
+// The coach's own values in the calculation summary; null = her data.
+const calculationOverridesSchema = new Schema<CalculationOverridesFields>(
+  {
+    weightKg: { type: Number, default: null },
+    heightCm: { type: Number, default: null },
+    ageYears: { type: Number, default: null },
+    activityFactor: { type: Number, default: null },
+    targetWeightKg: { type: Number, default: null },
+    timelineWeeks: { type: Number, default: null },
+  },
+  { _id: false },
+);
+
 const calorieTargetSchema = new Schema<CalorieTargetFields>(
   {
     kcal: { type: Number, min: 0, default: null },
     source: { type: String, enum: [...CALORIE_TARGET_SOURCE_IDS, null], default: null },
     goal: { type: String, enum: NUTRITION_GOAL_IDS, required: true },
     formulaSex: { type: String, enum: [...FORMULA_SEX_IDS, null], default: null },
+    overrides: { type: calculationOverridesSchema, default: () => ({}) },
     suggestion: { type: Schema.Types.Mixed, default: null },
     // A target below the floor needs this, for that exact kcal (checked on publish).
     floorConfirmation: { type: floorConfirmationSchema, default: null },
@@ -42,6 +57,8 @@ const nutritionPlanSchema = new Schema<NutritionPlanDocument>(
     calorieTarget: { type: calorieTargetSchema, required: true },
     meals: { type: [nutritionMealSchema], default: [] },
     tips: { type: [nutritionTipSchema], default: [] },
+    // The coach's note at the top of her Nutrition tab (plain text, line breaks kept).
+    introMessage: { type: String, default: null },
     waterGoalMl: { type: Number, min: 0, default: null },
     templateId: { type: Schema.Types.ObjectId, ref: 'Template', default: null },
     publishedVersion: { type: Number, min: 0, default: 0 },
@@ -64,6 +81,7 @@ const nutritionPlanVersionSchema = new Schema<NutritionPlanVersionDocument>(
     calorieTarget: { type: calorieTargetSchema, required: true },
     meals: { type: [nutritionMealSchema], default: [] },
     tips: { type: [nutritionTipSchema], default: [] },
+    introMessage: { type: String, default: null },
     waterGoalMl: { type: Number, min: 0, default: null },
     groupKcal: { type: Schema.Types.Mixed, required: true },
     mealKcal: {

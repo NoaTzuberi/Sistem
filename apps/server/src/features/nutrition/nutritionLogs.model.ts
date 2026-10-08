@@ -2,8 +2,6 @@ import { Schema, model } from 'mongoose';
 import { isDateString } from '../plans/planWeek';
 import { FOOD_GROUP_IDS } from './nutrition.constants';
 import type {
-  MealLogDocument,
-  PortionCountsFields,
   RecipeDocument,
   RecipeIngredientFields,
   WaterLogDocument,
@@ -11,16 +9,8 @@ import type {
 
 // Phase 13b models, designed (and approved) in Phase 13a. Nothing reads or writes them
 // yet: 13b adds their routes behind the feature flags (config/features.ts) —
-// nutritionRecipes, mealLogging, waterTracking — all closed by default.
-
-const portionCountsSchema = new Schema<PortionCountsFields>(
-  {
-    protein: { type: Number, min: 0, default: 0 },
-    carb: { type: Number, min: 0, default: 0 },
-    fat: { type: Number, min: 0, default: 0 },
-  },
-  { _id: false },
-);
+// nutritionRecipes, waterTracking — closed by default. (Meal logging opened in 13a+ as
+// portion tracking: features/mealLogs.)
 
 const recipeIngredientSchema = new Schema<RecipeIngredientFields>({
   kind: { type: String, enum: ['food', 'text'], required: true },
@@ -45,25 +35,6 @@ const recipeSchema = new Schema<RecipeDocument>(
 recipeSchema.index({ coachId: 1, archivedAt: 1, name: 1 });
 
 export const Recipe = model<RecipeDocument>('Recipe', recipeSchema);
-
-/** What she ate of one meal on one day, against a snapshot of what was planned. */
-const mealLogSchema = new Schema<MealLogDocument>(
-  {
-    traineeId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    coachId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    date: { type: String, required: true, validate: { validator: isDateString, message: 'date must be YYYY-MM-DD.' } },
-    planId: { type: Schema.Types.ObjectId, ref: 'NutritionPlan', required: true },
-    planVersion: { type: Number, required: true, min: 1 },
-    mealId: { type: Schema.Types.ObjectId, required: true },
-    optionId: { type: Schema.Types.ObjectId, default: null },
-    eaten: { type: portionCountsSchema, required: true },
-    planned: { type: portionCountsSchema, required: true },
-  },
-  { timestamps: true },
-);
-mealLogSchema.index({ traineeId: 1, date: 1, mealId: 1 }, { unique: true });
-
-export const MealLog = model<MealLogDocument>('MealLog', mealLogSchema);
 
 const waterLogSchema = new Schema<WaterLogDocument>(
   {

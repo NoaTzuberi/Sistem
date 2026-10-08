@@ -50,7 +50,8 @@ async function main() {
     const result = await applyNutritionSeed(String(coach._id), await readNutritionSeedFile(file));
     console.log(
       `Food items: ${result.foodsCreated} created, ${result.foodsKept} already there. ` +
-        `Template: ${result.templateCreated ? 'created' : 'already there'}.`,
+        `Template: ${result.templateCreated ? 'created' : 'already there'}. ` +
+        `Lactose tag added to ${result.lactoseTagged} dairy item(s) (once per coach).`,
     );
   } finally {
     await mongoose.disconnect();

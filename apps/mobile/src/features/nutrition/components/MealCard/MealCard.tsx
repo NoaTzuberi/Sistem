@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { FoodGroup, NutritionViewMeal } from '@sistem/types';
 import { FOOD_GROUP_LABELS, VEGETABLES_FREE_LABEL, describePortion, describeViewLine, mealPortionList } from '@sistem/shared';
 import { IconChevronRight } from '@tabler/icons-react';
@@ -10,10 +11,12 @@ interface MealCardProps {
   onOpenSwaps: (group: FoodGroup, foodId?: string) => void;
   /** Vegetables open a list only when the coach has vegetable items. */
   hasVegetableSwaps: boolean;
+  /** Under the options — the trainee's meal photo (13a+). */
+  footer?: ReactNode;
 }
 
 /** One meal: its portions per group (the focus), then the coach's options, as written. */
-export function MealCard({ meal, onOpenSwaps, hasVegetableSwaps }: MealCardProps) {
+export function MealCard({ meal, onOpenSwaps, hasVegetableSwaps, footer }: MealCardProps) {
   const portions = mealPortionList(meal.portions);
 
   return (
@@ -92,6 +95,7 @@ export function MealCard({ meal, onOpenSwaps, hasVegetableSwaps }: MealCardProps
           </ul>
         </section>
       ))}
+      {footer}
     </article>
   );
 }

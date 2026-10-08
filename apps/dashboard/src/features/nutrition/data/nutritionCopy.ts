@@ -20,7 +20,67 @@ export const NUTRITION_COPY = {
   nothingToPublish: 'Nothing changed since the last published version.',
 
   targetTitle: 'Calorie target',
-  suggestion: 'Suggested',
+  // Calculation summary (13a+)
+  summaryTitle: 'Calculation summary',
+  summaryError: "Couldn't calculate with these values.",
+  resetToHerData: 'Reset to her data',
+  herData: 'Her data',
+  weightKg: 'Weight (kg)',
+  heightCm: 'Height (cm)',
+  age: 'Age',
+  sex: 'Sex',
+  activity: 'Activity',
+  activityFromDays: (days: number | null) => (days ? `From her ${days} training days` : 'From her training days'),
+  activityLevels: { 1.2: 'Sedentary ×1.2', 1.375: 'Lightly active ×1.375', 1.55: 'Moderately active ×1.55', 1.725: 'Very active ×1.725' } as Record<number, string>,
+  targetWeight: 'Target weight (kg)',
+  timelineWeeks: 'Timeframe (weeks)',
+  inputsSource: (source: string | null, weighIn: string | null, targetDate: string | null) =>
+    [
+      source === 'weigh_in' ? `Weight from her weigh-in ${weighIn}` : source === 'onboarding' ? 'Weight from onboarding' : source === 'coach' ? 'Weight: yours' : null,
+      targetDate ? `her timeframe ends ${targetDate}` : null,
+    ]
+      .filter(Boolean)
+      .join(' · '),
+  overriddenMark: '• = your value',
+  deficit: 'Deficit',
+  surplus: 'Surplus',
+  weeklyRate: 'Weekly rate',
+  expectedTimeline: 'Expected timeline',
+  weeks: (count: number) => `${count} week${count === 1 ? '' : 's'}`,
+  method: 'Method',
+  methodTimeline: 'Her target + timeframe',
+  methodPercent: (pct: number) => `Goal ${pct > 0 ? '+' : ''}${pct}%`,
+  unsafePace: (weeks: number | null) => `Requested pace is unsafe; recommended timeline: ${weeks ?? '—'} weeks.`,
+  unsafeDetail: (weeks: number, required: number, safe: number, limit: string | null) =>
+    `She asked for ${weeks} weeks (${required} kg/week); the safe maximum is ${safe} kg/week (limited by ${
+      limit === 'rate' ? 'the % of body weight per week' : limit === 'max_deficit' ? 'the largest deficit' : 'the floor'
+    }). The numbers below use the safe pace.`,
+  timelineNotes: {
+    wrong_direction: 'Her target weight is in the other direction from the goal — the timeline is not used.',
+    date_passed: 'Her timeframe has passed — the timeline is not used.',
+    target_reached: 'She is already at her target weight — the timeline is not used.',
+    goal_not_weight: 'This goal does not change weight — her target is not used.',
+  } as Record<string, string>,
+  raisedToFloor: (floor: number) => `The calculation was below ${floor.toLocaleString('en-US')} kcal and was raised to it.`,
+  recommended: 'Recommended',
+  portionsPerDay: 'Portions per day',
+  planNow: 'Plan now',
+  // Intro message (13a+)
+  introTitle: 'Message to her',
+  introHint: 'Shown at the top of her Nutrition tab (plain text, line breaks kept). Saved with each published version.',
+  introCount: (count: number, max: number) => `${count.toLocaleString('en-US')} / ${max.toLocaleString('en-US')}`,
+  // Tracking (13a+) — neutral wording, no calories.
+  trackingTitle: 'Portion tracking',
+  trackingWeek: (range: string) => `Week of ${range}`,
+  trackingPrevious: '← Previous week',
+  trackingNext: 'Next week →',
+  trackingNotMarked: 'Nothing marked',
+  trackingNotYet: 'Not yet',
+  trackingNoPlan: 'No plan',
+  trackingWeekTotal: 'Week',
+  trackingDay: 'Day',
+  trackingPhotos: 'Meal photos',
+  trackingLoadError: "Couldn't load the tracking.",
   useSuggestion: 'Use suggestion',
   usingSuggestion: 'Using the suggestion',
   suggestionMissing: (fields: string) => `No estimate — missing: ${fields}.`,
@@ -34,7 +94,6 @@ export const NUTRITION_COPY = {
   confirmBelowFloor: 'I confirm this target',
   dayTotal: 'Day total',
   versusTarget: (diff: number) => `${diff > 0 ? '+' : ''}${diff.toLocaleString('en-US')} vs target`,
-  inputsLine: (parts: string[]) => parts.join(' · '),
 
   templateTitle: 'Templates',
   templatePick: 'Start from a template…',
@@ -117,6 +176,15 @@ export const NUTRITION_COPY = {
   activityFactors: 'Activity factor by training days per week',
   days: (count: number) => `${count} day${count === 1 ? '' : 's'}`,
   floor: 'Safety floor (kcal)',
+  safetyTitle: 'Pace and safety',
+  safetyLabels: {
+    maxLossRatePctPerWeek: 'Safe loss (% of body weight / week)',
+    maxGainRatePctPerWeek: 'Safe gain (% of body weight / week)',
+    maxDeficitPct: 'Largest deficit (% of TDEE)',
+    kcalPerKg: 'kcal per kg of body weight',
+  },
+  portionSplit: 'Portion split (% of the daily kcal, adds up to 100)',
+  ketoMaxCarb: 'Keto / low-carb: carb portions a day before a warning',
   resetDefaults: 'Reset to defaults',
   saved: 'Saved.',
 } as const;

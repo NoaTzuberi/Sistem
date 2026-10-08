@@ -4,6 +4,7 @@ import { startApiTestClient, createTestUser } from '../../../testing/apiTestClie
 import type { ApiTestClient } from '../../../testing/apiTestClient';
 import { User } from '../../users/user.model';
 import { OnboardingResponse } from '../onboardingResponse.model';
+import { migrateLegacyNutritionPreferences } from '../nutritionPreferencesMigration';
 import { Plan } from '../../plans/plan.model';
 import { BodyMetric } from '../../bodyMetrics/bodyMetric.model';
 import { localDateString } from '../../plans/planWeek';
@@ -337,33 +338,81 @@ describe('onboarding (OnboardingResponse)', () => {
     });
   });
 
-  describe('nutrition preferences step (Phase 13a)', () => {
-    const PREFERENCES = { dietType: 'vegetarian', kosher: true, allergies: ['tree_nuts', 'tree_nuts'], allergyNotes: ' Kiwi ', dislikes: '' };
+  describe('"Nutrition & goal" step (Phase 13a, v2 in 13a+)', () => {
+    const PREFERENCES = {
+      dietType: 'vegetarian',
+      dietTypeDetails: ' eggs ok ',
+      dietStyles: [{ id: 'intermittent_fasting', details: '16:8' }, { id: 'other', details: ' Mostly home-cooked ' }],
+      religious: [{ id: 'kosher' }],
+      intolerances: [{ id: 'lactose_free', details: ' lactose ok in yogurt ' }, { id: 'celiac', details: '' }],
+      allergies: [{ id: 'tree_nuts' }, { id: 'tree_nuts' }, { id: 'shellfish' }],
+      foodsLoved: ' Hummus ',
+      foodsDisliked: '',
+      mealsPerDay: 4,
+    };
+    const step = (answers: Record<string, unknown>, token = trainee.token) =>
+      api.request('PATCH', '/onboarding', { token, body: { step: 'nutrition_preferences', answers } });
 
-    it('saves the step (trimmed, de-duplicated) and resumes after it', async () => {
-      const res = await api.request('PATCH', '/onboarding', {
-        token: trainee.token,
-        body: { step: 'nutrition_preferences', answers: { nutritionPreferences: PREFERENCES } },
-      });
+    it('saves the step (trimmed, de-duplicated, empty details dropped) and resumes after it', async () => {
+      const res = await step({ nutritionPreferences: PREFERENCES });
       expect(res.status).toBe(200);
       expect(res.body.onboarding.lastStep).toBe('nutrition_preferences');
       expect(res.body.onboarding.answers.nutritionPreferences).toEqual({
         dietType: 'vegetarian',
-        kosher: true,
-        allergies: ['tree_nuts'],
-        allergyNotes: 'Kiwi',
+        dietTypeDetails: 'eggs ok',
+        dietStyles: [{ id: 'intermittent_fasting', details: '16:8' }, { id: 'other', details: 'Mostly home-cooked' }],
+        religious: [{ id: 'kosher' }],
+        intolerances: [{ id: 'lactose_free', details: 'lactose ok in yogurt' }, { id: 'celiac' }],
+        allergies: [{ id: 'tree_nuts' }, { id: 'shellfish' }],
+        foodsLoved: 'Hummus',
+        mealsPerDay: 4,
       });
     });
 
     it('validates on the server', async () => {
-      const save = (nutritionPreferences: unknown, step = 'nutrition_preferences') =>
-        api.request('PATCH', '/onboarding', { token: trainee.token, body: { step, answers: { nutritionPreferences } } });
+      const save = (nutritionPreferences: unknown, stepId = 'nutrition_preferences') =>
+        api.request('PATCH', '/onboarding', { token: trainee.token, body: { step: stepId, answers: { nutritionPreferences } } });
       expect((await save({ ...PREFERENCES, dietType: 'keto' })).status).toBe(400);
-      expect((await save({ ...PREFERENCES, kosher: 'yes' })).status).toBe(400);
-      expect((await save({ ...PREFERENCES, allergies: ['shellfish'] })).status).toBe(400);
-      expect((await save({ ...PREFERENCES, dislikes: 'x'.repeat(501) })).status).toBe(400);
+      expect((await save({ ...PREFERENCES, religious: [{ id: 'jain' }] })).status).toBe(400);
+      expect((await save({ ...PREFERENCES, allergies: ['tree_nuts'] })).status).toBe(400);
+      expect((await save({ ...PREFERENCES, allergies: [{ id: 'other' }] })).status).toBe(400);
+      expect((await save({ ...PREFERENCES, intolerances: [{ id: 'celiac', details: 'x'.repeat(301) }] })).status).toBe(400);
+      expect((await save({ ...PREFERENCES, foodsDisliked: 'x'.repeat(501) })).status).toBe(400);
+      expect((await save({ ...PREFERENCES, mealsPerDay: 9 })).status).toBe(400);
+      expect((await save({ ...PREFERENCES, mealsPerDay: null })).status).toBe(200);
       // Only its own step may save it.
       expect((await save(PREFERENCES, 'equipment')).status).toBe(400);
+    });
+
+    it('saves the weight goal in kg (typed in her unit) with the moment she set it; null clears it', async () => {
+      const first = await step({ weightGoal: { targetWeight: 55, timeframe: { kind: 'weeks', weeks: 12 } } });
+      expect(first.status).toBe(200);
+      const goal = first.body.onboarding.answers.weightGoal;
+      expect(goal).toMatchObject({ targetWeightKg: 55, timeframe: { kind: 'weeks', weeks: 12 } });
+      expect(typeof goal.setAt).toBe('string');
+
+      // The same goal again keeps "12 weeks from then"; a new one starts counting now.
+      const again = await step({ weightGoal: { targetWeight: 55, timeframe: { kind: 'weeks', weeks: 12 } } });
+      expect(again.body.onboarding.answers.weightGoal.setAt).toBe(goal.setAt);
+
+      await User.updateOne({ _id: trainee.user._id }, { $set: { 'preferences.units.weight': 'lb' } });
+      const inPounds = await step({ weightGoal: { targetWeight: 132, timeframe: null } });
+      expect(inPounds.body.onboarding.answers.weightGoal.targetWeightKg).toBeCloseTo(59.9, 1);
+
+      const cleared = await step({ weightGoal: null });
+      expect(cleared.body.onboarding.answers).not.toHaveProperty('weightGoal');
+    });
+
+    it('validates the weight goal', async () => {
+      const save = (weightGoal: unknown) => step({ weightGoal });
+      expect((await save({ targetWeight: 10, timeframe: null })).status).toBe(400);
+      expect((await save({ targetWeight: 60, timeframe: { kind: 'weeks', weeks: 0 } })).status).toBe(400);
+      expect((await save({ targetWeight: 60, timeframe: { kind: 'weeks', weeks: 200 } })).status).toBe(400);
+      expect((await save({ targetWeight: 60, timeframe: { kind: 'date', date: '2001-01-01' } })).status).toBe(400);
+      expect((await save({ targetWeight: 60, timeframe: { kind: 'date', date: '2999-01-01' } })).status).toBe(400);
+      expect((await save({ targetWeight: 60, timeframe: { kind: 'months', months: 3 } })).status).toBe(400);
+      const inAMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      expect((await save({ targetWeight: 60, timeframe: { kind: 'date', date: inAMonth } })).status).toBe(200);
     });
 
     it('is optional on completion (trainees from before the step are never sent back) and kept when sent', async () => {
@@ -373,21 +422,48 @@ describe('onboarding (OnboardingResponse)', () => {
 
       const withPreferences = await api.request('POST', '/onboarding/complete', {
         token: trainee.token,
-        body: { ...FULL_PAYLOAD, nutritionPreferences: { dietType: 'none', kosher: false } },
+        body: { ...FULL_PAYLOAD, nutritionPreferences: { dietType: 'none' } },
       });
-      expect(withPreferences.body.onboarding.answers.nutritionPreferences).toEqual({ dietType: 'none', kosher: false, allergies: [] });
+      expect(withPreferences.body.onboarding.answers.nutritionPreferences).toEqual({
+        dietType: 'none',
+        dietStyles: [],
+        religious: [],
+        intolerances: [],
+        allergies: [],
+        mealsPerDay: null,
+      });
+    });
+
+    it('moves 13a answers to the v2 shape once (server start)', async () => {
+      await OnboardingResponse.collection.insertOne({
+        userId: trainee.user._id,
+        answers: {
+          goals: [],
+          nutritionPreferences: { dietType: 'vegetarian', kosher: true, allergies: ['tree_nuts'], allergyNotes: 'Kiwi', dislikes: 'Mushrooms' },
+        },
+      });
+      expect(await migrateLegacyNutritionPreferences()).toBe(1);
+      expect(await migrateLegacyNutritionPreferences()).toBe(0);
+      const res = await api.request('GET', '/onboarding', { token: trainee.token });
+      expect(res.body.onboarding.answers.nutritionPreferences).toEqual({
+        dietType: 'vegetarian',
+        dietStyles: [],
+        religious: [{ id: 'kosher' }],
+        intolerances: [],
+        allergies: [{ id: 'tree_nuts' }, { id: 'other', details: 'Kiwi' }],
+        foodsDisliked: 'Mushrooms',
+        mealsPerDay: null,
+      });
     });
 
     it('her coach sees them with the other answers; another coach does not', async () => {
       const coach = await createTestUser('coach@example.com', { role: 'coach' });
       const otherCoach = await createTestUser('other@example.com', { role: 'coach' });
       await User.updateOne({ _id: trainee.user._id }, { $set: { coachId: coach.user._id } });
-      await api.request('PATCH', '/onboarding', {
-        token: trainee.token,
-        body: { step: 'nutrition_preferences', answers: { nutritionPreferences: PREFERENCES } },
-      });
+      await step({ nutritionPreferences: PREFERENCES, weightGoal: { targetWeight: 55, timeframe: null } });
       const res = await api.request('GET', `/coach/trainees/${trainee.id}`, { token: coach.token });
-      expect(res.body.trainee.onboarding.answers.nutritionPreferences.allergies).toEqual(['tree_nuts']);
+      expect(res.body.trainee.onboarding.answers.nutritionPreferences.allergies).toEqual([{ id: 'tree_nuts' }, { id: 'shellfish' }]);
+      expect(res.body.trainee.onboarding.answers.weightGoal.targetWeightKg).toBe(55);
       expect((await api.request('GET', `/coach/trainees/${trainee.id}`, { token: otherCoach.token })).status).toBe(404);
     });
   });
