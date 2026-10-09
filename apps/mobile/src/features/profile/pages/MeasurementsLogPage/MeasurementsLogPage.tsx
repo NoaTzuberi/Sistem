@@ -3,7 +3,7 @@ import type { FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { BodyMetric } from '@sistem/types';
 import { extractErrorMessage } from '@sistem/api-client';
-import { formatLength, latestMeasurements, measurementLabel, parseDecimalInput, toCm, toDisplayLength } from '@sistem/shared';
+import { fill, formatLength, latestMeasurements, measurementLabel, parseDecimalInput, toCm, toDisplayLength, useCopy, useLanguage } from '@sistem/shared';
 import { AppShell } from '../../../../components/layout/AppShell/AppShell';
 import { Button } from '../../../../components/common/Button/Button';
 import { Input } from '../../../../components/common/Input/Input';
@@ -11,7 +11,7 @@ import { StateMessage } from '../../../../components/common/StateMessage/StateMe
 import { ROUTES } from '../../../../app/config/routes';
 import { saveBodyMetric } from '../../../../services/bodyMetrics/bodyMetricsService';
 import { celebrate } from '../../../achievements/celebration';
-import { BODY_COPY } from '../../../bodyTracking/data/bodyCopy';
+import { bodyCopy } from '../../../bodyTracking/copy';
 import { SubPageHeader } from '../../components/SubPageHeader/SubPageHeader';
 import { useGoBack } from '../../hooks/useGoBack';
 import { useMyBodyMetrics, useMyUnits } from '../../hooks/useMyBody';
@@ -29,6 +29,8 @@ function valuesOf(day: BodyMetric | undefined, ids: string[], unit: 'cm' | 'in')
  * per date). Empty fields are skipped; emptying a saved one clears it.
  */
 export function MeasurementsLogPage() {
+  const language = useLanguage();
+  const copy = useCopy(bodyCopy);
   const [params] = useSearchParams();
   const { list, error, isLoading, reload } = useMyBodyMetrics();
   const { units, today } = useMyUnits();
@@ -61,7 +63,7 @@ export function MeasurementsLogPage() {
       celebrate(saved.achievementsUnlocked);
       goBack();
     } catch (caught) {
-      setFormError(extractErrorMessage(caught, BODY_COPY.saveError));
+      setFormError(extractErrorMessage(caught, copy.saveError));
       setIsSaving(false);
     }
   }
@@ -77,13 +79,13 @@ export function MeasurementsLogPage() {
       }
       const parsed = parseDecimalInput(text);
       if (parsed === null) {
-        setFormError(BODY_COPY.measurementsInvalid);
+        setFormError(copy.measurementsInvalid);
         return;
       }
       measurements[id] = toCm(parsed, units.length);
     }
     if (!date || Object.keys(measurements).length === 0) {
-      setFormError(BODY_COPY.measurementsInvalid);
+      setFormError(copy.measurementsInvalid);
       return;
     }
     void send(measurements);
@@ -92,26 +94,26 @@ export function MeasurementsLogPage() {
   return (
     <AppShell hideTabBar>
       <div className="measurements-log-page">
-        <SubPageHeader title={hasSaved ? BODY_COPY.editMeasurements : BODY_COPY.logMeasurements} fallbackPath={ROUTES.PROFILE_MEASUREMENTS} />
+        <SubPageHeader title={hasSaved ? copy.editMeasurements : copy.logMeasurements} fallbackPath={ROUTES.PROFILE_MEASUREMENTS} />
 
-        {isLoading && !list && <StateMessage>{BODY_COPY.loading}</StateMessage>}
+        {isLoading && !list && <StateMessage>{copy.loading}</StateMessage>}
         {error && !list && <StateMessage onRetry={reload}>{error}</StateMessage>}
 
         {list && (
           <form className="measurements-log-page-form" onSubmit={handleSubmit} noValidate>
-            <Input label={BODY_COPY.date} type="date" max={today} value={date} onChange={(event) => setDate(event.target.value)} />
+            <Input label={copy.date} type="date" max={today} value={date} onChange={(event) => setDate(event.target.value)} />
             {ids.map((id) => {
               const last = lastElsewhere.get(id);
               return (
                 <Input
                   key={id}
-                  label={BODY_COPY.measurementField(measurementLabel(id), units.length)}
+                  label={fill(copy.measurementField, { label: measurementLabel(id, language), unit: units.length })}
                   type="text"
                   inputMode="decimal"
                   autoComplete="off"
                   enterKeyHint="next"
                   value={values[id] ?? ''}
-                  helperText={last !== undefined ? BODY_COPY.lastValue(formatLength(last, units.length)) : undefined}
+                  helperText={last !== undefined ? fill(copy.lastValue, { value: formatLength(last, units.length, language) }) : undefined}
                   onChange={(event) => setValues((previous) => ({ ...previous, [id]: event.target.value }))}
                 />
               );
@@ -122,27 +124,27 @@ export function MeasurementsLogPage() {
               </p>
             )}
             <Button type="submit" loading={isSaving} disabled={isSaving}>
-              {BODY_COPY.save}
+              {copy.save}
             </Button>
             {hasSaved &&
               (confirmDelete ? (
                 <div className="measurements-log-page-confirm">
-                  <span>{BODY_COPY.deleteMeasurementsTitle}</span>
+                  <span>{copy.deleteMeasurementsTitle}</span>
                   <Button
                     type="button"
                     variant="danger"
                     disabled={isSaving}
                     onClick={() => void send(Object.fromEntries(Object.keys(day!.measurements).map((id) => [id, null])))}
                   >
-                    {BODY_COPY.delete}
+                    {copy.delete}
                   </Button>
                   <Button type="button" variant="ghost" disabled={isSaving} onClick={() => setConfirmDelete(false)}>
-                    {BODY_COPY.cancel}
+                    {copy.cancel}
                   </Button>
                 </div>
               ) : (
                 <Button type="button" variant="ghost" disabled={isSaving} onClick={() => setConfirmDelete(true)}>
-                  {BODY_COPY.delete}
+                  {copy.delete}
                 </Button>
               ))}
           </form>

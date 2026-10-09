@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { useLoad, useServerNow } from '@sistem/shared';
+import { sharedCopy, useCopy, useLoad, useServerNow } from '@sistem/shared';
 import { IconChevronLeft } from '@tabler/icons-react';
 import { AppShell } from '../../../../components/layout/AppShell/AppShell';
 import { getTrainee } from '../../../../services/coach/coachService';
@@ -8,7 +8,6 @@ import { ROUTES } from '../../../../app/config/routes';
 import {
   DEFAULT_TRAINEE_TAB,
   TRAINEE_TABS,
-  TRAINEE_TAB_LABELS,
   TRAINEE_TAB_PARAM,
   isTraineeTab,
 } from '../../data/traineeTabs';
@@ -32,8 +31,10 @@ export function TraineeDetailPage() {
   const requestedTab = searchParams.get(TRAINEE_TAB_PARAM);
   const tab = isTraineeTab(requestedTab) ? requestedTab : DEFAULT_TRAINEE_TAB;
 
+  const shared = useCopy(sharedCopy);
+  const copy = shared.coach;
   const load = useCallback(() => getTrainee(traineeId), [traineeId]);
-  const { data, error, isLoading, reload } = useLoad(load, "Couldn't load this trainee.");
+  const { data, error, isLoading, reload } = useLoad(load, copy.loadTraineeError);
   const nowMs = useServerNow(data?.serverTime);
   const trainee = data?.trainee;
 
@@ -45,25 +46,29 @@ export function TraineeDetailPage() {
     <AppShell>
       <div className="coach-trainee">
         <header className="coach-trainee-header">
-          <Link className="coach-trainee-back" to={ROUTES.COACH_TRAINEES} aria-label="Back to trainees">
-            <IconChevronLeft size={24} aria-hidden="true" />
+          <Link className="coach-trainee-back" to={ROUTES.COACH_TRAINEES} aria-label={copy.backToTrainees}>
+            <IconChevronLeft className="flip-rtl" size={24} aria-hidden="true" />
           </Link>
           {trainee && (
             <div className="coach-trainee-heading">
-              <h1 className="coach-trainee-name">{trainee.name}</h1>
-              <span className="coach-trainee-email">{trainee.email}</span>
+              <h1 className="coach-trainee-name" dir="auto">
+                {trainee.name}
+              </h1>
+              <span className="coach-trainee-email" dir="ltr">
+                {trainee.email}
+              </span>
               <TraineeStatusBadges trainee={trainee} />
               {trainee.planDueAt && <PlanWindow planDueAt={trainee.planDueAt} nowMs={nowMs} />}
             </div>
           )}
         </header>
 
-        {isLoading && !trainee && <StateMessage>Loading…</StateMessage>}
+        {isLoading && !trainee && <StateMessage>{shared.common.loading}</StateMessage>}
         {error && !trainee && <StateMessage onRetry={reload}>{error}</StateMessage>}
 
         {trainee && (
           <>
-            <div className="coach-trainee-tabs" role="tablist" aria-label="Trainee sections">
+            <div className="coach-trainee-tabs" role="tablist" aria-label={copy.sectionsLabel}>
               {TRAINEE_TABS.map((id) => (
                 <button
                   key={id}
@@ -75,7 +80,7 @@ export function TraineeDetailPage() {
                   aria-controls="coach-trainee-panel"
                   onClick={() => selectTab(id)}
                 >
-                  {TRAINEE_TAB_LABELS[id]}
+                  {copy.tabs[id]}
                 </button>
               ))}
             </div>

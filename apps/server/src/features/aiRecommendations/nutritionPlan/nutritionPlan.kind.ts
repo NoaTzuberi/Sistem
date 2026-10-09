@@ -3,6 +3,7 @@ import type {
   AiNutritionInputSummary,
   AiNutritionPlanDraft,
   CalorieSuggestion,
+  CalorieSuggestionMissing,
   NutritionPreferences,
 } from '@sistem/types';
 import { OnboardingResponse } from '../../onboarding/onboardingResponse.model';
@@ -21,12 +22,14 @@ import { selectFoods } from './nutritionPlanFoods';
 import { buildNutritionProfile } from './nutritionPlanProfile';
 import {
   NUTRITION_PLAN_PROMPT_VERSION,
-  NUTRITION_PLAN_SYSTEM_PROMPT,
   buildNutritionPlanSchema,
+  buildNutritionPlanSystemPrompt,
   buildNutritionPlanUserMessage,
 } from './nutritionPlanPrompt';
 import { validateNutritionPlanReply } from './nutritionPlanValidation';
 import type { NutritionPlanValidationContext, StoredNutritionPlan } from './nutritionPlanValidation';
+import { msg, type MessageCode, type ServerMessage } from '../../../i18n';
+import { getUserLanguage } from '../../users/userLanguage';
 
 // PRD §5.6 (13c): a draft meal structure for the coach. Every number is computed in code by
 // the 13a+ calculation (the same one as the builder's calculation summary, with the coach's
@@ -35,29 +38,34 @@ import type { NutritionPlanValidationContext, StoredNutritionPlan } from './nutr
 
 type StoredInput = AiNutritionInputSummary & { foodAliases?: { alias: string; foodItemId: string; name: string }[] };
 
-const GROUP_NAMES = { protein: 'protein', carb: 'carb', fat: 'fat', snack: 'snack' } as const;
+const MISSING_FIELD_CODES: Record<CalorieSuggestionMissing, MessageCode> = {
+  weight: 'ai_field_weight',
+  height: 'ai_field_height',
+  birthDate: 'ai_field_birth_date',
+  trainingFrequency: 'ai_field_training_days',
+};
 
-function missingMessage(suggestion: CalorieSuggestion): string {
+function missingMessage(suggestion: CalorieSuggestion): ServerMessage {
   if (suggestion.status === 'needs_formula') {
-    return 'Her sex is not male / female, so there is no automatic calculation. Pick the formula (or set a target) in the calculation summary, then generate again.';
+    return msg('ai_needs_formula');
   }
-  const missing = suggestion.missing.map((field) => (field === 'birthDate' ? 'birth date' : field === 'trainingFrequency' ? 'training days' : field));
-  return `The calculation is missing her ${missing.join(', ')}. Fill it in the calculation summary (or set a target), then generate again.`;
+  return msg('ai_calculation_missing', { fields: suggestion.missing.map((field) => msg(MISSING_FIELD_CODES[field])) });
 }
 
 export const nutritionPlanKind: RecommendationKind<NutritionPlanValidationContext, StoredNutritionPlan> = {
   type: 'nutrition_plan',
 
   async prepare({ traineeId, coachId }, now) {
-    const [response, plan, config, foods, inputs] = await Promise.all([
+    const [response, plan, config, foods, inputs, language] = await Promise.all([
       OnboardingResponse.findOne({ userId: traineeId }).select('answers').lean(),
       NutritionPlan.findOne({ traineeId }).select('calorieTarget').lean(),
       getEffectiveNutritionConfig(coachId),
       listCoachFoods(coachId),
       loadCalorieInputs(traineeId, now),
+      getUserLanguage(coachId),
     ]);
     if (!response) {
-      return { ok: false, code: RECOMMENDATION_ERROR.notEnoughData, message: 'She has no onboarding answers yet.', input: null };
+      return { ok: false, code: RECOMMENDATION_ERROR.notEnoughData, message: msg('ai_no_onboarding'), input: null };
     }
 
     const stored = response.answers.nutritionPreferences;
@@ -71,7 +79,7 @@ export const nutritionPlanKind: RecommendationKind<NutritionPlanValidationContex
       now,
     );
     const profile = buildNutritionProfile(response.answers, preferences, suggestion);
-    const slots = mealSlotNames(preferences?.mealsPerDay);
+    const slots = mealSlotNames(preferences?.mealsPerDay, language);
 
     const planKcal = target?.kcal ?? null;
     const kcal = planKcal ?? (suggestion.status === 'ok' ? suggestion.kcal : null);
@@ -116,11 +124,10 @@ export const nutritionPlanKind: RecommendationKind<NutritionPlanValidationContex
     };
 
     if (selection.emptyGroups.length > 0) {
-      const groups = selection.emptyGroups.map((group) => GROUP_NAMES[group]).join(', ');
       return {
         ok: false,
         code: RECOMMENDATION_ERROR.notEnoughData,
-        message: `After her restrictions, no ${groups} items are left in your food list — build this plan by hand (or add items).`,
+        message: msg('ai_food_groups_empty', { groups: selection.emptyGroups.map((group) => msg(`group_${group}`)) }),
         input,
       };
     }
@@ -128,7 +135,7 @@ export const nutritionPlanKind: RecommendationKind<NutritionPlanValidationContex
     return {
       ok: true,
       promptVersion: NUTRITION_PLAN_PROMPT_VERSION,
-      system: NUTRITION_PLAN_SYSTEM_PROMPT,
+      system: buildNutritionPlanSystemPrompt(language),
       userMessage: buildNutritionPlanUserMessage(profile, calculation, slots, selection.candidates),
       schema: buildNutritionPlanSchema(),
       input,
@@ -136,6 +143,7 @@ export const nutritionPlanKind: RecommendationKind<NutritionPlanValidationContex
         coachId,
         candidates: selection.candidates,
         slots,
+        language,
         dailyPortions: recommended.portions,
         kcal,
         preferences,

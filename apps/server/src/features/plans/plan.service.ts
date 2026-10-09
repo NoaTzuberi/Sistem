@@ -4,8 +4,9 @@ import { getExerciseFactsByIds } from '../exercises/exercise.service';
 import { Plan } from './plan.model';
 import { resolvePlanExerciseSets } from './planSets';
 import type { PlanDocument, PlanExerciseFields, PlanWorkoutFields } from './plan.types';
+import { LocalizedError } from '../../i18n';
 
-export class PlanNotFoundError extends Error {}
+export class PlanNotFoundError extends LocalizedError {}
 
 export type LeanPlan = PlanDocument & { _id: Types.ObjectId };
 

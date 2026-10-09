@@ -3,19 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import type { AppNotification } from '@sistem/types';
 import { listNotifications, getUnreadCount, markRead, markAllRead } from '../../../../services/notifications/notificationsService';
 import { traineePath } from '../../../../app/config/routes';
-import { describeCoachNotification, formatDateTime } from '@sistem/shared';
+import { describeCoachNotification, fill, formatDateTime, sharedCopy, useCopy, useLanguage } from '@sistem/shared';
 import './NotificationBell.css';
 
 const POLL_MS = 60_000;
 const PANEL_LIMIT = 20;
 
 export function NotificationBell() {
+  const shared = useCopy(sharedCopy);
+  const inbox = shared.coach.inbox;
+  const language = useLanguage();
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [items, setItems] = useState<AppNotification[]>();
-  const [error, setError] = useState<string>();
+  const [error, setError] = useState<'load' | 'markRead'>();
 
   const refreshCount = useCallback(async () => {
     try {
@@ -45,7 +48,7 @@ export function NotificationBell() {
         setUnreadCount(list.unreadCount);
         setError(undefined);
       })
-      .catch(() => setError("Couldn't load notifications."));
+      .catch(() => setError('load'));
 
     function handlePointerDown(event: PointerEvent) {
       if (!containerRef.current?.contains(event.target as Node)) setIsOpen(false);
@@ -78,13 +81,13 @@ export function NotificationBell() {
       setUnreadCount(0);
       setItems((current) => current?.map((item) => ({ ...item, readAt: item.readAt ?? new Date().toISOString() })));
     } catch {
-      setError("Couldn't mark notifications as read.");
+      setError('markRead');
     }
   }
 
   const visible = (items ?? []).flatMap((notification) => {
     // The wording and the target are shared with the mobile Inbox.
-    const described = describeCoachNotification(notification);
+    const described = describeCoachNotification(notification, language);
     return described ? [{ notification, text: described.text, path: traineePath(described.traineeId, described.section ?? undefined) }] : [];
   });
 
@@ -95,7 +98,7 @@ export function NotificationBell() {
         type="button"
         aria-haspopup="true"
         aria-expanded={isOpen}
-        aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+        aria-label={unreadCount > 0 ? fill(inbox.bellUnread, { count: unreadCount }) : inbox.notificationsTitle}
         onClick={() => setIsOpen((open) => !open)}
       >
         <svg className="bell-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -105,21 +108,21 @@ export function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div className="bell-panel" role="region" aria-label="Notifications">
+        <div className="bell-panel" role="region" aria-label={inbox.notificationsTitle}>
           <div className="bell-panel-header">
-            <h2 className="bell-panel-title">Notifications</h2>
+            <h2 className="bell-panel-title">{inbox.notificationsTitle}</h2>
             <button className="bell-read-all" type="button" disabled={unreadCount === 0} onClick={handleMarkAllRead}>
-              Mark all read
+              {inbox.markAllRead}
             </button>
           </div>
 
           {error && (
             <p className="bell-message" role="alert">
-              {error}
+              {error === 'load' ? inbox.bellLoadError : inbox.markReadError}
             </p>
           )}
-          {!error && !items && <p className="bell-message">Loading…</p>}
-          {!error && items && visible.length === 0 && <p className="bell-message">No notifications yet.</p>}
+          {!error && !items && <p className="bell-message">{shared.common.loading}</p>}
+          {!error && items && visible.length === 0 && <p className="bell-message">{inbox.empty}</p>}
 
           <ul className="bell-list">
             {visible.map(({ notification, text, path }) => (
@@ -130,7 +133,7 @@ export function NotificationBell() {
                   onClick={() => handleOpenItem(notification, path)}
                 >
                   <span className="bell-item-text">{text}</span>
-                  <span className="bell-item-time">{formatDateTime(notification.createdAt)}</span>
+                  <span className="bell-item-time">{formatDateTime(notification.createdAt, language)}</span>
                 </button>
               </li>
             ))}

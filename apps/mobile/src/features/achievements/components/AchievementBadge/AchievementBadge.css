@@ -9,7 +9,7 @@
   height: 44px;
   background-color: var(--color-primary);
   color: var(--color-on-primary);
-  clip-path: polygon(0 0, calc(100% - var(--cut-size)) 0, 100% var(--cut-size), 100% 100%, 0 100%);
+  clip-path: var(--cut-corner);
 }
 
 .achievement-badge svg {

@@ -1,6 +1,7 @@
+import { useCopy } from '@sistem/shared';
 import { useState } from 'react';
 import { Button } from '../../../../components/common/Button/Button';
-import { FOCUS_TIP_COPY } from '../../data/workoutCopy';
+import { workoutCopy } from '../../copy';
 import './FocusTip.css';
 
 // "Don't show again" is remembered on this phone only (a per-device convenience).
@@ -19,6 +20,7 @@ function isHidden(): boolean {
  * web version; the native DND / Focus parts come with Capacitor in Phase 5b).
  */
 export function FocusTip() {
+  const copy = useCopy(workoutCopy);
   const [isOpen, setIsOpen] = useState(() => !isHidden());
   if (!isOpen) return null;
 
@@ -33,13 +35,13 @@ export function FocusTip() {
 
   return (
     <aside className="focus-tip" role="note">
-      <p className="focus-tip-text">{FOCUS_TIP_COPY.text}</p>
+      <p className="focus-tip-text">{copy.focusTip.text}</p>
       <div className="focus-tip-actions">
         <Button variant="secondary" onClick={() => setIsOpen(false)}>
-          {FOCUS_TIP_COPY.gotIt}
+          {copy.focusTip.gotIt}
         </Button>
         <Button variant="ghost" onClick={hideForGood}>
-          {FOCUS_TIP_COPY.dontShowAgain}
+          {copy.focusTip.dontShowAgain}
         </Button>
       </div>
     </aside>

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import type { NutritionConfig, NutritionGoal, NutritionSettingsPayload, PortionGroup } from '@sistem/types';
-import { FOOD_GROUP_LABELS, NUTRITION_GOAL_LABELS, PORTION_GROUPS, useLoad } from '@sistem/shared';
+import { PORTION_GROUPS, sharedCopy, useCopy, useI18n, useLoad } from '@sistem/shared';
 import { getNutritionSettings, saveNutritionSettings } from '../../../../services/coach/coachService';
 import { Button } from '../../../../components/common/Button/Button';
 import { NumberField } from '../../../../components/common/NumberField/NumberField';
 import { NutritionSubnav } from '../../components/NutritionSubnav/NutritionSubnav';
-import { NUTRITION_COPY } from '../../data/nutritionCopy';
+import { nutritionCopy } from '../../copy';
 import './NutritionSettingsPage.css';
 
 const GOALS: NutritionGoal[] = ['fat_loss', 'fat_loss_aggressive', 'recomp', 'muscle_gain', 'maintenance'];
@@ -71,7 +71,10 @@ function toPayload(form: Form): NutritionSettingsPayload | undefined {
  * floor, and (13a+) the pace / safety caps, the portion split and the keto limit.
  */
 export function NutritionSettingsPage() {
-  const { data, error, isLoading, reload } = useLoad(getNutritionSettings, "Couldn't load the settings.");
+  const { plural } = useI18n();
+  const shared = useCopy(sharedCopy);
+  const copy = useCopy(nutritionCopy);
+  const { data, error, isLoading, reload } = useLoad(getNutritionSettings, copy.settingsLoadError);
   const [form, setForm] = useState<Form>();
   const [message, setMessage] = useState<string>();
   const [busy, setBusy] = useState(false);
@@ -88,9 +91,9 @@ export function NutritionSettingsPage() {
     setMessage(undefined);
     try {
       setForm(toForm((await saveNutritionSettings(payload)).config));
-      setMessage(NUTRITION_COPY.saved);
+      setMessage(copy.saved);
     } catch (failure) {
-      setMessage(failure instanceof Error ? failure.message : "Couldn't save the settings.");
+      setMessage(failure instanceof Error ? failure.message : copy.settingsSaveError);
     } finally {
       setBusy(false);
     }
@@ -99,24 +102,24 @@ export function NutritionSettingsPage() {
   return (
     <div className="nutrition-settings-page">
       <NutritionSubnav />
-      <h1 className="nutrition-settings-title">{NUTRITION_COPY.settingsTitle}</h1>
-      <p className="nutrition-settings-note">{NUTRITION_COPY.settingsIntro}</p>
+      <h1 className="nutrition-settings-title">{copy.settingsTitle}</h1>
+      <p className="nutrition-settings-note">{copy.settingsIntro}</p>
 
-      {isLoading && !data && <p>Loading…</p>}
+      {isLoading && !data && <p>{shared.common.loading}</p>}
       {error && !data && (
         <p role="alert">
-          {error} <Button size="sm" onClick={reload}>Try again</Button>
+          {error} <Button size="sm" onClick={reload}>{shared.common.retry}</Button>
         </p>
       )}
 
       {form && data && (
         <form className="nutrition-settings-form" onSubmit={submit}>
           <fieldset className="nutrition-settings-group">
-            <legend>{NUTRITION_COPY.groupValues}</legend>
+            <legend>{copy.groupValues}</legend>
             {PORTION_GROUPS.map((group) => (
               <NumberField
                 key={group}
-                label={FOOD_GROUP_LABELS[group]}
+                label={shared.nutrition.groups[group]}
                 value={form.groupKcal[group]}
                 onChange={(value) => setForm({ ...form, groupKcal: { ...form.groupKcal, [group]: value } })}
               />
@@ -124,11 +127,11 @@ export function NutritionSettingsPage() {
           </fieldset>
 
           <fieldset className="nutrition-settings-group">
-            <legend>{NUTRITION_COPY.goalAdjustments}</legend>
+            <legend>{copy.goalAdjustments}</legend>
             {GOALS.map((goal) => (
               <NumberField
                 key={goal}
-                label={NUTRITION_GOAL_LABELS[goal]}
+                label={shared.nutrition.goals[goal]}
                 value={form.goalAdjustments[goal]}
                 min={-40}
                 onChange={(value) => setForm({ ...form, goalAdjustments: { ...form.goalAdjustments, [goal]: value } })}
@@ -137,11 +140,11 @@ export function NutritionSettingsPage() {
           </fieldset>
 
           <fieldset className="nutrition-settings-group">
-            <legend>{NUTRITION_COPY.activityFactors}</legend>
+            <legend>{copy.activityFactors}</legend>
             {form.activityFactors.map((factor, index) => (
               <NumberField
                 key={index}
-                label={NUTRITION_COPY.days(index + 1)}
+                label={plural(copy.days, index + 1)}
                 value={factor}
                 step={0.025}
                 min={1}
@@ -153,16 +156,16 @@ export function NutritionSettingsPage() {
           </fieldset>
 
           <fieldset className="nutrition-settings-group">
-            <legend>{NUTRITION_COPY.floor}</legend>
-            <NumberField label={NUTRITION_COPY.floor} hideLabel value={form.floorKcal} step={10} onChange={(value) => setForm({ ...form, floorKcal: value })} />
+            <legend>{copy.floor}</legend>
+            <NumberField label={copy.floor} hideLabel value={form.floorKcal} step={10} onChange={(value) => setForm({ ...form, floorKcal: value })} />
           </fieldset>
 
           <fieldset className="nutrition-settings-group">
-            <legend>{NUTRITION_COPY.safetyTitle}</legend>
+            <legend>{copy.safetyTitle}</legend>
             {SAFETY_FIELDS.map(({ key, step }) => (
               <NumberField
                 key={key}
-                label={NUTRITION_COPY.safetyLabels[key]}
+                label={copy.safetyLabels[key]}
                 value={form[key]}
                 step={step}
                 onChange={(value) => setForm({ ...form, [key]: value })}
@@ -171,12 +174,12 @@ export function NutritionSettingsPage() {
           </fieldset>
 
           <fieldset className="nutrition-settings-group">
-            <legend>{NUTRITION_COPY.portionSplit}</legend>
-            <p className="nutrition-settings-note">{NUTRITION_COPY.portionSplitPlaceholder}</p>
+            <legend>{copy.portionSplit}</legend>
+            <p className="nutrition-settings-note">{copy.portionSplitPlaceholder}</p>
             {PORTION_GROUPS.map((group) => (
               <NumberField
                 key={group}
-                label={FOOD_GROUP_LABELS[group]}
+                label={shared.nutrition.groups[group]}
                 value={form.portionSplit[group]}
                 onChange={(value) => setForm({ ...form, portionSplit: { ...form.portionSplit, [group]: value } })}
               />
@@ -184,9 +187,9 @@ export function NutritionSettingsPage() {
           </fieldset>
 
           <fieldset className="nutrition-settings-group">
-            <legend>{NUTRITION_COPY.ketoMaxCarb}</legend>
+            <legend>{copy.ketoMaxCarb}</legend>
             <NumberField
-              label={NUTRITION_COPY.ketoMaxCarb}
+              label={copy.ketoMaxCarb}
               hideLabel
               value={form.ketoMaxCarbPortions}
               step={0.5}
@@ -196,9 +199,9 @@ export function NutritionSettingsPage() {
 
           <div className="nutrition-settings-actions">
             <Button type="submit" variant="primary" disabled={busy || !toPayload(form)}>
-              {NUTRITION_COPY.save}
+              {copy.save}
             </Button>
-            <Button onClick={() => setForm(toForm(data.defaults))}>{NUTRITION_COPY.resetDefaults}</Button>
+            <Button onClick={() => setForm(toForm(data.defaults))}>{copy.resetDefaults}</Button>
             {message && (
               <span className="nutrition-settings-note" role="status">
                 {message}

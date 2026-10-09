@@ -1,37 +1,55 @@
-import type { PlanExercise, PlanSetTarget, ResolvedPlanSet, SetType } from '@sistem/types';
+import type { Language, PlanExercise, PlanSetTarget, ResolvedPlanSet } from '@sistem/types';
+import { sharedCopy } from './copy';
+import { fill, formatPlural } from './i18n/copy';
+import { isolateLtr } from './i18n/bidi';
+import { weekdayName } from './i18n/intl';
 import { addDaysToDate, formatDuration } from './format';
 
 // Read-only wording for a plan, shared by the coach's and the trainee's screens. Placeholder formats — the owner decides the final ones.
 
-export const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+/** Sunday = 0 … Saturday = 6 — the plan's day of the week, from Intl in the language on screen. */
+export function dayName(dayIndex: number, language: Language): string {
+  return weekdayName(dayIndex, language, 'long');
+}
 
-/** Placeholder wording for the weeks the server marks 'this' / 'next' (PlanWeekRelation). */
-export const WEEK_RELATION_LABELS = { this: 'This week', next: 'Next week' } as const;
+/** The seven day names, Sunday first (pickers). */
+export function dayNames(language: Language): string[] {
+  return [0, 1, 2, 3, 4, 5, 6].map((day) => dayName(day, language));
+}
 
 /**
  * 'This week' / 'Next week' for a plan, against the trainee's current week as the server
  * sent it (CoachTraineeSummary.currentWeekStart); null for any other week.
  */
-export function weekRelationLabel(weekStartDate: string, currentWeekStart: string): string | null {
-  if (weekStartDate === currentWeekStart) return WEEK_RELATION_LABELS.this;
-  if (weekStartDate === addDaysToDate(currentWeekStart, 7)) return WEEK_RELATION_LABELS.next;
+export function weekRelationLabel(weekStartDate: string, currentWeekStart: string, language: Language): string | null {
+  const labels = sharedCopy[language].weekRelation;
+  if (weekStartDate === currentWeekStart) return labels.this;
+  if (weekStartDate === addDaysToDate(currentWeekStart, 7)) return labels.next;
   return null;
 }
 
-const SET_TYPE_LABELS: Record<SetType, string> = { warmup: 'Warm-up', working: 'Working', drop: 'Drop' };
-
 /** '8–10', '12' or '30s' — what one set asks for, without the unit word. */
-function formatAmount(set: PlanSetTarget): string {
-  if (set.durationSec !== undefined) return formatDuration(set.durationSec);
+function formatAmount(set: PlanSetTarget, language: Language): string {
+  if (set.durationSec !== undefined) return formatDuration(set.durationSec, language);
   if (set.reps === undefined) return '—';
-  return set.repsMax !== undefined ? `${set.reps}–${set.repsMax}` : `${set.reps}`;
+  return set.repsMax !== undefined ? isolateLtr(`${set.reps}–${set.repsMax}`) : `${set.reps}`;
 }
 
-function formatExtras(set: PlanSetTarget): string[] {
+function formatExtras(set: PlanSetTarget, language: Language): string[] {
+  const copy = sharedCopy[language];
   return [
-    ...(set.targetWeight !== undefined ? [`${set.targetWeight} kg`] : []),
-    ...(set.restSec ? [`rest ${formatDuration(set.restSec)}`] : []),
+    ...(set.targetWeight !== undefined ? [`${set.targetWeight} ${copy.units.kg}`] : []),
+    ...(set.restSec ? [fill(copy.plan.rest, { time: formatDuration(set.restSec, language) })] : []),
   ];
+}
+
+/**
+ * '3 × 8–10', '3 × 45 שנ׳': only the arithmetic is kept left to right; a unit word after the
+ * number stays outside it, so Hebrew reads "3 × 45" and then "שנ׳".
+ */
+function timesAmount(count: number, amount: string): string {
+  const [head, ...rest] = amount.split(' ');
+  return isolateLtr(`${count} × ${head}`) + (rest.length > 0 ? ` ${rest.join(' ')}` : '');
 }
 
 function isSameTarget(a: ResolvedPlanSet, b: ResolvedPlanSet): boolean {
@@ -48,18 +66,20 @@ function isSameTarget(a: ResolvedPlanSet, b: ResolvedPlanSet): boolean {
 /**
  * The targets of one exercise, from the server's resolvedSets (sets are never derived
  * here): one line when every set is the same ('3 × 8–10 · 40 kg · rest 1 min 30s'),
- * otherwise one line per set ('1 · Warm-up · 10 · 20 kg').
+ * otherwise one line per set ('1 · Warm-up · 10 · 20 kg'). 'sets × amount' is kept
+ * left to right inside Hebrew text.
  */
-export function describeTargets(sets: ResolvedPlanSet[]): string[] {
+export function describeTargets(sets: ResolvedPlanSet[], language: Language): string[] {
   if (sets.length === 0) return [];
 
   const first = sets[0];
   if (first.type === 'working' && sets.every((set) => isSameTarget(set, first))) {
-    return [[`${sets.length} × ${formatAmount(first)}`, ...formatExtras(first)].join(' · ')];
+    return [[timesAmount(sets.length, formatAmount(first, language)), ...formatExtras(first, language)].join(' · ')];
   }
 
+  const setTypes = sharedCopy[language].plan.setTypes;
   return sets.map((set) =>
-    [`${set.setIndex + 1}`, SET_TYPE_LABELS[set.type], formatAmount(set), ...formatExtras(set)].join(' · '),
+    [`${set.setIndex + 1}`, setTypes[set.type], formatAmount(set, language), ...formatExtras(set, language)].join(' · '),
   );
 }
 
@@ -67,13 +87,14 @@ export function describeTargets(sets: ResolvedPlanSet[]): string[] {
  * 'Interval · 8 rounds · 20s work / 10s rest' for an interval exercise (from its first
  * set — the usual case is the same work and rest every round); null otherwise.
  */
-export function describeInterval(exercise: Pick<PlanExercise, 'interval' | 'resolvedSets'>): string | null {
+export function describeInterval(exercise: Pick<PlanExercise, 'interval' | 'resolvedSets'>, language: Language): string | null {
   const first = exercise.resolvedSets[0];
   if (!exercise.interval || !first) return null;
+  const copy = sharedCopy[language].plan;
   const rounds = exercise.resolvedSets.length;
   return [
-    'Interval',
-    `${rounds} ${rounds === 1 ? 'round' : 'rounds'}`,
-    `${formatDuration(first.durationSec ?? 0)} work / ${formatDuration(first.restSec ?? 0)} rest`,
+    copy.interval,
+    formatPlural(language, copy.rounds, rounds),
+    fill(copy.workRest, { work: formatDuration(first.durationSec ?? 0, language), rest: formatDuration(first.restSec ?? 0, language) }),
   ].join(' · ');
 }

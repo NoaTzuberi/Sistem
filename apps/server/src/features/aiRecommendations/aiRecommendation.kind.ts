@@ -1,4 +1,5 @@
 import type { AiRecommendationType } from '@sistem/types';
+import type { ServerMessage } from '../../i18n';
 
 // What one TYPE of recommendation plugs into the generic pipeline
 // (prompt → structured output → validation → retry → store). Training plan: Phase 12;
@@ -25,7 +26,7 @@ export type PreparedRecommendation<Context> =
       ok: false;
       /** Not enough data to ask the model (e.g. no usable exercises): the coach is told why. */
       code: string;
-      message: string;
+      message: ServerMessage;
       input: object | null;
     };
 

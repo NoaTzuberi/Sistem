@@ -1,11 +1,8 @@
 import type {
-  AllergyId,
-  DietStyleId,
   DietTag,
-  DietType,
   FoodCategory,
   FoodGroup,
-  IntoleranceId,
+  Language,
   MealLogDay,
   NutritionGoal,
   NutritionPreferences,
@@ -13,35 +10,27 @@ import type {
   PortionCounts,
   PortionGroup,
   PreferenceItem,
-  ReligiousId,
   WeightGoal,
   WeightUnit,
 } from '@sistem/types';
+import { sharedCopy } from './copy';
+import { fill, formatPlural } from './i18n/copy';
+import { isolateAuto } from './i18n/bidi';
+import { formatNumber } from './i18n/intl';
 import { formatDateOnly } from './format';
 import { formatWeight } from './units';
 
 // Read-only wording for nutrition (Phase 13a), shared by the dashboard builder, the
 // trainee's Nutrition tab and coach mode. PLACEHOLDER wording — the owner sends the final
-// copy (Phase 15 moves it into the translation files). Coach content (food names,
+// copy (shared copy files, Phase 15). Coach content (food names,
 // portions, meal names, tips) is always shown exactly as she wrote it.
 
 export const PORTION_GROUPS: readonly PortionGroup[] = ['protein', 'carb', 'fat', 'snack'];
 export const FOOD_GROUPS: readonly FoodGroup[] = ['protein', 'carb', 'fat', 'snack', 'vegetable'];
 
-export const FOOD_GROUP_LABELS: Record<FoodGroup, string> = {
-  protein: 'Protein',
-  carb: 'Carb',
-  fat: 'Fat',
-  snack: 'Snack',
-  vegetable: 'Vegetables',
-};
-
-/** The word after a count: "1 protein", "1½ carb". */
-const PORTION_WORDS: Record<PortionGroup, string> = { protein: 'protein', carb: 'carb', fat: 'fat', snack: 'snack' };
-
 /**
  * Food categories per group, in display order (13a+: picker chips, food list filters) — mirrors the server's
- * FOOD_CATEGORY_IDS. Labels are PLACEHOLDERS (Phase 15 translations).
+ * FOOD_CATEGORY_IDS. Labels (shared copy) are PLACEHOLDERS.
  */
 export const FOOD_CATEGORIES: Record<FoodGroup, readonly FoodCategory[]> = {
   protein: ['dairy', 'poultry', 'meat', 'fish_seafood', 'eggs', 'plant_based', 'supplements'],
@@ -51,101 +40,22 @@ export const FOOD_CATEGORIES: Record<FoodGroup, readonly FoodCategory[]> = {
   vegetable: [],
 };
 
-export const FOOD_CATEGORY_LABELS: Record<FoodCategory, string> = {
-  dairy: 'Dairy',
-  poultry: 'Poultry',
-  meat: 'Meat',
-  fish_seafood: 'Fish & seafood',
-  eggs: 'Eggs',
-  plant_based: 'Plant-based',
-  supplements: 'Supplements',
-  grains_cereals: 'Grains & cereals',
-  bread_crackers: 'Bread & crackers',
-  fruits: 'Fruits',
-  legumes: 'Legumes',
-  starchy_vegetables: 'Starchy vegetables',
-  oils: 'Oils',
-  nuts_seeds: 'Nuts & seeds',
-  spreads: 'Spreads',
-  other: 'Other',
-  sweet_cereals: 'Sweet cereals',
-  chocolate: 'Chocolate',
-  cookies_pastries: 'Cookies & pastries',
-  ice_cream: 'Ice cream & popsicles',
-  candy: 'Candy',
-  salty: 'Salty',
-  fast_food: 'Fast food & frozen',
-};
+/** 'Protein', 'Vegetables' — a food group's name in the language on screen. */
+export function foodGroupLabel(group: FoodGroup, language: Language): string {
+  return sharedCopy[language].nutrition.groups[group];
+}
 
-/** Label for "no category" in filters. */
-export const NO_CATEGORY_LABEL = 'No category';
+export function foodCategoryLabel(category: FoodCategory, language: Language): string {
+  return sharedCopy[language].nutrition.categories[category];
+}
 
-export const VEGETABLES_FREE_LABEL = 'vegetables free';
+export function dietTagLabel(tag: DietTag, language: Language): string {
+  return sharedCopy[language].nutrition.dietTags[tag];
+}
 
-export const DIET_TYPE_LABELS: Record<DietType, string> = {
-  none: 'No restrictions',
-  vegetarian: 'Vegetarian',
-  vegan: 'Vegan',
-  pescatarian: 'Pescatarian',
-};
-
-export const DIET_STYLE_LABELS: Record<DietStyleId, string> = {
-  keto_low_carb: 'Keto / low-carb',
-  intermittent_fasting: 'Intermittent fasting',
-  other: 'Other',
-};
-
-export const RELIGIOUS_LABELS: Record<ReligiousId, string> = {
-  kosher: 'Kosher',
-  halal: 'Halal',
-};
-
-export const INTOLERANCE_LABELS: Record<IntoleranceId, string> = {
-  lactose_free: 'Lactose-free',
-  gluten_free: 'Gluten-free',
-  celiac: 'Celiac',
-  low_fodmap: 'Low-FODMAP',
-  other: 'Other',
-};
-
-export const ALLERGY_LABELS: Record<AllergyId, string> = {
-  dairy: 'Dairy',
-  eggs: 'Eggs',
-  peanuts: 'Peanuts',
-  tree_nuts: 'Tree nuts',
-  sesame: 'Sesame',
-  soy: 'Soy',
-  gluten: 'Gluten / wheat',
-  fish: 'Fish',
-  shellfish: 'Shellfish',
-  other: 'Other',
-};
-
-export const DIET_TAG_LABELS: Record<DietTag, string> = {
-  meat: 'Meat',
-  poultry: 'Poultry',
-  fish: 'Fish',
-  dairy: 'Dairy',
-  eggs: 'Eggs',
-  gluten: 'Gluten',
-  peanuts: 'Peanuts',
-  tree_nuts: 'Tree nuts',
-  sesame: 'Sesame',
-  soy: 'Soy',
-  shellfish: 'Shellfish',
-  pork: 'Pork',
-  lactose: 'Lactose',
-  alcohol: 'Alcohol',
-  high_fodmap: 'High-FODMAP',
-};
-
-export const NUTRITION_GOAL_LABELS: Record<NutritionGoal, string> = {
-  fat_loss: 'Fat loss',
-  fat_loss_aggressive: 'Fat loss (aggressive)',
-  recomp: 'Toning / recomp',
-  muscle_gain: 'Muscle gain',
-  maintenance: 'Maintenance',
-};
+export function nutritionGoalLabel(goal: NutritionGoal, language: Language): string {
+  return sharedCopy[language].nutrition.goals[goal];
+}
 
 /** 0.5 → '½', 1.5 → '1½', 2 → '2'. Portions only ever go in halves. */
 export function formatPortionCount(count: number): string {
@@ -156,8 +66,9 @@ export function formatPortionCount(count: number): string {
 }
 
 /** '1 protein' */
-export function describePortion(group: PortionGroup, count: number): string {
-  return `${formatPortionCount(count)} ${PORTION_WORDS[group]}`;
+export function describePortion(group: PortionGroup, count: number, language: Language): string {
+  const copy = sharedCopy[language].nutrition;
+  return fill(copy.portion, { count: formatPortionCount(count), group: copy.portionWords[group] });
 }
 
 /** The groups a meal counts, in order, without the zeros. */
@@ -166,9 +77,9 @@ export function mealPortionList(portions: PortionCounts): { group: PortionGroup;
 }
 
 /** '1 protein · 1 carb · 1 fat · vegetables free' (PRD §5.6). */
-export function describeMealPortions(portions: PortionCounts, vegetablesFree: boolean): string {
-  const parts = mealPortionList(portions).map(({ group, count }) => describePortion(group, count));
-  if (vegetablesFree) parts.push(VEGETABLES_FREE_LABEL);
+export function describeMealPortions(portions: PortionCounts, vegetablesFree: boolean, language: Language): string {
+  const parts = mealPortionList(portions).map(({ group, count }) => describePortion(group, count, language));
+  if (vegetablesFree) parts.push(sharedCopy[language].nutrition.vegetablesFree);
   return parts.join(' · ') || '—';
 }
 
@@ -176,75 +87,87 @@ export function describeMealPortions(portions: PortionCounts, vegetablesFree: bo
  * How much of an item a line means: its portion as the coach wrote it, times the count
  * when it is not exactly one ('½ × 2 eggs').
  */
-export function describePortionAmount(portion: string, count: number | null): string {
+export function describePortionAmount(portion: string, count: number | null, language: Language): string {
   if (count === null || count === 1) return portion;
-  return `${formatPortionCount(count)} × ${portion}`;
+  return fill(sharedCopy[language].nutrition.portionAmount, { count: formatPortionCount(count), portion: isolateAuto(portion) });
 }
 
 /** A line of a meal option as the trainee reads it (name, amount; free text as written). */
-export function describeViewLine(line: NutritionViewLine): { title: string; detail: string | null } {
-  if (line.food) return { title: line.food.name, detail: describePortionAmount(line.food.portion, line.portions) };
+export function describeViewLine(line: NutritionViewLine, language: Language): { title: string; detail: string | null } {
+  if (line.food) return { title: line.food.name, detail: describePortionAmount(line.food.portion, line.portions, language) };
   const counted = line.group && line.group !== 'vegetable' && line.portions;
-  return { title: line.text ?? '', detail: counted ? describePortion(line.group as PortionGroup, line.portions!) : null };
+  return { title: line.text ?? '', detail: counted ? describePortion(line.group as PortionGroup, line.portions!, language) : null };
 }
 
 /** 'Lactose-free (ok in yogurt)', 'Other: kiwi' — an item with her own words. */
-export function describePreferenceItem<T extends string>(item: PreferenceItem<T>, labels: Record<T, string>): string {
+export function describePreferenceItem<T extends string>(item: PreferenceItem<T>, labels: Readonly<Record<T, string>>, language: Language): string {
   const label = labels[item.id] ?? item.id;
   if (!item.details) return label;
-  return item.id === 'other' ? item.details : `${label} (${item.details})`;
+  return item.id === 'other' ? item.details : fill(sharedCopy[language].nutrition.itemWithDetails, { label, details: isolateAuto(item.details) });
 }
 
-function describeItems<T extends string>(items: readonly PreferenceItem<T>[], labels: Record<T, string>): string {
-  return items.map((item) => describePreferenceItem(item, labels)).join(', ');
+function describeItems<T extends string>(items: readonly PreferenceItem<T>[], labels: Readonly<Record<T, string>>, language: Language): string {
+  return items.map((item) => describePreferenceItem(item, labels, language)).join(sharedCopy[language].common.listSeparator);
 }
 
 /** "How I eat" in one line: 'Vegetarian · Kosher · 4 meals' ('' = nothing chosen). */
-export function summarizeHowIEat(preferences: NutritionPreferences): string {
+export function summarizeHowIEat(preferences: NutritionPreferences, language: Language): string {
+  const copy = sharedCopy[language].nutrition;
   return [
-    ...(preferences.dietType !== 'none' ? [DIET_TYPE_LABELS[preferences.dietType]] : []),
-    ...preferences.dietStyles.map((item) => (item.id === 'other' ? item.details || DIET_STYLE_LABELS.other : DIET_STYLE_LABELS[item.id])),
-    ...preferences.religious.map((item) => RELIGIOUS_LABELS[item.id]),
-    ...(preferences.mealsPerDay ? [`${preferences.mealsPerDay} meals`] : []),
+    ...(preferences.dietType !== 'none' ? [copy.dietTypes[preferences.dietType]] : []),
+    ...preferences.dietStyles.map((item) => (item.id === 'other' ? item.details || copy.dietStyles.other : copy.dietStyles[item.id])),
+    ...preferences.religious.map((item) => copy.religious[item.id]),
+    ...(preferences.mealsPerDay ? [formatPlural(language, copy.meals, preferences.mealsPerDay)] : []),
   ].join(' · ');
 }
 
 /** "Intolerances & allergies" in one line: 'Lactose-free · Peanuts' ('' = none chosen). */
-export function summarizeRestrictions(preferences: NutritionPreferences): string {
+export function summarizeRestrictions(preferences: NutritionPreferences, language: Language): string {
+  const copy = sharedCopy[language].nutrition;
   return [
-    ...preferences.intolerances.map((item) => (item.id === 'other' ? item.details || INTOLERANCE_LABELS.other : INTOLERANCE_LABELS[item.id])),
-    ...preferences.allergies.map((item) => (item.id === 'other' ? item.details || ALLERGY_LABELS.other : ALLERGY_LABELS[item.id])),
+    ...preferences.intolerances.map((item) => (item.id === 'other' ? item.details || copy.intolerances.other : copy.intolerances[item.id])),
+    ...preferences.allergies.map((item) => (item.id === 'other' ? item.details || copy.allergies.other : copy.allergies[item.id])),
   ].join(' · ');
 }
 
 /** '62 kg · 12 weeks' / '62 kg · by 3 Dec 2026' / '62 kg' — in the reader's unit. */
-export function describeWeightGoal(goal: Pick<WeightGoal, 'targetWeightKg' | 'timeframe'>, unit: WeightUnit = 'kg'): string {
-  const target = formatWeight(goal.targetWeightKg, unit);
+export function describeWeightGoal(goal: Pick<WeightGoal, 'targetWeightKg' | 'timeframe'>, unit: WeightUnit, language: Language): string {
+  const copy = sharedCopy[language].nutrition;
+  const target = formatWeight(goal.targetWeightKg, unit, language);
   if (!goal.timeframe) return target;
   return goal.timeframe.kind === 'weeks'
-    ? `${target} · ${goal.timeframe.weeks} week${goal.timeframe.weeks === 1 ? '' : 's'}`
-    : `${target} · by ${formatDateOnly(goal.timeframe.date)}`;
+    ? `${target} · ${formatPlural(language, copy.goalWeeks, goal.timeframe.weeks)}`
+    : `${target} · ${fill(copy.goalByDate, { date: formatDateOnly(goal.timeframe.date, language) })}`;
 }
 
 /** One row per preference, for the coach (builder panel, onboarding answers). */
-export function describeNutritionPreferences(preferences: NutritionPreferences | null | undefined): { label: string; value: string }[] {
-  if (!preferences) return [{ label: 'Nutrition preferences', value: 'Not answered' }];
-  const diet = DIET_TYPE_LABELS[preferences.dietType] ?? preferences.dietType;
+export function describeNutritionPreferences(
+  preferences: NutritionPreferences | null | undefined,
+  language: Language,
+): { label: string; value: string }[] {
+  const common = sharedCopy[language].common;
+  const copy = sharedCopy[language].nutrition;
+  const labels = copy.preferences;
+  if (!preferences) return [{ label: labels.title, value: common.notAnswered }];
+  const diet = copy.dietTypes[preferences.dietType] ?? preferences.dietType;
   return [
-    { label: 'Diet', value: preferences.dietTypeDetails ? `${diet} (${preferences.dietTypeDetails})` : diet },
-    { label: 'Diet style', value: describeItems(preferences.dietStyles, DIET_STYLE_LABELS) || '—' },
-    { label: 'Religious', value: describeItems(preferences.religious, RELIGIOUS_LABELS) || '—' },
-    { label: 'Intolerances', value: describeItems(preferences.intolerances, INTOLERANCE_LABELS) || 'None' },
-    { label: 'Allergies', value: describeItems(preferences.allergies, ALLERGY_LABELS) || 'None' },
-    { label: 'Loves', value: preferences.foodsLoved?.trim() || '—' },
-    { label: 'Dislikes', value: preferences.foodsDisliked?.trim() || '—' },
-    { label: 'Meals per day', value: preferences.mealsPerDay ? String(preferences.mealsPerDay) : 'No preference' },
+    {
+      label: labels.diet,
+      value: preferences.dietTypeDetails ? fill(copy.itemWithDetails, { label: diet, details: isolateAuto(preferences.dietTypeDetails) }) : diet,
+    },
+    { label: labels.dietStyle, value: describeItems(preferences.dietStyles, copy.dietStyles, language) || '—' },
+    { label: labels.religious, value: describeItems(preferences.religious, copy.religious, language) || '—' },
+    { label: labels.intolerances, value: describeItems(preferences.intolerances, copy.intolerances, language) || common.noneChosen },
+    { label: labels.allergies, value: describeItems(preferences.allergies, copy.allergies, language) || common.noneChosen },
+    { label: labels.loves, value: preferences.foodsLoved?.trim() || '—' },
+    { label: labels.dislikes, value: preferences.foodsDisliked?.trim() || '—' },
+    { label: labels.mealsPerDay, value: preferences.mealsPerDay ? String(preferences.mealsPerDay) : common.noPreference },
   ];
 }
 
 /** Portion tracking, neutral wording (no judgment): '2 of 4½'. */
-export function describeMarked(eaten: number, planned: number): string {
-  return `${formatPortionCount(eaten)} of ${formatPortionCount(planned)}`;
+export function describeMarked(eaten: number, planned: number, language: Language): string {
+  return fill(sharedCopy[language].nutrition.marked, { eaten: formatPortionCount(eaten), planned: formatPortionCount(planned) });
 }
 
 export type TrackingDayStatus = 'future' | 'no_plan' | 'not_marked' | 'marked';
@@ -256,11 +179,12 @@ export type TrackingDayStatus = 'future' | 'no_plan' | 'not_marked' | 'marked';
 export function describeTrackingDay(
   day: Pick<MealLogDay, 'date' | 'planned' | 'eaten' | 'logged' | 'planVersion'>,
   today: string,
+  language: Language,
 ): { status: TrackingDayStatus; groups: { group: PortionGroup; label: string; text: string }[] } {
   const groups = PORTION_GROUPS.filter((group) => day.planned[group] > 0).map((group) => ({
     group,
-    label: FOOD_GROUP_LABELS[group],
-    text: describeMarked(day.eaten[group], day.planned[group]),
+    label: foodGroupLabel(group, language),
+    text: describeMarked(day.eaten[group], day.planned[group], language),
   }));
   if (day.date > today) return { status: 'future', groups: [] };
   if (day.planVersion === null || groups.length === 0) return { status: 'no_plan', groups: [] };
@@ -268,6 +192,6 @@ export function describeTrackingDay(
 }
 
 /** "Kcal" wording for the coach only — never used on trainee screens. */
-export function formatKcal(kcal: number): string {
-  return `${kcal.toLocaleString('en-US')} kcal`;
+export function formatKcal(kcal: number, language: Language): string {
+  return `${formatNumber(kcal, language)} ${sharedCopy[language].units.kcal}`;
 }

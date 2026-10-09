@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import type { AuthUser } from '@sistem/types';
+import type { AuthUser, Language } from '@sistem/types';
 import { User, UserDocument, isOnboardingCompleted } from '../users/user.model';
 import { config } from '../../config/env';
 import { sendPasswordResetEmail } from './email.service';
@@ -9,16 +9,17 @@ import { getAppState } from '../users/appState.service';
 import { resolveDefaultCoachId } from '../users/coachAssignment.service';
 import { isValidTimezone } from '../users/timezone';
 import { DEFAULT_TIMEZONE } from '../users/users.constants';
-import { resolveUnits } from '../users/units';
+import { resolveLanguage, resolveUnits } from '../users/units';
+import { LocalizedError } from '../../i18n';
 
 const SALT_ROUNDS = 12;
 const TOKEN_EXPIRY = '7d';
 const RESET_TOKEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
 
-export class EmailAlreadyInUseError extends Error {}
-export class InvalidCredentialsError extends Error {}
-export class UserNotFoundError extends Error {}
-export class InvalidResetTokenError extends Error {}
+export class EmailAlreadyInUseError extends LocalizedError {}
+export class InvalidCredentialsError extends LocalizedError {}
+export class UserNotFoundError extends LocalizedError {}
+export class InvalidResetTokenError extends LocalizedError {}
 
 function signToken(userId: string): string {
   return jwt.sign({ sub: userId }, config.jwtSecret, { expiresIn: TOKEN_EXPIRY });
@@ -41,14 +42,15 @@ export async function toPublicUser(user: UserDocument & { _id: unknown }): Promi
     onboardingCompletedAt: user.onboardingCompletedAt ? user.onboardingCompletedAt.toISOString() : null,
     timezone: user.timezone,
     units: resolveUnits(user.preferences),
+    language: resolveLanguage(user.preferences),
     createdAt: user.createdAt.toISOString(),
   };
 }
 
-export async function registerUser(name: string, email: string, password: string, timezone?: string) {
+export async function registerUser(name: string, email: string, password: string, timezone?: string, language?: Language) {
   const existingUser = await User.findOne({ email });
   if (existingUser) {
-    throw new EmailAlreadyInUseError('Email is already registered.');
+    throw new EmailAlreadyInUseError('email_taken');
   }
 
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
@@ -60,6 +62,8 @@ export async function registerUser(name: string, email: string, password: string
     coachId: await resolveDefaultCoachId(),
     // The device zone is a hint: an unknown value must not block sign-up.
     timezone: isValidTimezone(timezone) ? timezone : DEFAULT_TIMEZONE,
+    // The language she signed up in (validated); unset = Hebrew.
+    ...(language ? { preferences: { language } } : {}),
   });
 
   return { token: signToken(String(user._id)), user: await toPublicUser(user) };
@@ -68,7 +72,7 @@ export async function registerUser(name: string, email: string, password: string
 export async function getCurrentUser(userId: string) {
   const user = await User.findById(userId);
   if (!user) {
-    throw new UserNotFoundError('User not found.');
+    throw new UserNotFoundError('user_not_found');
   }
   return await toPublicUser(user);
 }
@@ -76,12 +80,12 @@ export async function getCurrentUser(userId: string) {
 export async function loginUser(email: string, password: string) {
   const user = await User.findOne({ email });
   if (!user) {
-    throw new InvalidCredentialsError('Invalid email or password.');
+    throw new InvalidCredentialsError('invalid_credentials');
   }
 
   const isMatch = await bcrypt.compare(password, user.passwordHash);
   if (!isMatch) {
-    throw new InvalidCredentialsError('Invalid email or password.');
+    throw new InvalidCredentialsError('invalid_credentials');
   }
 
   return { token: signToken(String(user._id)), user: await toPublicUser(user) };
@@ -101,7 +105,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
 
   const resetUrl = `${config.clientUrl}/reset-password?token=${rawToken}`;
   try {
-    await sendPasswordResetEmail(user.email, resetUrl);
+    await sendPasswordResetEmail(user.email, resetUrl, resolveLanguage(user.preferences));
   } catch (error) {
     console.error('Failed to send password reset email:', error);
   }
@@ -114,7 +118,7 @@ export async function resetPassword(token: string, newPassword: string): Promise
   });
 
   if (!user) {
-    throw new InvalidResetTokenError('This reset link is invalid or has expired.');
+    throw new InvalidResetTokenError('reset_token_invalid');
   }
 
   user.passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);

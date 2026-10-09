@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="he" dir="rtl">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/app-icon-512.png" />
@@ -14,6 +14,18 @@
     />
     <!-- Onboarding clips and posters are served from Cloudinary: warm up the connection. -->
     <link rel="preconnect" href="https://res.cloudinary.com" />
+    <!-- Phase 15: Hebrew / RTL by default; the language last used on this device wins before the
+         app loads (no flash of the wrong direction). Keep the key in step with @sistem/shared language.ts. -->
+    <script>
+      try {
+        if (localStorage.getItem('sistem.language') === 'en') {
+          document.documentElement.lang = 'en';
+          document.documentElement.dir = 'ltr';
+        }
+      } catch (error) {
+        /* Storage blocked: Hebrew. */
+      }
+    </script>
     <title>Sistem</title>
   </head>
   <body>

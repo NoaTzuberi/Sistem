@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FoodGroup, FoodItem, FoodItemPayload } from '@sistem/types';
-import { DIET_TAG_LABELS, FOOD_CATEGORY_LABELS, FOOD_GROUPS, FOOD_GROUP_LABELS, useLoad } from '@sistem/shared';
+import { fill, FOOD_GROUPS, sharedCopy, useCopy, useLoad } from '@sistem/shared';
 import { createFood, deleteFood, getNutritionSettings, listFoods, restoreFood, updateFood } from '../../../../services/coach/coachService';
 import { Button } from '../../../../components/common/Button/Button';
 import { Badge } from '../../../../components/common/Badge/Badge';
@@ -10,7 +10,7 @@ import { GroupTabs } from '../../components/GroupTabs/GroupTabs';
 import { CategoryChips } from '../../components/CategoryChips/CategoryChips';
 import { matchesCategory } from '../../data/foodFilters';
 import type { CategoryFilter } from '../../data/foodFilters';
-import { NUTRITION_COPY } from '../../data/nutritionCopy';
+import { nutritionCopy } from '../../copy';
 import './FoodListPage.css';
 
 async function loadFoods() {
@@ -20,7 +20,9 @@ async function loadFoods() {
 
 /** The coach's food list (PRD §5.6): exchange-list items per group, stored as she writes them. */
 export function FoodListPage() {
-  const { data, error, isLoading, reload } = useLoad(loadFoods, "Couldn't load the food list.");
+  const shared = useCopy(sharedCopy);
+  const copy = useCopy(nutritionCopy);
+  const { data, error, isLoading, reload } = useLoad(loadFoods, copy.foodsLoadError);
   const [editingId, setEditingId] = useState<string>();
   const [showArchived, setShowArchived] = useState(false);
   // Filters (13a+): one group (or all), then a category of that group.
@@ -36,7 +38,7 @@ export function FoodListPage() {
       reload();
       return true;
     } catch (failure) {
-      setMessage(failure instanceof Error ? failure.message : "Couldn't save.");
+      setMessage(failure instanceof Error ? failure.message : copy.foodSaveError);
       return false;
     }
   }
@@ -50,16 +52,16 @@ export function FoodListPage() {
   const remove = (item: FoodItem) =>
     run(async () => {
       const result = await deleteFood(item.id);
-      return result.outcome === 'archived' ? NUTRITION_COPY.removedArchived(item.name) : NUTRITION_COPY.removedDeleted(item.name);
+      return result.outcome === 'archived' ? fill(copy.removedArchived, { name: item.name }) : fill(copy.removedDeleted, { name: item.name });
     });
 
   return (
     <div className="food-list-page">
       <NutritionSubnav />
-      <h1 className="food-list-title">{NUTRITION_COPY.foodsTitle}</h1>
-      <p className="food-list-note">{NUTRITION_COPY.foodsIntro}</p>
+      <h1 className="food-list-title">{copy.foodsTitle}</h1>
+      <p className="food-list-note">{copy.foodsIntro}</p>
 
-      <h2 className="food-list-subtitle">{NUTRITION_COPY.addFoodTitle}</h2>
+      <h2 className="food-list-subtitle">{copy.addFoodTitle}</h2>
       <FoodForm onSubmit={add} />
 
       {message && (
@@ -75,8 +77,8 @@ export function FoodListPage() {
             setGroupFilter(next);
             setCategoryFilter(null);
           }}
-          label={NUTRITION_COPY.groupFilter}
-          allLabel={NUTRITION_COPY.groupAll}
+          label={copy.groupFilter}
+          allLabel={copy.groupAll}
         />
         {data && groupFilter && (
           <CategoryChips
@@ -87,14 +89,14 @@ export function FoodListPage() {
           />
         )}
         <label className="food-list-archived">
-          <input type="checkbox" checked={showArchived} onChange={(event) => setShowArchived(event.target.checked)} /> {NUTRITION_COPY.showArchived}
+          <input type="checkbox" checked={showArchived} onChange={(event) => setShowArchived(event.target.checked)} /> {copy.showArchived}
         </label>
       </div>
 
-      {isLoading && !data && <p>Loading…</p>}
+      {isLoading && !data && <p>{shared.common.loading}</p>}
       {error && !data && (
         <p role="alert">
-          {error} <Button size="sm" onClick={reload}>Try again</Button>
+          {error} <Button size="sm" onClick={reload}>{shared.common.retry}</Button>
         </p>
       )}
 
@@ -107,22 +109,22 @@ export function FoodListPage() {
           return (
             <section key={group} className="food-list-group" aria-labelledby={`food-group-${group}`}>
               <h2 className="food-list-subtitle" id={`food-group-${group}`}>
-                {FOOD_GROUP_LABELS[group]} <span className="food-list-cap">· {cap > 0 ? NUTRITION_COPY.groupCap(cap) : NUTRITION_COPY.groupFree}</span>
+                {shared.nutrition.groups[group]} <span className="food-list-cap">· {cap > 0 ? fill(copy.groupCap, { kcal: cap }) : copy.groupFree}</span>
               </h2>
               {items.length === 0 ? (
-                <p className="food-list-note">{NUTRITION_COPY.emptyGroup}</p>
+                <p className="food-list-note">{copy.emptyGroup}</p>
               ) : (
                 <table className="food-list-table">
                   <thead>
                     <tr>
-                      <th>{NUTRITION_COPY.name}</th>
-                      <th>{NUTRITION_COPY.category}</th>
-                      <th>{NUTRITION_COPY.portion}</th>
-                      <th>{NUTRITION_COPY.grams}</th>
-                      <th>{NUTRITION_COPY.kcal}</th>
-                      <th>{NUTRITION_COPY.dietTags}</th>
+                      <th>{copy.name}</th>
+                      <th>{copy.category}</th>
+                      <th>{copy.portion}</th>
+                      <th>{copy.grams}</th>
+                      <th>{copy.kcal}</th>
+                      <th>{copy.dietTags}</th>
                       <th>
-                        <span className="visually-hidden">Actions</span>
+                        <span className="visually-hidden">{copy.actions}</span>
                       </th>
                     </tr>
                   </thead>
@@ -137,25 +139,25 @@ export function FoodListPage() {
                       ) : (
                         <tr key={item.id} className={item.archivedAt ? 'food-list-row-archived' : undefined}>
                           <td dir="auto">
-                            {item.name} {item.isNew && <Badge tone="accent">{NUTRITION_COPY.isNew}</Badge>}{' '}
-                            {item.archivedAt && <Badge tone="alert">{NUTRITION_COPY.archived}</Badge>}
+                            <bdi>{item.name}</bdi> {item.isNew && <Badge tone="accent">{copy.isNew}</Badge>}{' '}
+                            {item.archivedAt && <Badge tone="alert">{copy.archived}</Badge>}
                           </td>
-                          <td>{item.category ? FOOD_CATEGORY_LABELS[item.category] : '—'}</td>
+                          <td>{item.category ? shared.nutrition.categories[item.category] : '—'}</td>
                           <td dir="auto">{item.portion}</td>
                           <td>{item.grams ?? '—'}</td>
                           <td>{item.kcal ?? '—'}</td>
-                          <td>{item.dietTags.map((tag) => DIET_TAG_LABELS[tag]).join(', ') || '—'}</td>
+                          <td>{item.dietTags.map((tag) => shared.nutrition.dietTags[tag]).join(', ') || '—'}</td>
                           <td className="food-list-actions">
                             <Button size="sm" onClick={() => setEditingId(item.id)}>
-                              {NUTRITION_COPY.edit}
+                              {copy.edit}
                             </Button>
                             {item.archivedAt ? (
                               <Button size="sm" onClick={() => run(async () => void (await restoreFood(item.id)))}>
-                                {NUTRITION_COPY.restore}
+                                {copy.restore}
                               </Button>
                             ) : (
                               <Button size="sm" variant="danger" onClick={() => remove(item)}>
-                                {NUTRITION_COPY.remove}
+                                {copy.remove}
                               </Button>
                             )}
                           </td>

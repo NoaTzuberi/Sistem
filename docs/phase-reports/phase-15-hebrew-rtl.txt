@@ -1,0 +1,5292 @@
+SISTEM — PHASE 15 REPORT: HEBREW (DEFAULT) & RIGHT-TO-LEFT, ENGLISH AS AN OPTION
+Date: 2026-10-08
+Scope: docs/BUILD_PLAN.md "Phase 15" (PRD §11 "Language", §12) with the owner's answers of 2026-10-08. No other phase was started.
+
+================================================================================
+1. SUMMARY
+================================================================================
+- Hebrew is the default language of the mobile app and the dashboard, right-to-left everywhere; English is per user
+  (User.preferences.language, AuthUser.language, PATCH /api/users/preferences { language }), switched in Settings (mobile),
+  coach Profile (mobile), the dashboard top bar and the login screens — at once, without a reload, saved on the server.
+- Every UI text moved into copy files (1,673 entries incl. server messages), typed so Hebrew and English can't drift; plurals via
+  Intl.PluralRules; dates, weekdays and numbers via Intl in the language on screen. Own small helper — no new dependency.
+- The server answers every error as { code, message } in the request's language (the clients send Accept-Language); email and
+  (later) push are built in the user's saved language; AI drafts write their coach texts in the coach's language.
+- RTL: all CSS is logical (no left / right left), left/right chevrons mirror, charts keep time left → right, numbers and
+  arithmetic stay readable inside Hebrew text, the corner cuts mirror.
+- packages/tokens/tokens.css is now THE single file for every design value of both apps (per-language font tokens with a Hebrew
+  system-font placeholder, type scale, colors, spacing, cuts, borders, shadows, motion, opacity, layers, breakpoints, touch).
+- Two checks: `npm run lint` runs an audit for hard-coded text / fixed locales / physical CSS; `npm test` runs a parity test
+  (same keys, same {placeholders}, the plural forms each language needs — also the server catalogs).
+
+================================================================================
+2. DECISIONS AND HOW THEY WERE BUILT
+================================================================================
+Owner answers (2026-10-08) — written into PRD §11 ("Decisions — Phase 15") and BUILD_PLAN "Phase 15":
+1. Own small i18n helper, no new dependency.
+2. Charts keep the time axis left → right in both languages.
+3. No font decision now: per-language font tokens; current Latin fonts for English; a Hebrew system-font placeholder; no new
+   font files. packages/tokens = the single file for every design variable. Font suggestions below (section 7), not applied.
+4. Neutral forms for buttons and labels; feminine forms for sentences addressing the user.
+5. AI summaries and rationales in the coach's language.
+6. The logo stays in English exactly as it is — never translated or mirrored.
+
+The i18n helper (packages/shared/src/i18n — about 2 kB):
+- `defineCopy(he, en)` per feature: `features/<f>/copy/he.ts` (primary, `as const`) + `en.ts` typed `CopyShape<typeof he>` (a
+  missing / extra key fails the build) + `index.ts`. App-level texts in `apps/*/src/copy`. Texts both apps show, every
+  option / status / unit / achievement label and the display helpers' wording in `packages/shared/src/copy`.
+- `useCopy(copy)`, `useI18n()` → { language, direction, setLanguage, plural }, `fill('{name}', vars)`,
+  `plural({ one, two, other })` (Hebrew needs one / two / other), Intl helpers `dateFormat`, `formatNumber`, `formatRelative`,
+  `weekdayName` / `dayName` (replaces DAY_NAMES; Sunday first), bidi helpers `isolateLtr` / `isolateAuto`.
+- Every display helper of @sistem/shared takes `language` as its last argument (describeTargets, formatWeight, describeAchievement,
+  buildOnboardingSections, describeCoachNotification, …). Removed constant label maps (TRAINEE_STATUS_LABELS, FOOD_GROUP_LABELS,
+  DIET_*_LABELS, STATUS_FILTERS, WEEK_RELATION_LABELS, DAY_NAMES, …) — replaced by the copy / functions.
+- `I18nProvider` (outermost in both apps) keeps <html lang dir> in step; index.html defaults to he/rtl and an inline script applies
+  the device's last language before the first paint. `useUserLanguage(user.language)` — her saved language wins after login.
+  Sign-up sends the language on screen, so a new account keeps it.
+- Code that runs later (effects, async callbacks) reads `copy[getActiveLanguage()]`, so a load never depends on the language.
+- Bundle impact: the helper is ~2 kB; both locales are bundled (instant switch, offline). Mobile 592 kB → 651 kB (201 kB gzip),
+  dashboard 526 kB (162 kB gzip). Lazy-loading the inactive locale can join the "split the bundle" backlog item.
+
+Onboarding (protected): only text changed. options.ts / activities.ts keep their ids, order and emoji; labels come from the shared
+copy by id (onboardingOptions.*), so the coach now reads the same option labels (in her language) instead of humanized ids. Steps,
+logic, saving, validation and videos are untouched.
+
+Server (apps/server/src/i18n):
+- `msg(code, params)`, `LocalizedError`, `sendError(res, status, msg)` → { code, message } worded per request (Accept-Language;
+  Hebrew when absent). Params may be nested messages or lists (field labels, food groups, diet tags).
+- Validators return codes; plan / nutrition issues keep their indexes and get `message` per request (`localizeIssues`,
+  `localizeNutritionIssues`; nutrition issues keep their own stable `code`). The model still gets the issues in English.
+- `users/userLanguage.ts getUserLanguage()` for texts outside a request: the password-reset email is now in her language (RTL for
+  Hebrew); Phase 5b push will use the same path (notifications still store type + data only).
+- AI drafts: training-plan-v2 / nutrition-plan-v2 prompts ask for the coach's language (also the workout titles); meal slot names and
+  "Option A/B/C" (א/ב/ג) are written in the coach's language; failures are stored as code + params and worded when read.
+- Default meal names of a new nutrition plan (dashboard) are written in the coach's language; once saved they are her content.
+
+RTL:
+- CSS: 101 physical declarations → logical (margin/padding/border-inline-start|end, inset-inline-start|end, text-align start|end,
+  float inline-start). Kept physical with a `physical:` comment: a centered dot (left:50% + translate) and the countdown bar's
+  transform-origin (mirrored by an RTL rule).
+- Mirrored: every left/right chevron (`className="flip-rtl"`, CSS `scale: -1 1`), text arrows in back links / "next" hints (in the
+  copy: ← / →). Not mirrored: play / pause / skip, check, clock, sound, camera, +/−, logos, emoji.
+- Corner cuts: `--cut-corner` / `--cut-corners-diagonal` tokens, redefined under [dir='rtl'].
+- Numbers: only arithmetic is isolated left-to-right ('3 × 8–10', '3 × 45' then 'שנ׳', '2 / 3', '−2.7' then 'ק״ג'); "number unit"
+  reads correctly without an isolate. Typed numbers / emails / passwords are LTR inputs aligned with the RTL labels (one global
+  rule per app).
+- Charts (weight / measurements / sparkline, dashboard trend): `<svg direction="ltr">` — time left → right, labels in the language.
+- Week strip, day pickers, tab bar, tables: flex / grid follow the direction (Sunday on the right in Hebrew).
+- Coach / user text (names, titles, notes, food names, meal names, options, tips, intro, summaries, Kaggle exercise names):
+  `dir="auto"` or <bdi>, shown exactly as written.
+
+================================================================================
+3. FILES CHANGED
+================================================================================
+Added
+- packages/shared/src/i18n/ (copy.ts, language.ts, intl.ts, bidi.ts, I18nProvider.ts), packages/shared/src/copy/ (he, en, index),
+  packages/shared/src/planIssues.ts (describeIssue, shared by both apps)
+- apps/server/src/i18n/ (index.ts, locales/he.ts, locales/en.ts, __tests__/language.test.ts), apps/server/src/features/users/userLanguage.ts
+- apps/mobile/src/copy/, apps/mobile/src/features/<achievements|auth|bodyTracking|coach|home|nutrition|onboarding|profile|waiting|
+  workouts>/copy/, apps/mobile/src/features/workouts/data/workoutDisplay.ts, apps/mobile/src/components/common/LanguageSwitch/
+- apps/dashboard/src/copy/, apps/dashboard/src/features/<aiDraft|nutrition|planBuilder|trainees>/copy/,
+  apps/dashboard/src/features/aiDraft/data/aiDraftDisplay.ts, apps/dashboard/src/components/common/LanguageSwitch/
+- scripts/i18n-audit.mjs, scripts/i18n-parity.test.ts, vitest.i18n.config.mts
+Deleted (moved into copy folders)
+- mobile: data/achievementCopy.ts, bodyCopy.ts, homeCopy.ts, nutritionCopy.ts, nutritionPreferencesCopy.ts, profileCopy.ts,
+  waitingCopy.ts, workoutCopy.ts (helpers → workoutDisplay.ts), coach/data/planDisplay.ts (→ @sistem/shared planIssues.ts)
+- dashboard: aiDraft/data/aiDraftCopy.ts (helpers → aiDraftDisplay.ts), nutrition/data/nutritionCopy.ts
+Modified (391 files)
+- packages/types (Language, AuthUser.language, UpdatePreferencesPayload, RegisterPayload.language, ApiErrorBody.code, PlanIssue.code),
+  packages/api-client (Accept-Language, updatePreferences for both apps, no English fallbacks), packages/shared (every display
+  helper), packages/tokens/tokens.css
+- apps/server: user model / auth / users (language), every controller / validator / service that answered with text, AI kinds and
+  prompts, email, tests (codes; the test client sends Accept-Language: en by default)
+- apps/mobile and apps/dashboard: every component with text, every CSS file with a physical side / hard-coded design value,
+  index.html, globals.css, AuthContext / AppProviders, Settings
+- package.json (root scripts: test → + test:i18n, lint → + lint:i18n), docs/PRD.md, docs/BUILD_PLAN.md
+- CLAUDE.md updated (gitignored — not in any commit)
+
+================================================================================
+4. DEPENDENCIES
+================================================================================
+None added, none removed. (The checks use the TypeScript, vitest and tsx already installed.)
+
+================================================================================
+5. DESIGN TOKENS — WHAT MOVED INTO packages/tokens/tokens.css
+================================================================================
+Colors and font sizes were already all tokens (no hex / px font-size outside tokens). Moved / added:
+- Fonts: --font-heading-he / --font-body-he (system stack with Hebrew: system-ui, -apple-system, "Segoe UI", "Arial Hebrew",
+  "Noto Sans Hebrew", Arial) and --font-heading-en / --font-body-en (Cabinet Grotesk / Satoshi, unchanged); --font-family-display /
+  -body pick them by <html lang>. No font files added.
+- Corner cuts: the clip-path polygon repeated in 12 CSS files (HomePage, AchievementBadge, AchievementTile, PlanCard, coach
+  WorkoutLogList, TraineesPage ×2 (mobile + dashboard), BodySummary, PlaceholderPage, dashboard Login, …) → var(--cut-corner);
+  the Countdown's two-corner shape → var(--cut-corners-diagonal); both mirrored for RTL.
+- Border widths: ~213 declarations (1px / 2px / 3px / 4px) → --border-width-thin / -medium / -thick / -heavy.
+- Focus ring: outline-offset ±2px (5 files) → --focus-ring-offset.
+- Motion: --transition-fast/-base/-slow and --ease-standard/-out moved from apps/mobile/src/styles/animations.css; added
+  --transition-progress (StreakRing 1s), --ease-emphasized (StreakRing curve), --loop-slow (2s scroll hint); StepVideoBackground's
+  250ms ease-out → tokens.
+- Opacity: 0.6 / 0.4 / 0.5 → --opacity-muted / --opacity-faint / --opacity-disabled.
+- Layers: local z-index 0–3 (21 declarations) → --z-base / --z-raised / --z-overlay / --z-top (with --z-tab-bar, --z-modal).
+- Shadows: none are used (flat design); --shadow-none added as the group's starting point.
+- Breakpoints: --breakpoint-sm…-3xl (600 / 640 / 768 / 900 / 960 / 1024). CSS can't read a variable inside @media, so every
+  media query keeps its number and now names its token in a comment — change both together (or add a build step later).
+- Safe areas: --safe-inline-start / -end (follow the direction).
+
+================================================================================
+6. HOW TO TEST
+================================================================================
+Commands (repo root):
+- npm install (nothing new) · npm run build · npm run lint (oxlint + i18n audit) · npm test (551 server tests + 19 parity tests)
+- npm run dev:all → mobile http://localhost:5173 · dashboard http://localhost:5174 · server :5002
+- npm run seed:dev for coach@sistem.dev / trainee1@ / trainee2@sistem.dev (password in the seed script)
+Manual checks (done in this session at 375×667 for the mobile app and ~1350 px for the dashboard):
+- Login: Hebrew RTL by default; עברית | English under the card switches at once; the choice survives a reload.
+- Trainee: Home (week strip Sunday on the right, chevrons pointing left), workout detail ('3 × 45' then 'שנ׳'), workout log,
+  Nutrition (portion circles, day picker in Hebrew, coach intro shown as written), Profile → Weight chart (time left → right,
+  Hebrew month labels, '−2.7' ק״ג), onboarding steps in edit mode (her saved choices still selected), free interval timer.
+- Settings → English: the whole app mirrors to LTR instantly, /auth/me returns language "en"; back to עברית.
+- Coach mode: trainees list (statuses, 48h window, filters), trainee detail → onboarding answers now show the option labels.
+- Dashboard: trainees table, plan builder, nutrition builder (calculation summary numbers), top-bar language switch both ways.
+- API: curl -X POST :5002/api/auth/login -H 'Content-Type: application/json' -d '{"email":"x@y.z","password":"x"}' → Hebrew
+  message; add -H 'Accept-Language: en' → English; both with "code":"invalid_credentials".
+
+================================================================================
+7. FONT NOTES FOR THE DESIGN PHASE (suggestions only — nothing applied)
+================================================================================
+The current Latin fonts have no Hebrew glyphs, so Hebrew uses the system-font placeholder. If the brand font is Barlow Condensed
+(not in the code today — the tokens still say Cabinet Grotesk / Satoshi), possible Hebrew pairings (all free on Google Fonts):
+- Heebo — a clean grotesque with 9 weights (100–900); the de-facto Israeli app font. Pairs well with Barlow for body text and as
+  the Hebrew fallback for headings: font-family: "Barlow Condensed", "Heebo", sans-serif (the browser uses Barlow for Latin
+  letters and Heebo for Hebrew, letter by letter).
+- Karantina — a condensed, sporty Hebrew display face; the closest in feel to Barlow Condensed for headings, but only 3 weights
+  (300 / 400 / 700) — headings only.
+- Assistant — softer, 7 weights; an alternative to Heebo for body text.
+A possible setup: headings --font-heading-he: "Karantina" (or Heebo Bold), body --font-body-he: "Heebo"; English
+--font-heading-en: "Barlow Condensed". Only the four font tokens change.
+
+================================================================================
+8. KNOWN ISSUES / TODOs
+================================================================================
+- npm run dev:all could not start on its usual ports: dev servers from an earlier session were still running (the HTTPS
+  dev:phone app on 5173, a dashboard on 5174, the API on 5002, all watching this repo). I did not stop them. I checked the app
+  with my own mobile + dashboard dev servers on 5180 / 5181 against that running API (same code), then stopped mine. Please stop
+  the old ones and run npm run dev:all once to confirm.
+- Not checked live: iPhone Pro Max size (430×932 — the browser window could not be resized; 375×667 was checked in a frame), an
+  active workout session with its timers (starting one changes dev data), a running interval (the timer only ticks while the page
+  is visible; the automation frame counts as hidden), onboarding end to end as a brand-new user (the steps were checked in edit
+  mode). Worth a look on a real phone.
+- All Hebrew is a DRAFT translation (appendix) — copy marked PLACEHOLDER is still a placeholder ("הוחמץ" for "Missed" is expected
+  to be softened, like "Missed").
+- Not translated on purpose: the imported exercise names and facts (Kaggle, English — PRD §14), the onboarding exercise
+  suggestions (exerciseBank.ts — saved as her answer), coach content, the trainee exercise library in apps/mobile/src/features/
+  exercises (kept ATLAS code that is never routed — skipped by the audit; translate it if it is ever routed).
+- AI drafts created before this phase are in English; new ones follow the coach's language. A failed AI draft's "last problems"
+  stay English (they were written for the model).
+- English changes: dates now use one US format everywhere ("Oct 4 – Oct 10"; before, the code mixed en-GB and en-US); the dashboard
+  button says "Log Out" (shared with the app); the exercise-search API's per-parameter errors became one message
+  ("… must be one of the supported values"); a few English fallback texts in the API client were removed (the server's message,
+  already in the right language, is shown; the screen's own text when there is no answer).
+- Technical API messages (e.g. "weekStartDate must be a Sunday") are translated literally — they are for developers.
+- Breakpoint tokens can't drive media queries (see section 5).
+- Bundles: both apps are over Vite's 500 kB warning (the mobile one already was) — backlog "split the bundle by role".
+- Phase 5b push: the server side is ready (catalogs + getUserLanguage); no push wording exists yet.
+- The language switches (auth card, Settings, coach Profile, dashboard top bar) are functional placeholders for the design phase.
+- The two oxlint warnings (only-export-components in both AuthContext files) were there before this phase.
+
+================================================================================
+9. APPENDIX — EVERY TEXT, ENGLISH AND HEBREW DRAFT (for the owner's review)
+================================================================================
+Generated from the copy files (folder, then key; plural entries list their forms). {name} = filled in by the app.
+--- packages/shared/src/copy (359) ---
+  common.none
+      EN: —
+      HE: —
+  common.yes
+      EN: Yes
+      HE: כן
+  common.no
+      EN: No
+      HE: לא
+  common.other
+      EN: Other
+      HE: אחר
+  common.notAnswered
+      EN: Not answered
+      HE: לא נענה
+  common.noneChosen
+      EN: None
+      HE: אין
+  common.noPreference
+      EN: No preference
+      HE: אין העדפה
+  common.save
+      EN: Save
+      HE: שמירה
+  common.saving
+      EN: Saving…
+      HE: שומר…
+  common.cancel
+      EN: Cancel
+      HE: ביטול
+  common.close
+      EN: Close
+      HE: סגירה
+  common.back
+      EN: Back
+      HE: חזרה
+  common.retry
+      EN: Try again
+      HE: ניסיון נוסף
+  common.loading
+      EN: Loading…
+      HE: טוען…
+  common.remove
+      EN: Remove
+      HE: הסרה
+  common.delete
+      EN: Delete
+      HE: מחיקה
+  common.edit
+      EN: Edit
+      HE: עריכה
+  common.done
+      EN: Done
+      HE: סיום
+  common.logout
+      EN: Log Out
+      HE: התנתקות
+  common.listSeparator
+      EN: , 
+      HE: , 
+  languageNames.he
+      EN: עברית
+      HE: עברית
+  languageNames.en
+      EN: English
+      HE: English
+  language
+      EN: Language
+      HE: שפה
+  units.kg
+      EN: kg
+      HE: ק״ג
+  units.lb
+      EN: lb
+      HE: ליב׳
+  units.cm
+      EN: cm
+      HE: ס״מ
+  units.in
+      EN: in
+      HE: אינץ׳
+  units.km
+      EN: km
+      HE: ק״מ
+  units.miles
+      EN: miles
+      HE: מייל
+  units.kcal
+      EN: kcal
+      HE: קק״ל
+  duration.seconds
+      EN: {s}s
+      HE: {s} שנ׳
+  duration.minutes
+      EN: {m} min
+      HE: {m} דק׳
+  duration.minutesSeconds
+      EN: {m} min {s}s
+      HE: {m} דק׳ {s} שנ׳
+  duration.hoursMinutes
+      EN: {h}h {m}m
+      HE: {h} שע׳ {m} דק׳
+  time.left
+      EN: {time} left
+      HE: נותרו {time}
+  time.overdue
+      EN: Overdue by {time}
+      HE: באיחור של {time}
+  time.weekRange
+      EN: {start} – {end}
+      HE: {start} – {end}
+  weekRelation.this
+      EN: This week
+      HE: השבוע
+  weekRelation.next
+      EN: Next week
+      HE: שבוע הבא
+  plan.setTypes.warmup
+      EN: Warm-up
+      HE: חימום
+  plan.setTypes.working
+      EN: Working
+      HE: עבודה
+  plan.setTypes.drop
+      EN: Drop
+      HE: דרופ
+  plan.rest
+      EN: rest {time}
+      HE: מנוחה {time}
+  plan.interval
+      EN: Interval
+      HE: אינטרוולים
+  plan.rounds
+      EN: one: {count} round | other: {count} rounds
+      HE: one: סבב אחד | two: שני סבבים | other: {count} סבבים
+  plan.workRest
+      EN: {work} work / {rest} rest
+      HE: {work} עבודה / {rest} מנוחה
+  log.reps
+      EN: {reps} reps
+      HE: {reps} חזרות
+  log.notDone
+      EN: not done
+      HE: לא בוצע
+  log.exercise
+      EN: Exercise
+      HE: תרגיל
+  log.prWeight
+      EN: {name} — {value} (was {previous})
+      HE: {name} — {value} (קודם {previous})
+  log.prReps
+      EN: {name} — {value} reps{at} (was {previous})
+      HE: {name} — {value} חזרות{at} (קודם {previous})
+  log.prDuration
+      EN: {name} — {value} hold{at} (was {previous})
+      HE: {name} — החזקה {value}{at} (קודם {previous})
+  log.prAt
+      EN:  at {weight}
+      HE:  ב־{weight}
+  log.prCount
+      EN: one: {count} PR | other: {count} PRs
+      HE: one: שיא אישי אחד | two: 2 שיאים אישיים | other: {count} שיאים אישיים
+  traineeStatus.labels.new
+      EN: New
+      HE: חדשה
+  traineeStatus.labels.waiting
+      EN: Waiting for plan
+      HE: ממתינה לתוכנית
+  traineeStatus.labels.active
+      EN: Active
+      HE: פעילה
+  traineeStatus.labels.inactive
+      EN: Inactive
+      HE: לא פעילה
+  traineeStatus.needsNextWeek
+      EN: Needs next week's plan
+      HE: צריכה תוכנית לשבוע הבא
+  traineeStatus.all
+      EN: All
+      HE: הכול
+  coach.tabs.onboarding
+      EN: Onboarding
+      HE: שאלון
+  coach.tabs.plan
+      EN: Plan
+      HE: תוכנית
+  coach.tabs.plans
+      EN: Plans
+      HE: תוכניות
+  coach.tabs.nutrition
+      EN: Nutrition
+      HE: תזונה
+  coach.tabs.tracking
+      EN: Tracking
+      HE: מעקב
+  coach.tabs.logs
+      EN: Logs
+      HE: תיעודים
+  coach.tabs.body
+      EN: Body
+      HE: גוף
+  coach.tabs.achievements
+      EN: Achievements
+      HE: הישגים
+  coach.traineesTitle
+      EN: Trainees
+      HE: מתאמנות
+  coach.searchPlaceholder
+      EN: Search name or email
+      HE: חיפוש לפי שם או אימייל
+  coach.searchLabel
+      EN: Search trainees
+      HE: חיפוש מתאמנות
+  coach.filterLabel
+      EN: Filter by status
+      HE: סינון לפי סטטוס
+  coach.loadTraineesError
+      EN: Couldn't load your trainees.
+      HE: לא הצלחנו לטעון את המתאמנות שלך.
+  coach.noTrainees
+      EN: No trainees yet.
+      HE: עדיין אין מתאמנות.
+  coach.noMatch
+      EN: No trainees match this filter.
+      HE: אין מתאמנות שמתאימות לסינון הזה.
+  coach.windowLeft
+      EN: {time} on the 48h window
+      HE: {time} מחלון 48 השעות
+  coach.lastActivity
+      EN: Last activity
+      HE: פעילות אחרונה
+  coach.lastActivityAt
+      EN: Last activity: {time}
+      HE: פעילות אחרונה: {time}
+  coach.loadTraineeError
+      EN: Couldn't load this trainee.
+      HE: לא הצלחנו לטעון את המתאמנת הזו.
+  coach.backToTrainees
+      EN: Back to trainees
+      HE: חזרה למתאמנות
+  coach.sectionsLabel
+      EN: Trainee sections
+      HE: חלקי המתאמנת
+  coach.onboardingNotStarted
+      EN: This trainee has not started onboarding yet.
+      HE: המתאמנת הזו עדיין לא התחילה את השאלון.
+  coach.startedByTrainee
+      EN: Started by trainee
+      HE: המתאמנת התחילה
+  coach.noWorkoutsInPlan
+      EN: No workouts in this plan yet.
+      HE: עדיין אין אימונים בתוכנית הזו.
+  coach.logStatus.in_progress
+      EN: In progress
+      HE: בתהליך
+  coach.logStatus.completed
+      EN: Completed
+      HE: הושלם
+  coach.logStatus.abandoned
+      EN: Abandoned
+      HE: בוטל
+  coach.rating
+      EN: Rating {rating}
+      HE: דירוג {rating}
+  coach.hasPumpPhoto
+      EN: Has a Daily Pump photo
+      HE: יש תמונת Daily Pump
+  coach.duration
+      EN: Duration
+      HE: משך
+  coach.totalVolume
+      EN: Total volume
+      HE: נפח כולל
+  coach.setsCompleted
+      EN: Sets completed
+      HE: סטים שבוצעו
+  coach.personalRecords
+      EN: Personal records
+      HE: שיאים אישיים
+  coach.pumpPhotoAlt
+      EN: Daily Pump photo — {workout}
+      HE: תמונת Daily Pump — {workout}
+  coach.openPumpPhoto
+      EN: Open the Daily Pump photo
+      HE: פתיחת תמונת ה־Daily Pump
+  coach.noPumpPhoto
+      EN: No Daily Pump photo.
+      HE: אין תמונת Daily Pump.
+  coach.noLogs
+      EN: No workout logs yet.
+      HE: עדיין אין תיעודי אימונים.
+  coach.logsLoadError
+      EN: Couldn't load the workout logs.
+      HE: לא הצלחנו לטעון את תיעודי האימונים.
+  coach.inbox.title
+      EN: Inbox
+      HE: הודעות
+  coach.inbox.markAllRead
+      EN: Mark all read
+      HE: סימון הכול כנקרא
+  coach.inbox.empty
+      EN: No notifications yet.
+      HE: עדיין אין התראות.
+  coach.inbox.unread
+      EN:  (unread)
+      HE:  (לא נקראה)
+  coach.inbox.loadMore
+      EN: Load more
+      HE: טעינת עוד
+  coach.inbox.loadError
+      EN: Couldn't load your inbox.
+      HE: לא הצלחנו לטעון את ההודעות שלך.
+  coach.inbox.loadMoreError
+      EN: Couldn't load more notifications.
+      HE: לא הצלחנו לטעון עוד התראות.
+  coach.inbox.notificationsTitle
+      EN: Notifications
+      HE: התראות
+  coach.inbox.bellUnread
+      EN: Notifications, {count} unread
+      HE: התראות, {count} שלא נקראו
+  coach.inbox.bellLoadError
+      EN: Couldn't load notifications.
+      HE: לא הצלחנו לטעון את ההתראות.
+  coach.inbox.markReadError
+      EN: Couldn't mark notifications as read.
+      HE: לא הצלחנו לסמן את ההתראות כנקראו.
+  coach.planStatus.published
+      EN: Published
+      HE: פורסמה
+  coach.planStatus.draft
+      EN: Draft
+      HE: טיוטה
+  coach.exerciseCount
+      EN: one: {count} exercise | other: {count} exercises
+      HE: one: תרגיל אחד | two: 2 תרגילים | other: {count} תרגילים
+  coach.issueWorkout
+      EN: Workout {n}
+      HE: אימון {n}
+  coach.issueExercise
+      EN: exercise {n}
+      HE: תרגיל {n}
+  coach.issueAt
+      EN: {where}: {message}
+      HE: {where}: {message}
+  coachNotifications.traineeOnboarded
+      EN: New trainee: {name}
+      HE: מתאמנת חדשה: {name}
+  coachNotifications.workoutCompleted
+      EN: {name} finished {workout}
+      HE: {name} סיימה את {workout}
+  onboardingSections.basicProfile
+      EN: Basic profile
+      HE: פרטים בסיסיים
+  onboardingSections.name
+      EN: Name
+      HE: שם
+  onboardingSections.birthDate
+      EN: Birth date
+      HE: תאריך לידה
+  onboardingSections.height
+      EN: Height
+      HE: גובה
+  onboardingSections.weight
+      EN: Weight
+      HE: משקל
+  onboardingSections.gender
+      EN: Gender
+      HE: מגדר
+  onboardingSections.preferredUnits
+      EN: Preferred units
+      HE: יחידות מועדפות
+  onboardingSections.goals
+      EN: Goals
+      HE: מטרות
+  onboardingSections.trainingFrequency
+      EN: Training frequency
+      HE: תדירות אימונים
+  onboardingSections.daysPerWeek
+      EN: Days per week
+      HE: ימים בשבוע
+  onboardingSections.flexibleSchedule
+      EN: Flexible schedule
+      HE: לו״ז גמיש
+  onboardingSections.activities
+      EN: Activities
+      HE: פעילויות
+  onboardingSections.preferredActivities
+      EN: Preferred activities
+      HE: פעילויות מועדפות
+  onboardingSections.exercisePreferences
+      EN: Exercise preferences
+      HE: העדפות תרגילים
+  onboardingSections.favoriteExercises
+      EN: Favorite exercises
+      HE: תרגילים אהובים
+  onboardingSections.wantsToImprove
+      EN: Wants to improve
+      HE: רוצה להשתפר ב־
+  onboardingSections.muscleFocus
+      EN: Muscle focus
+      HE: דגש על שרירים
+  onboardingSections.recovery
+      EN: Recovery
+      HE: התאוששות
+  onboardingSections.flags
+      EN: Flags
+      HE: סימונים
+  onboardingSections.notes
+      EN: Notes
+      HE: הערות
+  onboardingSections.equipment
+      EN: Equipment
+      HE: ציוד
+  onboardingSections.nutritionAndGoal
+      EN: Nutrition & goal
+      HE: תזונה ומטרה
+  onboardingSections.weightGoal
+      EN: Weight goal
+      HE: יעד משקל
+  onboardingSections.completed
+      EN: Completed {date}
+      HE: הושלם {date}
+  onboardingSections.inProgress
+      EN: In progress
+      HE: בתהליך
+  onboardingSections.inProgressLastStep
+      EN: In progress — last step saved: {step}
+      HE: בתהליך — שלב אחרון שנשמר: {step}
+  onboardingOptions.steps.welcome
+      EN: Welcome
+      HE: פתיחה
+  onboardingOptions.steps.basic_profile
+      EN: Basic profile
+      HE: פרטים בסיסיים
+  onboardingOptions.steps.goals
+      EN: Goals
+      HE: מטרות
+  onboardingOptions.steps.frequency
+      EN: Frequency
+      HE: תדירות
+  onboardingOptions.steps.activities
+      EN: Activities
+      HE: פעילויות
+  onboardingOptions.steps.exercise_preferences
+      EN: Exercise preferences
+      HE: העדפות תרגילים
+  onboardingOptions.steps.recovery
+      EN: Recovery
+      HE: התאוששות
+  onboardingOptions.steps.equipment
+      EN: Equipment
+      HE: ציוד
+  onboardingOptions.steps.nutrition_preferences
+      EN: Nutrition preferences
+      HE: תזונה ומטרה
+  onboardingOptions.steps.review
+      EN: Review
+      HE: סיכום
+  onboardingOptions.gender.male
+      EN: Male
+      HE: גבר
+  onboardingOptions.gender.female
+      EN: Female
+      HE: אישה
+  onboardingOptions.gender.other
+      EN: Other
+      HE: אחר
+  onboardingOptions.goals.build_muscle
+      EN: Build muscle
+      HE: בניית שריר
+  onboardingOptions.goals.increase_strength
+      EN: Increase strength
+      HE: הגברת כוח
+  onboardingOptions.goals.lose_weight
+      EN: Lose weight
+      HE: ירידה במשקל
+  onboardingOptions.goals.improve_endurance
+      EN: Improve endurance
+      HE: שיפור סיבולת
+  onboardingOptions.goals.improve_health
+      EN: Improve health
+      HE: שיפור הבריאות
+  onboardingOptions.goals.maintain_active_lifestyle
+      EN: Maintain an active lifestyle
+      HE: שמירה על אורח חיים פעיל
+  onboardingOptions.goals.move_better
+      EN: Move better
+      HE: לנוע טוב יותר
+  onboardingOptions.equipment.full_gym
+      EN: Full gym
+      HE: חדר כושר מלא
+  onboardingOptions.equipment.home_equipment
+      EN: Home equipment
+      HE: ציוד ביתי
+  onboardingOptions.equipment.dumbbells
+      EN: Dumbbells
+      HE: משקולות יד
+  onboardingOptions.equipment.barbell_plates
+      EN: Barbell and plates
+      HE: מוט ומשקולות
+  onboardingOptions.equipment.resistance_bands
+      EN: Resistance bands
+      HE: גומיות התנגדות
+  onboardingOptions.equipment.bench
+      EN: Bench
+      HE: ספסל
+  onboardingOptions.equipment.cardio_machines
+      EN: Cardio machines
+      HE: מכשירי אירובי
+  onboardingOptions.equipment.bodyweight_only
+      EN: Bodyweight only
+      HE: משקל גוף בלבד
+  onboardingOptions.equipment.no_equipment
+      EN: No equipment
+      HE: בלי ציוד
+  onboardingOptions.muscleFocus.chest
+      EN: Chest
+      HE: חזה
+  onboardingOptions.muscleFocus.back
+      EN: Back
+      HE: גב
+  onboardingOptions.muscleFocus.shoulders
+      EN: Shoulders
+      HE: כתפיים
+  onboardingOptions.muscleFocus.arms
+      EN: Arms
+      HE: ידיים
+  onboardingOptions.muscleFocus.core
+      EN: Core
+      HE: ליבה
+  onboardingOptions.muscleFocus.glutes
+      EN: Glutes
+      HE: ישבן
+  onboardingOptions.muscleFocus.legs
+      EN: Legs
+      HE: רגליים
+  onboardingOptions.muscleFocus.full_body
+      EN: Full body
+      HE: כל הגוף
+  onboardingOptions.recoveryFlags.returning_after_break
+      EN: I'm returning after time away
+      HE: אני חוזרת אחרי הפסקה
+  onboardingOptions.recoveryFlags.prefers_low_impact
+      EN: I prefer low-impact training
+      HE: אני מעדיפה אימונים בעצימות נמוכה
+  onboardingOptions.recoveryFlags.has_injury_or_limitation
+      EN: I have an injury or limitation
+      HE: יש לי פציעה או מגבלה
+  onboardingOptions.recoveryFlags.has_mobility_restrictions
+      EN: I have mobility restrictions
+      HE: יש לי מגבלות בטווחי תנועה
+  onboardingOptions.recoveryFlags.nothing_to_add
+      EN: Nothing to add
+      HE: אין מה להוסיף
+  onboardingOptions.activityCategories.strength_training
+      EN: Strength & training
+      HE: כוח ואימונים
+  onboardingOptions.activityCategories.cardio_endurance
+      EN: Cardio & endurance
+      HE: אירובי וסיבולת
+  onboardingOptions.activityCategories.mind_mobility_recovery
+      EN: Mind, mobility & recovery
+      HE: גוף־נפש, מוביליטי והתאוששות
+  onboardingOptions.activityCategories.combat_sports
+      EN: Combat sports
+      HE: אומנויות לחימה
+  onboardingOptions.activityCategories.outdoor_board_sports
+      EN: Outdoor & board sports
+      HE: ספורט אתגרי וגלשנים
+  onboardingOptions.activityCategories.team_racquet_sports
+      EN: Team & racquet sports
+      HE: ספורט קבוצתי ומחבטים
+  onboardingOptions.activityCategories.other
+      EN: Other
+      HE: אחר
+  onboardingOptions.activities.gym_strength_training
+      EN: Gym / Strength Training
+      HE: חדר כושר / אימוני כוח
+  onboardingOptions.activities.calisthenics
+      EN: Calisthenics
+      HE: קליסטניקס
+  onboardingOptions.activities.functional_training
+      EN: Functional Training
+      HE: אימון פונקציונלי
+  onboardingOptions.activities.crossfit
+      EN: CrossFit
+      HE: קרוספיט
+  onboardingOptions.activities.running
+      EN: Running
+      HE: ריצה
+  onboardingOptions.activities.cycling
+      EN: Cycling
+      HE: רכיבה על אופניים
+  onboardingOptions.activities.swimming
+      EN: Swimming
+      HE: שחייה
+  onboardingOptions.activities.rowing
+      EN: Rowing
+      HE: חתירה
+  onboardingOptions.activities.hiking
+      EN: Hiking
+      HE: הליכת שטח
+  onboardingOptions.activities.jump_rope
+      EN: Jump Rope
+      HE: קפיצה בחבל
+  onboardingOptions.activities.yoga
+      EN: Yoga
+      HE: יוגה
+  onboardingOptions.activities.pilates
+      EN: Pilates
+      HE: פילאטיס
+  onboardingOptions.activities.mobility
+      EN: Mobility
+      HE: מוביליטי
+  onboardingOptions.activities.dance
+      EN: Dance
+      HE: ריקוד
+  onboardingOptions.activities.boxing
+      EN: Boxing
+      HE: אגרוף
+  onboardingOptions.activities.martial_arts
+      EN: Martial Arts
+      HE: אומנויות לחימה
+  onboardingOptions.activities.brazilian_jiu_jitsu
+      EN: Brazilian Jiu-Jitsu
+      HE: ג'יו־ג'יטסו ברזילאי
+  onboardingOptions.activities.muay_thai
+      EN: Muay Thai
+      HE: מואי תאי
+  onboardingOptions.activities.surfing
+      EN: Surfing
+      HE: גלישה
+  onboardingOptions.activities.skateboarding
+      EN: Skateboarding
+      HE: סקייטבורד
+  onboardingOptions.activities.climbing
+      EN: Climbing
+      HE: טיפוס
+  onboardingOptions.activities.skiing
+      EN: Skiing
+      HE: סקי
+  onboardingOptions.activities.snowboarding
+      EN: Snowboarding
+      HE: סנובורד
+  onboardingOptions.activities.football_soccer
+      EN: Football / Soccer
+      HE: כדורגל
+  onboardingOptions.activities.basketball
+      EN: Basketball
+      HE: כדורסל
+  onboardingOptions.activities.tennis
+      EN: Tennis
+      HE: טניס
+  onboardingOptions.activities.volleyball
+      EN: Volleyball
+      HE: כדורעף
+  onboardingOptions.activities.table_tennis
+      EN: Table Tennis
+      HE: טניס שולחן
+  onboardingOptions.activities.badminton
+      EN: Badminton
+      HE: בדמינטון
+  onboardingOptions.activities.rugby
+      EN: Rugby
+      HE: רוגבי
+  onboardingOptions.activities.other_activity
+      EN: Other activity
+      HE: פעילות אחרת
+  achievements.first_workout.name
+      EN: First workout
+      HE: אימון ראשון
+  achievements.first_workout.description
+      EN: Complete your first workout.
+      HE: השלימי את האימון הראשון שלך.
+  achievements.workoutsName
+      EN: {count} workouts
+      HE: {count} אימונים
+  achievements.workoutsDescription
+      EN: Complete {count} workouts.
+      HE: השלימי {count} אימונים.
+  achievements.prsName
+      EN: {count} PRs
+      HE: {count} שיאים אישיים
+  achievements.prsDescription
+      EN: Set {count} personal records.
+      HE: קבעי {count} שיאים אישיים.
+  achievements.volumeName
+      EN: {amount} kg lifted
+      HE: {amount} ק״ג הורמו
+  achievements.volumeDescription
+      EN: Lift {amount} kg in total, over all your workouts.
+      HE: הרימי {amount} ק״ג בסך הכול, בכל האימונים שלך.
+  achievements.streakName
+      EN: {count}-week streak
+      HE: רצף של {count} שבועות
+  achievements.streakDescription
+      EN: Complete your weekly plan {count} weeks in a row.
+      HE: השלימי את התוכנית השבועית {count} שבועות ברצף.
+  achievements.first_weight_pr.name
+      EN: Heavier than ever
+      HE: כבד מתמיד
+  achievements.first_weight_pr.description
+      EN: Lift your heaviest weight on an exercise.
+      HE: הרימי את המשקל הכבד ביותר שלך בתרגיל.
+  achievements.first_reps_pr.name
+      EN: Rep record
+      HE: שיא חזרות
+  achievements.first_reps_pr.description
+      EN: Do more reps than ever at a weight you have lifted before.
+      HE: בצעי יותר חזרות מאי־פעם במשקל שכבר הרמת.
+  achievements.perfect_week.name
+      EN: Perfect week
+      HE: שבוע מושלם
+  achievements.perfect_week.description
+      EN: Complete every workout of your weekly plan.
+      HE: השלימי כל אימון בתוכנית השבועית שלך.
+  achievements.comeback.name
+      EN: Comeback
+      HE: חזרה
+  achievements.comeback.description
+      EN: Train again after 14 days or more away.
+      HE: התאמני שוב אחרי 14 ימים או יותר של הפסקה.
+  achievements.first_pump_photo.name
+      EN: First Daily Pump
+      HE: Daily Pump ראשון
+  achievements.first_pump_photo.description
+      EN: Add your first Daily Pump photo.
+      HE: הוסיפי את תמונת ה־Daily Pump הראשונה שלך.
+  achievements.first_measurement.name
+      EN: First measurements
+      HE: מדידות ראשונות
+  achievements.first_measurement.description
+      EN: Log your body measurements for the first time.
+      HE: תעדי את מידות הגוף שלך בפעם הראשונה.
+  achievements.first_progress_photo.name
+      EN: First progress photo
+      HE: תמונת התקדמות ראשונה
+  achievements.first_progress_photo.description
+      EN: Add your first progress photo.
+      HE: הוסיפי את תמונת ההתקדמות הראשונה שלך.
+  achievements.weigh_ins_10.name
+      EN: 10 weigh-ins
+      HE: 10 שקילות
+  achievements.weigh_ins_10.description
+      EN: Log your weight on 10 days.
+      HE: תעדי את המשקל שלך ב־10 ימים.
+  achievements.streakWeeks
+      EN: one: {count} week | other: {count} weeks
+      HE: one: שבוע אחד | two: שבועיים | other: {count} שבועות
+  achievements.weekProgress
+      EN: {progress} workouts this week
+      HE: {progress} אימונים השבוע
+  achievements.unlockedCount
+      EN: {unlocked} of {total} unlocked
+      HE: {unlocked} מתוך {total} נפתחו
+  body.measurements.chest
+      EN: Chest
+      HE: חזה
+  body.measurements.waist
+      EN: Waist
+      HE: מותניים
+  body.measurements.hips
+      EN: Hips
+      HE: אגן
+  body.measurements.arms
+      EN: Arms
+      HE: זרועות
+  body.measurements.thighs
+      EN: Thighs
+      HE: ירכיים
+  body.poses.front
+      EN: Front
+      HE: מלפנים
+  body.poses.side
+      EN: Side
+      HE: מהצד
+  body.poses.back
+      EN: Back
+      HE: מאחור
+  body.chartRanges.1M
+      EN: 1M
+      HE: חודש
+  body.chartRanges.3M
+      EN: 3M
+      HE: 3 ח׳
+  body.chartRanges.6M
+      EN: 6M
+      HE: 6 ח׳
+  body.chartRanges.1Y
+      EN: 1Y
+      HE: שנה
+  body.chartRanges.all
+      EN: All
+      HE: הכול
+  nutrition.groups.protein
+      EN: Protein
+      HE: חלבון
+  nutrition.groups.carb
+      EN: Carb
+      HE: פחמימה
+  nutrition.groups.fat
+      EN: Fat
+      HE: שומן
+  nutrition.groups.snack
+      EN: Snack
+      HE: נשנוש
+  nutrition.groups.vegetable
+      EN: Vegetables
+      HE: ירקות
+  nutrition.portionWords.protein
+      EN: protein
+      HE: חלבון
+  nutrition.portionWords.carb
+      EN: carb
+      HE: פחמימה
+  nutrition.portionWords.fat
+      EN: fat
+      HE: שומן
+  nutrition.portionWords.snack
+      EN: snack
+      HE: נשנוש
+  nutrition.portion
+      EN: {count} {group}
+      HE: {count} {group}
+  nutrition.portionAmount
+      EN: {count} × {portion}
+      HE: {count} × {portion}
+  nutrition.vegetablesFree
+      EN: vegetables free
+      HE: ירקות חופשי
+  nutrition.categories.dairy
+      EN: Dairy
+      HE: מוצרי חלב
+  nutrition.categories.poultry
+      EN: Poultry
+      HE: עוף
+  nutrition.categories.meat
+      EN: Meat
+      HE: בשר
+  nutrition.categories.fish_seafood
+      EN: Fish & seafood
+      HE: דגים ופירות ים
+  nutrition.categories.eggs
+      EN: Eggs
+      HE: ביצים
+  nutrition.categories.plant_based
+      EN: Plant-based
+      HE: מן הצומח
+  nutrition.categories.supplements
+      EN: Supplements
+      HE: תוספים
+  nutrition.categories.grains_cereals
+      EN: Grains & cereals
+      HE: דגנים
+  nutrition.categories.bread_crackers
+      EN: Bread & crackers
+      HE: לחם ופריכיות
+  nutrition.categories.fruits
+      EN: Fruits
+      HE: פירות
+  nutrition.categories.legumes
+      EN: Legumes
+      HE: קטניות
+  nutrition.categories.starchy_vegetables
+      EN: Starchy vegetables
+      HE: ירקות עמילניים
+  nutrition.categories.oils
+      EN: Oils
+      HE: שמנים
+  nutrition.categories.nuts_seeds
+      EN: Nuts & seeds
+      HE: אגוזים וגרעינים
+  nutrition.categories.spreads
+      EN: Spreads
+      HE: ממרחים
+  nutrition.categories.other
+      EN: Other
+      HE: אחר
+  nutrition.categories.sweet_cereals
+      EN: Sweet cereals
+      HE: דגני בוקר מתוקים
+  nutrition.categories.chocolate
+      EN: Chocolate
+      HE: שוקולד
+  nutrition.categories.cookies_pastries
+      EN: Cookies & pastries
+      HE: עוגיות ומאפים
+  nutrition.categories.ice_cream
+      EN: Ice cream & popsicles
+      HE: גלידות וארטיקים
+  nutrition.categories.candy
+      EN: Candy
+      HE: ממתקים
+  nutrition.categories.salty
+      EN: Salty
+      HE: מלוחים
+  nutrition.categories.fast_food
+      EN: Fast food & frozen
+      HE: מזון מהיר וקפואים
+  nutrition.noCategory
+      EN: No category
+      HE: ללא קטגוריה
+  nutrition.dietTypes.none
+      EN: No restrictions
+      HE: בלי הגבלות
+  nutrition.dietTypes.vegetarian
+      EN: Vegetarian
+      HE: צמחונית
+  nutrition.dietTypes.vegan
+      EN: Vegan
+      HE: טבעונית
+  nutrition.dietTypes.pescatarian
+      EN: Pescatarian
+      HE: פסקטריאנית
+  nutrition.dietStyles.keto_low_carb
+      EN: Keto / low-carb
+      HE: קטו / דל פחמימות
+  nutrition.dietStyles.intermittent_fasting
+      EN: Intermittent fasting
+      HE: צום לסירוגין
+  nutrition.dietStyles.other
+      EN: Other
+      HE: אחר
+  nutrition.religious.kosher
+      EN: Kosher
+      HE: כשר
+  nutrition.religious.halal
+      EN: Halal
+      HE: חלאל
+  nutrition.intolerances.lactose_free
+      EN: Lactose-free
+      HE: ללא לקטוז
+  nutrition.intolerances.gluten_free
+      EN: Gluten-free
+      HE: ללא גלוטן
+  nutrition.intolerances.celiac
+      EN: Celiac
+      HE: צליאק
+  nutrition.intolerances.low_fodmap
+      EN: Low-FODMAP
+      HE: דל FODMAP
+  nutrition.intolerances.other
+      EN: Other
+      HE: אחר
+  nutrition.allergies.dairy
+      EN: Dairy
+      HE: חלב
+  nutrition.allergies.eggs
+      EN: Eggs
+      HE: ביצים
+  nutrition.allergies.peanuts
+      EN: Peanuts
+      HE: בוטנים
+  nutrition.allergies.tree_nuts
+      EN: Tree nuts
+      HE: אגוזים
+  nutrition.allergies.sesame
+      EN: Sesame
+      HE: שומשום
+  nutrition.allergies.soy
+      EN: Soy
+      HE: סויה
+  nutrition.allergies.gluten
+      EN: Gluten / wheat
+      HE: גלוטן / חיטה
+  nutrition.allergies.fish
+      EN: Fish
+      HE: דגים
+  nutrition.allergies.shellfish
+      EN: Shellfish
+      HE: פירות ים
+  nutrition.allergies.other
+      EN: Other
+      HE: אחר
+  nutrition.dietTags.meat
+      EN: Meat
+      HE: בשר
+  nutrition.dietTags.poultry
+      EN: Poultry
+      HE: עוף
+  nutrition.dietTags.fish
+      EN: Fish
+      HE: דגים
+  nutrition.dietTags.dairy
+      EN: Dairy
+      HE: חלב
+  nutrition.dietTags.eggs
+      EN: Eggs
+      HE: ביצים
+  nutrition.dietTags.gluten
+      EN: Gluten
+      HE: גלוטן
+  nutrition.dietTags.peanuts
+      EN: Peanuts
+      HE: בוטנים
+  nutrition.dietTags.tree_nuts
+      EN: Tree nuts
+      HE: אגוזים
+  nutrition.dietTags.sesame
+      EN: Sesame
+      HE: שומשום
+  nutrition.dietTags.soy
+      EN: Soy
+      HE: סויה
+  nutrition.dietTags.shellfish
+      EN: Shellfish
+      HE: פירות ים
+  nutrition.dietTags.pork
+      EN: Pork
+      HE: חזיר
+  nutrition.dietTags.lactose
+      EN: Lactose
+      HE: לקטוז
+  nutrition.dietTags.alcohol
+      EN: Alcohol
+      HE: אלכוהול
+  nutrition.dietTags.high_fodmap
+      EN: High-FODMAP
+      HE: עתיר FODMAP
+  nutrition.goals.fat_loss
+      EN: Fat loss
+      HE: ירידה בשומן
+  nutrition.goals.fat_loss_aggressive
+      EN: Fat loss (aggressive)
+      HE: ירידה בשומן (אגרסיבית)
+  nutrition.goals.recomp
+      EN: Toning / recomp
+      HE: חיטוב / ריקומפ
+  nutrition.goals.muscle_gain
+      EN: Muscle gain
+      HE: עלייה במסת שריר
+  nutrition.goals.maintenance
+      EN: Maintenance
+      HE: שמירה
+  nutrition.itemWithDetails
+      EN: {label} ({details})
+      HE: {label} ({details})
+  nutrition.meals
+      EN: one: {count} meal | other: {count} meals
+      HE: one: ארוחה אחת | two: שתי ארוחות | other: {count} ארוחות
+  nutrition.goalWeeks
+      EN: one: {count} week | other: {count} weeks
+      HE: one: שבוע אחד | two: שבועיים | other: {count} שבועות
+  nutrition.goalByDate
+      EN: by {date}
+      HE: עד {date}
+  nutrition.preferences.title
+      EN: Nutrition preferences
+      HE: העדפות תזונה
+  nutrition.preferences.diet
+      EN: Diet
+      HE: תזונה
+  nutrition.preferences.dietStyle
+      EN: Diet style
+      HE: סגנון תזונה
+  nutrition.preferences.religious
+      EN: Religious
+      HE: דת
+  nutrition.preferences.intolerances
+      EN: Intolerances
+      HE: רגישויות
+  nutrition.preferences.allergies
+      EN: Allergies
+      HE: אלרגיות
+  nutrition.preferences.loves
+      EN: Loves
+      HE: אוהבת
+  nutrition.preferences.dislikes
+      EN: Dislikes
+      HE: לא אוהבת
+  nutrition.preferences.mealsPerDay
+      EN: Meals per day
+      HE: ארוחות ביום
+  nutrition.marked
+      EN: {eaten} of {planned}
+      HE: {eaten} מתוך {planned}
+
+--- apps/mobile/src/copy (9) ---
+  tabs.home
+      EN: Home
+      HE: בית
+  tabs.workouts
+      EN: Workouts
+      HE: אימונים
+  tabs.nutrition
+      EN: Nutrition
+      HE: תזונה
+  tabs.profile
+      EN: Profile
+      HE: פרופיל
+  tabs.inbox
+      EN: Inbox
+      HE: הודעות
+  tabs.trainees
+      EN: Trainees
+      HE: מתאמנות
+  tabs.navigation
+      EN: Main
+      HE: ראשי
+  comingSoon
+      EN: Coming soon.
+      HE: בקרוב.
+  unread
+      EN: one: {count} unread | other: {count} unread
+      HE: one: התראה אחת שלא נקראה | two: 2 התראות שלא נקראו | other: {count} התראות שלא נקראו
+
+--- apps/mobile/src/features/achievements/copy (24) ---
+  streak
+      EN: Streak
+      HE: רצף
+  streakValue
+      EN: one: {count} week | other: {count} weeks
+      HE: one: שבוע אחד | two: שבועיים | other: {count} שבועות
+  streakUnit
+      EN: one: week | other: weeks
+      HE: one: שבוע | two: שבועות | other: שבועות
+  bestStreak
+      EN: Best: {label}
+      HE: שיא: {label}
+  noPlanThisWeek
+      EN: No plan this week
+      HE: אין תוכנית השבוע
+  recent
+      EN: Recent achievements
+      HE: הישגים אחרונים
+  none
+      EN: No achievements yet.
+      HE: עדיין אין הישגים.
+  seeAll
+      EN: See all
+      HE: לכל ההישגים
+  allTitle
+      EN: Achievements
+      HE: הישגים
+  unlockedTitle
+      EN: Unlocked
+      HE: נפתחו
+  lockedTitle
+      EN: Still to unlock
+      HE: עוד לפתוח
+  unlockedOn
+      EN: Unlocked {date}
+      HE: נפתח ב־{date}
+  times
+      EN: ×{count}
+      HE: ×{count}
+  loading
+      EN: Loading…
+      HE: טוען…
+  loadError
+      EN: Couldn't load your achievements.
+      HE: לא הצלחנו לטעון את ההישגים שלך.
+  unlockedThisWorkout
+      EN: Achievements unlocked
+      HE: הישגים שנפתחו
+  celebrationTitle
+      EN: one: Achievement unlocked! | other: {count} achievements unlocked!
+      HE: one: הישג חדש נפתח! | two: שני הישגים חדשים נפתחו! | other: {count} הישגים חדשים נפתחו!
+  celebrationDone
+      EN: Nice!
+      HE: יש!
+  statsTitle
+      EN: Your progress
+      HE: ההתקדמות שלך
+  statWorkouts
+      EN: Workouts
+      HE: אימונים
+  statVolume
+      EN: Total volume
+      HE: נפח כולל
+  statPrs
+      EN: PRs
+      HE: שיאים אישיים
+  statAchievements
+      EN: Achievements
+      HE: הישגים
+  back
+      EN: Back
+      HE: חזרה
+
+--- apps/mobile/src/features/auth/copy (37) ---
+  loginTitle
+      EN: Log In
+      HE: התחברות
+  registerTitle
+      EN: Create Account
+      HE: יצירת חשבון
+  forgotTitle
+      EN: Forgot Password
+      HE: שכחתי סיסמה
+  resetTitle
+      EN: Reset Password
+      HE: איפוס סיסמה
+  name
+      EN: Name
+      HE: שם
+  namePlaceholder
+      EN: Your full name
+      HE: השם המלא שלך
+  email
+      EN: Email
+      HE: אימייל
+  emailPlaceholder
+      EN: you@example.com
+      HE: you@example.com
+  password
+      EN: Password
+      HE: סיסמה
+  passwordPlaceholder
+      EN: Enter your password
+      HE: הזיני את הסיסמה שלך
+  newPasswordPlaceholder
+      EN: At least 8 characters
+      HE: לפחות 8 תווים
+  forgotLink
+      EN: Forgot password?
+      HE: שכחת סיסמה?
+  loginButton
+      EN: Log In
+      HE: התחברות
+  registerButton
+      EN: Create Account
+      HE: יצירת חשבון
+  noAccount
+      EN: Don't have an account?
+      HE: אין לך חשבון?
+  registerLink
+      EN: Register
+      HE: הרשמה
+  haveAccount
+      EN: Already have an account?
+      HE: כבר יש לך חשבון?
+  loginLink
+      EN: Log In
+      HE: התחברות
+  forgotIntro
+      EN: Enter the email on your account and we'll send you a link to reset your password.
+      HE: הזיני את האימייל של החשבון ונשלח לך קישור לאיפוס הסיסמה.
+  sendResetLink
+      EN: Send Reset Link
+      HE: שליחת קישור לאיפוס
+  backToLogin
+      EN: Back to Log In
+      HE: חזרה להתחברות
+  resetLinkInvalid
+      EN: This reset link is missing or invalid. Request a new one to continue.
+      HE: הקישור לאיפוס חסר או לא תקין. בקשי קישור חדש כדי להמשיך.
+  requestNewLink
+      EN: Request a new link
+      HE: בקשת קישור חדש
+  resetDone
+      EN: Your password has been reset.
+      HE: הסיסמה שלך אופסה.
+  newPassword
+      EN: New Password
+      HE: סיסמה חדשה
+  newPasswordInputPlaceholder
+      EN: Enter a new password
+      HE: הזיני סיסמה חדשה
+  confirmPassword
+      EN: Confirm Password
+      HE: אישור סיסמה
+  confirmPasswordPlaceholder
+      EN: Re-enter your new password
+      HE: הזיני שוב את הסיסמה החדשה
+  resetButton
+      EN: Reset Password
+      HE: איפוס סיסמה
+  loginFailed
+      EN: Login failed. Please try again.
+      HE: ההתחברות נכשלה. נסי שוב.
+  registerFailed
+      EN: Registration failed. Please try again.
+      HE: ההרשמה נכשלה. נסי שוב.
+  somethingWrong
+      EN: Something went wrong. Please try again.
+      HE: משהו השתבש. נסי שוב.
+  errors.nameRequired
+      EN: Name is required.
+      HE: יש להזין שם.
+  errors.emailInvalid
+      EN: Enter a valid email address.
+      HE: הזיני כתובת אימייל תקינה.
+  errors.passwordTooShort
+      EN: Password must be at least {min} characters.
+      HE: הסיסמה חייבת להכיל לפחות {min} תווים.
+  errors.passwordRequired
+      EN: Password is required.
+      HE: יש להזין סיסמה.
+  errors.passwordsDiffer
+      EN: Passwords do not match.
+      HE: הסיסמאות לא תואמות.
+
+--- apps/mobile/src/features/bodyTracking/copy (66) ---
+  loading
+      EN: Loading…
+      HE: טוען…
+  loadError
+      EN: Couldn't load your body tracking.
+      HE: לא הצלחנו לטעון את מעקב הגוף שלך.
+  coachLoadError
+      EN: Couldn't load the body tracking.
+      HE: לא הצלחנו לטעון את מעקב הגוף.
+  back
+      EN: Back
+      HE: חזרה
+  close
+      EN: Close
+      HE: סגירה
+  cancel
+      EN: Cancel
+      HE: ביטול
+  save
+      EN: Save
+      HE: שמירה
+  logShort
+      EN: Log
+      HE: תיעוד
+  addShort
+      EN: Add
+      HE: הוספה
+  delete
+      EN: Delete
+      HE: מחיקה
+  edit
+      EN: Edit
+      HE: עריכה
+  date
+      EN: Date
+      HE: תאריך
+  saveError
+      EN: Couldn't save. Check your connection and try again.
+      HE: לא הצלחנו לשמור. בדקי את החיבור ונסי שוב.
+  deleteError
+      EN: Couldn't delete. Try again.
+      HE: לא הצלחנו למחוק. נסי שוב.
+  rangeLabel
+      EN: Time range
+      HE: טווח זמן
+  ranges.1M
+      EN: 1M
+      HE: חודש
+  ranges.3M
+      EN: 3M
+      HE: 3 ח׳
+  ranges.6M
+      EN: 6M
+      HE: 6 ח׳
+  ranges.1Y
+      EN: 1Y
+      HE: שנה
+  ranges.all
+      EN: All
+      HE: הכול
+  rangeChange
+      EN: over this range
+      HE: בטווח הזה
+  chartEmpty
+      EN: Log at least two entries to see the trend.
+      HE: תעדי לפחות שתי מדידות כדי לראות את המגמה.
+  chartLabel
+      EN: {what} over time
+      HE: {what} לאורך זמן
+  weightTitle
+      EN: Weight
+      HE: משקל
+  logWeight
+      EN: Log weight
+      HE: תיעוד משקל
+  editWeight
+      EN: Edit weight
+      HE: עריכת משקל
+  weightField
+      EN: Weight ({unit})
+      HE: משקל ({unit})
+  weightInvalid
+      EN: Enter your weight.
+      HE: הזיני את המשקל שלך.
+  noWeight
+      EN: No weight logged yet.
+      HE: עדיין לא תועד משקל.
+  deleteWeightTitle
+      EN: Delete this weight?
+      HE: למחוק את המשקל הזה?
+  measurementsTitle
+      EN: Measurements
+      HE: מידות
+  logMeasurements
+      EN: Log measurements
+      HE: תיעוד מידות
+  editMeasurements
+      EN: Edit measurements
+      HE: עריכת מידות
+  measurementField
+      EN: {label} ({unit})
+      HE: {label} ({unit})
+  lastValue
+      EN: Last: {value}
+      HE: אחרון: {value}
+  measurementsInvalid
+      EN: Enter at least one measurement.
+      HE: הזיני לפחות מידה אחת.
+  noMeasurements
+      EN: No measurements logged yet.
+      HE: עדיין לא תועדו מידות.
+  deleteMeasurementsTitle
+      EN: Delete these measurements?
+      HE: למחוק את המידות האלה?
+  pickMeasurement
+      EN: Measurement
+      HE: מידה
+  photosTitle
+      EN: Progress photos
+      HE: תמונות התקדמות
+  addPhotos
+      EN: Add photos
+      HE: הוספת תמונות
+  editPhotos
+      EN: Edit photos
+      HE: עריכת תמונות
+  compare
+      EN: Compare
+      HE: השוואה
+  noPhotos
+      EN: No progress photos yet.
+      HE: עדיין אין תמונות התקדמות.
+  photoAlt
+      EN: {pose} progress photo, {date}
+      HE: תמונת התקדמות {pose}, {date}
+  openPhoto
+      EN: Open the {pose} photo
+      HE: פתיחת התמונה {pose}
+  addPose
+      EN: Add a {pose} photo
+      HE: הוספת תמונה {pose}
+  takePhoto
+      EN: Take photo
+      HE: צילום
+  chooseFromGallery
+      EN: Gallery
+      HE: גלריה
+  remove
+      EN: Remove
+      HE: הסרה
+  removeTitle
+      EN: Remove this photo?
+      HE: להסיר את התמונה הזו?
+  preparing
+      EN: Preparing…
+      HE: מכין…
+  uploading
+      EN: Uploading… {percent}%
+      HE: מעלה… {percent}%
+  retry
+      EN: Retry
+      HE: ניסיון נוסף
+  tooLarge
+      EN: This photo is too large. Try another one.
+      HE: התמונה גדולה מדי. נסי תמונה אחרת.
+  readError
+      EN: Couldn't read this photo. Try another one.
+      HE: לא הצלחנו לקרוא את התמונה. נסי תמונה אחרת.
+  uploadError
+      EN: Couldn't upload the photo. Try again.
+      HE: לא הצלחנו להעלות את התמונה. נסי שוב.
+  offline
+      EN: You're offline. Try again when you're connected.
+      HE: אין חיבור. נסי שוב כשתהיי מחוברת.
+  removeError
+      EN: Couldn't remove the photo. Try again.
+      HE: לא הצלחנו להסיר את התמונה. נסי שוב.
+  privacy
+      EN: Visible only to you and your coach
+      HE: גלוי רק לך ולמאמנת שלך
+  photosDayHint
+      EN: One photo per pose for this date. A new photo replaces the old one.
+      HE: תמונה אחת לכל תנוחה בתאריך הזה. תמונה חדשה מחליפה את הקודמת.
+  compareTitle
+      EN: Compare
+      HE: השוואה
+  comparePose
+      EN: Pose
+      HE: תנוחה
+  before
+      EN: Before
+      HE: לפני
+  after
+      EN: After
+      HE: אחרי
+  compareEmpty
+      EN: Add photos of this pose on two different days to compare them.
+      HE: הוסיפי תמונות של התנוחה הזו בשני ימים שונים כדי להשוות ביניהן.
+
+--- apps/mobile/src/features/coach/copy (15) ---
+  plansLoadError
+      EN: Couldn't load the plans.
+      HE: לא הצלחנו לטעון את התוכניות.
+  publishError
+      EN: Couldn't publish the plan. Please try again.
+      HE: לא הצלחנו לפרסם את התוכנית. נסי שוב.
+  copySavedNotPublished
+      EN: The copy was saved as a draft, but it was not published. {message}
+      HE: העותק נשמר כטיוטה, אבל לא פורסם. {message}
+  publishPlan
+      EN: Publish plan
+      HE: פרסום התוכנית
+  noPlanThisWeek
+      EN: No plan for this week yet.
+      HE: עדיין אין תוכנית לשבוע הזה.
+  duplicateLastWeek
+      EN: Duplicate last week and publish
+      HE: שכפול השבוע שעבר ופרסום
+  fixOnDashboard
+      EN: Fix it on the dashboard, then publish.
+      HE: תקני את זה בדשבורד, ואז פרסמי.
+  plansOnDashboard
+      EN: Plans are built and edited on the dashboard, on a computer.
+      HE: בונים ועורכים תוכניות בדשבורד, במחשב.
+  confirmDuplicateTitle
+      EN: Duplicate and publish?
+      HE: לשכפל ולפרסם?
+  confirmPublishTitle
+      EN: Publish this plan?
+      HE: לפרסם את התוכנית הזו?
+  confirmDuplicateMessage
+      EN: {name}'s most recent plan will be copied to {week} and published. The trainee will be notified.
+      HE: התוכנית האחרונה של {name} תועתק ל־{week} ותפורסם. המתאמנת תקבל התראה.
+  confirmPublishMessage
+      EN: {name} will see the plan for {week}. The trainee will be notified.
+      HE: {name} תראה את התוכנית של {week}. המתאמנת תקבל התראה.
+  duplicateConfirm
+      EN: Duplicate and publish
+      HE: שכפול ופרסום
+  publishConfirm
+      EN: Publish
+      HE: פרסום
+  nutritionLoadError
+      EN: Couldn't load the nutrition plan.
+      HE: לא הצלחנו לטעון את תוכנית התזונה.
+
+--- apps/mobile/src/features/home/copy (12) ---
+  greeting
+      EN: Hi, {firstName}
+      HE: היי, {firstName}
+  weekOf
+      EN: Week of
+      HE: השבוע של
+  nextWorkout
+      EN: Next workout
+      HE: האימון הבא
+  startNextWorkout
+      EN: Start next workout
+      HE: התחלת האימון הבא
+  resumeWorkout
+      EN: Resume workout · {title}
+      HE: המשך אימון · {title}
+  thisWeek
+      EN: This week
+      HE: השבוע
+  noPlanThisWeek
+      EN: No plan for this week yet.
+      HE: עדיין אין תוכנית לשבוע הזה.
+  noWorkoutsInPlan
+      EN: No workouts in this plan.
+      HE: אין אימונים בתוכנית הזו.
+  allDone
+      EN: All of this week's workouts are done.
+      HE: כל האימונים של השבוע הושלמו.
+  intervalTimer
+      EN: Interval timer
+      HE: טיימר אינטרוולים
+  loading
+      EN: Loading…
+      HE: טוען…
+  loadError
+      EN: Couldn't load your week.
+      HE: לא הצלחנו לטעון את השבוע שלך.
+
+--- apps/mobile/src/features/nutrition/copy (63) ---
+  tabLabel
+      EN: Nutrition
+      HE: תזונה
+  title
+      EN: Nutrition
+      HE: תזונה
+  loading
+      EN: Loading your nutrition plan…
+      HE: טוען את תוכנית התזונה שלך…
+  loadError
+      EN: Couldn't load your nutrition plan.
+      HE: לא הצלחנו לטעון את תוכנית התזונה שלך.
+  empty
+      EN: No nutrition plan yet. Your coach will add it here.
+      HE: עדיין אין תוכנית תזונה. המאמנת שלך תוסיף אותה כאן.
+  updated
+      EN: Updated
+      HE: עודכן
+  tipsTitle
+      EN: Coach's tips
+      HE: הטיפים של המאמנת
+  swapsTitle
+      EN: {group} swaps
+      HE: החלפות: {group}
+  swapsIntro
+      EN: Any item here is one portion — swap freely within the group.
+      HE: כל פריט כאן הוא מנה אחת — אפשר להחליף בחופשיות בתוך הקבוצה.
+  swapsEmpty
+      EN: Nothing to swap yet.
+      HE: עדיין אין מה להחליף.
+  swapsCurrent
+      EN: In your plan
+      HE: בתוכנית שלך
+  newTag
+      EN: New
+      HE: חדש
+  grams
+      EN: {grams} g
+      HE: {grams} גר׳
+  openSwaps
+      EN: {label}: see swaps
+      HE: {label}: החלפות
+  tabUpdated
+      EN: New update
+      HE: עדכון חדש
+  introTitle
+      EN: A note from your coach
+      HE: הודעה מהמאמנת שלך
+  introShow
+      EN: Show the note
+      HE: הצגת ההודעה
+  introHide
+      EN: Hide the note
+      HE: הסתרת ההודעה
+  dayTitle
+      EN: Your day
+      HE: היום שלך
+  today
+      EN: Today
+      HE: היום
+  trackerHint
+      EN: Tap a circle when you've had a portion.
+      HE: הקישי על עיגול כשאכלת מנה.
+  trackerSavedLocally
+      EN: Saved on this phone — will sync.
+      HE: נשמר בטלפון — יסונכרן.
+  trackerSaving
+      EN: Saving…
+      HE: שומר…
+  trackerOffline
+      EN: You're offline — showing what's saved on this phone.
+      HE: אין חיבור — מוצג מה שנשמר בטלפון.
+  trackerNoPlan
+      EN: No plan on this day.
+      HE: אין תוכנית ביום הזה.
+  trackerReadOnly
+      EN: This day can no longer be changed.
+      HE: כבר אי אפשר לשנות את היום הזה.
+  previousDay
+      EN: Previous day
+      HE: היום הקודם
+  nextDay
+      EN: Next day
+      HE: היום הבא
+  circleLabel
+      EN: {group} portion {n}: {state}
+      HE: מנת {group} {n}: {state}
+  halfAdd
+      EN: Mark half a {group} portion
+      HE: סימון חצי מנת {group}
+  halfRemove
+      EN: Take back the half {group} portion
+      HE: ביטול חצי מנת {group}
+  marked
+      EN: {marked} of {planned}
+      HE: {marked} מתוך {planned}
+  photoAdd
+      EN: Add a photo of your meal
+      HE: הוספת תמונה של הארוחה
+  photoCamera
+      EN: Camera
+      HE: מצלמה
+  photoGallery
+      EN: Gallery
+      HE: גלריה
+  photoPrivacy
+      EN: Visible only to you and your coach
+      HE: גלוי רק לך ולמאמנת שלך
+  photoAlt
+      EN: Photo of {meal}
+      HE: תמונה של {meal}
+  photoOpen
+      EN: Open photo
+      HE: פתיחת התמונה
+  photoClose
+      EN: Close
+      HE: סגירה
+  photoRemove
+      EN: Remove
+      HE: הסרה
+  photoPreparing
+      EN: Preparing photo…
+      HE: מכין את התמונה…
+  photoUploading
+      EN: Uploading… {percent}%
+      HE: מעלה… {percent}%
+  photoOffline
+      EN: Connect to upload
+      HE: צריך חיבור כדי להעלות
+  photoError
+      EN: Couldn't upload the photo.
+      HE: לא הצלחנו להעלות את התמונה.
+  photoTooLarge
+      EN: This photo is too large. Try another one.
+      HE: התמונה גדולה מדי. נסי תמונה אחרת.
+  photoReadError
+      EN: Couldn't read this photo. Try another one.
+      HE: לא הצלחנו לקרוא את התמונה. נסי תמונה אחרת.
+  photoRemoveError
+      EN: Couldn't remove the photo.
+      HE: לא הצלחנו להסיר את התמונה.
+  otherPhotos
+      EN: Meal photos
+      HE: תמונות ארוחות
+  coachEmpty
+      EN: No published nutrition plan yet.
+      HE: עדיין אין תוכנית תזונה שפורסמה.
+  coachUnpublished
+      EN: There are changes on the dashboard that are not published yet.
+      HE: יש שינויים בדשבורד שעדיין לא פורסמו.
+  coachEditHint
+      EN: Build and edit nutrition plans on the dashboard.
+      HE: בונים ועורכים תוכניות תזונה בדשבורד.
+  trackingTitle
+      EN: Tracking
+      HE: מעקב
+  coachDayTitle
+      EN: Daily portions
+      HE: מנות יומיות
+  trackingWeek
+      EN: Week of {range}
+      HE: השבוע של {range}
+  trackingNotMarked
+      EN: Nothing marked
+      HE: לא סומן דבר
+  trackingNotYet
+      EN: Not yet
+      HE: עדיין לא
+  trackingNoPlan
+      EN: No plan
+      HE: אין תוכנית
+  trackingWeekTotal
+      EN: Week
+      HE: שבוע
+  trackingLoadError
+      EN: Couldn't load the tracking.
+      HE: לא הצלחנו לטעון את המעקב.
+  trackingPreviousWeek
+      EN: Previous week
+      HE: השבוע הקודם
+  trackingNextWeek
+      EN: Next week
+      HE: השבוע הבא
+  circleMarked
+      EN: marked — tap to undo
+      HE: מסומנת — הקישי לביטול
+  circleUnmarked
+      EN: tap to mark
+      HE: הקישי לסימון
+
+--- apps/mobile/src/features/onboarding/copy (78) ---
+  nutrition.title
+      EN: Nutrition & goal
+      HE: תזונה ומטרה
+  nutrition.intro
+      EN: Optional — helps your coach build your nutrition plan.
+      HE: לא חובה — עוזר למאמנת שלך לבנות את תוכנית התזונה שלך.
+  nutrition.notAnswered
+      EN: Not answered
+      HE: לא נענה
+  nutrition.none
+      EN: None
+      HE: אין
+  nutrition.goalTitle
+      EN: My goal
+      HE: המטרה שלי
+  nutrition.currentWeight
+      EN: Current weight
+      HE: משקל נוכחי
+  nutrition.targetWeight
+      EN: Target weight
+      HE: משקל יעד
+  nutrition.byWhen
+      EN: By when?
+      HE: עד מתי?
+  nutrition.inWeeks
+      EN: In weeks
+      HE: בשבועות
+  nutrition.byDate
+      EN: By a date
+      HE: עד תאריך
+  nutrition.weeks
+      EN: Weeks
+      HE: שבועות
+  nutrition.date
+      EN: Date
+      HE: תאריך
+  nutrition.goalInvalid
+      EN: Check the target weight and the weeks (1–104).
+      HE: בדקי את משקל היעד ואת מספר השבועות (1–104).
+  nutrition.howIEatTitle
+      EN: How I eat
+      HE: איך אני אוכלת
+  nutrition.dietLabel
+      EN: Diet style
+      HE: סגנון תזונה
+  nutrition.dietNone
+      EN: None
+      HE: ללא
+  nutrition.religiousLabel
+      EN: Religious
+      HE: דת
+  nutrition.mealsLabel
+      EN: Meals per day
+      HE: ארוחות ביום
+  nutrition.mealsNoPreference
+      EN: No preference
+      HE: אין העדפה
+  nutrition.foodsLovedLabel
+      EN: Foods I love
+      HE: מאכלים שאני אוהבת
+  nutrition.foodsLovedPlaceholder
+      EN: e.g. hummus, berries
+      HE: למשל חומוס, פירות יער
+  nutrition.foodsDislikedLabel
+      EN: Foods I don't like
+      HE: מאכלים שאני לא אוהבת
+  nutrition.foodsDislikedPlaceholder
+      EN: e.g. mushrooms
+      HE: למשל פטריות
+  nutrition.restrictionsTitle
+      EN: Intolerances & allergies
+      HE: רגישויות ואלרגיות
+  nutrition.intolerancesLabel
+      EN: Intolerances / medical
+      HE: רגישויות / רפואי
+  nutrition.allergiesLabel
+      EN: Allergies
+      HE: אלרגיות
+  nutrition.detailsLabel
+      EN: {label} — details
+      HE: {label} — פירוט
+  nutrition.detailsPlaceholder
+      EN: Optional, e.g. "ok in yogurt"
+      HE: לא חובה, למשל ״בסדר ביוגורט״
+  nutrition.otherLabel
+      EN: {group} — other
+      HE: {group} — אחר
+  nutrition.otherPlaceholder
+      EN: Describe it
+      HE: פרטי
+  nutrition.otherRequired
+      EN: Describe "other" to continue.
+      HE: פרטי את ״אחר״ כדי להמשיך.
+  nutrition.privacyNote
+      EN: Only you and your coach see these answers.
+      HE: רק את והמאמנת שלך רואות את התשובות האלה.
+  nutrition.reviewTitle
+      EN: Nutrition & goal
+      HE: תזונה ומטרה
+  nutrition.skip
+      EN: Skip
+      HE: דילוג
+  flow.start
+      EN: Start
+      HE: בואי נתחיל
+  flow.continue
+      EN: Continue
+      HE: המשך
+  flow.createProfile
+      EN: Create my profile
+      HE: יצירת הפרופיל שלי
+  flow.back
+      EN: Back
+      HE: חזרה
+  flow.skipForNow
+      EN: Skip for now
+      HE: דילוג בינתיים
+  flow.cancel
+      EN: Cancel
+      HE: ביטול
+  flow.saveChanges
+      EN: Save changes
+      HE: שמירת השינויים
+  flow.tryAgain
+      EN: Try again
+      HE: ניסיון נוסף
+  flow.step
+      EN: Step {current} of {total}
+      HE: שלב {current} מתוך {total}
+  flow.loadError
+      EN: Couldn't load your answers.
+      HE: לא הצלחנו לטעון את התשובות שלך.
+  flow.saveError
+      EN: Could not save your answers. Please try again.
+      HE: לא הצלחנו לשמור את התשובות שלך. נסי שוב.
+  flow.profileSaveError
+      EN: Could not save your profile. Please try again.
+      HE: לא הצלחנו לשמור את הפרופיל שלך. נסי שוב.
+  welcome.title
+      EN: Build a profile that moves with you.
+      HE: בני פרופיל שזז איתך.
+  welcome.body
+      EN: Sistem uses your answers to adapt training, activities, and guidance around your real life.
+      HE: Sistem משתמשת בתשובות שלך כדי להתאים אימונים, פעילויות והכוונה לחיים האמיתיים שלך.
+  basicProfile.title
+      EN: Let's start with you.
+      HE: נתחיל ממך.
+  basicProfile.name
+      EN: Name
+      HE: שם
+  basicProfile.birthDate
+      EN: Birth Date
+      HE: תאריך לידה
+  basicProfile.height
+      EN: Height (cm)
+      HE: גובה (ס״מ)
+  basicProfile.weight
+      EN: Weight
+      HE: משקל
+  basicProfile.gender
+      EN: Gender (optional)
+      HE: מגדר (לא חובה)
+  basicProfile.selectPlaceholder
+      EN: Select...
+      HE: בחירה...
+  basicProfile.preferredUnits
+      EN: Preferred units
+      HE: יחידות מועדפות
+  goals.title
+      EN: What are you working toward?
+      HE: לקראת מה את עובדת?
+  chooseAll
+      EN: Choose all that apply.
+      HE: בחרי את כל מה שמתאים.
+  frequency.title
+      EN: How often would you like to train?
+      HE: כמה פעמים בשבוע תרצי להתאמן?
+  frequency.minDays
+      EN: Minimum days per week
+      HE: מינימום ימים בשבוע
+  frequency.maxDays
+      EN: Maximum days per week
+      HE: מקסימום ימים בשבוע
+  frequency.flexible
+      EN: My schedule changes week to week
+      HE: הלו״ז שלי משתנה משבוע לשבוע
+  frequency.note
+      EN: Sistem can adapt recommendations when your available time changes.
+      HE: Sistem יכולה להתאים את ההמלצות כשהזמן הפנוי שלך משתנה.
+  activities.title
+      EN: What activities are part of your life?
+      HE: אילו פעילויות הן חלק מהחיים שלך?
+  exercisePreferences.title
+      EN: What would you like Sistem to prioritize?
+      HE: במה תרצי ש־Sistem תתמקד?
+  exercisePreferences.hint
+      EN: All answers are optional — you can edit this later.
+      HE: כל התשובות לא חובה — אפשר לערוך את זה אחר כך.
+  exercisePreferences.enjoyLabel
+      EN: Exercises you enjoy
+      HE: תרגילים שאת נהנית מהם
+  exercisePreferences.enjoyPlaceholder
+      EN: e.g. Bench Press, Deadlift
+      HE: למשל Bench Press, Deadlift
+  exercisePreferences.improveLabel
+      EN: Exercises you want to improve
+      HE: תרגילים שתרצי להשתפר בהם
+  exercisePreferences.improvePlaceholder
+      EN: e.g. Pull-ups, Squats
+      HE: למשל Pull-ups, Squats
+  exercisePreferences.muscleLabel
+      EN: Muscle groups you want to focus on
+      HE: קבוצות שרירים שתרצי להתמקד בהן
+  recovery.title
+      EN: Anything Sistem should consider?
+      HE: משהו ש־Sistem צריכה לקחת בחשבון?
+  recovery.hint
+      EN: Optional.
+      HE: לא חובה.
+  recovery.notesLabel
+      EN: Tell us anything helpful for adapting your training.
+      HE: ספרי לנו כל מה שיעזור להתאים את האימונים שלך.
+  recovery.note
+      EN: Sistem can adapt training suggestions, but it does not diagnose medical conditions.
+      HE: Sistem יכולה להתאים הצעות לאימונים, אבל היא לא מאבחנת מצבים רפואיים.
+  equipment.title
+      EN: What equipment can you use?
+      HE: באיזה ציוד את יכולה להשתמש?
+  review.title
+      EN: Your Sistem profile is ready.
+      HE: פרופיל ה־Sistem שלך מוכן.
+  review.body
+      EN: Sistem will use your goals, schedule, activities, preferences, and equipment to build a more relevant training experience.
+      HE: Sistem תשתמש במטרות, בלו״ז, בפעילויות, בהעדפות ובציוד שלך כדי לבנות חוויית אימון מתאימה יותר.
+
+--- apps/mobile/src/features/profile/copy (39) ---
+  bodyTitle
+      EN: Body
+      HE: גוף
+  weightCard
+      EN: Weight
+      HE: משקל
+  measurementsCard
+      EN: Measurements
+      HE: מידות
+  photosCard
+      EN: Progress photos
+      HE: תמונות התקדמות
+  noEntries
+      EN: Nothing logged yet
+      HE: עדיין לא תועד דבר
+  lastLogged
+      EN: Last: {date}
+      HE: אחרון: {date}
+  moreMeasurements
+      EN: +{count} more
+      HE: +{count} נוספות
+  settings
+      EN: Settings
+      HE: הגדרות
+  nutritionPreferencesTitle
+      EN: Nutrition & goal
+      HE: תזונה ומטרה
+  weightGoalLabel
+      EN: My goal
+      HE: המטרה שלי
+  settingsTitle
+      EN: Settings
+      HE: הגדרות
+  unitsTitle
+      EN: Units
+      HE: יחידות
+  unitsHint
+      EN: For your body weight and measurements. Workouts stay in kg for now.
+      HE: למשקל הגוף ולמידות שלך. האימונים נשארים בק״ג בינתיים.
+  weightUnit
+      EN: Weight
+      HE: משקל
+  lengthUnit
+      EN: Measurements
+      HE: מידות
+  unitsSaveError
+      EN: Couldn't change your units. Try again.
+      HE: לא הצלחנו לשנות את היחידות. נסי שוב.
+  timezone
+      EN: Time zone
+      HE: אזור זמן
+  account
+      EN: Account
+      HE: חשבון
+  notSetYet
+      EN: Not set yet
+      HE: עדיין לא הוגדר
+  email
+      EN: Email
+      HE: אימייל
+  trainingProfile
+      EN: Training Profile
+      HE: פרופיל אימונים
+  goals
+      EN: Goals
+      HE: מטרות
+  trainingFrequency
+      EN: Training Frequency
+      HE: תדירות אימונים
+  daysPerWeek
+      EN: {min}–{max} days/week
+      HE: {min}–{max} ימים בשבוע
+  flexibleSchedule
+      EN:  · Flexible schedule
+      HE:  · לו״ז גמיש
+  preferredActivities
+      EN: Preferred Activities
+      HE: פעילויות מועדפות
+  equipment
+      EN: Equipment
+      HE: ציוד
+  redoOnboarding
+      EN: Redo full onboarding
+      HE: מילוי השאלון מחדש
+  editLabel
+      EN: Edit {title}
+      HE: עריכת {title}
+  loadError
+      EN: Couldn't load your profile.
+      HE: לא הצלחנו לטעון את הפרופיל שלך.
+  summaryFlexible
+      EN: flexible schedule
+      HE: לו״ז גמיש
+  summaryDays
+      EN: {min}–{max} days/week
+      HE: {min}–{max} ימים בשבוע
+  summaryFullGym
+      EN: full gym access
+      HE: גישה לחדר כושר מלא
+  summaryHomeEquipment
+      EN: home equipment
+      HE: ציוד ביתי
+  summaryBodyweight
+      EN: bodyweight training
+      HE: אימוני משקל גוף
+  languageTitle
+      EN: Language
+      HE: שפה
+  languageHint
+      EN: The app and the messages you get follow this language.
+      HE: האפליקציה וההודעות שתקבלי יוצגו בשפה הזו.
+  languageSaveError
+      EN: Couldn't change the language. Try again.
+      HE: לא הצלחנו לשנות את השפה. נסי שוב.
+  summaryGoals
+      EN: one: {count} goal | other: {count} goals
+      HE: one: מטרה אחת | two: שתי מטרות | other: {count} מטרות
+
+--- apps/mobile/src/features/waiting/copy (4) ---
+  title
+      EN: Your plan is being built
+      HE: התוכנית שלך בהכנה
+  message
+      EN: Your personalized workouts will be ready within 48 hours.
+      HE: האימונים המותאמים אישית שלך יהיו מוכנים תוך 48 שעות.
+  overdueMessage
+      EN: Your coach is putting the final touches on your plan. You'll get a notification as soon as it's ready.
+      HE: המאמנת שלך מוסיפה את הנגיעות האחרונות לתוכנית. תקבלי התראה ברגע שהיא תהיה מוכנה.
+  countdownLabel
+      EN: Time remaining
+      HE: הזמן שנותר
+
+--- apps/mobile/src/features/workouts/copy (167) ---
+  status.upcoming
+      EN: Upcoming
+      HE: בקרוב
+  status.done
+      EN: Done
+      HE: בוצע
+  status.missed
+      EN: Missed
+      HE: הוחמץ
+  status.today
+      EN: Today
+      HE: היום
+  status.inProgress
+      EN: In progress
+      HE: בתהליך
+  list.title
+      EN: Workouts
+      HE: אימונים
+  list.thisWeek
+      EN: This week
+      HE: השבוע
+  list.nextWeek
+      EN: Next week
+      HE: שבוע הבא
+  list.pastWeeks
+      EN: Past weeks
+      HE: שבועות קודמים
+  list.completedLogs
+      EN: Completed workouts
+      HE: אימונים שהושלמו
+  list.noPlanThisWeek
+      EN: No plan for this week yet.
+      HE: עדיין אין תוכנית לשבוע הזה.
+  list.noWorkoutsInPlan
+      EN: No workouts in this plan.
+      HE: אין אימונים בתוכנית הזו.
+  list.noPastWeeks
+      EN: No past weeks yet.
+      HE: עדיין אין שבועות קודמים.
+  list.noCompletedLogs
+      EN: No completed workouts yet.
+      HE: עדיין אין אימונים שהושלמו.
+  list.anyDay
+      EN: Any day
+      HE: כל יום
+  list.loading
+      EN: Loading…
+      HE: טוען…
+  list.loadError
+      EN: Couldn't load your workouts.
+      HE: לא הצלחנו לטעון את האימונים שלך.
+  list.workoutLoadError
+      EN: Couldn't load this workout.
+      HE: לא הצלחנו לטעון את האימון הזה.
+  list.workoutNotFound
+      EN: This workout is no longer in your plan.
+      HE: האימון הזה כבר לא בתוכנית שלך.
+  list.logLoadError
+      EN: Couldn't load this workout log.
+      HE: לא הצלחנו לטעון את תיעוד האימון.
+  list.startWorkout
+      EN: Start workout
+      HE: התחלת אימון
+  list.resumeWorkout
+      EN: Resume workout
+      HE: המשך אימון
+  list.notStartableYet
+      EN: You can start this workout when its week begins.
+      HE: אפשר להתחיל את האימון הזה כשהשבוע שלו מתחיל.
+  list.viewLog
+      EN: View what you logged
+      HE: מה תיעדת
+  list.addSummary
+      EN: Add summary
+      HE: הוספת סיכום
+  list.editSummary
+      EN: Edit summary
+      HE: עריכת סיכום
+  list.back
+      EN: Back
+      HE: חזרה
+  list.exerciseCount
+      EN: one: {count} exercise | other: {count} exercises
+      HE: one: תרגיל אחד | two: 2 תרגילים | other: {count} תרגילים
+  list.doneCount
+      EN: {done} done
+      HE: {done} בוצעו
+  session.leave
+      EN: Leave — the workout stays open
+      HE: יציאה — האימון נשאר פתוח
+  session.menu
+      EN: More
+      HE: עוד
+  session.soundOff
+      EN: Sound off
+      HE: כיבוי צליל
+  session.soundOn
+      EN: Sound on
+      HE: הפעלת צליל
+  session.setsProgress
+      EN: {progress} sets
+      HE: {progress} סטים
+  session.now
+      EN: Now
+      HE: עכשיו
+  session.supersetLabel
+      EN: Superset {group}
+      HE: סופרסט {group}
+  session.lastTime
+      EN: Last time:
+      HE: בפעם הקודמת:
+  session.columnSet
+      EN: Set
+      HE: סט
+  session.columnKg
+      EN: kg
+      HE: ק״ג
+  session.columnReps
+      EN: Reps
+      HE: חזרות
+  session.columnSec
+      EN: Sec
+      HE: שנ׳
+  session.columnDone
+      EN: Done
+      HE: בוצע
+  session.markDone
+      EN: Mark set {setLabel} done
+      HE: סימון סט {setLabel} כבוצע
+  session.markNotDone
+      EN: Mark set {setLabel} not done
+      HE: סימון סט {setLabel} כלא בוצע
+  session.startHold
+      EN: Start {seconds}
+      HE: התחלה {seconds}
+  session.stopHold
+      EN: Stop
+      HE: עצירה
+  session.decrease
+      EN: Decrease
+      HE: הפחתה
+  session.increase
+      EN: Increase
+      HE: הוספה
+  session.rest
+      EN: Rest
+      HE: מנוחה
+  session.restLess
+      EN: −{sec}s
+      HE: −{sec} שנ׳
+  session.restMore
+      EN: +{sec}s
+      HE: +{sec} שנ׳
+  session.restSkip
+      EN: Skip
+      HE: דילוג
+  session.restOver
+      EN: Rest over
+      HE: המנוחה הסתיימה
+  session.restOverNext
+      EN: Rest over — next: {next}
+      HE: המנוחה הסתיימה — הבא: {next}
+  session.finish
+      EN: Finish workout
+      HE: סיום אימון
+  session.finishing
+      EN: Finishing…
+      HE: מסיים…
+  session.offline
+      EN: Offline — saved on this phone
+      HE: אין חיבור — נשמר בטלפון
+  session.saving
+      EN: Saving…
+      HE: שומר…
+  session.finishQueued
+      EN: No connection. Your sets are saved on this phone — the workout finishes as soon as you're back online.
+      HE: אין חיבור. הסטים שלך שמורים בטלפון — האימון יסתיים ברגע שתחזרי לרשת.
+  session.confirmFinishTitle
+      EN: Finish workout?
+      HE: לסיים את האימון?
+  session.notDoneCount
+      EN: one: {count} set is not done. | other: {count} sets are not done.
+      HE: one: סט אחד לא בוצע. | two: 2 סטים לא בוצעו. | other: {count} סטים לא בוצעו.
+  session.finishAnyway
+      EN: Finish anyway
+      HE: לסיים בכל זאת
+  session.keepGoing
+      EN: Keep going
+      HE: להמשיך
+  session.nothingDoneTitle
+      EN: Nothing logged yet
+      HE: עדיין לא תועד דבר
+  session.nothingDone
+      EN: Mark at least one set done, or discard the workout.
+      HE: סמני לפחות סט אחד כבוצע, או בטלי את האימון.
+  session.ok
+      EN: OK
+      HE: אישור
+  session.menuTitle
+      EN: Workout
+      HE: אימון
+  session.discard
+      EN: Discard workout
+      HE: ביטול האימון
+  session.confirmDiscardTitle
+      EN: Discard this workout?
+      HE: לבטל את האימון הזה?
+  session.confirmDiscard
+      EN: Your logged sets won't count. You can start this workout again later.
+      HE: הסטים שתיעדת לא ייספרו. אפשר להתחיל את האימון הזה שוב מאוחר יותר.
+  session.discardConfirm
+      EN: Discard
+      HE: ביטול האימון
+  session.cancel
+      EN: Cancel
+      HE: חזרה
+  session.discardOffline
+      EN: Discarding needs a connection. Try again when you are back online.
+      HE: ביטול צריך חיבור. נסי שוב כשתחזרי לרשת.
+  session.discardError
+      EN: Couldn't discard the workout.
+      HE: לא הצלחנו לבטל את האימון.
+  session.finishError
+      EN: Couldn't finish the workout.
+      HE: לא הצלחנו לסיים את האימון.
+  session.notActive
+      EN: This workout was already finished or discarded.
+      HE: האימון הזה כבר הסתיים או בוטל.
+  session.loading
+      EN: Loading your workout…
+      HE: טוען את האימון שלך…
+  session.loadError
+      EN: Couldn't load this workout.
+      HE: לא הצלחנו לטעון את האימון הזה.
+  session.notFound
+      EN: This workout session no longer exists.
+      HE: האימון הזה כבר לא קיים.
+  session.startError
+      EN: Couldn't start the workout.
+      HE: לא הצלחנו להתחיל את האימון.
+  session.startOffline
+      EN: Starting a workout needs a connection.
+      HE: כדי להתחיל אימון צריך חיבור.
+  session.conflictTitle
+      EN: Another workout is open
+      HE: אימון אחר פתוח
+  session.conflictText
+      EN: "{title}" is still in progress. Resume it, or discard it and start this one.
+      HE: ״{title}״ עדיין בתהליך. המשיכי אותו, או בטלי אותו והתחילי את האימון הזה.
+  session.conflictResume
+      EN: Resume {title}
+      HE: המשך {title}
+  session.conflictDiscardAndStart
+      EN: Discard it and start this one
+      HE: לבטל אותו ולהתחיל את זה
+  session.setAria
+      EN: Set {set}
+      HE: סט {set}
+  session.setColumnAria
+      EN: {column}, set {set}
+      HE: {column}, סט {set}
+  session.tagWarmup
+      EN: W
+      HE: ח
+  session.tagDrop
+      EN: D
+      HE: ד
+  interval.phase.ready
+      EN: Get ready
+      HE: היכוני
+  interval.phase.work
+      EN: Work
+      HE: עבודה
+  interval.phase.rest
+      EN: Rest
+      HE: מנוחה
+  interval.round
+      EN: Round {round} of {rounds}
+      HE: סבב {round} מתוך {rounds}
+  interval.first
+      EN: First: {label}
+      HE: ראשון: {label}
+  interval.next
+      EN: Next:
+      HE: הבא:
+  interval.nextRestThen
+      EN: Rest {rest}{label}
+      HE: מנוחה {rest}{label}
+  interval.nextWork
+      EN: Work
+      HE: עבודה
+  interval.lastOne
+      EN: Last one
+      HE: אחרון
+  interval.pause
+      EN: Pause
+      HE: השהיה
+  interval.resume
+      EN: Resume
+      HE: המשך
+  interval.paused
+      EN: Paused
+      HE: מושהה
+  interval.skip
+      EN: Skip
+      HE: דילוג
+  interval.stop
+      EN: Stop interval
+      HE: עצירת האינטרוולים
+  interval.mute
+      EN: Sound off
+      HE: כיבוי צליל
+  interval.unmute
+      EN: Sound on
+      HE: הפעלת צליל
+  interval.confirmStopTitle
+      EN: Stop the interval?
+      HE: לעצור את האינטרוולים?
+  interval.confirmStop
+      EN: Sets already logged stay done.
+      HE: סטים שכבר תועדו נשארים מסומנים.
+  interval.confirmStopFree
+      EN: The timer stops here.
+      HE: הטיימר ייעצר כאן.
+  interval.stopConfirm
+      EN: Stop
+      HE: עצירה
+  interval.keepGoing
+      EN: Keep going
+      HE: להמשיך
+  interval.catchUpTitle
+      EN: Welcome back
+      HE: ברוכה השבה
+  interval.catchUp
+      EN: one: While you were away, {count} work period ended. Mark it as done? | other: While you were away, {count} work periods ended. Mark them as done?
+      HE: one: בזמן שלא היית כאן הסתיימה תקופת עבודה אחת. לסמן אותה כבוצעה? | two: בזמן שלא היית כאן הסתיימו 2 תקופות עבודה. לסמן אותן כבוצעו? | other: בזמן שלא היית כאן הסתיימו {count} תקופות עבודה. לסמן אותן כבוצעו?
+  interval.catchUpYes
+      EN: Yes, I did them
+      HE: כן, ביצעתי
+  interval.catchUpNo
+      EN: No
+      HE: לא
+  interval.doneTitle
+      EN: Interval done
+      HE: האינטרוולים הסתיימו
+  interval.roundsDone
+      EN: {progress} rounds
+      HE: {progress} סבבים
+  interval.backToWorkout
+      EN: Back to workout
+      HE: חזרה לאימון
+  interval.close
+      EN: Done
+      HE: סיום
+  interval.again
+      EN: Again
+      HE: שוב
+  interval.startInterval
+      EN: Start interval
+      HE: התחלת אינטרוולים
+  interval.timerTitle
+      EN: Interval timer
+      HE: טיימר אינטרוולים
+  interval.timerWork
+      EN: Work
+      HE: עבודה
+  interval.timerRest
+      EN: Rest
+      HE: מנוחה
+  interval.timerRounds
+      EN: Rounds
+      HE: סבבים
+  interval.timerTotal
+      EN: Total {total}
+      HE: סה״כ {total}
+  interval.timerStart
+      EN: Start
+      HE: התחלה
+  interval.back
+      EN: Back
+      HE: חזרה
+  interval.thenLabel
+      EN:  → {label}
+      HE:  ← {label}
+  summary.title
+      EN: Workout complete
+      HE: האימון הושלם
+  summary.close
+      EN: Close
+      HE: סגירה
+  summary.loading
+      EN: Loading…
+      HE: טוען…
+  summary.loadError
+      EN: Couldn't load your workout.
+      HE: לא הצלחנו לטעון את האימון שלך.
+  summary.notFinished
+      EN: This workout is not finished yet.
+      HE: האימון הזה עדיין לא הסתיים.
+  summary.statDuration
+      EN: Duration
+      HE: משך
+  summary.statVolume
+      EN: Total volume
+      HE: נפח כולל
+  summary.statSets
+      EN: Sets done
+      HE: סטים שבוצעו
+  summary.statPrs
+      EN: PRs
+      HE: שיאים אישיים
+  summary.personalRecords
+      EN: Personal records
+      HE: שיאים אישיים
+  summary.ratingQuestion
+      EN: How was it?
+      HE: איך היה?
+  summary.ratingOption
+      EN: {value} out of 5
+      HE: {value} מתוך 5
+  summary.notes
+      EN: Notes
+      HE: הערות
+  summary.notesPlaceholder
+      EN: Anything to remember or tell your coach?
+      HE: משהו לזכור או לספר למאמנת?
+  summary.save
+      EN: Save & finish
+      HE: שמירה וסיום
+  summary.saveError
+      EN: Couldn't save your summary. Try again.
+      HE: לא הצלחנו לשמור את הסיכום. נסי שוב.
+  summary.rating
+      EN: Rating
+      HE: דירוג
+  pumpPhoto.title
+      EN: Daily Pump
+      HE: Daily Pump
+  pumpPhoto.privacy
+      EN: Visible only to you and your coach
+      HE: גלוי רק לך ולמאמנת שלך
+  pumpPhoto.takePhoto
+      EN: Take photo
+      HE: צילום
+  pumpPhoto.chooseFromGallery
+      EN: Gallery
+      HE: גלריה
+  pumpPhoto.remove
+      EN: Remove
+      HE: הסרה
+  pumpPhoto.removeTitle
+      EN: Remove this photo?
+      HE: להסיר את התמונה הזו?
+  pumpPhoto.removeConfirm
+      EN: Remove photo
+      HE: הסרת התמונה
+  pumpPhoto.cancel
+      EN: Cancel
+      HE: ביטול
+  pumpPhoto.preparing
+      EN: Preparing photo…
+      HE: מכין את התמונה…
+  pumpPhoto.uploading
+      EN: Uploading… {percent}%
+      HE: מעלה… {percent}%
+  pumpPhoto.open
+      EN: Open photo
+      HE: פתיחת התמונה
+  pumpPhoto.alt
+      EN: Daily Pump photo
+      HE: תמונת Daily Pump
+  pumpPhoto.noPhoto
+      EN: No Daily Pump photo.
+      HE: אין תמונת Daily Pump.
+  pumpPhoto.readError
+      EN: Couldn't read this photo. Try another one.
+      HE: לא הצלחנו לקרוא את התמונה. נסי תמונה אחרת.
+  pumpPhoto.tooLarge
+      EN: This photo is too large. Try another one.
+      HE: התמונה גדולה מדי. נסי תמונה אחרת.
+  pumpPhoto.uploadError
+      EN: Couldn't upload the photo.
+      HE: לא הצלחנו להעלות את התמונה.
+  pumpPhoto.offline
+      EN: No connection — the photo needs a connection to upload.
+      HE: אין חיבור — כדי להעלות את התמונה צריך חיבור.
+  pumpPhoto.removeError
+      EN: Couldn't remove the photo.
+      HE: לא הצלחנו להסיר את התמונה.
+  pumpPhoto.retry
+      EN: Try again
+      HE: ניסיון נוסף
+  focusTip.text
+      EN: Tip: turn on Focus / Do Not Disturb so nothing interrupts your workout.
+      HE: טיפ: הפעילי מיקוד / נא לא להפריע כדי ששום דבר לא יפריע לאימון שלך.
+  focusTip.gotIt
+      EN: Got it
+      HE: הבנתי
+  focusTip.dontShowAgain
+      EN: Don't show again
+      HE: לא להציג שוב
+
+--- apps/dashboard/src/copy (11) ---
+  nav.main
+      EN: Main
+      HE: ראשי
+  nav.trainees
+      EN: Trainees
+      HE: מתאמנות
+  nav.nutrition
+      EN: Nutrition
+      HE: תזונה
+  loginTitle
+      EN: Coach dashboard
+      HE: דשבורד מאמנת
+  email
+      EN: Email
+      HE: אימייל
+  password
+      EN: Password
+      HE: סיסמה
+  loggingIn
+      EN: Logging in…
+      HE: מתחברת…
+  logIn
+      EN: Log in
+      HE: התחברות
+  coachOnly
+      EN: This dashboard is for coach accounts only.
+      HE: הדשבורד הזה מיועד לחשבונות מאמנת בלבד.
+  loginFailed
+      EN: Login failed. Please try again.
+      HE: ההתחברות נכשלה. נסי שוב.
+  languageSaveError
+      EN: Couldn't save the language. Try again.
+      HE: לא הצלחנו לשמור את השפה. נסי שוב.
+
+--- apps/dashboard/src/features/aiDraft/copy (85) ---
+  training.title
+      EN: AI draft
+      HE: טיוטת AI
+  training.none
+      EN: No AI draft for this trainee yet.
+      HE: עדיין אין טיוטת AI למתאמנת הזו.
+  training.generate
+      EN: Generate AI draft
+      HE: יצירת טיוטת AI
+  training.regenerate
+      EN: Regenerate
+      HE: יצירה מחדש
+  training.tryAgain
+      EN: Try again
+      HE: ניסיון נוסף
+  training.generating
+      EN: Generating the draft… this can take a minute.
+      HE: יוצרת את הטיוטה… זה יכול לקחת דקה.
+  training.failedPrefix
+      EN: Couldn't generate an AI draft:
+      HE: לא הצלחנו ליצור טיוטת AI:
+  training.useInNewPlan
+      EN: Use in a new plan
+      HE: שימוש בתוכנית חדשה
+  training.loadIntoPlan
+      EN: Load AI draft
+      HE: טעינת טיוטת AI
+  training.loadingRunning
+      EN: AI draft generating…
+      HE: טיוטת AI בהכנה…
+  training.replaceConfirm
+      EN: Replace the workouts in this plan with the AI draft?
+      HE: להחליף את האימונים בתוכנית הזו בטיוטת ה־AI?
+  training.reviewNote
+      EN: AI draft — review and edit everything before publishing. Only you see it; the trainee sees the plan only after you publish.
+      HE: טיוטת AI — בדקי וערכי הכול לפני פרסום. רק את רואה אותה; המתאמנת רואה את התוכנית רק אחרי שתפרסמי.
+  training.reviewBadge
+      EN: AI draft — review before publishing
+      HE: טיוטת AI — לבדוק לפני פרסום
+  training.rationaleTitle
+      EN: AI rationale
+      HE: ההסבר של ה־AI
+  training.split
+      EN: Split
+      HE: חלוקה
+  training.considerations
+      EN: Check with her
+      HE: לבדוק איתה
+  training.workouts
+      EN: Workouts
+      HE: אימונים
+  training.inputTitle
+      EN: What the AI was given
+      HE: מה ה־AI קיבל
+  training.inputNoIdentity
+      EN: Sent without her name, email, birth date or photos. Free text trimmed, emails and phone numbers removed.
+      HE: נשלח בלי השם, האימייל, תאריך הלידה או התמונות שלה. טקסט חופשי קוצר, אימיילים ומספרי טלפון הוסרו.
+  training.missingExercise
+      EN: Exercise no longer in the library
+      HE: התרגיל כבר לא בספרייה
+  training.fromAiBadge
+      EN: From AI draft
+      HE: מטיוטת AI
+  training.loadError
+      EN: Couldn't load the AI draft.
+      HE: לא הצלחנו לטעון את טיוטת ה־AI.
+  training.workoutCount
+      EN: {count} workouts
+      HE: {count} אימונים
+  training.candidates
+      EN: {count} library exercises offered
+      HE: הוצעו {count} תרגילים מהספרייה
+  training.guidance
+      EN: Guidance: {sources}
+      HE: הנחיות: {sources}
+  training.noGuidance
+      EN: No guidance passages.
+      HE: אין קטעי הנחיה.
+  nutrition.title
+      EN: AI nutrition draft
+      HE: טיוטת תזונה של AI
+  nutrition.none
+      EN: No AI nutrition draft for this trainee yet.
+      HE: עדיין אין טיוטת תזונה של AI למתאמנת הזו.
+  nutrition.generating
+      EN: Generating the nutrition draft… this can take a minute.
+      HE: יוצרת את טיוטת התזונה… זה יכול לקחת דקה.
+  nutrition.builtFor
+      EN: Built for {kcal} · {portions} a day
+      HE: נבנתה ל־{kcal} · {portions} ביום
+  nutrition.meals
+      EN: one: {count} meal | other: {count} meals
+      HE: one: ארוחה אחת | two: שתי ארוחות | other: {count} ארוחות
+  nutrition.load
+      EN: Load AI draft
+      HE: טעינת טיוטת AI
+  nutrition.replaceConfirm
+      EN: Replace the meals in this plan with the AI draft? Target, message and tips stay.
+      HE: להחליף את הארוחות בתוכנית הזו בטיוטת ה־AI? היעד, ההודעה והטיפים נשארים.
+  nutrition.loadedBadge
+      EN: Meals from AI draft
+      HE: ארוחות מטיוטת AI
+  nutrition.reviewNote
+      EN: Review and edit everything before publishing. Only you see it; she sees the plan only after you publish.
+      HE: בדקי וערכי הכול לפני פרסום. רק את רואה אותה; היא רואה את התוכנית רק אחרי שתפרסמי.
+  nutrition.considerations
+      EN: Check with her
+      HE: לבדוק איתה
+  nutrition.checkByHand
+      EN: Check by hand — not checked by code
+      HE: לבדוק ידנית — לא נבדק בקוד
+  nutrition.checkByHandNote
+      EN: Her own words. The food list was filtered by her selected answers only.
+      HE: המילים שלה. רשימת המזון סוננה רק לפי התשובות שבחרה.
+  nutrition.notAnswered
+      EN: She didn't answer the nutrition step — the food list was not filtered.
+      HE: היא לא ענתה על שלב התזונה — רשימת המזון לא סוננה.
+  nutrition.rationaleTitle
+      EN: AI rationale
+      HE: ההסבר של ה־AI
+  nutrition.inputTitle
+      EN: What the AI was given
+      HE: מה ה־AI קיבל
+  nutrition.inputNoIdentity
+      EN: Sent without her name, email, birth date or photos. Free text trimmed, emails and phone numbers removed. Calories and portions were computed in code.
+      HE: נשלח בלי השם, האימייל, תאריך הלידה או התמונות שלה. טקסט חופשי קוצר, אימיילים ומספרי טלפון הוסרו. קלוריות ומנות חושבו בקוד.
+  nutrition.foodsSent
+      EN: Food items sent (filtered out by her answers)
+      HE: פריטי מזון שנשלחו (סוננו לפי התשובות שלה)
+  nutrition.excludedTags
+      EN: Ruled out by her answers
+      HE: נפסלו לפי התשובות שלה
+  nutrition.missingFood
+      EN: Item no longer in your list
+      HE: הפריט כבר לא ברשימה שלך
+  nutrition.archivedFood
+      EN: archived
+      HE: בארכיון
+  status.pending
+      EN: Queued
+      HE: בתור
+  status.running
+      EN: Generating
+      HE: בהכנה
+  status.ready
+      EN: Ready
+      HE: מוכנה
+  status.failed
+      EN: Failed
+      HE: נכשלה
+  profile.age
+      EN: Age
+      HE: גיל
+  profile.heightWeight
+      EN: Height / weight
+      HE: גובה / משקל
+  profile.heightWeightValue
+      EN: {height} cm / {weight} kg
+      HE: {height} ס״מ / {weight} ק״ג
+  profile.gender
+      EN: Gender
+      HE: מגדר
+  profile.goals
+      EN: Goals
+      HE: מטרות
+  profile.daysPerWeek
+      EN: Days per week
+      HE: ימים בשבוע
+  profile.flexible
+      EN:  (flexible)
+      HE:  (גמיש)
+  profile.muscleFocus
+      EN: Muscle focus
+      HE: דגש על שרירים
+  profile.equipment
+      EN: Equipment
+      HE: ציוד
+  profile.activities
+      EN: Activities
+      HE: פעילויות
+  profile.recoveryFlags
+      EN: Recovery flags
+      HE: סימוני התאוששות
+  profile.favoriteExercises
+      EN: Favorite exercises
+      HE: תרגילים אהובים
+  profile.wantsToImprove
+      EN: Wants to improve
+      HE: רוצה להשתפר ב־
+  profile.recoveryNotes
+      EN: Recovery notes
+      HE: הערות התאוששות
+  profile.targetWeight
+      EN: Target weight
+      HE: משקל יעד
+  profile.targetWeightValue
+      EN: {weight} kg
+      HE: {weight} ק״ג
+  profile.inWeeks
+      EN:  in {weeks} weeks
+      HE:  תוך {weeks} שבועות
+  profile.diet
+      EN: Diet
+      HE: תזונה
+  profile.dietStylesReligious
+      EN: Diet styles / religious
+      HE: סגנונות תזונה / דת
+  profile.intolerances
+      EN: Intolerances
+      HE: רגישויות
+  profile.allergies
+      EN: Allergies
+      HE: אלרגיות
+  profile.mealsPerDay
+      EN: Meals per day
+      HE: ארוחות ביום
+  profile.noPreference
+      EN: No preference
+      HE: אין העדפה
+  profile.target
+      EN: Target
+      HE: יעד
+  profile.targetYours
+      EN: your target
+      HE: היעד שלך
+  profile.targetCalculation
+      EN: the calculation
+      HE: החישוב
+  profile.dailyPortions
+      EN: Daily portions
+      HE: מנות יומיות
+  freeText.diet_type
+      EN: Diet
+      HE: תזונה
+  freeText.diet_style
+      EN: Diet style
+      HE: סגנון תזונה
+  freeText.religious
+      EN: Religious
+      HE: דת
+  freeText.intolerance
+      EN: Intolerance
+      HE: רגישות
+  freeText.allergy
+      EN: Allergy
+      HE: אלרגיה
+  freeText.foodsLoved
+      EN: Foods she loves
+      HE: מאכלים שהיא אוהבת
+  freeText.foodsDisliked
+      EN: Foods she dislikes
+      HE: מאכלים שהיא לא אוהבת
+  freeText.sectionItem
+      EN: {section} — {item}
+      HE: {section} — {item}
+
+--- apps/dashboard/src/features/nutrition/copy (204) ---
+  navLabel
+      EN: Nutrition
+      HE: תזונה
+  foodsTab
+      EN: Food list
+      HE: רשימת מזון
+  templatesTab
+      EN: Templates
+      HE: תבניות
+  settingsTab
+      EN: Settings
+      HE: הגדרות
+  builderTitle
+      EN: {name} — Nutrition plan
+      HE: {name} — תוכנית תזונה
+  backToTrainee
+      EN: ← Back to the trainee
+      HE: → חזרה למתאמנת
+  loadError
+      EN: Couldn't load the nutrition plan.
+      HE: לא הצלחנו לטעון את תוכנית התזונה.
+  statusNever
+      EN: Draft · never published
+      HE: טיוטה · מעולם לא פורסמה
+  statusPublished
+      EN: Version {version} published {date}
+      HE: גרסה {version} פורסמה {date}
+  statusChanged
+      EN: Unpublished changes
+      HE: שינויים שלא פורסמו
+  publish
+      EN: Publish
+      HE: פרסום
+  publishUpdate
+      EN: Publish update
+      HE: פרסום עדכון
+  publishConfirm
+      EN: Publish this nutrition plan? {name} will see it right away and get a notification.
+      HE: לפרסם את תוכנית התזונה? {name} תראה אותה מיד ותקבל התראה.
+  nothingToPublish
+      EN: Nothing changed since the last published version.
+      HE: שום דבר לא השתנה מאז הגרסה שפורסמה.
+  targetTitle
+      EN: Calorie target
+      HE: יעד קלורי
+  summaryTitle
+      EN: Calculation summary
+      HE: סיכום החישוב
+  summaryError
+      EN: Couldn't calculate with these values.
+      HE: לא הצלחנו לחשב עם הערכים האלה.
+  resetToHerData
+      EN: Reset to her data
+      HE: חזרה לנתונים שלה
+  herData
+      EN: Her data
+      HE: הנתונים שלה
+  weightKg
+      EN: Weight (kg)
+      HE: משקל (ק״ג)
+  heightCm
+      EN: Height (cm)
+      HE: גובה (ס״מ)
+  age
+      EN: Age
+      HE: גיל
+  sex
+      EN: Sex
+      HE: מין
+  activity
+      EN: Activity
+      HE: פעילות
+  activityFromDays
+      EN: From her {days} training days
+      HE: לפי {days} ימי האימון שלה
+  activityLevels.1.2
+      EN: Sedentary ×1.2
+      HE: יושבני ×1.2
+  activityLevels.1.375
+      EN: Lightly active ×1.375
+      HE: פעיל קלות ×1.375
+  activityLevels.1.55
+      EN: Moderately active ×1.55
+      HE: פעיל במידה בינונית ×1.55
+  activityLevels.1.725
+      EN: Very active ×1.725
+      HE: פעיל מאוד ×1.725
+  targetWeight
+      EN: Target weight (kg)
+      HE: משקל יעד (ק״ג)
+  timelineWeeks
+      EN: Timeframe (weeks)
+      HE: פרק זמן (שבועות)
+  overriddenMark
+      EN: • = your value
+      HE: • = הערך שלך
+  deficit
+      EN: Deficit
+      HE: גירעון
+  surplus
+      EN: Surplus
+      HE: עודף
+  weeklyRate
+      EN: Weekly rate
+      HE: קצב שבועי
+  expectedTimeline
+      EN: Expected timeline
+      HE: פרק זמן צפוי
+  weeks
+      EN: one: {count} week | other: {count} weeks
+      HE: one: שבוע אחד | two: שבועיים | other: {count} שבועות
+  method
+      EN: Method
+      HE: שיטה
+  methodTimeline
+      EN: Her target + timeframe
+      HE: היעד שלה + פרק הזמן
+  methodPercent
+      EN: Goal {pct}%
+      HE: מטרה {pct}%
+  unsafePace
+      EN: Requested pace is unsafe; recommended timeline: {weeks} weeks.
+      HE: הקצב המבוקש לא בטוח; פרק זמן מומלץ: {weeks} שבועות.
+  unsafeDetail
+      EN: She asked for {weeks} weeks ({required} kg/week); the safe maximum is {safe} kg/week (limited by {limit}). The numbers below use the safe pace.
+      HE: היא ביקשה {weeks} שבועות ({required} ק״ג לשבוע); המקסימום הבטוח הוא {safe} ק״ג לשבוע (מוגבל על ידי {limit}). המספרים למטה לפי הקצב הבטוח.
+  timelineNotes.wrong_direction
+      EN: Her target weight is in the other direction from the goal — the timeline is not used.
+      HE: משקל היעד שלה בכיוון ההפוך מהמטרה — פרק הזמן לא בשימוש.
+  timelineNotes.date_passed
+      EN: Her timeframe has passed — the timeline is not used.
+      HE: פרק הזמן שלה עבר — הוא לא בשימוש.
+  timelineNotes.target_reached
+      EN: She is already at her target weight — the timeline is not used.
+      HE: היא כבר במשקל היעד שלה — פרק הזמן לא בשימוש.
+  timelineNotes.goal_not_weight
+      EN: This goal does not change weight — her target is not used.
+      HE: המטרה הזו לא משנה משקל — היעד שלה לא בשימוש.
+  raisedToFloor
+      EN: The calculation was below {floor} kcal and was raised to it.
+      HE: החישוב יצא מתחת ל־{floor} קק״ל והועלה אליו.
+  recommended
+      EN: Recommended
+      HE: מומלץ
+  portionsPerDay
+      EN: Portions per day
+      HE: מנות ביום
+  planNow
+      EN: Plan now
+      HE: בתוכנית עכשיו
+  introTitle
+      EN: Message to her
+      HE: הודעה אליה
+  introHint
+      EN: Shown at the top of her Nutrition tab (plain text, line breaks kept). Saved with each published version.
+      HE: מוצגת בראש לשונית התזונה שלה (טקסט פשוט, שורות נשמרות). נשמרת עם כל גרסה שמתפרסמת.
+  introCount
+      EN: {count} / {max}
+      HE: {count} / {max}
+  trackingTitle
+      EN: Portion tracking
+      HE: מעקב מנות
+  trackingWeek
+      EN: Week of {range}
+      HE: השבוע של {range}
+  trackingPrevious
+      EN: ← Previous week
+      HE: → השבוע הקודם
+  trackingNext
+      EN: Next week →
+      HE: השבוע הבא ←
+  trackingNotMarked
+      EN: Nothing marked
+      HE: לא סומן דבר
+  trackingNotYet
+      EN: Not yet
+      HE: עדיין לא
+  trackingNoPlan
+      EN: No plan
+      HE: אין תוכנית
+  trackingWeekTotal
+      EN: Week
+      HE: שבוע
+  trackingDay
+      EN: Day
+      HE: יום
+  trackingPhotos
+      EN: Meal photos
+      HE: תמונות ארוחות
+  trackingLoadError
+      EN: Couldn't load the tracking.
+      HE: לא הצלחנו לטעון את המעקב.
+  useSuggestion
+      EN: Use suggestion
+      HE: שימוש בהצעה
+  usingSuggestion
+      EN: Using the suggestion
+      HE: משתמשת בהצעה
+  suggestionMissing
+      EN: No estimate — missing: {fields}.
+      HE: אין הערכה — חסרים: {fields}.
+  suggestionNeedsFormula
+      EN: No automatic estimate (sex not male / female) — pick the formula or type a target.
+      HE: אין הערכה אוטומטית (המין אינו זכר / נקבה) — בחרי נוסחה או הקלידי יעד.
+  missing.weight
+      EN: weight
+      HE: משקל
+  missing.height
+      EN: height
+      HE: גובה
+  missing.birthDate
+      EN: age
+      HE: גיל
+  missing.trainingFrequency
+      EN: training days
+      HE: ימי אימון
+  kcalPerDay
+      EN:  kcal/day
+      HE:  קק״ל ליום
+  kgPerWeek
+      EN:  kg/week
+      HE:  ק״ג לשבוע
+  bmr
+      EN: BMR
+      HE: BMR
+  tdee
+      EN: TDEE
+      HE: TDEE
+  group
+      EN: Group
+      HE: קבוצה
+  recipe
+      EN: Recipe
+      HE: מתכון
+  templateSaveError
+      EN: Couldn't save the template.
+      HE: לא הצלחנו לשמור את התבנית.
+  saveError
+      EN: Couldn't save the nutrition plan.
+      HE: לא הצלחנו לשמור את תוכנית התזונה.
+  publishError
+      EN: Couldn't publish the nutrition plan.
+      HE: לא הצלחנו לפרסם את תוכנית התזונה.
+  templateApplyError
+      EN: Couldn't start from that template.
+      HE: לא הצלחנו להתחיל מהתבנית הזו.
+  foodsLoadError
+      EN: Couldn't load the food list.
+      HE: לא הצלחנו לטעון את רשימת המזון.
+  foodSaveError
+      EN: Couldn't save.
+      HE: לא הצלחנו לשמור.
+  actions
+      EN: Actions
+      HE: פעולות
+  settingsLoadError
+      EN: Couldn't load the settings.
+      HE: לא הצלחנו לטעון את ההגדרות.
+  settingsSaveError
+      EN: Couldn't save the settings.
+      HE: לא הצלחנו לשמור את ההגדרות.
+  templatesLoadError
+      EN: Couldn't load the templates.
+      HE: לא הצלחנו לטעון את התבניות.
+  defaultMeals.breakfast
+      EN: Breakfast
+      HE: ארוחת בוקר
+  defaultMeals.lunch
+      EN: Lunch
+      HE: ארוחת צהריים
+  defaultMeals.snack
+      EN: Snack
+      HE: ארוחת ביניים
+  defaultMeals.dinner
+      EN: Dinner
+      HE: ארוחת ערב
+  formula
+      EN: Formula
+      HE: נוסחה
+  formulaPick
+      EN: Pick…
+      HE: בחירה…
+  goal
+      EN: Goal
+      HE: מטרה
+  target
+      EN: Target (kcal)
+      HE: יעד (קק״ל)
+  override
+      EN: override
+      HE: ידני
+  belowFloor
+      EN: Below {floor} kcal — this needs your explicit confirmation.
+      HE: מתחת ל־{floor} קק״ל — נדרש אישור מפורש שלך.
+  confirmBelowFloor
+      EN: I confirm this target
+      HE: אני מאשרת את היעד הזה
+  dayTotal
+      EN: Day total
+      HE: סה״כ יומי
+  versusTarget
+      EN: {diff} vs target
+      HE: {diff} מול היעד
+  templateTitle
+      EN: Templates
+      HE: תבניות
+  templatePick
+      EN: Start from a template…
+      HE: התחלה מתבנית…
+  templateApply
+      EN: Apply
+      HE: החלה
+  templateReplaceConfirm
+      EN: Replace the meals and tips with this template?
+      HE: להחליף את הארוחות והטיפים בתבנית הזו?
+  saveAsTemplate
+      EN: Save as template
+      HE: שמירה כתבנית
+  templateName
+      EN: Template name
+      HE: שם התבנית
+  templateSaved
+      EN: Saved as template "{name}".
+      HE: נשמר כתבנית ״{name}״.
+  mealsTitle
+      EN: Meals
+      HE: ארוחות
+  addMeal
+      EN: + Meal
+      HE: + ארוחה
+  mealName
+      EN: Meal name
+      HE: שם הארוחה
+  removeMeal
+      EN: Remove meal
+      HE: הסרת ארוחה
+  moveUp
+      EN: Move up
+      HE: הזזה למעלה
+  moveDown
+      EN: Move down
+      HE: הזזה למטה
+  vegetablesFree
+      EN: Vegetables free
+      HE: ירקות חופשי
+  optionsTitle
+      EN: Options
+      HE: אפשרויות
+  addOption
+      EN: + Option
+      HE: + אפשרות
+  optionLabel
+      EN: Option label
+      HE: שם האפשרות
+  removeOption
+      EN: Remove option
+      HE: הסרת אפשרות
+  addFood
+      EN: + Food item…
+      HE: + פריט מזון…
+  pickerTitle
+      EN: Add a food item
+      HE: הוספת פריט מזון
+  pickerGroups
+      EN: Food groups
+      HE: קבוצות מזון
+  pickerClose
+      EN: Close
+      HE: סגירה
+  pickerSearch
+      EN: Search this group…
+      HE: חיפוש בקבוצה…
+  pickerRecent
+      EN: Recently used
+      HE: בשימוש לאחרונה
+  pickerResults
+      EN: Food items
+      HE: פריטי מזון
+  pickerEmpty
+      EN: No items match.
+      HE: אין פריטים מתאימים.
+  pickerHint
+      EN: Type to search · ↑ ↓ to move · Enter to add · Esc to close
+      HE: הקלידי לחיפוש · ↑ ↓ למעבר · Enter להוספה · Esc לסגירה
+  categoryFilter
+      EN: Categories
+      HE: קטגוריות
+  categoryAll
+      EN: All
+      HE: הכול
+  category
+      EN: Category
+      HE: קטגוריה
+  categoryNone
+      EN: — None —
+      HE: — ללא —
+  groupFilter
+      EN: Groups
+      HE: קבוצות
+  groupAll
+      EN: All groups
+      HE: כל הקבוצות
+  addText
+      EN: + Text line
+      HE: + שורת טקסט
+  lineText
+      EN: Text
+      HE: טקסט
+  lineGroup
+      EN: Counts as
+      HE: נספר כ־
+  lineGroupNone
+      EN: Not counted
+      HE: לא נספר
+  removeLine
+      EN: Remove line
+      HE: הסרת שורה
+  archived
+      EN: archived
+      HE: בארכיון
+  portions
+      EN: portions
+      HE: מנות
+  noMeals
+      EN: No meals yet — add one or start from a template.
+      HE: עדיין אין ארוחות — הוסיפי אחת או התחילי מתבנית.
+  tipsTitle
+      EN: Coach tips
+      HE: הטיפים של המאמנת
+  addTip
+      EN: + Tip
+      HE: + טיפ
+  removeTip
+      EN: Remove tip
+      HE: הסרת טיפ
+  preferencesTitle
+      EN: Her preferences (onboarding)
+      HE: ההעדפות שלה (מהשאלון)
+  issuesTitle
+      EN: Before publishing
+      HE: לפני פרסום
+  noIssues
+      EN: Ready to publish.
+      HE: מוכן לפרסום.
+  tabTitle
+      EN: Nutrition plan
+      HE: תוכנית תזונה
+  tabEmpty
+      EN: No nutrition plan yet.
+      HE: עדיין אין תוכנית תזונה.
+  openBuilder
+      EN: Open the nutrition builder
+      HE: פתיחת בונה התזונה
+  foodsTitle
+      EN: Food list
+      HE: רשימת מזון
+  foodsIntro
+      EN: One line = one portion. Any item can be swapped for another of the same group.
+      HE: שורה אחת = מנה אחת. אפשר להחליף כל פריט בפריט אחר מאותה קבוצה.
+  showArchived
+      EN: Show archived
+      HE: הצגת פריטים בארכיון
+  addFoodTitle
+      EN: Add a food item
+      HE: הוספת פריט מזון
+  name
+      EN: Name
+      HE: שם
+  portion
+      EN: Portion
+      HE: מנה
+  grams
+      EN: Grams
+      HE: גרם
+  kcal
+      EN: Kcal
+      HE: קק״ל
+  isNew
+      EN: New
+      HE: חדש
+  dietTags
+      EN: Contains
+      HE: מכיל
+  order
+      EN: Order
+      HE: סדר
+  edit
+      EN: Edit
+      HE: עריכה
+  save
+      EN: Save
+      HE: שמירה
+  cancel
+      EN: Cancel
+      HE: ביטול
+  add
+      EN: Add
+      HE: הוספה
+  remove
+      EN: Remove
+      HE: הסרה
+  restore
+      EN: Restore
+      HE: שחזור
+  removedArchived
+      EN: "{name}" is used by a plan or template, so it was archived (not deleted).
+      HE: ״{name}״ בשימוש בתוכנית או בתבנית, ולכן הועבר לארכיון (לא נמחק).
+  removedDeleted
+      EN: "{name}" was deleted.
+      HE: ״{name}״ נמחק.
+  groupCap
+      EN: up to {kcal} kcal per portion
+      HE: עד {kcal} קק״ל למנה
+  groupFree
+      EN: free
+      HE: חופשי
+  emptyGroup
+      EN: No items yet.
+      HE: עדיין אין פריטים.
+  templatesTitle
+      EN: Nutrition templates
+      HE: תבניות תזונה
+  templatesIntro
+      EN: Save a trainee's plan as a template from her nutrition builder; start a plan from one there.
+      HE: שומרים תוכנית של מתאמנת כתבנית מבונה התזונה שלה; מתחילים ממנה תוכנית באותו מקום.
+  templatesEmpty
+      EN: No templates yet.
+      HE: עדיין אין תבניות.
+  deleteTemplate
+      EN: Delete
+      HE: מחיקה
+  deleteTemplateConfirm
+      EN: Delete the template "{name}"?
+      HE: למחוק את התבנית ״{name}״?
+  settingsTitle
+      EN: Nutrition settings
+      HE: הגדרות תזונה
+  settingsIntro
+      EN: The numbers behind every calorie suggestion and meal total. Changes apply to suggestions from now on; published versions keep their numbers.
+      HE: המספרים שמאחורי כל הצעת קלוריות וסה״כ ארוחה. שינויים חלים על הצעות מעכשיו; גרסאות שפורסמו שומרות על המספרים שלהן.
+  groupValues
+      EN: Calories per portion
+      HE: קלוריות למנה
+  goalAdjustments
+      EN: Goal adjustment (% of maintenance)
+      HE: התאמת מטרה (% מתחזוקה)
+  activityFactors
+      EN: Activity factor by training days per week
+      HE: מקדם פעילות לפי ימי אימון בשבוע
+  days
+      EN: one: {count} day | other: {count} days
+      HE: one: יום אחד | two: יומיים | other: {count} ימים
+  floor
+      EN: Safety floor (kcal)
+      HE: רצפת בטיחות (קק״ל)
+  safetyTitle
+      EN: Pace and safety
+      HE: קצב ובטיחות
+  safetyLabels.maxLossRatePctPerWeek
+      EN: Safe loss (% of body weight / week)
+      HE: ירידה בטוחה (% ממשקל הגוף / שבוע)
+  safetyLabels.maxGainRatePctPerWeek
+      EN: Safe gain (% of body weight / week)
+      HE: עלייה בטוחה (% ממשקל הגוף / שבוע)
+  safetyLabels.maxDeficitPct
+      EN: Largest deficit (% of TDEE)
+      HE: הגירעון הגדול ביותר (% מ־TDEE)
+  safetyLabels.kcalPerKg
+      EN: kcal per kg of body weight
+      HE: קק״ל לק״ג משקל גוף
+  portionSplit
+      EN: Portion split (% of the daily kcal, adds up to 100; snack 0 = the calculation never adds treats)
+      HE: חלוקת מנות (% מהקלוריות היומיות, מסתכם ב־100; נשנוש 0 = החישוב אף פעם לא מוסיף פינוקים)
+  portionSplitPlaceholder
+      EN: The default split is a placeholder — set your own.
+      HE: חלוקת ברירת המחדל היא זמנית — הגדירי משלך.
+  portionsPlaceholderNote
+      EN: Split from Settings (default is a placeholder)
+      HE: חלוקה מההגדרות (ברירת המחדל זמנית)
+  ketoMaxCarb
+      EN: Keto / low-carb: carb portions a day before a warning
+      HE: קטו / דל פחמימות: מנות פחמימה ביום לפני אזהרה
+  resetDefaults
+      EN: Reset to defaults
+      HE: חזרה לברירות המחדל
+  saved
+      EN: Saved.
+      HE: נשמר.
+  activityFromDaysUnknown
+      EN: From her training days
+      HE: לפי ימי האימון שלה
+  sourceWeighIn
+      EN: Weight from her weigh-in {date}
+      HE: משקל מהשקילה שלה ב־{date}
+  sourceOnboarding
+      EN: Weight from onboarding
+      HE: משקל מהשאלון
+  sourceCoach
+      EN: Weight: yours
+      HE: משקל: שלך
+  sourceTargetDate
+      EN: her timeframe ends {date}
+      HE: פרק הזמן שלה מסתיים ב־{date}
+  limitRate
+      EN: the % of body weight per week
+      HE: אחוז משקל הגוף לשבוע
+  limitMaxDeficit
+      EN: the largest deficit
+      HE: הגירעון הגדול ביותר
+  limitFloor
+      EN: the floor
+      HE: הרצפה
+
+--- apps/dashboard/src/features/planBuilder/copy (92) ---
+  filterAny
+      EN: {label}: any
+      HE: {label}: הכול
+  exercisesLoadError
+      EN: Couldn't load exercises.
+      HE: לא הצלחנו לטעון תרגילים.
+  library
+      EN: Exercise library
+      HE: ספריית תרגילים
+  searchExercises
+      EN: Search exercises
+      HE: חיפוש תרגילים
+  muscle
+      EN: Muscle
+      HE: שריר
+  equipment
+      EN: Equipment
+      HE: ציוד
+  level
+      EN: Level
+      HE: רמה
+  addingTo
+      EN: Adding to: {title}
+      HE: מוסיפה ל: {title}
+  untitledWorkout
+      EN: untitled workout
+      HE: אימון ללא שם
+  addWorkoutFirst
+      EN: Add a workout first, then add exercises to it.
+      HE: הוסיפי קודם אימון, ואז הוסיפי אליו תרגילים.
+  noExercises
+      EN: No exercises found.
+      HE: לא נמצאו תרגילים.
+  add
+      EN: Add
+      HE: הוספה
+  loadMore
+      EN: Load more ({shown} of {total})
+      HE: טעינת עוד ({shown} מתוך {total})
+  missingExercise
+      EN: Exercise no longer in the library
+      HE: התרגיל כבר לא בספרייה
+  backToSimpleConfirm
+      EN: Back to simple targets? The per-set values will be replaced by one value for every set.
+      HE: לחזור ליעדים פשוטים? הערכים לכל סט יוחלפו בערך אחד לכל הסטים.
+  remove
+      EN: Remove
+      HE: הסרה
+  sets
+      EN: Sets
+      HE: סטים
+  countBy
+      EN: Count reps or time
+      HE: ספירת חזרות או זמן
+  reps
+      EN: Reps
+      HE: חזרות
+  time
+      EN: Time
+      HE: זמן
+  toOptional
+      EN: to (optional)
+      HE: עד (לא חובה)
+  seconds
+      EN: Seconds
+      HE: שניות
+  weightKg
+      EN: Weight (kg)
+      HE: משקל (ק״ג)
+  restSec
+      EN: Rest (sec)
+      HE: מנוחה (שנ׳)
+  superset
+      EN: Superset
+      HE: סופרסט
+  interval
+      EN: Interval
+      HE: אינטרוולים
+  wholeSuperset
+      EN: whole superset {group} · 
+      HE: כל סופרסט {group} · 
+  intervalHint
+      EN: seconds = work, rest = rest, sets = rounds
+      HE: שניות = עבודה, מנוחה = מנוחה, סטים = סבבים
+  backToSimple
+      EN: Back to simple
+      HE: חזרה לפשוט
+  perSetTargets
+      EN: Per-set targets
+      HE: יעדים לכל סט
+  notesLabel
+      EN: Notes — the trainee sees these as the instructions
+      HE: הערות — המתאמנת רואה אותן כהוראות
+  publishConfirm
+      EN: Publish this plan? {name} will see it right away.
+      HE: לפרסם את התוכנית? {name} תראה אותה מיד.
+  unpublishDirtyConfirm
+      EN: Unpublish and keep your unsaved changes in the draft?
+      HE: לבטל את הפרסום ולשמור את השינויים שלא נשמרו בטיוטה?
+  unpublishConfirm
+      EN: Unpublish this plan? {name} will no longer see it.
+      HE: לבטל את פרסום התוכנית? {name} כבר לא תראה אותה.
+  deleteConfirm
+      EN: Delete this plan? This cannot be undone.
+      HE: למחוק את התוכנית? אי אפשר לבטל את זה.
+  saveChanges
+      EN: Save changes
+      HE: שמירת השינויים
+  unpublish
+      EN: Unpublish
+      HE: ביטול פרסום
+  saveDraft
+      EN: Save draft
+      HE: שמירת טיוטה
+  publish
+      EN: Publish
+      HE: פרסום
+  delete
+      EN: Delete
+      HE: מחיקה
+  liveNote
+      EN: This plan is live. Changes reach the trainee only when you press Save changes.
+      HE: התוכנית הזו פעילה. שינויים מגיעים למתאמנת רק כשלוחצים על ״שמירת השינויים״.
+  draftNote
+      EN: Drafts are saved automatically a few seconds after your last change.
+      HE: טיוטות נשמרות אוטומטית כמה שניות אחרי השינוי האחרון.
+  lockedNote
+      EN:  The trainee already started a workout from it, so it can be edited but not unpublished or deleted.
+      HE:  המתאמנת כבר התחילה ממנה אימון, ולכן אפשר לערוך אותה אבל לא לבטל את פרסומה או למחוק אותה.
+  notSaved
+      EN: The plan was not saved. Fix the marked items:
+      HE: התוכנית לא נשמרה. תקני את הפריטים המסומנים:
+  planNotes
+      EN: Plan notes
+      HE: הערות התוכנית
+  noWorkouts
+      EN: No workouts yet. Add the first one.
+      HE: עדיין אין אימונים. הוסיפי את הראשון.
+  addWorkout
+      EN: + Add workout
+      HE: + הוספת אימון
+  saveStatus.saved
+      EN: Saved
+      HE: נשמר
+  saveStatus.unsaved
+      EN: Unsaved changes
+      HE: שינויים שלא נשמרו
+  saveStatus.saving
+      EN: Saving…
+      HE: שומר…
+  saveStatus.error
+      EN: Not saved
+      HE: לא נשמר
+  set
+      EN: Set
+      HE: סט
+  type
+      EN: Type
+      HE: סוג
+  to
+      EN: to
+      HE: עד
+  kg
+      EN: Kg
+      HE: ק״ג
+  actions
+      EN: Actions
+      HE: פעולות
+  copy
+      EN: Copy
+      HE: העתקה
+  addSet
+      EN: + Set
+      HE: + סט
+  addWarmupSet
+      EN: + Warm-up set
+      HE: + סט חימום
+  addDropSet
+      EN: + Drop set
+      HE: + סט דרופ
+  removeWorkoutConfirm
+      EN: Remove "{title}" and its {count} exercises?
+      HE: להסיר את ״{title}״ ואת {count} התרגילים שלו?
+  workoutTitle
+      EN: Workout title
+      HE: כותרת האימון
+  day
+      EN: Day
+      HE: יום
+  noDay
+      EN: No day
+      HE: בלי יום
+  show
+      EN: Show ({count})
+      HE: הצגה ({count})
+  hide
+      EN: Hide
+      HE: הסתרה
+  duplicate
+      EN: Duplicate
+      HE: שכפול
+  workoutNotes
+      EN: Workout notes
+      HE: הערות האימון
+  libraryTarget
+      EN: Exercises you add from the library go into this workout.
+      HE: תרגילים שמוסיפים מהספרייה נכנסים לאימון הזה.
+  addExercisesHere
+      EN: Add exercises to this workout
+      HE: הוספת תרגילים לאימון הזה
+  addNamed
+      EN: Add {name}
+      HE: הוספת {name}
+  dragNamed
+      EN: Drag {name}
+      HE: גרירת {name}
+  moveUpNamed
+      EN: Move {name} up
+      HE: הזזת {name} למעלה
+  moveDownNamed
+      EN: Move {name} down
+      HE: הזזת {name} למטה
+  removeNamed
+      EN: Remove {name}
+      HE: הסרת {name}
+  duplicateNamed
+      EN: Duplicate {name}
+      HE: שכפול {name}
+  setTypeAria
+      EN: {set} type
+      HE: {set} סוג
+  setRepsAria
+      EN: {set} reps
+      HE: {set} חזרות
+  setMaxRepsAria
+      EN: {set} max reps
+      HE: {set} מקסימום חזרות
+  setSecondsAria
+      EN: {set} seconds
+      HE: {set} שניות
+  setWeightAria
+      EN: {set} weight in kg
+      HE: {set} משקל בק״ג
+  setRestAria
+      EN: {set} rest in seconds
+      HE: {set} מנוחה בשניות
+  saveError
+      EN: Couldn't save the plan.
+      HE: לא הצלחנו לשמור את התוכנית.
+  publishError
+      EN: Couldn't publish the plan.
+      HE: לא הצלחנו לפרסם את התוכנית.
+  unpublishError
+      EN: Couldn't unpublish the plan.
+      HE: לא הצלחנו לבטל את פרסום התוכנית.
+  deleteError
+      EN: Couldn't delete the plan.
+      HE: לא הצלחנו למחוק את התוכנית.
+  loadError
+      EN: Couldn't load this plan.
+      HE: לא הצלחנו לטעון את התוכנית.
+  backToName
+      EN: ← {name}
+      HE: → {name}
+  backToTrainee
+      EN: ← Back to the trainee
+      HE: → חזרה למתאמנת
+  supersetTooSmall
+      EN: Superset {group} needs at least two exercises.
+      HE: בסופרסט {group} צריכים להיות לפחות שני תרגילים.
+  supersetNotAdjacent
+      EN: Superset {group} exercises must be next to each other.
+      HE: התרגילים בסופרסט {group} חייבים להיות זה אחר זה.
+  supersetIntervalMixed
+      EN: Superset {group}: mark every exercise as Interval, or none.
+      HE: סופרסט {group}: יש לסמן את כל התרגילים כאינטרוולים, או אף אחד.
+
+--- apps/dashboard/src/features/trainees/copy (68) ---
+  bodyLoadError
+      EN: Couldn't load the body tracking.
+      HE: לא הצלחנו לטעון את מעקב הגוף.
+  bodyEmpty
+      EN: No body tracking yet.
+      HE: עדיין אין מעקב גוף.
+  weight
+      EN: Weight
+      HE: משקל
+  measurement
+      EN: Measurement
+      HE: מידה
+  everyEntry
+      EN: Every entry
+      HE: כל הרשומות
+  entries
+      EN: Entries
+      HE: רשומות
+  date
+      EN: Date
+      HE: תאריך
+  weightKg
+      EN: Weight (kg)
+      HE: משקל (ק״ג)
+  cmSuffix
+      EN: {label} (cm)
+      HE: {label} (ס״מ)
+  overTime
+      EN: {title} over time
+      HE: {title} לאורך זמן
+  photos
+      EN: Photos
+      HE: תמונות
+  progressPhotos
+      EN: Progress photos
+      HE: תמונות התקדמות
+  timeRange
+      EN: Time range
+      HE: טווח זמן
+  overRange
+      EN: over this range
+      HE: בטווח הזה
+  nothingLogged
+      EN: Nothing logged yet.
+      HE: עדיין לא תועד דבר.
+  notEnoughTrend
+      EN: Not enough entries for a trend in this range.
+      HE: אין מספיק רשומות למגמה בטווח הזה.
+  photoAlt
+      EN: {pose} progress photo, {date}
+      HE: תמונת התקדמות {pose}, {date}
+  noPhotos
+      EN: No progress photos yet.
+      HE: עדיין אין תמונות התקדמות.
+  comparePhotos
+      EN: Compare progress photos
+      HE: השוואת תמונות התקדמות
+  pose
+      EN: Pose
+      HE: תנוחה
+  notEnoughPhotos
+      EN: Not enough {pose} photos to compare yet.
+      HE: עדיין אין מספיק תמונות {pose} להשוואה.
+  before
+      EN: Before
+      HE: לפני
+  after
+      EN: After
+      HE: אחרי
+  notYet
+      EN: Not yet
+      HE: עדיין לא
+  unlockedOn
+      EN: Unlocked {date}
+      HE: נפתח ב־{date}
+  achievementsLoadError
+      EN: Couldn't load the achievements.
+      HE: לא הצלחנו לטעון את ההישגים.
+  streak
+      EN: Streak
+      HE: רצף
+  bestStreak
+      EN: Best streak
+      HE: הרצף הטוב ביותר
+  thisWeek
+      EN: This week
+      HE: השבוע
+  noPlanThisWeek
+      EN: No plan this week
+      HE: אין תוכנית השבוע
+  workouts
+      EN: Workouts
+      HE: אימונים
+  totalVolume
+      EN: Total volume
+      HE: נפח כולל
+  prs
+      EN: PRs
+      HE: שיאים אישיים
+  streakRule
+      EN: A week counts toward the streak when {percent}% of its planned workouts are done. Weeks without a plan are skipped.
+      HE: שבוע נספר ברצף כש־{percent}% מהאימונים המתוכננים בו בוצעו. שבועות בלי תוכנית לא נספרים.
+  achievementsCaption
+      EN: Achievements · {unlocked} of {total} unlocked
+      HE: הישגים · {unlocked} מתוך {total} נפתחו
+  achievement
+      EN: Achievement
+      HE: הישג
+  rule
+      EN: Rule
+      HE: כלל
+  status
+      EN: Status
+      HE: סטטוס
+  plansLoadError
+      EN: Couldn't load the plans.
+      HE: לא הצלחנו לטעון את התוכניות.
+  weeksLoadError
+      EN: Couldn't load the weeks. Please try again.
+      HE: לא הצלחנו לטעון את השבועות. נסי שוב.
+  createError
+      EN: Couldn't create the plan.
+      HE: לא הצלחנו ליצור את התוכנית.
+  newPlan
+      EN: New plan
+      HE: תוכנית חדשה
+  duplicateLastWeek
+      EN: Duplicate last week
+      HE: שכפול השבוע שעבר
+  noPlans
+      EN: No plans yet.
+      HE: עדיין אין תוכניות.
+  planSize
+      EN: {workouts} workouts · {exercises} exercises
+      HE: {workouts} אימונים · {exercises} תרגילים
+  open
+      EN: Open
+      HE: פתיחה
+  pickNewTitle
+      EN: New plan — choose the week
+      HE: תוכנית חדשה — בחירת שבוע
+  pickDuplicateTitle
+      EN: Duplicate last week — choose the week
+      HE: שכפול השבוע שעבר — בחירת שבוע
+  later
+      EN: Later…
+      HE: מאוחר יותר…
+  weekTaken
+      EN: {week} already has a {status} plan.
+      HE: ל־{week} כבר יש תוכנית ({status}).
+  openPlan
+      EN: Open plan
+      HE: פתיחת התוכנית
+  copiesFrom
+      EN: Copies the plan of {week}.
+      HE: מעתיק את התוכנית של {week}.
+  nothingToCopy
+      EN: There is no earlier plan to copy into this week.
+      HE: אין תוכנית קודמת להעתיק לשבוע הזה.
+  createPlan
+      EN: Create plan
+      HE: יצירת תוכנית
+  duplicate
+      EN: Duplicate
+      HE: שכפול
+  photo
+      EN: Photo
+      HE: תמונה
+  exercise
+      EN: Exercise
+      HE: תרגיל
+  set
+      EN: Set
+      HE: סט
+  type
+      EN: Type
+      HE: סוג
+  performed
+      EN: Performed
+      HE: בוצע בפועל
+  done
+      EN: Done
+      HE: בוצע
+  backToTrainees
+      EN: ← Trainees
+      HE: → מתאמנות
+  email
+      EN: Email
+      HE: אימייל
+  timezone
+      EN: Time zone
+      HE: אזור זמן
+  window48h
+      EN: 48h window
+      HE: חלון 48 שעות
+  name
+      EN: Name
+      HE: שם
+  lastActivity
+      EN: Last activity
+      HE: פעילות אחרונה
+  workoutLogs
+      EN: Workout logs
+      HE: תיעודי אימונים
+
+--- apps/server/src/i18n/locales (340) ---
+  auth_required
+      EN: Authentication required.
+      HE: נדרשת התחברות.
+  invalid_token
+      EN: Invalid or expired token.
+      HE: ההתחברות פגה או אינה תקינה.
+  forbidden
+      EN: You do not have access to this resource.
+      HE: אין לך גישה למשאב הזה.
+  not_found
+      EN: Not found.
+      HE: לא נמצא.
+  invalid_body
+      EN: Invalid request body.
+      HE: הבקשה אינה תקינה.
+  id_invalid
+      EN: Invalid {label} id.
+      HE: מזהה {label} לא תקין.
+  user_not_found
+      EN: User not found.
+      HE: המשתמשת לא נמצאה.
+  invalid_trainee_id
+      EN: Invalid trainee id.
+      HE: מזהה מתאמנת לא תקין.
+  trainee_not_found
+      EN: Trainee not found.
+      HE: המתאמנת לא נמצאה.
+  email_taken
+      EN: Email is already registered.
+      HE: האימייל כבר רשום.
+  invalid_credentials
+      EN: Invalid email or password.
+      HE: אימייל או סיסמה שגויים.
+  reset_token_invalid
+      EN: This reset link is invalid or has expired.
+      HE: הקישור לאיפוס אינו תקין או שפג תוקפו.
+  name_required
+      EN: Name is required.
+      HE: יש להזין שם.
+  email_invalid
+      EN: A valid email is required.
+      HE: יש להזין אימייל תקין.
+  password_too_short
+      EN: Password must be at least {min} characters.
+      HE: הסיסמה חייבת להכיל לפחות {min} תווים.
+  timezone_not_string
+      EN: Time zone must be a string.
+      HE: אזור הזמן חייב להיות טקסט.
+  password_required
+      EN: Password is required.
+      HE: יש להזין סיסמה.
+  reset_token_required
+      EN: Reset token is required.
+      HE: חסר קוד איפוס.
+  reset_link_sent
+      EN: If an account exists for that email, a reset link has been sent.
+      HE: אם קיים חשבון עם האימייל הזה, נשלח אליו קישור לאיפוס.
+  password_reset_done
+      EN: Password reset successfully.
+      HE: הסיסמה אופסה בהצלחה.
+  preferences_empty
+      EN: Send a weight unit, a length unit or a language.
+      HE: יש לשלוח יחידת משקל, יחידת אורך או שפה.
+  preferences_units_not_object
+      EN: units must be an object.
+      HE: היחידות חייבות להיות אובייקט.
+  preferences_unknown_unit
+      EN: Only the weight and length units can be changed here.
+      HE: כאן אפשר לשנות רק את יחידות המשקל והאורך.
+  preferences_unknown_field
+      EN: Only units and language can be changed here.
+      HE: כאן אפשר לשנות רק יחידות ושפה.
+  weight_unit_invalid
+      EN: Weight unit must be 'kg' or 'lb'.
+      HE: יחידת המשקל חייבת להיות 'kg' או 'lb'.
+  length_unit_invalid
+      EN: Length unit must be 'cm' or 'in'.
+      HE: יחידת האורך חייבת להיות 'cm' או 'in'.
+  distance_unit_invalid
+      EN: Distance unit must be 'km' or 'miles'.
+      HE: יחידת המרחק חייבת להיות 'km' או 'miles'.
+  language_invalid
+      EN: Language must be 'he' or 'en'.
+      HE: השפה חייבת להיות 'he' או 'en'.
+  photo_storage_unavailable
+      EN: Photo storage is not configured.
+      HE: אחסון התמונות לא מוגדר.
+  photo_too_large
+      EN: The photo is too large.
+      HE: התמונה גדולה מדי.
+  photo_unreadable
+      EN: Couldn't read the photo.
+      HE: לא הצלחנו לקרוא את התמונה.
+  photo_wrong_type
+      EN: Send the photo as image/jpeg, image/png or image/webp.
+      HE: יש לשלוח את התמונה כ־image/jpeg, image/png או image/webp.
+  photo_invalid_image
+      EN: The photo must be a JPEG, PNG or WebP image.
+      HE: התמונה חייבת להיות בפורמט JPEG, PNG או WebP.
+  onboarding_name_invalid
+      EN: Name must be a non-empty string.
+      HE: יש להזין שם.
+  onboarding_birth_date_invalid
+      EN: Birth date must indicate an age between {min} and {max}.
+      HE: תאריך הלידה חייב להתאים לגיל בין {min} ל־{max}.
+  onboarding_height_invalid
+      EN: Height must be a number between {min} and {max}.
+      HE: הגובה חייב להיות מספר בין {min} ל־{max}.
+  onboarding_weight_invalid
+      EN: Weight must be a number between {min} and {max}.
+      HE: המשקל חייב להיות מספר בין {min} ל־{max}.
+  onboarding_weight_invalid_lb
+      EN: Weight must be a number between {min} and {max} lb.
+      HE: המשקל חייב להיות מספר בין {min} ל־{max} lb.
+  onboarding_target_weight_invalid
+      EN: Target weight must be a number between {min} and {max}.
+      HE: משקל היעד חייב להיות מספר בין {min} ל־{max}.
+  onboarding_target_weight_invalid_lb
+      EN: Target weight must be a number between {min} and {max} lb.
+      HE: משקל היעד חייב להיות מספר בין {min} ל־{max} lb.
+  onboarding_gender_invalid
+      EN: Gender must be one of the valid options.
+      HE: יש לבחור מגדר מהאפשרויות.
+  onboarding_units_required
+      EN: Units preference is required.
+      HE: יש לבחור יחידות.
+  onboarding_goals_invalid
+      EN: Goals must include at least one valid goal.
+      HE: יש לבחור לפחות מטרה אחת.
+  onboarding_frequency_required
+      EN: Training frequency is required.
+      HE: יש לבחור תדירות אימונים.
+  onboarding_min_days_invalid
+      EN: Minimum training days must be between 1 and 7.
+      HE: מספר ימי האימון המינימלי חייב להיות בין 1 ל־7.
+  onboarding_max_days_invalid
+      EN: Maximum training days must be between 1 and 7.
+      HE: מספר ימי האימון המקסימלי חייב להיות בין 1 ל־7.
+  onboarding_days_inverted
+      EN: Minimum training days cannot exceed maximum training days.
+      HE: המינימום של ימי האימון לא יכול להיות גדול מהמקסימום.
+  onboarding_flexible_invalid
+      EN: Flexible schedule must be true or false.
+      HE: לו״ז גמיש חייב להיות כן או לא.
+  onboarding_activities_invalid
+      EN: Preferred activities must include at least one valid activity.
+      HE: יש לבחור לפחות פעילות אחת.
+  onboarding_exercise_preferences_invalid
+      EN: Exercise preferences must be an object.
+      HE: העדפות התרגילים חייבות להיות אובייקט.
+  onboarding_favorite_notes_invalid
+      EN: Favorite exercise notes must be a string.
+      HE: הערות על תרגילים אהובים חייבות להיות טקסט.
+  onboarding_improvement_notes_invalid
+      EN: Improvement exercise notes must be a string.
+      HE: הערות על תרגילים לשיפור חייבות להיות טקסט.
+  onboarding_muscle_focus_invalid
+      EN: Muscle focus contains an invalid value.
+      HE: הדגש על השרירים כולל ערך לא תקין.
+  onboarding_equipment_invalid
+      EN: Equipment must include at least one valid option.
+      HE: יש לבחור לפחות אפשרות ציוד אחת.
+  onboarding_recovery_invalid
+      EN: Recovery must be an object.
+      HE: ההתאוששות חייבת להיות אובייקט.
+  onboarding_recovery_flags_invalid
+      EN: Recovery flags contain an invalid value.
+      HE: סימוני ההתאוששות כוללים ערך לא תקין.
+  onboarding_recovery_notes_invalid
+      EN: Recovery notes must be a string.
+      HE: הערות ההתאוששות חייבות להיות טקסט.
+  onboarding_nutrition_invalid
+      EN: Nutrition preferences must be an object.
+      HE: העדפות התזונה חייבות להיות אובייקט.
+  onboarding_diet_type_invalid
+      EN: Diet type must be none, vegetarian, vegan or pescatarian.
+      HE: סוג התזונה חייב להיות ללא, צמחונית, טבעונית או פסקטריאנית.
+  onboarding_details_too_long
+      EN: Details are text of at most {max} characters.
+      HE: הפירוט הוא טקסט של עד {max} תווים.
+  onboarding_list_not_list
+      EN: {label} must be a list.
+      HE: {label} חייב להיות רשימה.
+  onboarding_list_invalid_value
+      EN: {label} contain an invalid value.
+      HE: {label} כולל ערך לא תקין.
+  onboarding_list_other_needs_text
+      EN: {label}: describe "other".
+      HE: {label}: יש לפרט את ״אחר״.
+  onboarding_label_diet_styles
+      EN: Diet styles
+      HE: סגנונות תזונה
+  onboarding_label_religious
+      EN: Religious preferences
+      HE: העדפות דתיות
+  onboarding_label_intolerances
+      EN: Intolerances
+      HE: רגישויות
+  onboarding_label_allergies
+      EN: Allergies
+      HE: אלרגיות
+  onboarding_label_foods_loved
+      EN: Foods you love
+      HE: מאכלים שאת אוהבת
+  onboarding_label_foods_disliked
+      EN: Foods you dislike
+      HE: מאכלים שאת לא אוהבת
+  onboarding_text_too_long
+      EN: {label} must be text of at most {max} characters.
+      HE: {label} – טקסט של עד {max} תווים.
+  onboarding_meals_invalid
+      EN: Meals per day must be between {min} and {max}, or no preference.
+      HE: מספר הארוחות ביום חייב להיות בין {min} ל־{max}, או ללא העדפה.
+  onboarding_weight_goal_invalid
+      EN: The weight goal must be an object.
+      HE: יעד המשקל חייב להיות אובייקט.
+  onboarding_timeframe_invalid
+      EN: The timeframe must be weeks or a date.
+      HE: פרק הזמן חייב להיות בשבועות או תאריך.
+  onboarding_timeframe_weeks_invalid
+      EN: The timeframe must be between {min} and {max} weeks.
+      HE: פרק הזמן חייב להיות בין {min} ל־{max} שבועות.
+  onboarding_target_date_invalid
+      EN: The target date must be a date.
+      HE: תאריך היעד חייב להיות תאריך.
+  onboarding_target_date_range
+      EN: The target date must be in the next two years.
+      HE: תאריך היעד חייב להיות בשנתיים הקרובות.
+  onboarding_step_invalid
+      EN: Step must be one of the onboarding steps.
+      HE: השלב חייב להיות אחד משלבי השאלון.
+  onboarding_answers_invalid
+      EN: Answers must be an object.
+      HE: התשובות חייבות להיות אובייקט.
+  onboarding_field_not_in_step
+      EN: '{field}' is not part of the {step} step.
+      HE: '{field}' אינו חלק מהשלב {step}.
+  plan_invalid_id
+      EN: Invalid plan id.
+      HE: מזהה תוכנית לא תקין.
+  plan_not_found
+      EN: Plan not found.
+      HE: התוכנית לא נמצאה.
+  workout_not_found
+      EN: Workout not found.
+      HE: האימון לא נמצא.
+  plan_week_too_early
+      EN: A new plan must be for this week or a later one.
+      HE: תוכנית חדשה חייבת להיות לשבוע הזה או לשבוע מאוחר יותר.
+  plan_week_taken
+      EN: This trainee already has a plan for that week.
+      HE: למתאמנת כבר יש תוכנית לשבוע הזה.
+  plan_nothing_to_duplicate
+      EN: There is no earlier plan to duplicate.
+      HE: אין תוכנית קודמת לשכפול.
+  plan_locked
+      EN: The trainee already started a workout from this plan, so it can only be edited.
+      HE: המתאמנת כבר התחילה אימון מהתוכנית הזו, ולכן אפשר רק לערוך אותה.
+  plan_exercise_not_in_library
+      EN: This exercise is not in the library.
+      HE: התרגיל הזה לא נמצא בספרייה.
+  plan_ai_recommendation_missing
+      EN: That AI recommendation was not found for this trainee.
+      HE: המלצת ה־AI הזו לא נמצאה עבור המתאמנת.
+  plan_ai_recommendation_id_invalid
+      EN: Invalid AI recommendation id.
+      HE: מזהה המלצת AI לא תקין.
+  plan_workouts_required
+      EN: A plan needs a list of workouts.
+      HE: תוכנית צריכה רשימת אימונים.
+  plan_too_many_workouts
+      EN: A plan can have at most {max} workouts.
+      HE: בתוכנית יכולים להיות עד {max} אימונים.
+  plan_workout_invalid
+      EN: Invalid workout.
+      HE: אימון לא תקין.
+  plan_workout_title_required
+      EN: A workout needs a title.
+      HE: לאימון צריכה להיות כותרת.
+  plan_workout_title_too_long
+      EN: The workout title is too long.
+      HE: כותרת האימון ארוכה מדי.
+  plan_day_invalid
+      EN: The day must be between Sunday (0) and Saturday (6).
+      HE: היום חייב להיות בין ראשון (0) לשבת (6).
+  plan_too_many_exercises
+      EN: A workout can have at most {max} exercises.
+      HE: באימון יכולים להיות עד {max} תרגילים.
+  plan_exercise_invalid
+      EN: Invalid exercise.
+      HE: תרגיל לא תקין.
+  plan_exercise_unknown
+      EN: Unknown exercise.
+      HE: תרגיל לא מוכר.
+  plan_exercise_needs_set
+      EN: An exercise needs at least one set.
+      HE: לתרגיל צריך להיות לפחות סט אחד.
+  plan_too_many_sets
+      EN: An exercise can have at most {max} sets.
+      HE: לתרגיל יכולים להיות עד {max} סטים.
+  plan_set_targets_not_list
+      EN: Set targets must be a list.
+      HE: יעדי הסטים חייבים להיות רשימה.
+  plan_set_invalid
+      EN: Set {n}: invalid set.
+      HE: סט {n}: סט לא תקין.
+  plan_set_unknown_type
+      EN: Set {n}: unknown set type.
+      HE: סט {n}: סוג סט לא מוכר.
+  plan_superset_label_invalid
+      EN: Superset must be a short label such as A or B2.
+      HE: סופרסט מסומן בתווית קצרה כמו A או B2.
+  plan_interval_not_boolean
+      EN: Interval must be true or false.
+      HE: אינטרוולים חייב להיות כן או לא.
+  plan_whole_number_min
+      EN: {field} must be a whole number of at least {min}.
+      HE: {field} חייב להיות מספר שלם של {min} לפחות.
+  plan_number_min
+      EN: {field} must be a number of at least {min}.
+      HE: {field} חייב להיות מספר של {min} לפחות.
+  plan_text_not_text
+      EN: {field} must be text.
+      HE: {field} חייב להיות טקסט.
+  plan_text_too_long
+      EN: {field} is too long (max {max} characters).
+      HE: {field} ארוך מדי (עד {max} תווים).
+  plan_field_of_set
+      EN: Set {n}: {field}
+      HE: סט {n}: {field}
+  plan_field_reps
+      EN: Reps
+      HE: חזרות
+  plan_field_max_reps
+      EN: Max reps
+      HE: מקסימום חזרות
+  plan_field_duration
+      EN: Duration
+      HE: משך
+  plan_field_weight
+      EN: Weight
+      HE: משקל
+  plan_field_rest
+      EN: Rest
+      HE: מנוחה
+  plan_field_sets
+      EN: Sets
+      HE: סטים
+  plan_field_notes
+      EN: Notes
+      HE: הערות
+  plan_field_plan_notes
+      EN: Plan notes
+      HE: הערות התוכנית
+  plan_field_workout_notes
+      EN: Workout notes
+      HE: הערות האימון
+  plan_subject_exercise
+      EN: An exercise
+      HE: תרגיל
+  plan_subject_set
+      EN: Set {n}
+      HE: סט {n}
+  plan_target_needs_amount
+      EN: {subject} needs reps or a duration.
+      HE: {subject}: צריך חזרות או משך.
+  plan_target_range_needs_reps
+      EN: {subject}: a rep range needs reps.
+      HE: {subject}: טווח חזרות צריך חזרות.
+  plan_target_range_inverted
+      EN: {subject}: repsMax cannot be lower than reps.
+      HE: {subject}: מקסימום החזרות לא יכול להיות נמוך מהחזרות.
+  plan_interval_needs_durations
+      EN: An interval exercise needs a duration on every set, and no reps.
+      HE: בתרגיל אינטרוולים צריך משך בכל סט, ובלי חזרות.
+  plan_sets_count_mismatch
+      EN: sets must equal the number of set targets.
+      HE: מספר הסטים חייב להיות שווה למספר יעדי הסטים.
+  plan_publish_needs_workout
+      EN: A plan needs at least one workout before it can be published.
+      HE: לפני פרסום צריך לפחות אימון אחד בתוכנית.
+  plan_workout_needs_exercise
+      EN: A workout needs at least one exercise.
+      HE: באימון צריך להיות לפחות תרגיל אחד.
+  plan_superset_too_small
+      EN: Superset {group} needs at least two exercises.
+      HE: בסופרסט {group} צריכים להיות לפחות שני תרגילים.
+  plan_superset_not_adjacent
+      EN: Superset {group} exercises must be next to each other.
+      HE: התרגילים בסופרסט {group} חייבים להיות זה אחר זה.
+  plan_superset_interval_mixed
+      EN: Superset {group}: mark every exercise as Interval, or none.
+      HE: סופרסט {group}: יש לסמן את כל התרגילים כאינטרוולים, או אף אחד.
+  plan_week_not_sunday
+      EN: weekStartDate must be a Sunday (YYYY-MM-DD).
+      HE: weekStartDate חייב להיות יום ראשון (YYYY-MM-DD).
+  plan_duplicate_flag_invalid
+      EN: duplicatePrevious must be true or false.
+      HE: duplicatePrevious חייב להיות true או false.
+  workout_log_invalid_id
+      EN: Invalid workout log id.
+      HE: מזהה תיעוד אימון לא תקין.
+  workout_log_not_found
+      EN: Workout log not found.
+      HE: תיעוד האימון לא נמצא.
+  workout_not_this_week
+      EN: Only this week's workouts can be started.
+      HE: אפשר להתחיל רק אימונים של השבוע הזה.
+  workout_already_done
+      EN: This workout is already done.
+      HE: האימון הזה כבר בוצע.
+  workout_not_in_progress
+      EN: This workout is no longer in progress.
+      HE: האימון הזה כבר לא בתהליך.
+  workout_set_unknown
+      EN: Set {n} is not part of this workout.
+      HE: סט {n} אינו חלק מהאימון הזה.
+  workout_nothing_completed
+      EN: Mark at least one set done, or discard the workout.
+      HE: סמני לפחות סט אחד כבוצע, או בטלי את האימון.
+  other_workout_active
+      EN: Another workout is still open. Resume it or discard it first.
+      HE: אימון אחר עדיין פתוח. המשיכי אותו או בטלי אותו קודם.
+  workout_summary_not_finished
+      EN: A summary can only be added to a finished workout.
+      HE: אפשר להוסיף סיכום רק לאימון שהסתיים.
+  workout_start_ids_required
+      EN: planId and workoutId are required.
+      HE: חסרים planId ו־workoutId.
+  log_set_not_object
+      EN: Update {n} must be an object.
+      HE: עדכון {n} חייב להיות אובייקט.
+  log_set_plan_exercise_invalid
+      EN: Update {n}: invalid planExerciseId.
+      HE: עדכון {n}: planExerciseId לא תקין.
+  log_set_index_invalid
+      EN: Update {n}: invalid setIndex.
+      HE: עדכון {n}: setIndex לא תקין.
+  log_set_completed_invalid
+      EN: Update {n}: completed must be true or false.
+      HE: עדכון {n}: completed חייב להיות true או false.
+  log_set_reps_invalid
+      EN: Update {n}: invalid reps.
+      HE: עדכון {n}: חזרות לא תקינות.
+  log_set_weight_invalid
+      EN: Update {n}: invalid weight.
+      HE: עדכון {n}: משקל לא תקין.
+  log_set_duration_invalid
+      EN: Update {n}: invalid duration.
+      HE: עדכון {n}: משך לא תקין.
+  log_sets_not_array
+      EN: sets must be an array.
+      HE: sets חייב להיות מערך.
+  log_too_many_updates
+      EN: At most {max} set updates at once.
+      HE: עד {max} עדכוני סטים בבת אחת.
+  summary_not_object
+      EN: The summary must be an object.
+      HE: הסיכום חייב להיות אובייקט.
+  summary_rating_invalid
+      EN: rating must be a whole number from {min} to {max}.
+      HE: הדירוג חייב להיות מספר שלם בין {min} ל־{max}.
+  summary_notes_not_text
+      EN: notes must be text.
+      HE: ההערות חייבות להיות טקסט.
+  summary_notes_too_long
+      EN: notes can be at most {max} characters.
+      HE: ההערות יכולות להכיל עד {max} תווים.
+  body_date_in_future
+      EN: A body entry can't be dated in the future.
+      HE: אי אפשר לתעד מדידה בתאריך עתידי.
+  body_pose_invalid
+      EN: pose must be front, side or back.
+      HE: התנוחה חייבת להיות מלפנים, מהצד או מאחור.
+  body_only_known_fields
+      EN: Only weight and measurements can be saved.
+      HE: אפשר לשמור רק משקל ומידות.
+  body_weight_range
+      EN: weight must be between {min} and {max} kg.
+      HE: המשקל חייב להיות בין {min} ל־{max} ק״ג.
+  body_measurements_not_object
+      EN: measurements must be an object.
+      HE: המידות חייבות להיות אובייקט.
+  body_measurement_unknown
+      EN: Unknown body measurement: {id}.
+      HE: מידה לא מוכרת: {id}.
+  body_measurement_range
+      EN: {id} must be between {min} and {max} cm.
+      HE: {id} חייב להיות בין {min} ל־{max} ס״מ.
+  body_nothing_to_save
+      EN: Send a weight or at least one measurement.
+      HE: יש לשלוח משקל או לפחות מידה אחת.
+  body_date_invalid
+      EN: date must be YYYY-MM-DD.
+      HE: התאריך חייב להיות בפורמט YYYY-MM-DD.
+  body_date_too_early
+      EN: date can't be before {min}.
+      HE: התאריך לא יכול להיות לפני {min}.
+  achievements_seen_ids_invalid
+      EN: ids must be a list of 1 to {max} achievement ids.
+      HE: ids חייב להיות רשימה של 1 עד {max} מזהי הישגים.
+  achievements_seen_ids_unknown
+      EN: ids must be achievement ids.
+      HE: ids חייב להכיל מזהי הישגים.
+  notification_id_invalid
+      EN: Invalid notification id.
+      HE: מזהה התראה לא תקין.
+  notification_not_found
+      EN: Notification not found.
+      HE: ההתראה לא נמצאה.
+  notification_limit_invalid
+      EN: limit must be a whole number between 1 and {max}.
+      HE: limit חייב להיות מספר שלם בין 1 ל־{max}.
+  notification_before_invalid
+      EN: Invalid before cursor.
+      HE: סמן before לא תקין.
+  notification_unread_invalid
+      EN: unread must be true or false.
+      HE: unread חייב להיות true או false.
+  tab_invalid
+      EN: Tab must be workouts or nutrition.
+      HE: הלשונית חייבת להיות אימונים או תזונה.
+  exercise_query_invalid
+      EN: Invalid query parameters.
+      HE: פרמטרי החיפוש אינם תקינים.
+  exercise_page_invalid
+      EN: page must be an integer of at least {min}.
+      HE: page חייב להיות מספר שלם של {min} לפחות.
+  exercise_limit_invalid
+      EN: limit must be an integer between {min} and {max}.
+      HE: limit חייב להיות מספר שלם בין {min} ל־{max}.
+  exercise_query_param_invalid
+      EN: {param} must be one of the supported values.
+      HE: הערך של {param} אינו נתמך.
+  exercise_slug_invalid
+      EN: A valid exercise slug is required.
+      HE: חסר מזהה תרגיל תקין.
+  exercise_not_found
+      EN: Exercise not found.
+      HE: התרגיל לא נמצא.
+  meal_log_day_out_of_window
+      EN: Only today and the {days} days before can be changed.
+      HE: אפשר לשנות רק את היום ואת {days} הימים שלפניו.
+  meal_log_no_plan
+      EN: There was no nutrition plan on that day.
+      HE: לא הייתה תוכנית תזונה ביום הזה.
+  meal_log_meal_unknown
+      EN: That meal is not in the plan for this day.
+      HE: הארוחה הזו לא בתוכנית של היום הזה.
+  meal_log_meal_id_invalid
+      EN: Invalid meal id.
+      HE: מזהה ארוחה לא תקין.
+  meal_log_week_start_invalid
+      EN: weekStart must be a Sunday (YYYY-MM-DD).
+      HE: weekStart חייב להיות יום ראשון (YYYY-MM-DD).
+  meal_log_portions_required
+      EN: Send the day's portions.
+      HE: יש לשלוח את מנות היום.
+  meal_log_portion_step
+      EN: Portions go in steps of 0.5.
+      HE: מנות הולכות בקפיצות של 0.5.
+  food_group_invalid
+      EN: Group must be protein, carb, fat or vegetable.
+      HE: הקבוצה חייבת להיות חלבון, פחמימה, שומן או ירקות.
+  food_name_required
+      EN: Name is required (max {max} characters).
+      HE: יש להזין שם (עד {max} תווים).
+  food_portion_required
+      EN: Portion is required (max {max} characters).
+      HE: יש להזין מנה (עד {max} תווים).
+  food_grams_invalid
+      EN: Grams must be a number above 0 and at most {max}, or empty.
+      HE: גרמים – מספר מעל 0 ועד {max}, או ריק.
+  food_kcal_invalid
+      EN: Calories must be a number of at least 0, or empty.
+      HE: קלוריות – מספר של 0 לפחות, או ריק.
+  food_is_new_invalid
+      EN: isNew must be true or false.
+      HE: isNew חייב להיות true או false.
+  food_diet_tags_invalid
+      EN: Diet tags contain an invalid value.
+      HE: תגיות התזונה כוללות ערך לא תקין.
+  food_category_unknown
+      EN: Unknown category.
+      HE: קטגוריה לא מוכרת.
+  food_category_wrong_group
+      EN: That category is not in this group.
+      HE: הקטגוריה הזו לא שייכת לקבוצה הזו.
+  food_order_invalid
+      EN: Order must be a whole number of at least 0.
+      HE: הסדר חייב להיות מספר שלם של 0 לפחות.
+  food_nothing_to_change
+      EN: Nothing to change.
+      HE: אין מה לשנות.
+  food_vegetable_kcal
+      EN: Vegetables are free — leave calories empty.
+      HE: ירקות הם חופשי – השאירי את הקלוריות ריקות.
+  food_kcal_above_cap
+      EN: Calories can't be above the {group} portion value ({cap} kcal).
+      HE: הקלוריות לא יכולות לעלות על ערך מנת {group} ({cap} קק״ל).
+  food_not_found
+      EN: Food item not found.
+      HE: פריט המזון לא נמצא.
+  settings_group_kcal_range
+      EN: Group values must be between {min} and {max} kcal.
+      HE: ערכי הקבוצות חייבים להיות בין {min} ל־{max} קק״ל.
+  settings_goal_range
+      EN: Goal adjustments must be between {min}% and {max}%.
+      HE: התאמות המטרה חייבות להיות בין {min}% ל־{max}%.
+  settings_activity_range
+      EN: Activity factors: one per training day count (1–7), each between {min} and {max}.
+      HE: מקדמי פעילות: אחד לכל מספר ימי אימון (1–7), כל אחד בין {min} ל־{max}.
+  settings_floor_range
+      EN: The floor must be a whole number between {min} and {max} kcal.
+      HE: הרצפה חייבת להיות מספר שלם בין {min} ל־{max} קק״ל.
+  settings_value_range
+      EN: {label} must be between {min} and {max}.
+      HE: {label} חייב להיות בין {min} ל־{max}.
+  settings_label_kcal_per_kg
+      EN: kcal per kg
+      HE: קק״ל לק״ג
+  settings_label_loss_rate
+      EN: The safe loss rate (% per week)
+      HE: קצב הירידה הבטוח (% לשבוע)
+  settings_label_gain_rate
+      EN: The safe gain rate (% per week)
+      HE: קצב העלייה הבטוח (% לשבוע)
+  settings_label_max_deficit
+      EN: The largest deficit (%)
+      HE: הגירעון הגדול ביותר (%)
+  settings_label_keto_carbs
+      EN: Keto carb portions
+      HE: מנות פחמימה בקטו
+  settings_portion_split
+      EN: The portion split is a % per group and adds up to 100.
+      HE: חלוקת המנות היא % לכל קבוצה ומסתכמת ב־100.
+  settings_conflict
+      EN: The settings were changed elsewhere — reload and try again.
+      HE: ההגדרות שונו במקום אחר — טעני מחדש ונסי שוב.
+  settings_food_above_cap_one
+      EN: {count} food item has more calories than the new group value — lower it first.
+      HE: {count} פריט מזון עם יותר קלוריות מהערך החדש של הקבוצה — הורידי אותו קודם.
+  settings_food_above_cap_other
+      EN: {count} food items have more calories than the new group value — lower them first.
+      HE: ל־{count} פריטי מזון יש יותר קלוריות מהערך החדש של הקבוצה — הורידי אותם קודם.
+  overrides_invalid
+      EN: Invalid calculation overrides.
+      HE: ערכי החישוב אינם תקינים.
+  overrides_label_weight
+      EN: Weight (kg)
+      HE: משקל (ק״ג)
+  overrides_label_height
+      EN: Height (cm)
+      HE: גובה (ס״מ)
+  overrides_label_age
+      EN: Age
+      HE: גיל
+  overrides_label_activity
+      EN: The activity factor
+      HE: מקדם הפעילות
+  overrides_label_target_weight
+      EN: Target weight (kg)
+      HE: משקל יעד (ק״ג)
+  overrides_label_timeline
+      EN: The timeframe (weeks)
+      HE: פרק הזמן (שבועות)
+  nutrition_goal_unknown
+      EN: Unknown goal.
+      HE: מטרה לא מוכרת.
+  nutrition_formula_invalid
+      EN: The formula must be male or female.
+      HE: הנוסחה חייבת להיות גבר או אישה.
+  nutrition_version_invalid
+      EN: Invalid version.
+      HE: גרסה לא תקינה.
+  nutrition_target_missing_field
+      EN: The calorie target is missing.
+      HE: חסר יעד קלורי.
+  nutrition_target_range
+      EN: The target must be a whole number between {min} and {max} kcal.
+      HE: היעד חייב להיות מספר שלם בין {min} ל־{max} קק״ל.
+  nutrition_target_source_invalid
+      EN: The target source must be suggested or override.
+      HE: מקור היעד חייב להיות מוצע או ידני.
+  nutrition_goal_invalid
+      EN: The goal must be fat loss, aggressive fat loss, recomp, muscle gain or maintenance.
+      HE: המטרה חייבת להיות ירידה בשומן, ירידה אגרסיבית, ריקומפ, עלייה במסה או שמירה.
+  nutrition_floor_flag_invalid
+      EN: confirmBelowFloor must be true or false.
+      HE: confirmBelowFloor חייב להיות true או false.
+  nutrition_meals_not_list
+      EN: Meals must be a list.
+      HE: הארוחות חייבות להיות רשימה.
+  nutrition_too_many_meals
+      EN: A plan has at most {max} meals.
+      HE: בתוכנית יש עד {max} ארוחות.
+  nutrition_meal_invalid
+      EN: Invalid meal.
+      HE: ארוחה לא תקינה.
+  nutrition_meal_name_required
+      EN: A meal needs a name (max {max} characters).
+      HE: לארוחה צריך שם (עד {max} תווים).
+  nutrition_meal_portion_step
+      EN: Portions go in steps of {step}, from 0 to {max}.
+      HE: מנות הולכות בקפיצות של {step}, מ־0 עד {max}.
+  nutrition_too_many_options
+      EN: A meal has at most {max} options.
+      HE: לארוחה יש עד {max} אפשרויות.
+  nutrition_option_invalid
+      EN: Invalid option.
+      HE: אפשרות לא תקינה.
+  nutrition_option_label_required
+      EN: An option needs a label (max {max} characters).
+      HE: לאפשרות צריכה תווית (עד {max} תווים).
+  nutrition_too_many_lines
+      EN: An option has at most {max} lines.
+      HE: באפשרות יש עד {max} שורות.
+  nutrition_line_kind_invalid
+      EN: A line is a food item, a recipe or text.
+      HE: שורה היא פריט מזון, מתכון או טקסט.
+  nutrition_line_food_required
+      EN: Pick a food item.
+      HE: בחרי פריט מזון.
+  nutrition_line_portion_step
+      EN: Portions go in steps of {step}, above 0 and up to {max}.
+      HE: מנות הולכות בקפיצות של {step}, מעל 0 ועד {max}.
+  nutrition_recipes_unavailable
+      EN: Recipes are not available.
+      HE: מתכונים לא זמינים.
+  nutrition_line_recipe_required
+      EN: Pick a recipe and its servings.
+      HE: בחרי מתכון ומספר מנות.
+  nutrition_line_text_required
+      EN: A text line needs text (max {max} characters).
+      HE: שורת טקסט צריכה טקסט (עד {max} תווים).
+  nutrition_line_group_invalid
+      EN: Invalid group.
+      HE: קבוצה לא תקינה.
+  nutrition_line_text_portion_step
+      EN: A text line in a group needs portions in steps of {step}.
+      HE: שורת טקסט בקבוצה צריכה מנות בקפיצות של {step}.
+  nutrition_too_many_tips
+      EN: At most {max} tips.
+      HE: עד {max} טיפים.
+  nutrition_tip_required
+      EN: A tip needs text (max {max} characters).
+      HE: טיפ צריך טקסט (עד {max} תווים).
+  nutrition_water_unavailable
+      EN: Water tracking is not available.
+      HE: מעקב מים לא זמין.
+  nutrition_water_goal_invalid
+      EN: The water goal must be a whole number of ml up to {max}.
+      HE: יעד המים חייב להיות מספר שלם של מ״ל עד {max}.
+  nutrition_intro_too_long
+      EN: The intro message is text of at most {max} characters.
+      HE: הודעת הפתיחה היא טקסט של עד {max} תווים.
+  nutrition_ai_id_invalid
+      EN: Invalid AI recommendation id.
+      HE: מזהה המלצת AI לא תקין.
+  nutrition_plan_none
+      EN: There is no nutrition plan to publish yet.
+      HE: עדיין אין תוכנית תזונה לפרסום.
+  nutrition_plan_unchanged
+      EN: Nothing changed since the last published version.
+      HE: שום דבר לא השתנה מאז הגרסה שפורסמה.
+  nutrition_plan_just_published
+      EN: This plan was just published — reload to see it.
+      HE: התוכנית פורסמה זה עתה — טעני מחדש כדי לראות אותה.
+  nutrition_template_not_found
+      EN: Template not found.
+      HE: התבנית לא נמצאה.
+  nutrition_template_needs_meal
+      EN: Add at least one meal before saving a template.
+      HE: הוסיפי לפחות ארוחה אחת לפני שמירת תבנית.
+  nutrition_template_name_required
+      EN: A template needs a name (max {max} characters).
+      HE: לתבנית צריך שם (עד {max} תווים).
+  nutrition_template_description_too_long
+      EN: The description is at most {max} characters.
+      HE: התיאור הוא עד {max} תווים.
+  nutrition_template_required
+      EN: Pick a template.
+      HE: בחרי תבנית.
+  target_missing
+      EN: Set a calorie target.
+      HE: הגדירי יעד קלורי.
+  below_floor_unconfirmed
+      EN: The target is below {floor} kcal — confirm it to publish.
+      HE: היעד נמוך מ־{floor} קק״ל — אשרי אותו כדי לפרסם.
+  no_meals
+      EN: Add at least one meal.
+      HE: הוסיפי לפחות ארוחה אחת.
+  meal_no_portions
+      EN: {meal}: no portions set.
+      HE: {meal}: לא הוגדרו מנות.
+  option_empty
+      EN: {where}: the option has no lines.
+      HE: {where}: אין שורות באפשרות.
+  recipe_unavailable
+      EN: {where}: that recipe is not available.
+      HE: {where}: המתכון הזה לא זמין.
+  food_missing
+      EN: {where}: a food item is no longer in the list.
+      HE: {where}: פריט מזון כבר לא ברשימה.
+  food_not_in_list
+      EN: That food item is not in your list.
+      HE: פריט המזון הזה לא ברשימה שלך.
+  food_archived
+      EN: {where}: "{food}" is archived — replace it.
+      HE: {where}: ״{food}״ בארכיון — החליפי אותו.
+  food_group_changed
+      EN: {where}: "{food}" is now in the {group} group — re-add it.
+      HE: {where}: ״{food}״ עבר לקבוצת {group} — הוסיפי אותו מחדש.
+  food_conflict
+      EN: {where}: "{food}" {conflicts}.
+      HE: {where}: ״{food}״ {conflicts}.
+  conflict_allergy
+      EN: contains {tag} (her allergy)
+      HE: מכיל {tag} (אלרגיה שלה)
+  conflict_preference
+      EN: contains {tag} ({source})
+      HE: מכיל {tag} ({source})
+  kosher_meat_dairy
+      EN: {where}: meat and dairy in the same option (she keeps kosher).
+      HE: {where}: בשר וחלב באותה אפשרות (היא שומרת כשרות).
+  option_portions_mismatch
+      EN: {where}: {option} — the meal has {meal}.
+      HE: {where}: {option} — בארוחה {meal}.
+  portion_count
+      EN: {count} {group}
+      HE: {count} {group}
+  keto_carb_portions
+      EN: {count} carb / snack portions a day — she eats keto / low-carb (your limit: {limit}).
+      HE: {count} מנות פחמימה / נשנוש ביום — היא בקטו / דל פחמימות (המגבלה שלך: {limit}).
+  ai_recommendation_missing
+      EN: That AI draft is not available for this trainee.
+      HE: טיוטת ה־AI הזו לא זמינה עבור המתאמנת.
+  group_protein
+      EN: protein
+      HE: חלבון
+  group_carb
+      EN: carb
+      HE: פחמימה
+  group_fat
+      EN: fat
+      HE: שומן
+  group_snack
+      EN: snack
+      HE: נשנוש
+  group_vegetable
+      EN: vegetable
+      HE: ירקות
+  tag_meat
+      EN: meat
+      HE: בשר
+  tag_poultry
+      EN: poultry
+      HE: עוף
+  tag_fish
+      EN: fish
+      HE: דגים
+  tag_dairy
+      EN: dairy
+      HE: חלב
+  tag_eggs
+      EN: eggs
+      HE: ביצים
+  tag_gluten
+      EN: gluten
+      HE: גלוטן
+  tag_peanuts
+      EN: peanuts
+      HE: בוטנים
+  tag_tree_nuts
+      EN: tree nuts
+      HE: אגוזים
+  tag_sesame
+      EN: sesame
+      HE: שומשום
+  tag_soy
+      EN: soy
+      HE: סויה
+  tag_shellfish
+      EN: shellfish
+      HE: פירות ים
+  tag_pork
+      EN: pork
+      HE: חזיר
+  tag_lactose
+      EN: lactose
+      HE: לקטוז
+  tag_alcohol
+      EN: alcohol
+      HE: אלכוהול
+  tag_high_fodmap
+      EN: high fodmap
+      HE: עתיר FODMAP
+  source_vegetarian
+      EN: vegetarian
+      HE: צמחונית
+  source_vegan
+      EN: vegan
+      HE: טבעונית
+  source_pescatarian
+      EN: pescatarian
+      HE: פסקטריאנית
+  source_kosher
+      EN: kosher
+      HE: כשר
+  source_halal
+      EN: halal
+      HE: חלאל
+  source_lactose_free
+      EN: lactose-free
+      HE: ללא לקטוז
+  source_gluten_free
+      EN: gluten-free
+      HE: ללא גלוטן
+  source_celiac
+      EN: celiac
+      HE: צליאק
+  source_low_fodmap
+      EN: low-FODMAP
+      HE: דל FODMAP
+  ai_not_configured
+      EN: AI drafts are not set up on this server (no GEMINI_API_KEY).
+      HE: טיוטות AI לא מוגדרות בשרת הזה (אין GEMINI_API_KEY).
+  ai_off_in_production
+      EN: AI drafts are off in production until a paid AI tier that excludes training on our data is set up.
+      HE: טיוטות AI כבויות בפרודקשן עד שיוגדר מסלול AI בתשלום שלא מתאמן על המידע שלנו.
+  ai_type_invalid
+      EN: type must be one of: training_plan, nutrition_plan.
+      HE: type חייב להיות training_plan או nutrition_plan.
+  ai_recommendation_id_invalid
+      EN: Invalid recommendation id.
+      HE: מזהה המלצה לא תקין.
+  ai_recommendation_not_found
+      EN: Recommendation not found.
+      HE: ההמלצה לא נמצאה.
+  ai_already_running
+      EN: A draft is already being generated for this trainee.
+      HE: כבר נוצרת טיוטה עבור המתאמנת הזו.
+  ai_no_onboarding
+      EN: She has no onboarding answers yet.
+      HE: עדיין אין לה תשובות לשאלון.
+  ai_needs_formula
+      EN: Her sex is not male / female, so there is no automatic calculation. Pick the formula (or set a target) in the calculation summary, then generate again.
+      HE: המין שלה אינו זכר / נקבה, ולכן אין חישוב אוטומטי. בחרי נוסחה (או הגדירי יעד) בסיכום החישוב, ואז צרי שוב.
+  ai_calculation_missing
+      EN: The calculation is missing her {fields}. Fill it in the calculation summary (or set a target), then generate again.
+      HE: בחישוב חסרים לה: {fields}. השלימי אותם בסיכום החישוב (או הגדירי יעד), ואז צרי שוב.
+  ai_field_weight
+      EN: weight
+      HE: משקל
+  ai_field_height
+      EN: height
+      HE: גובה
+  ai_field_birth_date
+      EN: birth date
+      HE: תאריך לידה
+  ai_field_sex
+      EN: sex
+      HE: מין
+  ai_field_training_days
+      EN: training days
+      HE: ימי אימון
+  ai_food_groups_empty
+      EN: After her restrictions, no {groups} items are left in your food list — build this plan by hand (or add items).
+      HE: אחרי ההגבלות שלה לא נשארו פריטי {groups} ברשימת המזון שלך — בני את התוכנית ידנית (או הוסיפי פריטים).
+  ai_too_few_exercises
+      EN: Only {count} library exercises fit her equipment — too few for a draft. Build this plan by hand.
+      HE: רק {count} תרגילים מהספרייה מתאימים לציוד שלה — מעט מדי לטיוטה. בני את התוכנית ידנית.
+  ai_rules_broken
+      EN: The AI draft broke the rules {max} times. Last problems: {problems}
+      HE: טיוטת ה־AI הפרה את הכללים {max} פעמים. הבעיות האחרונות: {problems}
+  ai_internal
+      EN: Something went wrong while generating the draft.
+      HE: משהו השתבש ביצירת הטיוטה.
+  ai_interrupted
+      EN: The server restarted while the draft was being generated.
+      HE: השרת הופעל מחדש בזמן יצירת הטיוטה.
+  ai_provider_failed
+      EN: The AI service did not answer ({reason}). Try again later.
+      HE: שירות ה־AI לא ענה ({reason}). נסי שוב מאוחר יותר.
+  email_reset_subject
+      EN: Reset your Sistem password
+      HE: איפוס הסיסמה שלך ב־Sistem
+  email_reset_title
+      EN: Reset your password
+      HE: איפוס סיסמה
+  email_reset_body
+      EN: We received a request to reset the password for your Sistem account. Click the button below to choose a new one — this link expires in 1 hour.
+      HE: קיבלנו בקשה לאפס את הסיסמה לחשבון שלך ב־Sistem. לחצי על הכפתור כדי לבחור סיסמה חדשה — הקישור בתוקף לשעה.
+  email_reset_button
+      EN: Reset Password
+      HE: איפוס סיסמה
+  email_reset_ignore
+      EN: If you didn't request this, you can safely ignore this email — your password won't change.
+      HE: אם לא ביקשת את זה, אפשר להתעלם מהמייל — הסיסמה שלך לא תשתנה.
+  meal_breakfast
+      EN: Breakfast
+      HE: ארוחת בוקר
+  meal_lunch
+      EN: Lunch
+      HE: ארוחת צהריים
+  meal_snack
+      EN: Snack
+      HE: ארוחת ביניים
+  meal_dinner
+      EN: Dinner
+      HE: ארוחת ערב
+  meal_afternoon_snack
+      EN: Afternoon snack
+      HE: ביניים אחר הצהריים
+  meal_evening_snack
+      EN: Evening snack
+      HE: ביניים בערב
+  option_label
+      EN: Option {letter}
+      HE: אפשרות {letter}
+
+================================================================================
+10. SUGGESTED COMMITS (Conventional Commits) — in this order
+================================================================================
+1) feat(shared): i18n core, shared Hebrew / English copy, language-aware display helpers
+   packages/shared, packages/types, packages/api-client
+2) refactor(tokens): one token file for every design value, per-language fonts, RTL cuts
+   packages/tokens
+3) feat(server): user language, error codes with localized messages, AI drafts in the coach's language
+   apps/server
+4) feat(mobile): Hebrew by default with RTL, English option, copy files, language switch
+   apps/mobile
+5) feat(dashboard): Hebrew by default with RTL, English option, copy files, language switch
+   apps/dashboard
+6) chore: i18n audit in lint, copy parity test in npm test
+   scripts/i18n-audit.mjs, scripts/i18n-parity.test.ts, vitest.i18n.config.mts, package.json
+7) docs: phase 15 decisions and report
+   docs/PRD.md, docs/BUILD_PLAN.md, docs/phase-reports/phase-15-hebrew-rtl.txt
+
+git add -A -- packages/shared packages/types packages/api-client
+git commit -m "feat(shared): i18n core, shared Hebrew / English copy, language-aware display helpers"
+
+git add -A -- packages/tokens
+git commit -m "refactor(tokens): one token file for every design value, per-language fonts, RTL cuts"
+
+git add -A -- apps/server
+git commit -m "feat(server): user language, error codes with localized messages, AI drafts in the coach's language"
+
+git add -A -- apps/mobile
+git commit -m "feat(mobile): Hebrew by default with RTL, English option, copy files, language switch"
+
+git add -A -- apps/dashboard
+git commit -m "feat(dashboard): Hebrew by default with RTL, English option, copy files, language switch"
+
+git add -A -- scripts/i18n-audit.mjs scripts/i18n-parity.test.ts vitest.i18n.config.mts package.json
+git commit -m "chore: i18n audit in lint, copy parity test in npm test"
+
+git add -A -- docs/PRD.md docs/BUILD_PLAN.md docs/phase-reports/phase-15-hebrew-rtl.txt
+git commit -m "docs: phase 15 decisions and report"

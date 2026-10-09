@@ -1,13 +1,4 @@
-/* Motion tokens and accessibility overrides. GSAP-driven animation
-   utilities are introduced separately in Phase 1.3. */
-
-:root {
-  --transition-fast: 150ms;
-  --transition-base: 250ms;
-  --transition-slow: 400ms;
-  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-out: cubic-bezier(0, 0, 0.2, 1);
-}
+/* Accessibility overrides for motion. The motion tokens themselves live in @sistem/tokens. */
 
 @media (prefers-reduced-motion: reduce) {
   *,

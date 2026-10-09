@@ -3,15 +3,17 @@ import type { ChangeEvent } from 'react';
 import axios from 'axios';
 import type { BodyMetric, ProgressPhoto, ProgressPhotoPose } from '@sistem/types';
 import { IconCamera, IconPhoto } from '@tabler/icons-react';
-import { formatDateOnly, poseLabel } from '@sistem/shared';
+import { fill, formatDateOnly, poseLabel, useCopy, useLanguage } from '@sistem/shared';
 import { Button } from '../../../../components/common/Button/Button';
 import { Modal } from '../../../../components/common/Modal/Modal';
 import { PrivatePhoto } from '../../../../components/common/PrivatePhoto/PrivatePhoto';
 import { removeProgressPhoto, uploadProgressPhoto } from '../../../../services/bodyMetrics/bodyMetricsService';
 import { celebrate } from '../../../achievements/celebration';
 import { PhotoTooLargeError, compressPhoto } from '../../../privatePhotos/data/photoCompression';
-import { BODY_COPY } from '../../data/bodyCopy';
+import { bodyCopy } from '../../copy';
 import './ProgressPhotoSlot.css';
+
+type BodyCopy = (typeof bodyCopy)['he'];
 
 type Busy = { kind: 'preparing' } | { kind: 'uploading'; percent: number } | { kind: 'removing' } | null;
 
@@ -24,14 +26,14 @@ interface ProgressPhotoSlotProps {
   onLinkExpired: () => void;
 }
 
-function uploadErrorMessage(error: unknown): string {
-  if (error instanceof PhotoTooLargeError) return BODY_COPY.tooLarge;
+function uploadErrorMessage(error: unknown, copy: BodyCopy): string {
+  if (error instanceof PhotoTooLargeError) return copy.tooLarge;
   if (axios.isAxiosError(error)) {
-    if (!error.response) return BODY_COPY.offline;
-    if (error.response.status === 413) return BODY_COPY.tooLarge;
-    return BODY_COPY.uploadError;
+    if (!error.response) return copy.offline;
+    if (error.response.status === 413) return copy.tooLarge;
+    return copy.uploadError;
   }
-  return BODY_COPY.readError;
+  return copy.readError;
 }
 
 /**
@@ -39,6 +41,8 @@ function uploadErrorMessage(error: unknown): string {
  * as a private photo (the Daily Pump flow). A new pick replaces the pose's photo.
  */
 export function ProgressPhotoSlot({ date, pose, photo, onDayChange, onLinkExpired }: ProgressPhotoSlotProps) {
+  const language = useLanguage();
+  const copy = useCopy(bodyCopy);
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<Busy>(null);
@@ -47,7 +51,7 @@ export function ProgressPhotoSlot({ date, pose, photo, onDayChange, onLinkExpire
   const [localSrc, setLocalSrc] = useState<string | null>(null);
   const [pending, setPending] = useState<Blob | null>(null);
   const [confirmRemove, setConfirmRemove] = useState(false);
-  const label = poseLabel(pose);
+  const label = poseLabel(pose, language);
 
   useEffect(() => () => {
     if (localSrc) URL.revokeObjectURL(localSrc);
@@ -66,7 +70,7 @@ export function ProgressPhotoSlot({ date, pose, photo, onDayChange, onLinkExpire
       onDayChange(saved.metric);
       celebrate(saved.achievementsUnlocked);
     } catch (caught) {
-      setError(uploadErrorMessage(caught));
+      setError(uploadErrorMessage(caught, copy));
     } finally {
       setBusy(null);
     }
@@ -84,7 +88,7 @@ export function ProgressPhotoSlot({ date, pose, photo, onDayChange, onLinkExpire
       compressed = await compressPhoto(file);
     } catch (caught) {
       setBusy(null);
-      setError(uploadErrorMessage(caught));
+      setError(uploadErrorMessage(caught, copy));
       return;
     }
     await upload(compressed);
@@ -98,14 +102,14 @@ export function ProgressPhotoSlot({ date, pose, photo, onDayChange, onLinkExpire
       onDayChange(await removeProgressPhoto(date, pose));
       setLocalSrc(null);
     } catch {
-      setError(BODY_COPY.removeError);
+      setError(copy.removeError);
     } finally {
       setBusy(null);
     }
   }
 
   const status =
-    busy?.kind === 'preparing' ? BODY_COPY.preparing : busy?.kind === 'uploading' ? BODY_COPY.uploading(busy.percent) : null;
+    busy?.kind === 'preparing' ? copy.preparing : busy?.kind === 'uploading' ? fill(copy.uploading, { percent: busy.percent }) : null;
 
   return (
     <section className="progress-photo-slot" aria-label={label}>
@@ -115,9 +119,9 @@ export function ProgressPhotoSlot({ date, pose, photo, onDayChange, onLinkExpire
             photo={photo}
             thumbnail
             localSrc={localSrc ?? undefined}
-            alt={BODY_COPY.photoAlt(label, formatDateOnly(date))}
-            openLabel={BODY_COPY.openPhoto(label)}
-            closeLabel={BODY_COPY.close}
+            alt={fill(copy.photoAlt, { pose: label, date: formatDateOnly(date, language) })}
+            openLabel={fill(copy.openPhoto, { pose: label })}
+            closeLabel={copy.close}
             onLinkExpired={onLinkExpired}
           />
         ) : (
@@ -137,7 +141,7 @@ export function ProgressPhotoSlot({ date, pose, photo, onDayChange, onLinkExpire
             <span>{error}</span>
             {pending && (
               <Button variant="secondary" onClick={() => void upload(pending)}>
-                {BODY_COPY.retry}
+                {copy.retry}
               </Button>
             )}
           </div>
@@ -147,18 +151,18 @@ export function ProgressPhotoSlot({ date, pose, photo, onDayChange, onLinkExpire
           icon={<IconCamera size={20} aria-hidden="true" />}
           onClick={() => cameraRef.current?.click()}
           disabled={busy !== null}
-          aria-label={`${BODY_COPY.takePhoto}: ${label}`}
+          aria-label={`${copy.takePhoto}: ${label}`}
         >
-          {BODY_COPY.takePhoto}
+          {copy.takePhoto}
         </Button>
         <Button
           variant="secondary"
           icon={<IconPhoto size={20} aria-hidden="true" />}
           onClick={() => galleryRef.current?.click()}
           disabled={busy !== null}
-          aria-label={`${BODY_COPY.chooseFromGallery}: ${label}`}
+          aria-label={`${copy.chooseFromGallery}: ${label}`}
         >
-          {BODY_COPY.chooseFromGallery}
+          {copy.chooseFromGallery}
         </Button>
         {photo && (
           <Button
@@ -166,9 +170,9 @@ export function ProgressPhotoSlot({ date, pose, photo, onDayChange, onLinkExpire
             onClick={() => setConfirmRemove(true)}
             loading={busy?.kind === 'removing'}
             disabled={busy !== null}
-            aria-label={`${BODY_COPY.remove}: ${label}`}
+            aria-label={`${copy.remove}: ${label}`}
           >
-            {BODY_COPY.remove}
+            {copy.remove}
           </Button>
         )}
       </div>
@@ -177,13 +181,13 @@ export function ProgressPhotoSlot({ date, pose, photo, onDayChange, onLinkExpire
       <input ref={cameraRef} className="progress-photo-slot-input" type="file" accept="image/*" capture onChange={handlePicked} />
       <input ref={galleryRef} className="progress-photo-slot-input" type="file" accept="image/*" onChange={handlePicked} />
 
-      <Modal isOpen={confirmRemove} onClose={() => setConfirmRemove(false)} variant="flat" title={BODY_COPY.removeTitle}>
+      <Modal isOpen={confirmRemove} onClose={() => setConfirmRemove(false)} variant="flat" title={copy.removeTitle}>
         <div className="progress-photo-slot-dialog">
           <Button variant="danger" onClick={() => void handleRemove()}>
-            {BODY_COPY.remove}
+            {copy.remove}
           </Button>
           <Button variant="ghost" onClick={() => setConfirmRemove(false)}>
-            {BODY_COPY.cancel}
+            {copy.cancel}
           </Button>
         </div>
       </Modal>

@@ -2,8 +2,9 @@ import type { Types } from 'mongoose';
 import type { AppNotification, NotificationList } from '@sistem/types';
 import { Notification } from './notification.model';
 import type { NotificationDocument, NotificationPayload } from './notification.types';
+import { LocalizedError } from '../../i18n';
 
-export class NotificationNotFoundError extends Error {}
+export class NotificationNotFoundError extends LocalizedError {}
 
 type LeanNotification = NotificationDocument & { _id: Types.ObjectId };
 
@@ -89,7 +90,7 @@ export async function markNotificationRead(userId: string, notificationId: strin
   await Notification.updateOne({ _id: notificationId, userId, readAt: null }, { $set: { readAt: new Date() } });
   const notification = await Notification.findOne({ _id: notificationId, userId }).lean<LeanNotification>();
   if (!notification) {
-    throw new NotificationNotFoundError('Notification not found.');
+    throw new NotificationNotFoundError('notification_not_found');
   }
   return toPublicNotification(notification);
 }

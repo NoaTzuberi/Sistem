@@ -14,8 +14,8 @@
   max-width: 400px;
   padding: var(--space-5);
   background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  clip-path: polygon(0 0, calc(100% - var(--cut-size)) 0, 100% var(--cut-size), 100% 100%, 0 100%);
+  border: var(--border-width-thin) solid var(--color-border);
+  clip-path: var(--cut-corner);
 }
 
 .login-logo {
@@ -45,12 +45,12 @@
   padding: 0 var(--space-2);
   font-size: var(--text-base);
   background-color: var(--color-bg);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-thin) solid var(--color-border);
   border-radius: var(--radius-none);
 }
 
 .login-input:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: var(--border-width-medium) solid var(--color-primary);
   outline-offset: 0;
 }
 

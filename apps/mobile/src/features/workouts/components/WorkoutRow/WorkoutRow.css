@@ -4,7 +4,7 @@
   gap: var(--space-2);
   min-height: 56px;
   padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: var(--border-width-thin) solid var(--color-border);
 }
 
 .workout-row-link:active {

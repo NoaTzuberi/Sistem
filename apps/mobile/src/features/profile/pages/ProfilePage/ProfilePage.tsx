@@ -8,7 +8,6 @@ import { Spinner } from '../../../../components/common/Spinner/Spinner';
 import { StateMessage } from '../../../../components/common/StateMessage/StateMessage';
 import { LogoutButton } from '../../../../components/common/LogoutButton/LogoutButton';
 import { FlagIcon, CalendarIcon, CompassIcon, DumbbellIcon, EditIcon } from '../../components/icons';
-import { GOAL_OPTIONS, EQUIPMENT_OPTIONS } from '../../../onboarding/data/options';
 import { ACTIVITIES } from '../../../onboarding/data/activities';
 import type { OnboardingStepId } from '../../../onboarding/data/stepVideoMap';
 import { getMyProfile } from '../../../../services/users/usersService';
@@ -16,38 +15,38 @@ import type { MyProfileResponse } from '../../../../services/users/usersService'
 import { StreakSummary } from '../../../achievements/components/StreakSummary/StreakSummary';
 import { ProgressStats } from '../../../achievements/components/ProgressStats/ProgressStats';
 import { useMyAchievements } from '../../../achievements/hooks/useMyAchievements';
-import { ACHIEVEMENT_COPY } from '../../../achievements/data/achievementCopy';
+import { achievementCopy } from '../../../achievements/copy';
 import { useAuth } from '../../../../services/auth/AuthContext';
 import { useStaggerReveal } from '../../../../hooks/useStaggerReveal';
 import { ROUTES, onboardingEditPath } from '../../../../app/config/routes';
 import { IconChevronRight, IconSalad, IconSettings, IconTrophy } from '@tabler/icons-react';
-import { describeNutritionPreferences, describeWeightGoal } from '@sistem/shared';
+import { describeNutritionPreferences, describeWeightGoal, fill, sharedCopy, useCopy, useI18n, getActiveLanguage } from '@sistem/shared';
 import { BodySummary } from '../../components/BodySummary/BodySummary';
-import { PROFILE_COPY } from '../../data/profileCopy';
+import { profileCopy } from '../../copy';
 import { useMyBodyMetrics, useMyUnits } from '../../hooks/useMyBody';
 import './ProfilePage.css';
 
-const GOAL_LABELS = new Map(GOAL_OPTIONS.map((option) => [option.id, option.label]));
-const EQUIPMENT_LABELS = new Map(EQUIPMENT_OPTIONS.map((option) => [option.id, option.label]));
-const ACTIVITIES_BY_ID = new Map(ACTIVITIES.map((activity) => [activity.id, activity]));
+const ACTIVITIES_BY_ID = new Map<string, (typeof ACTIVITIES)[number]>(ACTIVITIES.map((activity) => [activity.id, activity]));
 
+// Her answers are option ids; the labels are the questionnaire's own (shared copy), in the language on screen.
 function BadgeList({
   ids,
   labels,
   variant,
 }: {
   ids: string[];
-  labels: Map<string, string>;
+  labels: Readonly<Record<string, string>>;
   variant: 'accent' | 'neutral';
 }) {
+  const copy = useCopy(profileCopy);
   if (ids.length === 0) {
-    return <span className="profile-summary-empty">Not set yet</span>;
+    return <span className="profile-summary-empty">{copy.notSetYet}</span>;
   }
   return (
     <div className="profile-summary-badges">
       {ids.map((id) => (
         <span key={id} className={`profile-tag profile-tag-${variant}`}>
-          {labels.get(id) ?? id}
+          {labels[id] ?? id}
         </span>
       ))}
     </div>
@@ -55,8 +54,10 @@ function BadgeList({
 }
 
 function ActivityBadgeList({ ids }: { ids: string[] }) {
+  const copy = useCopy(profileCopy);
+  const labels: Readonly<Record<string, string>> = useCopy(sharedCopy).onboardingOptions.activities;
   if (ids.length === 0) {
-    return <span className="profile-summary-empty">Not set yet</span>;
+    return <span className="profile-summary-empty">{copy.notSetYet}</span>;
   }
   return (
     <div className="profile-summary-badges">
@@ -65,7 +66,7 @@ function ActivityBadgeList({ ids }: { ids: string[] }) {
         return (
           <span key={id} className="profile-tag profile-tag-success">
             {activity?.emoji && <span aria-hidden="true">{activity.emoji}</span>}
-            {activity?.label ?? id}
+            {labels[id] ?? id}
           </span>
         );
       })}
@@ -85,6 +86,7 @@ interface TrainingBlockProps {
 }
 
 function TrainingBlock({ icon, title, accent, className, editStep, children }: TrainingBlockProps) {
+  const copy = useCopy(profileCopy);
   return (
     <GlassCard
       variant="flat"
@@ -96,7 +98,7 @@ function TrainingBlock({ icon, title, accent, className, editStep, children }: T
         </span>
         <h3 className="training-block-title">{title}</h3>
         {editStep && (
-          <Link to={onboardingEditPath(editStep)} className="training-block-edit" aria-label={`Edit ${title}`}>
+          <Link to={onboardingEditPath(editStep)} className="training-block-edit" aria-label={fill(copy.editLabel, { title })}>
             <EditIcon />
           </Link>
         )}
@@ -122,36 +124,49 @@ function FrequencyStrip({ minDays, maxDays }: { minDays: number; maxDays: number
   );
 }
 
-function buildSummaryLine(profile: MyProfileResponse | null): string {
+function buildSummaryLine(
+  profile: MyProfileResponse | null,
+  copy: (typeof profileCopy)['he'],
+  equipmentLabels: Readonly<Record<string, string>>,
+  pluralize: ReturnType<typeof useI18n>['plural'],
+): string {
   if (!profile?.profile) return '';
   const parts: string[] = [];
 
   const goalsCount = profile.profile.goals.length;
   if (goalsCount > 0) {
-    parts.push(`${goalsCount} goal${goalsCount === 1 ? '' : 's'}`);
+    parts.push(pluralize(copy.summaryGoals, goalsCount));
   }
 
   const frequency = profile.profile.trainingFrequency;
   if (frequency) {
-    parts.push(frequency.flexibleSchedule ? 'flexible schedule' : `${frequency.minDays}–${frequency.maxDays} days/week`);
+    parts.push(
+      frequency.flexibleSchedule
+        ? copy.summaryFlexible
+        : fill(copy.summaryDays, { min: frequency.minDays, max: frequency.maxDays }),
+    );
   }
 
   const equipment = profile.profile.equipment;
   if (equipment.includes('full_gym')) {
-    parts.push('full gym access');
+    parts.push(copy.summaryFullGym);
   } else if (equipment.includes('home_equipment')) {
-    parts.push('home equipment');
+    parts.push(copy.summaryHomeEquipment);
   } else if (equipment.includes('bodyweight_only') || equipment.includes('no_equipment')) {
-    parts.push('bodyweight training');
+    parts.push(copy.summaryBodyweight);
   } else if (equipment.length > 0) {
-    parts.push((EQUIPMENT_LABELS.get(equipment[0]) ?? equipment[0]).toLowerCase());
+    parts.push(equipmentLabels[equipment[0]] ?? equipment[0]);
   }
 
   return parts.join(' · ');
 }
 
 export function ProfilePage() {
+  const achievementText = useCopy(achievementCopy);
+  const copy = useCopy(profileCopy);
   const { user } = useAuth();
+  const { language, plural } = useI18n();
+  const options = useCopy(sharedCopy).onboardingOptions;
   const [profile, setProfile] = useState<MyProfileResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string>();
@@ -167,14 +182,14 @@ export function ProfilePage() {
     getMyProfile()
       .then(setProfile)
       .catch((error) => {
-        setLoadError(error instanceof Error ? error.message : "Couldn't load your profile.");
+        setLoadError((error instanceof Error && error.message) || profileCopy[getActiveLanguage()].loadError);
       })
       .finally(() => setIsLoading(false));
   }, []);
 
   const frequency = profile?.profile?.trainingFrequency;
   const initial = user?.name?.trim().charAt(0).toUpperCase() ?? '?';
-  const summaryLine = buildSummaryLine(profile);
+  const summaryLine = buildSummaryLine(profile, copy, options.equipment, plural);
 
   return (
     <AppShell>
@@ -192,14 +207,14 @@ export function ProfilePage() {
                       {initial}
                     </span>
                     <div className="profile-header-text">
-                      <span className="profile-header-name">{user?.name}</span>
+                      <span className="profile-header-name" dir="auto">{user?.name}</span>
                       {summaryLine && <span className="profile-header-summary">{summaryLine}</span>}
                     </div>
                   </div>
 
                   <div className="profile-header-footer">
                     <div className="profile-account-row">
-                      <span className="text-label">Email</span>
+                      <span className="text-label">{copy.email}</span>
                       <span>{user?.email}</span>
                     </div>
                   </div>
@@ -207,12 +222,12 @@ export function ProfilePage() {
               )}
 
               <GlassCard variant="flat" className="profile-section-card profile-body-card">
-                <h2>{PROFILE_COPY.bodyTitle}</h2>
+                <h2>{copy.bodyTitle}</h2>
                 <BodySummary list={body.list} error={body.error} units={units} onRetry={body.reload} />
               </GlassCard>
 
               <GlassCard variant="flat" className="profile-section-card profile-training-card">
-                <h2>Training Profile</h2>
+                <h2>{copy.trainingProfile}</h2>
 
                 {isLoading && (
                   <div className="profile-loading-inline">
@@ -226,17 +241,17 @@ export function ProfilePage() {
                   <div className="training-block-grid" ref={trainingBlocksRef}>
                     <TrainingBlock
                       icon={<FlagIcon />}
-                      title="Goals"
+                      title={copy.goals}
                       accent="orange"
                       className="training-block-goals"
                       editStep="goals"
                     >
-                      <BadgeList ids={profile?.profile?.goals ?? []} labels={GOAL_LABELS} variant="accent" />
+                      <BadgeList ids={profile?.profile?.goals ?? []} labels={options.goals} variant="accent" />
                     </TrainingBlock>
 
                     <TrainingBlock
                       icon={<CalendarIcon />}
-                      title="Training Frequency"
+                      title={copy.trainingFrequency}
                       accent="blue"
                       className="training-block-frequency"
                       editStep="frequency"
@@ -245,18 +260,18 @@ export function ProfilePage() {
                         <>
                           <FrequencyStrip minDays={frequency.minDays} maxDays={frequency.maxDays} />
                           <span className="training-block-caption">
-                            {frequency.minDays}–{frequency.maxDays} days/week
-                            {frequency.flexibleSchedule && ' · Flexible schedule'}
+                            {fill(copy.daysPerWeek, { min: frequency.minDays, max: frequency.maxDays })}
+                            {frequency.flexibleSchedule && copy.flexibleSchedule}
                           </span>
                         </>
                       ) : (
-                        <span className="profile-summary-empty">Not set yet</span>
+                        <span className="profile-summary-empty">{copy.notSetYet}</span>
                       )}
                     </TrainingBlock>
 
                     <TrainingBlock
                       icon={<CompassIcon />}
-                      title="Preferred Activities"
+                      title={copy.preferredActivities}
                       accent="teal"
                       className="training-block-activities"
                       editStep="activities"
@@ -266,17 +281,17 @@ export function ProfilePage() {
 
                     <TrainingBlock
                       icon={<DumbbellIcon />}
-                      title="Equipment"
+                      title={copy.equipment}
                       accent="gray"
                       className="training-block-equipment"
                       editStep="equipment"
                     >
-                      <BadgeList ids={profile?.profile?.equipment ?? []} labels={EQUIPMENT_LABELS} variant="neutral" />
+                      <BadgeList ids={profile?.profile?.equipment ?? []} labels={options.equipment} variant="neutral" />
                     </TrainingBlock>
 
                     <TrainingBlock
                       icon={<IconSalad size={20} />}
-                      title={PROFILE_COPY.nutritionPreferencesTitle}
+                      title={copy.nutritionPreferencesTitle}
                       accent="teal"
                       className="training-block-nutrition"
                       editStep="nutrition_preferences"
@@ -285,9 +300,9 @@ export function ProfilePage() {
                         <dl className="training-block-rows">
                           {[
                             ...(profile.profile.weightGoal
-                              ? [{ label: PROFILE_COPY.weightGoalLabel, value: describeWeightGoal(profile.profile.weightGoal, units.weight) }]
+                              ? [{ label: copy.weightGoalLabel, value: describeWeightGoal(profile.profile.weightGoal, units.weight, language) }]
                               : []),
-                            ...(profile.profile.nutritionPreferences ? describeNutritionPreferences(profile.profile.nutritionPreferences) : []),
+                            ...(profile.profile.nutritionPreferences ? describeNutritionPreferences(profile.profile.nutritionPreferences, language) : []),
                           ].map((row) => (
                             <div key={row.label} className="training-block-row">
                               <dt>{row.label}</dt>
@@ -296,21 +311,21 @@ export function ProfilePage() {
                           ))}
                         </dl>
                       ) : (
-                        <span className="profile-summary-empty">Not set yet</span>
+                        <span className="profile-summary-empty">{copy.notSetYet}</span>
                       )}
                     </TrainingBlock>
                   </div>
                 )}
 
                 <Link to={ROUTES.ONBOARDING} className="profile-redo-onboarding-link">
-                  Redo full onboarding
+                  {copy.redoOnboarding}
                 </Link>
               </GlassCard>
             </div>
 
             <div className="profile-side-column">
               <GlassCard variant="flat" className="profile-section-card profile-stats-card">
-                <h2>{ACHIEVEMENT_COPY.statsTitle}</h2>
+                <h2>{achievementText.statsTitle}</h2>
 
                 {!progress && !progressError && (
                   <div className="profile-loading-inline">
@@ -330,13 +345,13 @@ export function ProfilePage() {
 
                 <Link to={ROUTES.PROFILE_ACHIEVEMENTS} className="profile-settings-link">
                   <IconTrophy size={20} aria-hidden="true" />
-                  <span>{ACHIEVEMENT_COPY.allTitle}</span>
-                  <IconChevronRight size={20} aria-hidden="true" />
+                  <span>{achievementText.allTitle}</span>
+                  <IconChevronRight className="flip-rtl" size={20} aria-hidden="true" />
                 </Link>
                 <Link to={ROUTES.SETTINGS} className="profile-settings-link">
                   <IconSettings size={20} aria-hidden="true" />
-                  <span>{PROFILE_COPY.settings}</span>
-                  <IconChevronRight size={20} aria-hidden="true" />
+                  <span>{copy.settings}</span>
+                  <IconChevronRight className="flip-rtl" size={20} aria-hidden="true" />
                 </Link>
                 <LogoutButton />
               </GlassCard>

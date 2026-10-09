@@ -8,7 +8,8 @@ import { ROUTES } from '../../../app/config/routes';
 import { UnreadBadge } from '../../../features/notifications/components/UnreadBadge/UnreadBadge';
 import { TabUpdateDot } from '../../../features/nutrition/components/TabUpdateDot/TabUpdateDot';
 import { clearTabUpdate, useTabUpdates } from '../../../features/nutrition/tabUpdates';
-import { NUTRITION_COPY } from '../../../features/nutrition/data/nutritionCopy';
+import { useCopy } from '@sistem/shared';
+import { appCopy } from '../../../copy';
 import './TabBar.css';
 
 interface TabItem {
@@ -21,31 +22,33 @@ interface TabItem {
 
 const ICON_SIZE = 24;
 
+type TabLabels = (typeof appCopy)['he']['tabs'];
+
 // Tabs are chosen by role (PRD §5 trainee tabs, §6 coach mode).
-function tabsFor(role: 'trainee' | 'coach', updates: TabUpdates): TabItem[] {
+function tabsFor(role: 'trainee' | 'coach', updates: TabUpdates, labels: TabLabels): TabItem[] {
   if (role === 'coach') {
     return [
-      { to: ROUTES.COACH_INBOX, label: 'Inbox', icon: <IconInbox size={ICON_SIZE} />, badge: <UnreadBadge /> },
-      { to: ROUTES.COACH_TRAINEES, label: 'Trainees', icon: <IconUsers size={ICON_SIZE} /> },
-      { to: ROUTES.COACH_PROFILE, label: 'Profile', icon: <IconUser size={ICON_SIZE} /> },
+      { to: ROUTES.COACH_INBOX, label: labels.inbox, icon: <IconInbox size={ICON_SIZE} />, badge: <UnreadBadge /> },
+      { to: ROUTES.COACH_TRAINEES, label: labels.trainees, icon: <IconUsers size={ICON_SIZE} /> },
+      { to: ROUTES.COACH_PROFILE, label: labels.profile, icon: <IconUser size={ICON_SIZE} /> },
     ];
   }
 
   return [
-    { to: ROUTES.TRAINEE_HOME, label: 'Home', icon: <IconHome size={ICON_SIZE} /> },
+    { to: ROUTES.TRAINEE_HOME, label: labels.home, icon: <IconHome size={ICON_SIZE} /> },
     {
       to: ROUTES.WORKOUTS,
-      label: 'Workouts',
+      label: labels.workouts,
       icon: <IconBarbell size={ICON_SIZE} />,
       badge: <TabUpdateDot visible={updates.workouts} />,
     },
     {
       to: ROUTES.NUTRITION,
-      label: NUTRITION_COPY.tabLabel,
+      label: labels.nutrition,
       icon: <IconSalad size={ICON_SIZE} />,
       badge: <TabUpdateDot visible={updates.nutrition} />,
     },
-    { to: ROUTES.PROFILE, label: 'Profile', icon: <IconUser size={ICON_SIZE} /> },
+    { to: ROUTES.PROFILE, label: labels.profile, icon: <IconUser size={ICON_SIZE} /> },
   ];
 }
 
@@ -58,6 +61,7 @@ function openTab(pathname: string): UpdateTab | null {
 
 export function TabBar() {
   const { user } = useAuth();
+  const copy = useCopy(appCopy);
   const { pathname } = useLocation();
   const isTrainee = user?.role === 'trainee';
   const updates = useTabUpdates(isTrainee);
@@ -71,13 +75,13 @@ export function TabBar() {
 
   if (!user) return null;
 
-  const tabs = tabsFor(user.role, updates);
+  const tabs = tabsFor(user.role, updates, copy.tabs);
 
   return (
-    <nav className="tab-bar" aria-label="Main">
+    <nav className="tab-bar" aria-label={copy.tabs.navigation}>
       {tabs.map((tab) => (
         <NavLink
-          key={tab.label}
+          key={tab.to}
           to={tab.to}
           className={({ isActive }) => 'tab-bar-link' + (isActive ? ' tab-bar-link-active' : '')}
         >

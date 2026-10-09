@@ -1,3 +1,4 @@
+import { useCopy, getActiveLanguage } from '@sistem/shared';
 import { useCallback, useEffect, useState } from 'react';
 import type { TraineeNutritionPlanResponse } from '@sistem/types';
 import { AppShell } from '../../../../components/layout/AppShell/AppShell';
@@ -9,7 +10,7 @@ import { PortionTracker } from '../../components/PortionTracker/PortionTracker';
 import { MealPhotoField } from '../../components/MealPhotoField/MealPhotoField';
 import { useMealTracker } from '../../hooks/useMealTracker';
 import { loadNutritionCache, saveNutritionCache } from '../../data/nutritionCache';
-import { NUTRITION_COPY } from '../../data/nutritionCopy';
+import { nutritionCopy } from '../../copy';
 import './NutritionPage.css';
 
 // Trainee Nutrition tab (PRD §5.6): her coach's newest published plan, the coach's note,
@@ -17,13 +18,14 @@ import './NutritionPage.css';
 // reach this screen (the server doesn't send them). The last plan is kept on the phone,
 // so the tab and the tracker work without a connection.
 export function NutritionPage() {
+  const copy = useCopy(nutritionCopy);
   const { user } = useAuth();
   const userId = user?.id ?? 'anonymous';
 
   return (
     <AppShell>
       <div className="nutrition-page">
-        <h1 className="nutrition-page-title">{NUTRITION_COPY.title}</h1>
+        <h1 className="nutrition-page-title">{copy.title}</h1>
         <NutritionContent key={userId} userId={userId} />
       </div>
     </AppShell>
@@ -31,6 +33,7 @@ export function NutritionPage() {
 }
 
 function NutritionContent({ userId }: { userId: string }) {
+  const copy = useCopy(nutritionCopy);
   const [data, setData] = useState<TraineeNutritionPlanResponse | null>(() => loadNutritionCache(userId).plan);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,7 +48,7 @@ function NutritionContent({ userId }: { userId: string }) {
       setData(response);
       setError(null);
     } catch {
-      setError(NUTRITION_COPY.loadError);
+      setError(nutritionCopy[getActiveLanguage()].loadError);
     } finally {
       setIsLoading(false);
     }
@@ -69,9 +72,9 @@ function NutritionContent({ userId }: { userId: string }) {
     if (cached) saveNutritionCache(userId, { plan: { ...cached, introUnseen: false } });
   }, [data?.introUnseen, userId, version]);
 
-  if (!data && isLoading) return <StateMessage>{NUTRITION_COPY.loading}</StateMessage>;
+  if (!data && isLoading) return <StateMessage>{copy.loading}</StateMessage>;
   if (!data) return <StateMessage onRetry={() => void load()}>{error}</StateMessage>;
-  if (!plan) return <StateMessage>{NUTRITION_COPY.empty}</StateMessage>;
+  if (!plan) return <StateMessage>{copy.empty}</StateMessage>;
 
   return (
     <NutritionPlanView

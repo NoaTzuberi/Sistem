@@ -9,6 +9,7 @@ import {
   PUSH_PLATFORM_IDS,
 } from './users.constants';
 import { isValidTimezone } from './timezone';
+import { LANGUAGE_IDS } from './units';
 
 interface UserPreferences {
   units?: {
@@ -17,6 +18,8 @@ interface UserPreferences {
     // Body measurements (Phase 10). Unset = cm.
     length?: 'cm' | 'in';
   };
+  /** UI language (Phase 15). Unset = Hebrew. */
+  language?: 'he' | 'en';
 }
 
 export interface PushToken {
@@ -55,6 +58,7 @@ const preferencesSchema = new Schema<UserPreferences>(
       distance: { type: String, enum: ['km', 'miles'] },
       length: { type: String, enum: ['cm', 'in'] },
     },
+    language: { type: String, enum: LANGUAGE_IDS },
   },
   { _id: false },
 );

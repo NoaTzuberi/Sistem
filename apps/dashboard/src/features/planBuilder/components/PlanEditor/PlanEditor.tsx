@@ -7,7 +7,7 @@ import type { AiTrainingRecommendation, CoachPlan, ExerciseFacts } from '@sistem
 import { traineePath } from '../../../../app/config/routes';
 import { Badge } from '../../../../components/common/Badge/Badge';
 import { Button } from '../../../../components/common/Button/Button';
-import { formatWeekSpanWithDays, weekRelationLabel } from '@sistem/shared';
+import { fill, formatWeekSpanWithDays, sharedCopy, useCopy, useLanguage, weekRelationLabel } from '@sistem/shared';
 import { usePlanEditor } from '../../hooks/usePlanEditor';
 import { useSortSensors } from '../../hooks/useSortSensors';
 import { duplicateWorkout, moveItem, newExercise, newWorkout } from '../../planDraft';
@@ -18,8 +18,9 @@ import { WorkoutCard } from '../WorkoutCard/WorkoutCard';
 import { useLatestAiDraft } from '../../../aiDraft/hooks/useLatestAiDraft';
 import { draftWorkoutsFromAi } from '../../../aiDraft/aiDraftToPlan';
 import { AiRationalePanel } from '../../../aiDraft/components/AiRationalePanel/AiRationalePanel';
-import { AI_DRAFT_COPY } from '../../../aiDraft/data/aiDraftCopy';
+import { aiDraftCopy } from '../../../aiDraft/copy';
 import './PlanEditor.css';
+import { planBuilderCopy } from '../../copy';
 
 interface PlanEditorProps {
   traineeId: string;
@@ -32,6 +33,10 @@ interface PlanEditorProps {
 }
 
 export function PlanEditor({ traineeId, traineeName, currentWeekStart, initialPlan, loadAiDraftId }: PlanEditorProps) {
+  const language = useLanguage();
+  const shared = useCopy(sharedCopy);
+  const aiText = useCopy(aiDraftCopy);
+  const copy = useCopy(planBuilderCopy);
   const navigate = useNavigate();
   const location = useLocation();
   const ai = useLatestAiDraft(traineeId);
@@ -64,7 +69,7 @@ export function PlanEditor({ traineeId, traineeName, currentWeekStart, initialPl
 
   function handleLoadAiDraft() {
     if (!ai.ready) return;
-    if (workouts.length > 0 && !window.confirm(AI_DRAFT_COPY.replaceConfirm)) return;
+    if (workouts.length > 0 && !window.confirm(aiText.training.replaceConfirm)) return;
     loadAiDraft(ai.ready);
   }
 
@@ -118,36 +123,36 @@ export function PlanEditor({ traineeId, traineeName, currentWeekStart, initialPl
   }
 
   function handlePublish() {
-    if (!window.confirm(`Publish this plan? ${traineeName} will see it right away.`)) return;
+    if (!window.confirm(fill(copy.publishConfirm, { name: traineeName }))) return;
     void runAction(publish);
   }
 
   function handleUnpublish() {
-    if (isDirty && !window.confirm('Unpublish and keep your unsaved changes in the draft?')) return;
-    if (!isDirty && !window.confirm(`Unpublish this plan? ${traineeName} will no longer see it.`)) return;
+    if (isDirty && !window.confirm(copy.unpublishDirtyConfirm)) return;
+    if (!isDirty && !window.confirm(fill(copy.unpublishConfirm, { name: traineeName }))) return;
     void runAction(unpublish);
   }
 
   async function handleDelete() {
-    if (!window.confirm('Delete this plan? This cannot be undone.')) return;
+    if (!window.confirm(copy.deleteConfirm)) return;
     if (await runAction(remove)) navigate(plansTab, { replace: true });
   }
 
   return (
     <div className="plan-editor">
       <Link className="plan-back" to={plansTab}>
-        ← {traineeName}
+        {fill(copy.backToName, { name: traineeName })}
       </Link>
 
       <header className="plan-header">
         <div className="plan-heading">
           <h1 className="plan-title">
-            {[weekRelationLabel(plan.weekStartDate, currentWeekStart), formatWeekSpanWithDays(plan.weekStartDate)]
+            {[weekRelationLabel(plan.weekStartDate, currentWeekStart, language), formatWeekSpanWithDays(plan.weekStartDate, language)]
               .filter(Boolean)
               .join(' · ')}
           </h1>
-          <Badge tone={isPublished ? 'accent' : 'neutral'}>{isPublished ? 'Published' : 'Draft'}</Badge>
-          {plan.locked && <Badge>Started by trainee</Badge>}
+          <Badge tone={isPublished ? 'accent' : 'neutral'}>{shared.coach.planStatus[plan.status]}</Badge>
+          {plan.locked && <Badge>{shared.coach.startedByTrainee}</Badge>}
           <SaveIndicator status={saveStatus} />
         </div>
 
@@ -156,45 +161,45 @@ export function PlanEditor({ traineeId, traineeName, currentWeekStart, initialPl
             <>
               {/* Changes go live to the trainee, so a published plan is never autosaved. */}
               <Button variant="primary" disabled={!isDirty || isBusy || saveStatus === 'saving'} onClick={() => void save()}>
-                Save changes
+                {copy.saveChanges}
               </Button>
               <Button disabled={plan.locked || isBusy} onClick={handleUnpublish}>
-                Unpublish
+                {copy.unpublish}
               </Button>
             </>
           ) : (
             <>
               {(ai.ready || ai.running) && (
                 <Button disabled={!ai.ready || isBusy} onClick={handleLoadAiDraft}>
-                  {ai.ready ? AI_DRAFT_COPY.loadIntoPlan : AI_DRAFT_COPY.loadingRunning}
+                  {ai.ready ? aiText.training.loadIntoPlan : aiText.training.loadingRunning}
                 </Button>
               )}
               <Button disabled={!isDirty || isBusy || saveStatus === 'saving'} onClick={() => void save()}>
-                Save draft
+                {copy.saveDraft}
               </Button>
               <Button variant="primary" disabled={isBusy} onClick={handlePublish}>
-                Publish
+                {copy.publish}
               </Button>
             </>
           )}
           <Button variant="danger" disabled={plan.locked || isBusy} onClick={handleDelete}>
-            Delete
+            {copy.delete}
           </Button>
         </div>
       </header>
 
       <p className="plan-mode-note">
         {isPublished
-          ? 'This plan is live. Changes reach the trainee only when you press Save changes.'
-          : 'Drafts are saved automatically a few seconds after your last change.'}
-        {plan.locked && ' The trainee already started a workout from it, so it can be edited but not unpublished or deleted.'}
+          ? copy.liveNote
+          : copy.draftNote}
+        {plan.locked && copy.lockedNote}
       </p>
 
       {(error || planIssues.length > 0) && (
         <div className="plan-errors" role="alert">
           {issues.length > 0 ? (
             <>
-              <p className="plan-errors-title">The plan was not saved. Fix the marked items:</p>
+              <p className="plan-errors-title">{copy.notSaved}</p>
               {planIssues.length > 0 && (
                 <ul className="plan-errors-list">
                   {planIssues.map((issue) => (
@@ -216,7 +221,7 @@ export function PlanEditor({ traineeId, traineeName, currentWeekStart, initialPl
           )}
 
           <label className="plan-notes">
-            <span className="plan-notes-label">Plan notes</span>
+            <span className="plan-notes-label">{copy.planNotes}</span>
             <textarea
               className="plan-notes-input"
               rows={2}
@@ -228,7 +233,7 @@ export function PlanEditor({ traineeId, traineeName, currentWeekStart, initialPl
             />
           </label>
 
-          {workouts.length === 0 && <p className="plan-empty">No workouts yet. Add the first one.</p>}
+          {workouts.length === 0 && <p className="plan-empty">{copy.noWorkouts}</p>}
 
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={workouts.map((workout) => workout.key)} strategy={verticalListSortingStrategy}>
@@ -252,7 +257,7 @@ export function PlanEditor({ traineeId, traineeName, currentWeekStart, initialPl
             </SortableContext>
           </DndContext>
 
-          <Button onClick={handleAddWorkout}>+ Add workout</Button>
+          <Button onClick={handleAddWorkout}>{copy.addWorkout}</Button>
         </div>
 
         <ExerciseLibrary targetTitle={selected?.title} onAdd={handleAddExercise} />

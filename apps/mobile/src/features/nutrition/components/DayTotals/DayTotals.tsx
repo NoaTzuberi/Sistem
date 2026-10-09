@@ -1,6 +1,6 @@
 import type { FoodGroup, PortionCounts } from '@sistem/types';
-import { VEGETABLES_FREE_LABEL, describePortion, mealPortionList } from '@sistem/shared';
-import { NUTRITION_COPY } from '../../data/nutritionCopy';
+import { describePortion, fill, mealPortionList, sharedCopy, useCopy, useLanguage } from '@sistem/shared';
+import { nutritionCopy } from '../../copy';
 import './DayTotals.css';
 
 interface DayTotalsProps {
@@ -16,14 +16,17 @@ interface DayTotalsProps {
  * the same with circles).
  */
 export function DayTotals({ portions, vegetablesFree, hasVegetableSwaps, onOpenSwaps }: DayTotalsProps) {
+  const language = useLanguage();
+  const shared = useCopy(sharedCopy);
+  const copy = useCopy(nutritionCopy);
   return (
-    <section className="day-totals" aria-label={NUTRITION_COPY.coachDayTitle}>
-      <h2 className="day-totals-title">{NUTRITION_COPY.coachDayTitle}</h2>
+    <section className="day-totals" aria-label={copy.coachDayTitle}>
+      <h2 className="day-totals-title">{copy.coachDayTitle}</h2>
       <div className="day-totals-list">
         {mealPortionList(portions).map(({ group, count }) => {
-          const label = describePortion(group, count);
+          const label = describePortion(group, count, language);
           return (
-            <button key={group} type="button" className="day-totals-group" onClick={() => onOpenSwaps(group)} aria-label={NUTRITION_COPY.openSwaps(label)}>
+            <button key={group} type="button" className="day-totals-group" onClick={() => onOpenSwaps(group)} aria-label={fill(copy.openSwaps, { label })}>
               {label}
             </button>
           );
@@ -31,10 +34,10 @@ export function DayTotals({ portions, vegetablesFree, hasVegetableSwaps, onOpenS
         {vegetablesFree &&
           (hasVegetableSwaps ? (
             <button type="button" className="day-totals-group" onClick={() => onOpenSwaps('vegetable')}>
-              {VEGETABLES_FREE_LABEL}
+              {shared.nutrition.vegetablesFree}
             </button>
           ) : (
-            <span className="day-totals-group day-totals-static">{VEGETABLES_FREE_LABEL}</span>
+            <span className="day-totals-group day-totals-static">{shared.nutrition.vegetablesFree}</span>
           ))}
       </div>
     </section>

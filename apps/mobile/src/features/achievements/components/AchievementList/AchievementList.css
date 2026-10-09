@@ -7,7 +7,7 @@
 .achievement-list-title {
   margin: 0 0 var(--space-2);
   padding-bottom: var(--space-2);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: var(--border-width-thin) solid var(--color-border);
   font-size: var(--text-sm);
   font-weight: var(--font-weight-bold);
   letter-spacing: var(--letter-spacing-wide);
@@ -33,7 +33,7 @@
 
 /* "Done" uses Cherry Rose, never green (CLAUDE.md). */
 .achievement-row-unlocked {
-  border-left: 3px solid var(--color-primary-deep);
+  border-inline-start: var(--border-width-thick) solid var(--color-primary-deep);
   background-color: var(--color-primary-soft);
 }
 

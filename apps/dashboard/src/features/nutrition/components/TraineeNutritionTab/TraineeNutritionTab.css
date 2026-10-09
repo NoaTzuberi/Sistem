@@ -26,7 +26,7 @@
 
 .trainee-nutrition-meals {
   margin: 0;
-  padding-left: var(--space-4);
+  padding-inline-start: var(--space-4);
   font-size: var(--text-sm);
 }
 
@@ -34,7 +34,7 @@
   text-decoration: none;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 960px) { /* = --breakpoint-2xl */
   .trainee-nutrition {
     grid-template-columns: minmax(0, 1fr);
   }

@@ -1,5 +1,6 @@
+import { useCopy } from '@sistem/shared';
 import { unlockAudio } from '../../data/intervalSounds';
-import { SESSION_COPY } from '../../data/workoutCopy';
+import { workoutCopy } from '../../copy';
 import { useSoundMuted } from '../../hooks/useSoundMuted';
 import './SoundToggle.css';
 
@@ -9,6 +10,7 @@ interface SoundToggleProps {
 
 /** Sound on / off for every workout timer (rest, holds, intervals) — one shared setting. */
 export function SoundToggle({ className }: SoundToggleProps) {
+  const copy = useCopy(workoutCopy);
   const [muted, toggle] = useSoundMuted();
 
   function handleClick() {
@@ -21,7 +23,7 @@ export function SoundToggle({ className }: SoundToggleProps) {
     <button
       type="button"
       className={['sound-toggle', className].filter(Boolean).join(' ')}
-      aria-label={muted ? SESSION_COPY.soundOn : SESSION_COPY.soundOff}
+      aria-label={muted ? copy.session.soundOn : copy.session.soundOff}
       aria-pressed={muted}
       onClick={handleClick}
     >

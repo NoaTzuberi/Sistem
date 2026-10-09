@@ -18,14 +18,14 @@
 .progress-photos-poses {
   display: flex;
   align-self: flex-start;
-  border: 1px solid var(--color-border);
+  border: var(--border-width-thin) solid var(--color-border);
 }
 
 .progress-photos-pose {
   min-width: 72px;
   padding: var(--space-1) var(--space-3);
   border: 0;
-  border-left: 1px solid var(--color-border);
+  border-inline-start: var(--border-width-thin) solid var(--color-border);
   background: var(--color-bg);
   color: var(--color-text);
   font: inherit;
@@ -34,7 +34,7 @@
 }
 
 .progress-photos-pose:first-child {
-  border-left: 0;
+  border-inline-start: 0;
 }
 
 @media (hover: hover) {
@@ -75,7 +75,7 @@
 
 .progress-photos-select select {
   padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-thin) solid var(--color-border);
   background: var(--color-bg);
   color: var(--color-text);
   font: inherit;
@@ -130,7 +130,7 @@
 }
 
 .progress-photo-missing {
-  border: 1px dashed var(--color-border);
+  border: var(--border-width-thin) dashed var(--color-border);
   background: none;
 }
 

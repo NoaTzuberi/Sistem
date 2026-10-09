@@ -1,3 +1,4 @@
+import { fill, useCopy, useI18n, getActiveLanguage, isolateLtr } from '@sistem/shared';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -10,7 +11,7 @@ import { ROUTES, workoutLogPath, workoutSummaryPath } from '../../../../app/conf
 import { REST_LATE_BEEP_MS, REST_OVER_NOTICE_MS, SYNC_RETRY_MS, VIBRATE_SET_DONE_MS } from '../../data/sessionConfig';
 import { countDone, nextOpenSet, nextOpenSetAfter } from '../../data/sessionSets';
 import type { SessionModel } from '../../data/sessionSets';
-import { INTERVAL_COPY, SESSION_COPY } from '../../data/workoutCopy';
+import { workoutCopy } from '../../copy';
 import { buildBlockPhases } from '../../data/intervalTimeline';
 import { beep, isCountdownBeep, isSoundMuted, unlockAudio } from '../../data/intervalSounds';
 import type { IntervalPhase } from '../../data/intervalTimeline';
@@ -60,6 +61,8 @@ function describeSet(model: SessionModel, key: string): string {
  * change saved on the phone first and on the server right after.
  */
 export function WorkoutSessionPage() {
+  const { plural } = useI18n();
+  const copy = useCopy(workoutCopy);
   const { logId = '' } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -236,7 +239,7 @@ export function WorkoutSessionPage() {
     if (Date.now() - rest.endsAt < REST_LATE_BEEP_MS) beep('long', isSoundMuted());
     vibrate(VIBRATE_SET_DONE_MS);
     endRest();
-    setRestOverText(currentSet && model ? SESSION_COPY.restOverNext(describeSet(model, currentSet.key)) : SESSION_COPY.restOver);
+    setRestOverText(currentSet && model ? fill(workoutCopy[getActiveLanguage()].session.restOverNext, { next: describeSet(model, currentSet.key) }) : workoutCopy[getActiveLanguage()].session.restOver);
   }, [currentSet, endRest, model, rest, restRemainingMs]);
 
   useEffect(() => {
@@ -296,11 +299,11 @@ export function WorkoutSessionPage() {
           {loadError ? (
             <StateMessage>{loadError}</StateMessage>
           ) : (
-            <StateMessage>{SESSION_COPY.loading}</StateMessage>
+            <StateMessage>{copy.session.loading}</StateMessage>
           )}
           {loadError && (
             <Button variant="secondary" onClick={() => navigate(ROUTES.TRAINEE_HOME)}>
-              {SESSION_COPY.leave}
+              {copy.session.leave}
             </Button>
           )}
         </div>
@@ -309,7 +312,7 @@ export function WorkoutSessionPage() {
   }
 
   const holdForRow = hold && holdRemainingMs !== null ? { key: hold.key, remainingMs: holdRemainingMs } : null;
-  const statusLine = finishQueued ? SESSION_COPY.finishQueued : syncState === 'offline' ? SESSION_COPY.offline : null;
+  const statusLine = finishQueued ? copy.session.finishQueued : syncState === 'offline' ? copy.session.offline : null;
 
   return (
     <AppShell hideTabBar>
@@ -318,7 +321,7 @@ export function WorkoutSessionPage() {
           <button
             type="button"
             className="workout-session-icon-button"
-            aria-label={SESSION_COPY.leave}
+            aria-label={copy.session.leave}
             onClick={() => navigate(ROUTES.TRAINEE_HOME)}
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -329,7 +332,7 @@ export function WorkoutSessionPage() {
             <h1 className="workout-session-title">{session.log.workoutTitle}</h1>
             <span className="workout-session-meta">
               <SessionClock startedAt={session.log.startedAt} serverOffsetMs={serverOffsetMs} /> ·{' '}
-              {SESSION_COPY.setsProgress(doneSets, totalSets)}
+              {fill(copy.session.setsProgress, { progress: isolateLtr(`${doneSets} / ${totalSets}`) })}
             </span>
           </div>
           {/* One sound setting for every timer: rest, holds and intervals. */}
@@ -337,7 +340,7 @@ export function WorkoutSessionPage() {
           <button
             type="button"
             className="workout-session-icon-button"
-            aria-label={SESSION_COPY.menu}
+            aria-label={copy.session.menu}
             onClick={() => setDialog('menu')}
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -353,7 +356,7 @@ export function WorkoutSessionPage() {
         {actionError && <p className="workout-session-error">{actionError}</p>}
         {showFocusTip && <FocusTip />}
 
-        {session.workout.notes && <p className="workout-session-notes">{session.workout.notes}</p>}
+        {session.workout.notes && <p className="workout-session-notes" dir="auto">{session.workout.notes}</p>}
 
         <div className="workout-session-blocks">
           {model.blocks.map((block) => (
@@ -395,7 +398,7 @@ export function WorkoutSessionPage() {
           )}
           <div className="workout-session-finish">
             <Button className="workout-session-finish-button" onClick={handleFinishClick} loading={isFinishing}>
-              {SESSION_COPY.finish}
+              {copy.session.finish}
             </Button>
           </div>
         </footer>,
@@ -407,7 +410,7 @@ export function WorkoutSessionPage() {
           run={interval.run}
           remainingMs={interval.remainingMs}
           catchUpCount={interval.catchUpCount}
-          doneLabel={INTERVAL_COPY.backToWorkout}
+          doneLabel={copy.interval.backToWorkout}
           onPause={interval.pause}
           onResume={interval.resume}
           onSkip={interval.skip}
@@ -416,13 +419,13 @@ export function WorkoutSessionPage() {
         />
       )}
 
-      <Modal isOpen={dialog === 'menu'} onClose={() => setDialog(null)} variant="flat" title={SESSION_COPY.menuTitle}>
+      <Modal isOpen={dialog === 'menu'} onClose={() => setDialog(null)} variant="flat" title={copy.session.menuTitle}>
         <div className="workout-session-dialog">
           <Button variant="secondary" onClick={() => navigate(ROUTES.INTERVAL_TIMER)}>
-            {INTERVAL_COPY.timerTitle}
+            {copy.interval.timerTitle}
           </Button>
           <Button variant="danger" onClick={() => setDialog('confirmDiscard')}>
-            {SESSION_COPY.discard}
+            {copy.session.discard}
           </Button>
         </div>
       </Modal>
@@ -431,15 +434,15 @@ export function WorkoutSessionPage() {
         isOpen={dialog === 'confirmDiscard'}
         onClose={() => setDialog(null)}
         variant="flat"
-        title={SESSION_COPY.confirmDiscardTitle}
+        title={copy.session.confirmDiscardTitle}
       >
         <div className="workout-session-dialog">
-          <p className="workout-session-dialog-text">{SESSION_COPY.confirmDiscard}</p>
+          <p className="workout-session-dialog-text">{copy.session.confirmDiscard}</p>
           <Button variant="danger" onClick={handleDiscard} loading={isDiscarding}>
-            {SESSION_COPY.discardConfirm}
+            {copy.session.discardConfirm}
           </Button>
           <Button variant="ghost" onClick={() => setDialog(null)} disabled={isDiscarding}>
-            {SESSION_COPY.cancel}
+            {copy.session.cancel}
           </Button>
         </div>
       </Modal>
@@ -448,13 +451,13 @@ export function WorkoutSessionPage() {
         isOpen={dialog === 'confirmFinish'}
         onClose={() => setDialog(null)}
         variant="flat"
-        title={SESSION_COPY.confirmFinishTitle}
+        title={copy.session.confirmFinishTitle}
       >
         <div className="workout-session-dialog">
-          <p className="workout-session-dialog-text">{SESSION_COPY.notDoneCount(totalSets - doneSets)}</p>
-          <Button onClick={() => void doFinish()}>{SESSION_COPY.finishAnyway}</Button>
+          <p className="workout-session-dialog-text">{plural(copy.session.notDoneCount, totalSets - doneSets)}</p>
+          <Button onClick={() => void doFinish()}>{copy.session.finishAnyway}</Button>
           <Button variant="ghost" onClick={() => setDialog(null)}>
-            {SESSION_COPY.keepGoing}
+            {copy.session.keepGoing}
           </Button>
         </div>
       </Modal>
@@ -463,11 +466,11 @@ export function WorkoutSessionPage() {
         isOpen={dialog === 'nothingDone'}
         onClose={() => setDialog(null)}
         variant="flat"
-        title={SESSION_COPY.nothingDoneTitle}
+        title={copy.session.nothingDoneTitle}
       >
         <div className="workout-session-dialog">
-          <p className="workout-session-dialog-text">{SESSION_COPY.nothingDone}</p>
-          <Button onClick={() => setDialog(null)}>{SESSION_COPY.ok}</Button>
+          <p className="workout-session-dialog-text">{copy.session.nothingDone}</p>
+          <Button onClick={() => setDialog(null)}>{copy.session.ok}</Button>
         </div>
       </Modal>
     </AppShell>

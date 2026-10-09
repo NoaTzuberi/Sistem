@@ -1,3 +1,4 @@
+
 import type { ImgHTMLAttributes } from 'react';
 import logoPink from '@sistem/tokens/brand/sistem_logo_horizontal_pink.png';
 import logoMark from '@sistem/tokens/brand/sistem_mark_transparent.png';
@@ -21,5 +22,6 @@ const SOURCES: Record<LogoVariant, string> = { full: logoPink, mark: logoMark };
 export function Logo({ size = 'md', variant = 'full', className, ...rest }: LogoProps) {
   const classNames = ['logo', `logo-${variant}`, `logo-${size}`, className].filter(Boolean).join(' ');
 
+  // The brand name stays as it is in every language (owner, Phase 15). i18n-ignore
   return <img className={classNames} src={SOURCES[variant]} alt="Sistem" {...rest} />;
 }

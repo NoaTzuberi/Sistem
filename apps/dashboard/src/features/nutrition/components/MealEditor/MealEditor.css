@@ -4,7 +4,7 @@
   gap: var(--space-2);
   padding: var(--space-3);
   background-color: var(--color-surface);
-  border-left: 3px solid var(--color-primary);
+  border-inline-start: var(--border-width-thick) solid var(--color-primary);
 }
 
 .meal-editor-header {
@@ -80,7 +80,7 @@
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-1) 0;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: var(--border-width-thin) solid var(--color-border);
 }
 
 .meal-line-food,
@@ -107,12 +107,12 @@
   padding: 0 var(--space-2);
   font-size: var(--text-sm);
   background-color: var(--color-bg);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-thin) solid var(--color-border);
   border-radius: var(--radius-none);
 }
 
 .meal-input:focus-visible,
 .meal-select:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: var(--border-width-medium) solid var(--color-primary);
   outline-offset: 0;
 }

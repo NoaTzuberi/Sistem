@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import type { UserRole } from '@sistem/types';
 import { config } from '../config/env';
 import { User } from '../features/users/user.model';
+import { sendError } from '../i18n';
 
 export interface AuthenticatedRequest extends Request {
   userId?: string;
@@ -15,7 +16,7 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
   const authHeader = req.headers.authorization;
 
   if (!authHeader?.startsWith('Bearer ')) {
-    res.status(401).json({ message: 'Authentication required.' });
+    sendError(res, 401, 'auth_required');
     return;
   }
 
@@ -26,7 +27,7 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
     req.userId = payload.sub;
     next();
   } catch {
-    res.status(401).json({ message: 'Invalid or expired token.' });
+    sendError(res, 401, 'invalid_token');
   }
 }
 
@@ -37,18 +38,18 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
 export function requireRole(role: UserRole) {
   return async function requireRoleMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     if (!req.userId) {
-      res.status(401).json({ message: 'Authentication required.' });
+      sendError(res, 401, 'auth_required');
       return;
     }
 
     const user = await User.findById(req.userId).select('role');
     if (!user) {
-      res.status(401).json({ message: 'Invalid or expired token.' });
+      sendError(res, 401, 'invalid_token');
       return;
     }
 
     if (user.role !== role) {
-      res.status(403).json({ message: 'You do not have access to this resource.' });
+      sendError(res, 403, 'forbidden');
       return;
     }
 

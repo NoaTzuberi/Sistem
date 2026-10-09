@@ -24,7 +24,7 @@
 
 .plan-workout {
   background-color: var(--color-surface);
-  clip-path: polygon(0 0, calc(100% - var(--cut-size)) 0, 100% var(--cut-size), 100% 100%, 0 100%);
+  clip-path: var(--cut-corner);
 }
 
 .plan-workout > .plan-card-notes {

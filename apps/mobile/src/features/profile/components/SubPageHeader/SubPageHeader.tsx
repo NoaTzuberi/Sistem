@@ -1,6 +1,7 @@
+import { useCopy } from '@sistem/shared';
 import type { ReactNode } from 'react';
 import { IconChevronLeft } from '@tabler/icons-react';
-import { BODY_COPY } from '../../../bodyTracking/data/bodyCopy';
+import { bodyCopy } from '../../../bodyTracking/copy';
 import { useGoBack } from '../../hooks/useGoBack';
 import './SubPageHeader.css';
 
@@ -13,12 +14,13 @@ interface SubPageHeaderProps {
 
 /** Back + title (+ one action) for the Profile sub-screens. */
 export function SubPageHeader({ title, fallbackPath, action }: SubPageHeaderProps) {
+  const copy = useCopy(bodyCopy);
   const goBack = useGoBack(fallbackPath);
 
   return (
     <header className="sub-page-header">
-      <button className="sub-page-header-back" type="button" onClick={goBack} aria-label={BODY_COPY.back}>
-        <IconChevronLeft size={24} aria-hidden="true" />
+      <button className="sub-page-header-back" type="button" onClick={goBack} aria-label={copy.back}>
+        <IconChevronLeft className="flip-rtl" size={24} aria-hidden="true" />
       </button>
       <h1 className="sub-page-header-title">{title}</h1>
       {action && <div className="sub-page-header-action">{action}</div>}

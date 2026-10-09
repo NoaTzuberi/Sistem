@@ -1,7 +1,7 @@
 import type { BodyMetric, LengthUnit } from '@sistem/types';
 import { IconChevronRight } from '@tabler/icons-react';
-import { formatDateOnly, formatLength, measurementDays, measurementLabel } from '@sistem/shared';
-import { BODY_COPY } from '../../data/bodyCopy';
+import { formatDateOnly, formatLength, measurementDays, measurementLabel, useCopy, useLanguage } from '@sistem/shared';
+import { bodyCopy } from '../../copy';
 import './MeasurementHistory.css';
 
 interface MeasurementHistoryProps {
@@ -14,19 +14,21 @@ interface MeasurementHistoryProps {
 
 /** Every day with measurements, newest first, each value in list order. */
 export function MeasurementHistory({ metrics, measurementIds, unit, onEdit }: MeasurementHistoryProps) {
+  const language = useLanguage();
+  const copy = useCopy(bodyCopy);
   const days = measurementDays(metrics);
-  if (days.length === 0) return <p className="measurement-history-empty">{BODY_COPY.noMeasurements}</p>;
+  if (days.length === 0) return <p className="measurement-history-empty">{copy.noMeasurements}</p>;
 
   return (
     <ul className="measurement-history">
       {days.map((metric) => {
         const content = (
           <span className="measurement-history-text">
-            <span className="measurement-history-date">{formatDateOnly(metric.date)}</span>
+            <span className="measurement-history-date">{formatDateOnly(metric.date, language)}</span>
             <span className="measurement-history-values">
               {measurementIds
                 .filter((id) => metric.measurements[id] !== undefined)
-                .map((id) => `${measurementLabel(id)} ${formatLength(metric.measurements[id], unit)}`)
+                .map((id) => `${measurementLabel(id, language)} ${formatLength(metric.measurements[id], unit, language)}`)
                 .join(' · ')}
             </span>
           </span>
@@ -36,7 +38,7 @@ export function MeasurementHistory({ metrics, measurementIds, unit, onEdit }: Me
             {onEdit ? (
               <button type="button" className="measurement-history-row measurement-history-row-button" onClick={() => onEdit(metric)}>
                 {content}
-                <IconChevronRight size={18} aria-hidden="true" />
+                <IconChevronRight className="flip-rtl" size={18} aria-hidden="true" />
               </button>
             ) : (
               <div className="measurement-history-row">{content}</div>

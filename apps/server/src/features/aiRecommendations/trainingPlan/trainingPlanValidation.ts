@@ -1,4 +1,5 @@
-import type { PlanIssue } from '@sistem/types';
+import { translate } from '../../../i18n';
+import type { PlanProblem } from '../../plans/plan.validation';
 import { findCoachLibraryIds } from '../../exercises/exercise.service';
 import { findPublishIssues, parseSavePlanPayload } from '../../plans/plan.validation';
 import type { Candidate } from './trainingPlanCandidates';
@@ -80,10 +81,12 @@ export async function validateTrainingPlanReply(
     const name = byAlias.get(alias)?.facts.name;
     return `${workoutLabel(workoutIndex)}, exercise ${exerciseIndex + 1} (${alias}${name ? ` ${name}` : ''})`;
   };
-  const describe = (issue: PlanIssue) => {
-    if (issue.workoutIndex === undefined) return issue.message;
-    if (issue.exerciseIndex === undefined) return `${workoutLabel(issue.workoutIndex)}: ${issue.message}`;
-    return `${exerciseLabel(issue.workoutIndex, issue.exerciseIndex)}: ${issue.message}`;
+  // Sent back to the model: English.
+  const describe = (issue: PlanProblem) => {
+    const message = translate('en', issue);
+    if (issue.workoutIndex === undefined) return message;
+    if (issue.exerciseIndex === undefined) return `${workoutLabel(issue.workoutIndex)}: ${message}`;
+    return `${exerciseLabel(issue.workoutIndex, issue.exerciseIndex)}: ${message}`;
   };
 
   // Aliases → real ids. The schema allows E001…E200; only this request's list counts.

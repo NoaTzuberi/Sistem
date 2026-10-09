@@ -14,6 +14,8 @@ import { AiRecommendation } from './aiRecommendation.model';
 import type { AiRecommendationDocument, RecommendationAttempt } from './aiRecommendation.types';
 import { nutritionPlanKind } from './nutritionPlan/nutritionPlan.kind';
 import { trainingPlanKind } from './trainingPlan/trainingPlan.kind';
+import type { Language } from '@sistem/types';
+import { msg, translate, type ServerMessage } from '../../i18n';
 
 // The generic pipeline (PRD §8): prepare the request → ask the model for structured JSON →
 // validate in code → send the issues back and retry → store ready / failed. It runs in
@@ -74,9 +76,14 @@ function retryMessage(issues: string[]): string {
   ].join('\n');
 }
 
+/** A failure the coach reads: English for the logs, the code + params for her language. */
+function failure(code: string, text: ServerMessage): { code: string; message: string; text: ServerMessage } {
+  return { code, message: translate('en', text), text };
+}
+
 async function finish(
   id: string,
-  update: { status: 'ready' | 'failed'; output?: unknown; model?: string | null; error?: { code: string; message: string } },
+  update: { status: 'ready' | 'failed'; output?: unknown; model?: string | null; error?: { code: string; message: string; text: ServerMessage } },
 ): Promise<void> {
   await AiRecommendation.updateOne(
     { _id: id },
@@ -114,7 +121,7 @@ export async function runRecommendation(id: string): Promise<void> {
       { $set: { input: prepared.input, promptVersion: prepared.ok ? prepared.promptVersion : null } },
     );
     if (!prepared.ok) {
-      await finish(id, { status: 'failed', error: { code: prepared.code, message: prepared.message } });
+      await finish(id, { status: 'failed', error: failure(prepared.code, prepared.message) });
       return;
     }
 
@@ -142,7 +149,11 @@ export async function runRecommendation(id: string): Promise<void> {
           error: `${error.code}: ${error.message}`,
           fallbackReason: null,
         });
-        await finish(id, { status: 'failed', model: error.model ?? lastModel, error: { code: error.code, message: error.message } });
+        await finish(id, {
+          status: 'failed',
+          model: error.model ?? lastModel,
+          error: { code: error.code, message: error.message, text: msg('ai_provider_failed', { reason: error.code }) },
+        });
         return;
       }
 
@@ -191,14 +202,12 @@ export async function runRecommendation(id: string): Promise<void> {
     await finish(id, {
       status: 'failed',
       model: lastModel,
-      error: {
-        code: RECOMMENDATION_ERROR.invalidOutput,
-        message: `The AI draft broke the rules ${AI_CONFIG.maxAttempts} times. Last problems: ${lastIssues.slice(0, 3).join(' ')}`,
-      },
+      // The problems were written for the model (English) and stay so.
+      error: failure(RECOMMENDATION_ERROR.invalidOutput, msg('ai_rules_broken', { max: AI_CONFIG.maxAttempts, problems: lastIssues.slice(0, 3).join(' ') })),
     });
   } catch (error) {
     console.error(`[aiRecommendations] ${id} failed:`, error);
-    await finish(id, { status: 'failed', error: { code: RECOMMENDATION_ERROR.internal, message: 'Something went wrong while generating the draft.' } }).catch(
+    await finish(id, { status: 'failed', error: failure(RECOMMENDATION_ERROR.internal, msg('ai_internal')) }).catch(
       (finishError: unknown) => console.error(`[aiRecommendations] ${id} could not be marked failed:`, finishError),
     );
   }
@@ -216,7 +225,7 @@ export async function failInterruptedRecommendations(): Promise<number> {
         status: 'failed',
         active: false,
         completedAt: new Date(),
-        error: { code: RECOMMENDATION_ERROR.interrupted, message: 'The server restarted while the draft was being generated.' },
+        error: failure(RECOMMENDATION_ERROR.interrupted, msg('ai_interrupted')),
       },
     },
   );
@@ -225,7 +234,7 @@ export async function failInterruptedRecommendations(): Promise<number> {
 
 // --- Reading (coach) ----------------------------------------------------------
 
-async function toPublicRecommendation(doc: LeanRecommendation): Promise<PublicAiRecommendation> {
+async function toPublicRecommendation(doc: LeanRecommendation, language: Language): Promise<PublicAiRecommendation> {
   const kind = KINDS[doc.type];
   const target = { traineeId: String(doc.traineeId), coachId: String(doc.coachId) };
   // The input / output shapes belong to the type (the kinds build them).
@@ -239,24 +248,28 @@ async function toPublicRecommendation(doc: LeanRecommendation): Promise<PublicAi
     completedAt: doc.completedAt ? doc.completedAt.toISOString() : null,
     model: doc.model,
     attemptCount: doc.attempts.length,
-    error: doc.error ? { code: doc.error.code, message: doc.error.message } : null,
+    error: doc.error ? { code: doc.error.code, message: doc.error.text ? translate(language, doc.error.text) : doc.error.message } : null,
     input: doc.input ? kind.presentInput(doc.input) : null,
     output: doc.status === 'ready' && doc.output ? await kind.present(doc.output, target) : null,
   } as PublicAiRecommendation;
 }
 
-export async function getLatestRecommendation(traineeId: string, type: AiRecommendationType): Promise<PublicAiRecommendation | null> {
+export async function getLatestRecommendation(
+  traineeId: string,
+  type: AiRecommendationType,
+  language: Language,
+): Promise<PublicAiRecommendation | null> {
   const doc = await AiRecommendation.findOne({ traineeId, type }).sort({ createdAt: -1, _id: -1 }).lean<LeanRecommendation>();
-  return doc ? toPublicRecommendation(doc) : null;
+  return doc ? toPublicRecommendation(doc, language) : null;
 }
 
-export async function getRecommendation(traineeId: string, id: string): Promise<PublicAiRecommendation | null> {
+export async function getRecommendation(traineeId: string, id: string, language: Language): Promise<PublicAiRecommendation | null> {
   const doc = await AiRecommendation.findOne({ _id: id, traineeId }).lean<LeanRecommendation>();
-  return doc ? toPublicRecommendation(doc) : null;
+  return doc ? toPublicRecommendation(doc, language) : null;
 }
 
-export async function presentRecommendation(doc: LeanRecommendation): Promise<PublicAiRecommendation> {
-  return toPublicRecommendation(doc);
+export async function presentRecommendation(doc: LeanRecommendation, language: Language): Promise<PublicAiRecommendation> {
+  return toPublicRecommendation(doc, language);
 }
 
 /** For the plan saves: a ready recommendation of this trainee (and type) that a plan may point at. */

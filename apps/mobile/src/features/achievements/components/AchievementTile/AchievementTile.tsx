@@ -1,5 +1,5 @@
 import type { Achievement } from '@sistem/types';
-import { describeAchievement, formatUnlockedDate } from '@sistem/shared';
+import { describeAchievement, formatUnlockedDate, useLanguage } from '@sistem/shared';
 import { AchievementBadge } from '../AchievementBadge/AchievementBadge';
 import './AchievementTile.css';
 
@@ -9,11 +9,12 @@ interface AchievementTileProps {
 
 /** One unlocked achievement as a small tile: badge, name, date (Home strip). */
 export function AchievementTile({ achievement }: AchievementTileProps) {
+  const language = useLanguage();
   return (
     <div className="achievement-tile">
       <AchievementBadge type={achievement.type} />
-      <span className="achievement-tile-name">{describeAchievement(achievement.type).name}</span>
-      <span className="achievement-tile-date">{formatUnlockedDate(achievement.unlockedAt)}</span>
+      <span className="achievement-tile-name">{describeAchievement(achievement.type, language).name}</span>
+      <span className="achievement-tile-date">{formatUnlockedDate(achievement.unlockedAt, language)}</span>
     </div>
   );
 }

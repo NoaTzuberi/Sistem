@@ -599,6 +599,13 @@ mobile app and the dashboard, right-to-left everywhere; English is an option. Nu
 "later": it runs before any design work (PRD §12) — the design is made for the Hebrew RTL app. It can run
 before Phases 12–14; whichever of them comes after it writes its copy straight into the translation files.
 
+Owner answers (2026-10-08, before coding): own small i18n helper (no new dependency); charts keep the time axis left →
+right; neutral forms for buttons / labels, feminine for sentences to the user; AI summaries / rationales in the coach's
+language. Fonts: no font decision now — per-language font tokens with a Hebrew system-font placeholder, the current Latin
+fonts for English, no new font files; `packages/tokens` becomes the single file for every design value (moved hard-coded
+values listed in the phase report); font suggestions go into the report for the design phase. The logo stays in English,
+never translated or mirrored.
+
 ```
 Implement PRD §11 "Language". Read PRD §11 and §12 first. Propose the approach before changing code:
 the i18n library (e.g. i18next + react-i18next) or a small in-house helper — a new dependency needs my

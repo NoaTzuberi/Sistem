@@ -1,22 +1,15 @@
+import type { LengthUnit, WeightUnit } from '@sistem/types';
 import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, PointerEvent } from 'react';
-import {
-  CHART_RANGES,
-  buildLineChart,
-  defaultChartRange,
-  formatChartDate,
-  formatSignedChange,
-  nearestPointIndex,
-  pointsInRange,
-  rangeChange,
-} from '@sistem/shared';
+import { buildLineChart, CHART_RANGES, defaultChartRange, fill, formatChartDate, formatSignedChange, nearestPointIndex, pointsInRange, rangeChange, sharedCopy, useCopy, useLanguage } from '@sistem/shared';
 import type { ChartPoint, ChartRange } from '@sistem/shared';
 import './BodyTrendChart.css';
+import { traineesCopy } from '../../copy';
 
 interface BodyTrendChartProps {
   /** Every point, oldest first, in kg / cm. */
   points: ChartPoint[];
-  unit: string;
+  unit: WeightUnit | LengthUnit;
   title: string;
   today: string;
 }
@@ -31,6 +24,9 @@ const RANGE_LABELS: Record<ChartRange, string> = { '1M': '1M', '3M': '3M', '6M':
  * Hover or arrow keys move the crosshair; the value shows above the chart.
  */
 export function BodyTrendChart({ points, unit, title, today }: BodyTrendChartProps) {
+  const language = useLanguage();
+  const shared = useCopy(sharedCopy);
+  const copy = useCopy(traineesCopy);
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
   const [range, setRange] = useState<ChartRange>(() => defaultChartRange(points, today));
@@ -48,7 +44,7 @@ export function BodyTrendChart({ points, unit, title, today }: BodyTrendChartPro
   const selectedIndex = selected !== null && selected < visible.length ? selected : visible.length - 1;
   const shown = visible[selectedIndex];
   const change = rangeChange(visible);
-  const geometry = width > 0 ? buildLineChart(visible, { width, height: HEIGHT, padding: PADDING }) : null;
+  const geometry = width > 0 ? buildLineChart(visible, { width, height: HEIGHT, padding: PADDING }, language) : null;
   const marker = geometry?.points[selectedIndex];
 
   function selectAt(event: PointerEvent<SVGSVGElement>) {
@@ -65,10 +61,10 @@ export function BodyTrendChart({ points, unit, title, today }: BodyTrendChartPro
   }
 
   return (
-    <section className="body-trend-chart" aria-label={`${title} over time`}>
+    <section className="body-trend-chart" aria-label={fill(copy.overTime, { title })}>
       <div className="body-trend-chart-header">
         <h3 className="body-trend-chart-title">{title}</h3>
-        <div className="body-trend-chart-ranges" role="group" aria-label="Time range">
+        <div className="body-trend-chart-ranges" role="group" aria-label={copy.timeRange}>
           {CHART_RANGES.map((option) => (
             <button
               key={option}
@@ -89,31 +85,35 @@ export function BodyTrendChart({ points, unit, title, today }: BodyTrendChartPro
         {shown ? (
           <>
             <strong>
-              {shown.value} {unit}
+              {shown.value} {shared.units[unit]}
             </strong>{' '}
-            · {formatChartDate(shown.date)}
-            {change !== null && <span className="body-trend-chart-change"> · {formatSignedChange(change, unit)} over this range</span>}
+            · {formatChartDate(shown.date, language)}
+            {change !== null && <span className="body-trend-chart-change">
+                {' · '}
+                {formatSignedChange(change, unit, language)} {copy.overRange}
+              </span>}
           </>
         ) : (
-          'Nothing logged yet.'
+          copy.nothingLogged
         )}
       </p>
       <div className="body-trend-chart-plot" ref={containerRef}>
         {visible.length < 2 ? (
-          <p className="body-trend-chart-empty">Not enough entries for a trend in this range.</p>
+          <p className="body-trend-chart-empty">{copy.notEnoughTrend}</p>
         ) : (
           geometry && (
-            <svg
+            <svg direction="ltr"
               width={width}
               height={HEIGHT}
               viewBox={`0 0 ${width} ${HEIGHT}`}
               role="img"
-              aria-label={`${title} over time`}
+              aria-label={fill(copy.overTime, { title })}
               tabIndex={0}
               onPointerMove={selectAt}
               onPointerDown={selectAt}
               onKeyDown={handleKeyDown}
             >
+              {/* Time runs left to right in both languages (owner, Phase 15); labels follow the language on screen. */}
               {geometry.yTicks.map((tick) => (
                 <g key={tick.value}>
                   <line className="body-trend-chart-grid" x1={geometry.plot.left} x2={geometry.plot.right} y1={tick.y} y2={tick.y} />

@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import type { BodyMetric, ProgressPhotoPose, WeightUnit } from '@sistem/types';
-import { PROGRESS_PHOTO_POSES, formatDateOnly, formatDateShort, formatWeight, photoDatesForPose, photoForPose, poseLabel } from '@sistem/shared';
+import { fill, formatDateOnly, formatDateShort, formatWeight, photoDatesForPose, photoForPose, poseLabel, PROGRESS_PHOTO_POSES, useCopy, useLanguage } from '@sistem/shared';
 import { PrivatePhoto } from '../../../../components/common/PrivatePhoto/PrivatePhoto';
 import { Select } from '../../../../components/common/Select/Select';
-import { BODY_COPY } from '../../data/bodyCopy';
+import { bodyCopy } from '../../copy';
 import './PhotoCompare.css';
 
 interface PhotoCompareProps {
@@ -28,13 +28,15 @@ function defaultChoice(dates: string[]): Choice {
  * that pose. The weight of that day is shown under it when she logged one.
  */
 export function PhotoCompare({ metrics, weightUnit, onLinkExpired }: PhotoCompareProps) {
+  const language = useLanguage();
+  const copy = useCopy(bodyCopy);
   const [pose, setPose] = useState<ProgressPhotoPose>('front');
   const dates = photoDatesForPose(metrics, pose);
   const [choice, setChoice] = useState<Choice>(() => defaultChoice(dates));
   // A pick that no longer has a photo (another pose, a removed photo) falls back to the default.
   const before = dates.includes(choice.before) ? choice.before : defaultChoice(dates).before;
   const after = dates.includes(choice.after) ? choice.after : defaultChoice(dates).after;
-  const options = dates.map((date) => ({ value: date, label: formatDateShort(date) }));
+  const options = dates.map((date) => ({ value: date, label: formatDateShort(date, language) }));
 
   function changePose(next: ProgressPhotoPose) {
     setPose(next);
@@ -50,21 +52,21 @@ export function PhotoCompare({ metrics, weightUnit, onLinkExpired }: PhotoCompar
           <PrivatePhoto
             photo={photo}
             thumbnail
-            alt={BODY_COPY.photoAlt(poseLabel(pose), formatDateOnly(date))}
-            openLabel={BODY_COPY.openPhoto(poseLabel(pose))}
-            closeLabel={BODY_COPY.close}
+            alt={fill(copy.photoAlt, { pose: poseLabel(pose, language), date: formatDateOnly(date, language) })}
+            openLabel={fill(copy.openPhoto, { pose: poseLabel(pose, language) })}
+            closeLabel={copy.close}
             onLinkExpired={onLinkExpired}
           />
         )}
         <Select label={label} options={options} value={date} onChange={(event) => onChange(event.target.value)} />
-        {metric?.weight !== undefined && <span className="photo-compare-weight">{formatWeight(metric.weight, weightUnit)}</span>}
+        {metric?.weight !== undefined && <span className="photo-compare-weight">{formatWeight(metric.weight, weightUnit, language)}</span>}
       </div>
     );
   }
 
   return (
     <div className="photo-compare">
-      <div className="photo-compare-poses" role="group" aria-label={BODY_COPY.comparePose}>
+      <div className="photo-compare-poses" role="group" aria-label={copy.comparePose}>
         {PROGRESS_PHOTO_POSES.map((option) => (
           <button
             key={option}
@@ -73,17 +75,17 @@ export function PhotoCompare({ metrics, weightUnit, onLinkExpired }: PhotoCompar
             aria-pressed={option === pose}
             onClick={() => changePose(option)}
           >
-            {poseLabel(option)}
+            {poseLabel(option, language)}
           </button>
         ))}
       </div>
 
       {dates.length < 2 ? (
-        <p className="photo-compare-empty">{BODY_COPY.compareEmpty}</p>
+        <p className="photo-compare-empty">{copy.compareEmpty}</p>
       ) : (
         <div className="photo-compare-sides">
-          {side(BODY_COPY.before, before, (date) => setChoice({ before: date, after }))}
-          {side(BODY_COPY.after, after, (date) => setChoice({ before, after: date }))}
+          {side(copy.before, before, (date) => setChoice({ before: date, after }))}
+          {side(copy.after, after, (date) => setChoice({ before, after: date }))}
         </div>
       )}
     </div>

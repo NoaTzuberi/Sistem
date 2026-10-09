@@ -17,7 +17,7 @@
   justify-content: space-between;
   gap: var(--space-3);
   padding-block: var(--space-2);
-  border-block-end: 1px solid var(--color-border);
+  border-block-end: var(--border-width-thin) solid var(--color-border);
 }
 
 .review-step-row dt {

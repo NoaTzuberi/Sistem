@@ -8,7 +8,9 @@ import { Input } from '../../../../components/common/Input/Input';
 import { Button } from '../../../../components/common/Button/Button';
 import { AuthCard } from '../../components/AuthCard/AuthCard';
 import { resetPassword } from '../../../../services/auth/authService';
-import { validatePassword, validateConfirmPassword } from '../../validation';
+import { authErrorText, validatePassword, validateConfirmPassword, type AuthErrorKey } from '../../validation';
+import { useCopy } from '@sistem/shared';
+import { authCopy } from '../../copy';
 import { ROUTES } from '../../../../app/config/routes';
 import './ResetPassword.css';
 
@@ -16,11 +18,12 @@ export function ResetPassword() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token') ?? '';
   const navigate = useNavigate();
+  const copy = useCopy(authCopy);
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordError, setPasswordError] = useState<string>();
-  const [confirmPasswordError, setConfirmPasswordError] = useState<string>();
+  const [passwordError, setPasswordError] = useState<AuthErrorKey>();
+  const [confirmPasswordError, setConfirmPasswordError] = useState<AuthErrorKey>();
   const [formError, setFormError] = useState<string>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDone, setIsDone] = useState(false);
@@ -41,7 +44,7 @@ export function ResetPassword() {
       await resetPassword(token, password);
       setIsDone(true);
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Something went wrong. Please try again.');
+      setFormError((error instanceof Error && error.message) || copy.somethingWrong);
     } finally {
       setIsSubmitting(false);
     }
@@ -52,12 +55,10 @@ export function ResetPassword() {
       <PageLayout>
         <Section className="auth-page">
           <Container>
-            <AuthCard title="Reset Password">
-              <p className="reset-password-message">
-                This reset link is missing or invalid. Request a new one to continue.
-              </p>
+            <AuthCard title={copy.resetTitle}>
+              <p className="reset-password-message">{copy.resetLinkInvalid}</p>
               <p className="auth-switch">
-                <Link to={ROUTES.FORGOT_PASSWORD}>Request a new link</Link>
+                <Link to={ROUTES.FORGOT_PASSWORD}>{copy.requestNewLink}</Link>
               </p>
             </AuthCard>
           </Container>
@@ -71,10 +72,10 @@ export function ResetPassword() {
       <PageLayout>
         <Section className="auth-page">
           <Container>
-            <AuthCard title="Reset Password">
-              <p className="reset-password-message">Your password has been reset.</p>
+            <AuthCard title={copy.resetTitle}>
+              <p className="reset-password-message">{copy.resetDone}</p>
               <Button variant="primary" onClick={() => navigate(ROUTES.LOGIN)}>
-                Log In
+                {copy.loginButton}
               </Button>
             </AuthCard>
           </Container>
@@ -87,33 +88,33 @@ export function ResetPassword() {
     <PageLayout>
       <Section className="auth-page">
         <Container>
-          <AuthCard title="Reset Password">
+          <AuthCard title={copy.resetTitle}>
             <form className="auth-form" onSubmit={handleSubmit} noValidate>
               <Input
                 type="password"
-                label="New Password"
-                placeholder="Enter a new password"
+                label={copy.newPassword}
+                placeholder={copy.newPasswordInputPlaceholder}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                error={passwordError}
+                error={authErrorText(copy, passwordError)}
                 autoComplete="new-password"
               />
               <Input
                 type="password"
-                label="Confirm Password"
-                placeholder="Re-enter your new password"
+                label={copy.confirmPassword}
+                placeholder={copy.confirmPasswordPlaceholder}
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
-                error={confirmPasswordError}
+                error={authErrorText(copy, confirmPasswordError)}
                 autoComplete="new-password"
               />
               {formError && <p className="auth-form-error">{formError}</p>}
               <Button type="submit" variant="primary" loading={isSubmitting}>
-                Reset Password
+                {copy.resetButton}
               </Button>
             </form>
             <p className="auth-switch">
-              <Link to={ROUTES.LOGIN}>Back to Log In</Link>
+              <Link to={ROUTES.LOGIN}>{copy.backToLogin}</Link>
             </p>
           </AuthCard>
         </Container>

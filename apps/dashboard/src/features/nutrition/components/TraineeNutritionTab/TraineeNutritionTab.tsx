@@ -1,25 +1,28 @@
 import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { describeMealPortions, formatDateTime, formatKcal, useLoad } from '@sistem/shared';
+import { describeMealPortions, fill, formatDateTime, formatKcal, sharedCopy, useCopy, useLanguage, useLoad } from '@sistem/shared';
 import { getNutritionPlan } from '../../../../services/coach/coachService';
 import { nutritionBuilderPath } from '../../../../app/config/routes';
 import { Button } from '../../../../components/common/Button/Button';
 import { Badge } from '../../../../components/common/Badge/Badge';
 import { PreferencesPanel } from '../PreferencesPanel/PreferencesPanel';
 import { TrackingWeek } from '../TrackingWeek/TrackingWeek';
-import { NUTRITION_COPY } from '../../data/nutritionCopy';
+import { nutritionCopy } from '../../copy';
 import './TraineeNutritionTab.css';
 
 /** The trainee page's Nutrition tab: where her plan stands, the way into the builder, and her portion tracking (13a+). */
 export function TraineeNutritionTab({ traineeId }: { traineeId: string }) {
+  const language = useLanguage();
+  const shared = useCopy(sharedCopy);
+  const copy = useCopy(nutritionCopy);
   const load = useCallback(() => getNutritionPlan(traineeId), [traineeId]);
-  const { data, error, isLoading, reload } = useLoad(load, NUTRITION_COPY.loadError);
+  const { data, error, isLoading, reload } = useLoad(load, copy.loadError);
 
-  if (isLoading && !data) return <p className="trainee-nutrition-note">Loading…</p>;
+  if (isLoading && !data) return <p className="trainee-nutrition-note">{shared.common.loading}</p>;
   if (!data) {
     return (
       <p role="alert">
-        {error} <Button size="sm" onClick={reload}>Try again</Button>
+        {error} <Button size="sm" onClick={reload}>{shared.common.retry}</Button>
       </p>
     );
   }
@@ -28,34 +31,34 @@ export function TraineeNutritionTab({ traineeId }: { traineeId: string }) {
   return (
     <div className="trainee-nutrition">
       <div className="trainee-nutrition-main">
-        <h2 className="trainee-nutrition-title">{NUTRITION_COPY.tabTitle}</h2>
+        <h2 className="trainee-nutrition-title">{copy.tabTitle}</h2>
         {plan ? (
           <>
             <p className="trainee-nutrition-status">
               {plan.publishedVersion > 0 && plan.publishedAt
-                ? NUTRITION_COPY.statusPublished(plan.publishedVersion, formatDateTime(plan.publishedAt))
-                : NUTRITION_COPY.statusNever}{' '}
-              {plan.publishedVersion > 0 && plan.changedSincePublish && <Badge tone="accent">{NUTRITION_COPY.statusChanged}</Badge>}
+                ? fill(copy.statusPublished, { version: plan.publishedVersion, date: formatDateTime(plan.publishedAt, language) })
+                : copy.statusNever}{' '}
+              {plan.publishedVersion > 0 && plan.changedSincePublish && <Badge tone="accent">{copy.statusChanged}</Badge>}
             </p>
             {plan.calorieTarget.kcal !== null && (
               <p className="trainee-nutrition-status">
-                {NUTRITION_COPY.targetTitle}: <strong>{formatKcal(plan.calorieTarget.kcal)}</strong> · {NUTRITION_COPY.dayTotal}{' '}
-                {formatKcal(plan.kcal.day)}
+                {copy.targetTitle}: <strong>{formatKcal(plan.calorieTarget.kcal, language)}</strong> · {copy.dayTotal}{' '}
+                {formatKcal(plan.kcal.day, language)}
               </p>
             )}
             <ul className="trainee-nutrition-meals">
               {plan.meals.map((meal) => (
                 <li key={meal.id}>
-                  <strong dir="auto">{meal.name}</strong> — {describeMealPortions(meal.portions, meal.vegetablesFree)}
+                  <strong dir="auto">{meal.name}</strong> — {describeMealPortions(meal.portions, meal.vegetablesFree, language)}
                 </li>
               ))}
             </ul>
           </>
         ) : (
-          <p className="trainee-nutrition-note">{NUTRITION_COPY.tabEmpty}</p>
+          <p className="trainee-nutrition-note">{copy.tabEmpty}</p>
         )}
         <Link className="button button-primary button-md trainee-nutrition-open" to={nutritionBuilderPath(traineeId)}>
-          {NUTRITION_COPY.openBuilder}
+          {copy.openBuilder}
         </Link>
       </div>
       <PreferencesPanel preferences={data.preferences} />

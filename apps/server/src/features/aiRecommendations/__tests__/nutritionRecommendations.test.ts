@@ -15,6 +15,7 @@ import { NutritionPlan, NutritionPlanVersion } from '../../nutrition/nutritionPl
 import { AiRecommendation } from '../aiRecommendation.model';
 import { onTraineeOnboardedStartDraft } from '../aiRecommendation.listeners';
 import { startRecommendation } from '../aiRecommendation.service';
+import { User } from '../../users/user.model';
 
 // Phase 13c (PRD §5.6): the AI nutrition draft through the real pipeline and API — the
 // food list filtered in code before the model, the reply validated (retry, reject), the
@@ -151,7 +152,8 @@ describe('AI nutrition recommendations', () => {
     setFeatureFlagsForTests({ nutritionRecipes: false, waterTracking: false });
     savedKey = config.ai.geminiApiKey;
     config.ai.geminiApiKey = 'test-key';
-    coach = await createTestUser('coach@example.com', { role: 'coach' });
+    // English: the assertions below read the English placeholders (a Hebrew coach is tested on its own).
+    coach = await createTestUser('coach@example.com', { role: 'coach', preferences: { language: 'en' } });
     otherCoach = await createTestUser('other-coach@example.com', { role: 'coach' });
     trainee = await createTestUser('maya@example.com', {
       coachId: coach.user._id,
@@ -285,13 +287,26 @@ describe('AI nutrition recommendations', () => {
     expect(doc?.status).toBe('ready');
   });
 
+  it("writes the meal names, option labels and the model's coach texts in the coach's language (Phase 15)", async () => {
+    await User.updateOne({ _id: coach.user._id }, { $set: { 'preferences.language': 'he' } });
+    await createAnswers();
+    const doc = await runDraft();
+    expect(doc?.status).toBe('ready');
+    expect(generate.mock.calls[0][0].system).toContain('plain Hebrew');
+
+    const res = await latest();
+    const meals = res.body.recommendation.output.meals;
+    expect(meals.map((meal: { name: string }) => meal.name)).toEqual(['ארוחת בוקר', 'ארוחת צהריים', 'ארוחת ערב']);
+    expect(meals[0].options[0].label).toBe('אפשרות א');
+  });
+
   it('does not ask the model when her restrictions leave a group empty', async () => {
     await FoodItem.deleteMany({ name: { $in: ['Olive oil', 'Avocado'] } });
     await createAnswers();
     const doc = await runDraft();
     expect(generate).not.toHaveBeenCalled();
     expect(doc?.status).toBe('failed');
-    expect(doc?.error).toEqual({ code: 'not_enough_data', message: expect.stringContaining('no fat items are left') });
+    expect(doc?.error).toMatchObject({ code: 'not_enough_data', message: expect.stringContaining('no fat items are left') });
   });
 
   it('does not ask the model when the calculation is missing her data', async () => {

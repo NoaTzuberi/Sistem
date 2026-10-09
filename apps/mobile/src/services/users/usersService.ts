@@ -1,4 +1,4 @@
-import { createTraineeApi } from '@sistem/api-client';
+import { createAuthApi } from '@sistem/api-client';
 import type { NutritionPreferences, WeightGoal } from '@sistem/types';
 import { apiClient } from '../api/apiClient';
 
@@ -45,5 +45,5 @@ export async function getMyProfile(): Promise<MyProfileResponse> {
   return data.user;
 }
 
-// Her display units (Settings, Phase 10).
-export const { updatePreferences } = createTraineeApi(apiClient);
+// Her display units (Settings, Phase 10) and UI language (Phase 15).
+export const { updatePreferences } = createAuthApi(apiClient);

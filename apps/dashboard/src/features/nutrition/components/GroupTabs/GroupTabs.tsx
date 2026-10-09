@@ -1,5 +1,5 @@
 import type { FoodGroup } from '@sistem/types';
-import { FOOD_GROUP_LABELS } from '@sistem/shared';
+import { sharedCopy, useCopy } from '@sistem/shared';
 import './GroupTabs.css';
 
 interface GroupTabsProps<T extends FoodGroup | null> {
@@ -13,6 +13,7 @@ interface GroupTabsProps<T extends FoodGroup | null> {
 
 /** One row of group buttons (single-select) — the picker's tabs and the food list's group filter. */
 export function GroupTabs<T extends FoodGroup | null>({ groups, value, onChange, label, allLabel }: GroupTabsProps<T>) {
+  const shared = useCopy(sharedCopy);
   return (
     <div className="group-tabs" role="group" aria-label={label}>
       {groups.map((group) => (
@@ -23,7 +24,7 @@ export function GroupTabs<T extends FoodGroup | null>({ groups, value, onChange,
           aria-pressed={value === group}
           onClick={() => onChange(group)}
         >
-          {group === null ? allLabel : FOOD_GROUP_LABELS[group]}
+          {group === null ? allLabel : shared.nutrition.groups[group]}
         </button>
       ))}
     </div>

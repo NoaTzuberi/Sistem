@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import type { CoachPlan, PlanIssue } from '@sistem/types';
+import type { CoachPlan } from '@sistem/types';
 import { emitAppEvent } from '../../events/appEvents';
 import { User } from '../users/user.model';
 import { WorkoutLog } from '../workoutLogs/workoutLog.model';
@@ -10,7 +10,8 @@ import { PlanNotFoundError, attachExerciseFacts, toPublicPlan } from './plan.ser
 import type { LeanPlan } from './plan.service';
 import { currentWeekStart } from './planWeek';
 import { findPublishIssues } from './plan.validation';
-import type { CreatePlanInput, SavePlanInput } from './plan.validation';
+import type { CreatePlanInput, PlanProblem, SavePlanInput } from './plan.validation';
+import { LocalizedError, msg } from '../../i18n';
 
 // The coach's side of plans (PRD §6 plan builder). Every function takes the trainee
 // id that loadCoachTrainee already checked, and scopes its queries by it — a plan id
@@ -18,13 +19,13 @@ import type { CreatePlanInput, SavePlanInput } from './plan.validation';
 
 /** The plan (or the request) breaks a plan rule; `issues` say where. */
 export class PlanValidationError extends Error {
-  constructor(public readonly issues: PlanIssue[]) {
-    super(issues[0]?.message ?? 'The plan is not valid.');
+  constructor(public readonly issues: PlanProblem[]) {
+    super(issues[0]?.code ?? 'plan_invalid');
   }
 }
 
 /** The action does not fit the plan's current state (week taken, plan locked, …). */
-export class PlanConflictError extends Error {}
+export class PlanConflictError extends LocalizedError {}
 
 const DUPLICATE_KEY_ERROR = 11000;
 
@@ -53,7 +54,7 @@ async function toCoachPlans(plans: LeanPlan[]): Promise<CoachPlan[]> {
 async function findPlan(traineeId: string, planId: string): Promise<LeanPlan> {
   const plan = await Plan.findOne({ _id: planId, traineeId }).lean<LeanPlan>();
   if (!plan) {
-    throw new PlanNotFoundError('Plan not found.');
+    throw new PlanNotFoundError('plan_not_found');
   }
   return plan;
 }
@@ -83,10 +84,10 @@ export async function createCoachPlan(traineeId: string, coachId: string, input:
     throw new Error('Trainee disappeared after the ownership check.');
   }
   if (input.weekStartDate < currentWeekStart(trainee.timezone)) {
-    throw new PlanConflictError('A new plan must be for this week or a later one.');
+    throw new PlanConflictError('plan_week_too_early');
   }
   if (await Plan.exists({ traineeId, weekStartDate: input.weekStartDate })) {
-    throw new PlanConflictError('This trainee already has a plan for that week.');
+    throw new PlanConflictError('plan_week_taken');
   }
 
   let notes: string | undefined;
@@ -96,7 +97,7 @@ export async function createCoachPlan(traineeId: string, coachId: string, input:
       .sort({ weekStartDate: -1 })
       .lean<LeanPlan>();
     if (!previous) {
-      throw new PlanConflictError('There is no earlier plan to duplicate.');
+      throw new PlanConflictError('plan_nothing_to_duplicate');
     }
     notes = previous.notes;
     workouts = previous.workouts.map(({ _id: _workoutId, exercises, ...workout }) => ({
@@ -113,7 +114,7 @@ export async function createCoachPlan(traineeId: string, coachId: string, input:
   } catch (error) {
     // Two creates for the same week at once: the unique index decides.
     if (isDuplicateKeyError(error)) {
-      throw new PlanConflictError('This trainee already has a plan for that week.');
+      throw new PlanConflictError('plan_week_taken');
     }
     throw error;
   }
@@ -127,10 +128,10 @@ export async function createCoachPlan(traineeId: string, coachId: string, input:
 export async function saveCoachPlan(traineeId: string, planId: string, input: SavePlanInput): Promise<CoachPlan> {
   const plan = await Plan.findOne({ _id: planId, traineeId });
   if (!plan) {
-    throw new PlanNotFoundError('Plan not found.');
+    throw new PlanNotFoundError('plan_not_found');
   }
 
-  const issues: PlanIssue[] = plan.status === 'published' ? findPublishIssues(input.workouts) : [];
+  const issues: PlanProblem[] = plan.status === 'published' ? findPublishIssues(input.workouts) : [];
 
   const existingExerciseIds = new Set<string>();
   for (const workout of plan.workouts) {
@@ -147,12 +148,12 @@ export async function saveCoachPlan(traineeId: string, planId: string, input: Sa
   input.workouts.forEach((workout, workoutIndex) => {
     workout.exercises.forEach((exercise, exerciseIndex) => {
       if (newExerciseIds.has(exercise.exerciseId) && !allowed.has(exercise.exerciseId)) {
-        issues.push({ message: 'This exercise is not in the library.', workoutIndex, exerciseIndex });
+        issues.push({ ...msg('plan_exercise_not_in_library'), workoutIndex, exerciseIndex });
       }
     });
   });
   if (input.aiRecommendationId && !(await isLinkableRecommendation(traineeId, input.aiRecommendationId))) {
-    issues.push({ message: 'That AI recommendation was not found for this trainee.' });
+    issues.push(msg('plan_ai_recommendation_missing'));
   }
   if (issues.length > 0) {
     throw new PlanValidationError(issues);
@@ -226,7 +227,6 @@ export async function publishCoachPlan(traineeId: string, planId: string): Promi
   return getCoachPlan(traineeId, planId);
 }
 
-const LOCKED_MESSAGE = 'The trainee already started a workout from this plan, so it can only be edited.';
 
 /**
  * Back to a draft — only while the trainee has not started any workout from it.
@@ -236,7 +236,7 @@ export async function unpublishCoachPlan(traineeId: string, planId: string): Pro
   const plan = await findPlan(traineeId, planId);
   if (plan.status === 'published') {
     if (await isLocked(planId)) {
-      throw new PlanConflictError(LOCKED_MESSAGE);
+      throw new PlanConflictError('plan_locked');
     }
     await Plan.updateOne({ _id: planId, traineeId }, { $set: { status: 'draft', publishedAt: null } });
   }
@@ -247,7 +247,7 @@ export async function unpublishCoachPlan(traineeId: string, planId: string): Pro
 export async function deleteCoachPlan(traineeId: string, planId: string): Promise<void> {
   await findPlan(traineeId, planId);
   if (await isLocked(planId)) {
-    throw new PlanConflictError(LOCKED_MESSAGE);
+    throw new PlanConflictError('plan_locked');
   }
   await Plan.deleteOne({ _id: planId, traineeId });
 }

@@ -1,19 +1,28 @@
 /*
- * Sistem design tokens (PRD §12) — the single source for colors, spacing, radius
- * and type in the mobile app and the coach dashboard. Never hard-code a value that
- * exists here. The owner leads the visual design; extend this file, don't fork it.
+ * Sistem design tokens (PRD §12) — THE one file for every design value of the mobile app and
+ * the coach dashboard. Change a value here and both apps follow; never hard-code one in a
+ * component. The owner leads the visual design; extend this file, don't fork it.
+ *
+ * Groups (search for the ═ headings):
+ *   1. Colors          5. Shape (radius, sharp cuts, borders)   9. Layers (z-index)
+ *   2. Fonts           6. Shadows                              10. Breakpoints
+ *   3. Type scale      7. Motion                               11. App chrome & touch
+ *   4. Spacing         8. Opacity
+ *
+ * Right-to-left (Phase 15): Hebrew is the default language. Everything that has a side
+ * (the corner cuts, …) is defined for both directions below; components use logical CSS
+ * (inline-start / inline-end), so they mirror on their own.
  */
 
 :root {
-  /* Palette (PRD §12) */
+  /* ═══ 1. Colors (PRD §12) ═══════════════════════════════════════════════════ */
   --color-primary: #ff006e;       /* Neon Pink — actions, highlights, active states */
   --color-primary-deep: #a50047;  /* Cherry Rose — pressed states, small pink text */
   --color-bg: #fcfcfc;            /* Bright Snow — app background */
   --color-surface: #eeeeee;       /* Platinum — cards, inputs, sections */
   --color-border: #e2e2e2;        /* Alabaster Grey — dividers, borders, disabled */
   --color-text: #26222a;          /* Body copy — the charcoal from the logo */
-  /* Text/icons placed on a Neon Pink fill. */
-  --color-on-primary: #ffffff;
+  --color-on-primary: #ffffff;    /* Text / icons placed on a Neon Pink fill */
 
   /* TEMPORARY — owner will finalize these two values. */
   --color-error: #d92d20;         /* Form errors, destructive actions */
@@ -23,29 +32,22 @@
      use Cherry Rose + --color-primary-soft — no green (owner decision). */
   --color-primary-soft: color-mix(in srgb, var(--color-primary) 12%, var(--color-bg));
   --color-error-soft: color-mix(in srgb, var(--color-error) 10%, var(--color-bg));
-  /* Dims the page behind a bottom sheet / modal. */
-  --color-overlay: color-mix(in srgb, var(--color-text) 55%, transparent);
+  --color-overlay: color-mix(in srgb, var(--color-text) 55%, transparent); /* behind sheets / modals */
 
-  /* Spacing (8px base scale) */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 16px;
-  --space-4: 24px;
-  --space-5: 32px;
-  --space-6: 48px;
-  --space-7: 64px;
-  --space-8: 96px;
+  /* ═══ 2. Fonts — one pair per language, chosen automatically by <html lang> ═════
+     PLACEHOLDERS: the owner picks the fonts in the design phase (see the phase-15 report for
+     suggestions). English keeps the current Latin fonts; Hebrew uses a system stack that has
+     Hebrew glyphs on every platform. Components only read --font-family-display / -body. */
+  --font-heading-en: "Cabinet Grotesk", system-ui, sans-serif;
+  --font-body-en: "Satoshi", system-ui, sans-serif;
+  --font-heading-he: system-ui, -apple-system, "Segoe UI", "Arial Hebrew", "Noto Sans Hebrew", Arial, sans-serif;
+  --font-body-he: system-ui, -apple-system, "Segoe UI", "Arial Hebrew", "Noto Sans Hebrew", Arial, sans-serif;
 
-  /* Shape — sharp cuts, not rounded cards. --cut-size is the corner cut used with
-     clip-path; --radius-round is only for truly circular things (avatars, dots). */
-  --radius-none: 0;
-  --radius-round: 999px;
-  --cut-size: 12px;
+  /* Hebrew is the default (also before <html lang> is set). */
+  --font-family-display: var(--font-heading-he);
+  --font-family-body: var(--font-body-he);
 
-  /* Typography — mobile-first scale. Inputs stay >= 16px (no zoom on focus). */
-  --font-family-display: "Cabinet Grotesk", system-ui, sans-serif;
-  --font-family-body: "Satoshi", system-ui, sans-serif;
-
+  /* ═══ 3. Type scale — mobile-first. Inputs stay >= 16px (no zoom on focus). ═════ */
   --text-xs: 12px;
   --text-sm: 14px;
   --text-base: 16px;
@@ -63,17 +65,110 @@
   --line-height-base: 1.5;
 
   --letter-spacing-tight: -0.02em;
-  --letter-spacing-wide: 0.08em;   /* Uppercase labels */
+  --letter-spacing-wide: 0.08em;   /* Uppercase labels (Latin only — Hebrew has no case) */
 
-  /* App chrome */
+  /* ═══ 4. Spacing (8px base scale) ═════════════════════════════════════════════ */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+  --space-6: 48px;
+  --space-7: 64px;
+  --space-8: 96px;
+
+  /* ═══ 5. Shape — sharp cuts, not rounded cards ══════════════════════════════════
+     --radius-round is only for truly circular things (avatars, dots). The cut shapes are
+     clip-path polygons; their side follows the reading direction (see the RTL block below). */
+  --radius-none: 0;
+  --radius-round: 999px;
+  --cut-size: 12px;
+  /* One corner cut at the top-end (the card / tile pattern). */
+  --cut-corner: polygon(0 0, calc(100% - var(--cut-size)) 0, 100% var(--cut-size), 100% 100%, 0 100%);
+  /* Top-end and bottom-start corners cut (the countdown). */
+  --cut-corners-diagonal: polygon(
+    0 0,
+    calc(100% - var(--cut-size)) 0,
+    100% var(--cut-size),
+    100% 100%,
+    var(--cut-size) 100%,
+    0 calc(100% - var(--cut-size))
+  );
+
+  --border-width-thin: 1px;     /* Dividers, inputs, cards */
+  --border-width-medium: 2px;   /* Focus rings, selected states */
+  --border-width-thick: 3px;    /* The bracket buttons, accents */
+  --border-width-heavy: 4px;    /* Emphasis bars */
+  --focus-ring-offset: 2px;     /* Space between an element and its focus outline */
+
+  /* ═══ 6. Shadows ══════════════════════════════════════════════════════════════
+     The design uses flat surfaces and sharp cuts — no shadows yet. Add them here first. */
+  --shadow-none: none;
+
+  /* ═══ 7. Motion ═══════════════════════════════════════════════════════════════
+     GSAP animations read their own durations in code; CSS transitions use these. */
+  --transition-fast: 150ms;
+  --transition-base: 250ms;
+  --transition-slow: 400ms;
+  --transition-progress: 1s;     /* Rings / bars filling to a new value */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+  --loop-slow: 2s;               /* Repeating hints (scroll bounce) */
+
+  /* ═══ 8. Opacity ══════════════════════════════════════════════════════════════ */
+  --opacity-disabled: 0.5;
+  --opacity-muted: 0.6;      /* Locked / secondary items */
+  --opacity-faint: 0.4;      /* Empty placeholders */
+
+  /* ═══ 9. Layers (z-index) ═════════════════════════════════════════════════════
+     Local layers inside one component, then the app-wide ones. */
+  --z-base: 0;
+  --z-raised: 1;     /* A badge / control over its own card */
+  --z-overlay: 2;    /* Sticky bars and overlays inside a page */
+  --z-top: 3;        /* The topmost element inside a component */
+  --z-tab-bar: 100;
+  --z-modal: 1000;
+
+  /* ═══ 10. Breakpoints ═════════════════════════════════════════════════════════
+     CSS can't read a variable inside @media, so each media query repeats the number and names
+     the token next to it — change both together. JS (matchMedia) can read these. */
+  --breakpoint-sm: 600px;    /* Phone → wider: sheets become centered dialogs */
+  --breakpoint-md: 640px;
+  --breakpoint-lg: 768px;
+  --breakpoint-xl: 900px;
+  --breakpoint-2xl: 960px;
+  --breakpoint-3xl: 1024px;
+
+  /* ═══ 11. App chrome & touch ══════════════════════════════════════════════════ */
   --touch-target-min: 44px;
   --tab-bar-height: 64px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
-  --opacity-disabled: 0.5;
+  /* The safe-area insets on the reading-direction sides (notch / home bar in landscape). */
+  --safe-inline-start: var(--safe-left);
+  --safe-inline-end: var(--safe-right);
+}
 
-  --z-tab-bar: 100;
-  --z-modal: 1000;
+/* English: the Latin font pair. */
+:root:lang(en) {
+  --font-family-display: var(--font-heading-en);
+  --font-family-body: var(--font-body-en);
+}
+
+/* Right-to-left: the same shapes, mirrored (polygons have no logical form). */
+:root[dir='rtl'] {
+  --cut-corner: polygon(0 var(--cut-size), var(--cut-size) 0, 100% 0, 100% 100%, 0 100%);
+  --cut-corners-diagonal: polygon(
+    0 var(--cut-size),
+    var(--cut-size) 0,
+    100% 0,
+    100% calc(100% - var(--cut-size)),
+    calc(100% - var(--cut-size)) 100%,
+    0 100%
+  );
+  --safe-inline-start: var(--safe-right);
+  --safe-inline-end: var(--safe-left);
 }

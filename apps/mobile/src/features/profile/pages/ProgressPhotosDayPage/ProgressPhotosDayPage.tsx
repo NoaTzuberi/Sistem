@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { PROGRESS_PHOTO_POSES, photoForPose } from '@sistem/shared';
+import { photoForPose, PROGRESS_PHOTO_POSES, useCopy } from '@sistem/shared';
 import { AppShell } from '../../../../components/layout/AppShell/AppShell';
 import { Button } from '../../../../components/common/Button/Button';
 import { Input } from '../../../../components/common/Input/Input';
 import { StateMessage } from '../../../../components/common/StateMessage/StateMessage';
 import { ROUTES } from '../../../../app/config/routes';
 import { ProgressPhotoSlot } from '../../../bodyTracking/components/ProgressPhotoSlot/ProgressPhotoSlot';
-import { BODY_COPY } from '../../../bodyTracking/data/bodyCopy';
+import { bodyCopy } from '../../../bodyTracking/copy';
 import { SubPageHeader } from '../../components/SubPageHeader/SubPageHeader';
 import { useGoBack } from '../../hooks/useGoBack';
 import { useMyBodyMetrics, useMyUnits } from '../../hooks/useMyBody';
@@ -18,6 +18,7 @@ import './ProgressPhotosDayPage.css';
  * then front / side / back — each uploads as soon as it is picked.
  */
 export function ProgressPhotosDayPage() {
+  const copy = useCopy(bodyCopy);
   const [params] = useSearchParams();
   const { list, error, isLoading, reload, applyDay } = useMyBodyMetrics();
   const { today } = useMyUnits();
@@ -29,21 +30,21 @@ export function ProgressPhotosDayPage() {
   return (
     <AppShell hideTabBar>
       <div className="progress-photos-day-page">
-        <SubPageHeader title={hasPhotos ? BODY_COPY.editPhotos : BODY_COPY.addPhotos} fallbackPath={ROUTES.PROFILE_PHOTOS} />
+        <SubPageHeader title={hasPhotos ? copy.editPhotos : copy.addPhotos} fallbackPath={ROUTES.PROFILE_PHOTOS} />
 
-        {isLoading && !list && <StateMessage>{BODY_COPY.loading}</StateMessage>}
+        {isLoading && !list && <StateMessage>{copy.loading}</StateMessage>}
         {error && !list && <StateMessage onRetry={reload}>{error}</StateMessage>}
 
         {list && (
           <>
             <Input
-              label={BODY_COPY.date}
+              label={copy.date}
               type="date"
               max={today}
               value={date}
               onChange={(event) => event.target.value && setDate(event.target.value)}
             />
-            <p className="progress-photos-day-page-hint">{BODY_COPY.photosDayHint}</p>
+            <p className="progress-photos-day-page-hint">{copy.photosDayHint}</p>
             <div>
               {PROGRESS_PHOTO_POSES.map((pose) => (
                 <ProgressPhotoSlot
@@ -56,8 +57,8 @@ export function ProgressPhotosDayPage() {
                 />
               ))}
             </div>
-            <p className="progress-photos-day-page-hint">{BODY_COPY.privacy}</p>
-            <Button onClick={goBack}>{BODY_COPY.close}</Button>
+            <p className="progress-photos-day-page-hint">{copy.privacy}</p>
+            <Button onClick={goBack}>{copy.close}</Button>
           </>
         )}
       </div>

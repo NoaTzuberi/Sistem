@@ -3,6 +3,7 @@ import { AuthenticatedRequest } from '../../middleware/auth.middleware';
 import { validatePlanIdParam } from './plan.validation';
 import { PlanNotFoundError } from './plan.service';
 import { listTraineePlans, getTraineePlan, getTraineeWeek } from './traineePlan.service';
+import { sendError } from '../../i18n';
 
 export async function getMyPlans(req: AuthenticatedRequest, res: Response) {
   res.status(200).json(await listTraineePlans(req.userId!));
@@ -16,7 +17,7 @@ export async function getMyWeek(req: AuthenticatedRequest, res: Response) {
 export async function getMyPlan(req: AuthenticatedRequest, res: Response) {
   const validationError = validatePlanIdParam(req.params.id);
   if (validationError) {
-    res.status(400).json({ message: validationError });
+    sendError(res, 400, validationError);
     return;
   }
 
@@ -25,7 +26,7 @@ export async function getMyPlan(req: AuthenticatedRequest, res: Response) {
     res.status(200).json({ plan });
   } catch (error) {
     if (error instanceof PlanNotFoundError) {
-      res.status(404).json({ message: error.message });
+      sendError(res, 404, error.serverMessage);
       return;
     }
     throw error;

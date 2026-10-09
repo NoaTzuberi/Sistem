@@ -1,3 +1,5 @@
+import { fill } from '@sistem/shared';
+import type { planBuilderCopy } from './copy';
 import type { CoachPlan, ExerciseFacts, PlanExerciseInput, SavePlanPayload, SetType } from '@sistem/types';
 import type { DraftExercise, DraftKeys, DraftSetTarget, DraftTargets, DraftWorkout, PlanDraft } from './types';
 import { DEFAULT_REPS, DEFAULT_SETS } from './data/planDefaults';
@@ -225,7 +227,7 @@ export function moveItem<T>(items: T[], from: number, to: number): T[] {
  * by one exercise only, by exercises that are not next to each other, or a circuit
  * where only some exercises are Interval.
  */
-export function supersetWarnings(exercises: DraftExercise[]): Map<string, string> {
+export function supersetWarnings(exercises: DraftExercise[], copy: (typeof planBuilderCopy)['he']): Map<string, string> {
   const positions = new Map<string, number[]>();
   exercises.forEach((exercise, index) => {
     if (!exercise.supersetGroup) return;
@@ -235,17 +237,17 @@ export function supersetWarnings(exercises: DraftExercise[]): Map<string, string
   const warnings = new Map<string, string>();
   for (const [group, indexes] of positions) {
     if (indexes.length < 2) {
-      warnings.set(exercises[indexes[0]].key, `Superset ${group} needs at least two exercises.`);
+      warnings.set(exercises[indexes[0]].key, fill(copy.supersetTooSmall, { group }));
       continue;
     }
     indexes.forEach((position, i) => {
       if (i > 0 && position !== indexes[i - 1] + 1) {
-        warnings.set(exercises[position].key, `Superset ${group} exercises must be next to each other.`);
+        warnings.set(exercises[position].key, fill(copy.supersetNotAdjacent, { group }));
       }
     });
     const mixed = indexes.find((position) => !exercises[position].interval);
     if (mixed !== undefined && indexes.some((position) => exercises[position].interval)) {
-      warnings.set(exercises[mixed].key, `Superset ${group}: mark every exercise as Interval, or none.`);
+      warnings.set(exercises[mixed].key, fill(copy.supersetIntervalMixed, { group }));
     }
   }
   return warnings;

@@ -1,10 +1,12 @@
+import { fill, sharedCopy, useCopy } from '@sistem/shared';
 import type { SetType } from '@sistem/types';
 import { Button } from '../../../../components/common/Button/Button';
 import { NumberField } from '../../../../components/common/NumberField/NumberField';
-import { SET_TYPE_OPTIONS } from '../../data/planDefaults';
+import { SET_TYPE_IDS } from '../../data/planDefaults';
 import { newKey, newSetTarget } from '../../planDraft';
 import type { DraftSetTarget } from '../../types';
 import './SetTargetsTable.css';
+import { planBuilderCopy } from '../../copy';
 
 interface SetTargetsTableProps {
   targets: DraftSetTarget[];
@@ -13,6 +15,8 @@ interface SetTargetsTableProps {
 
 /** One row per set: pyramids (edit each row), warm-up sets and drop sets. */
 export function SetTargetsTable({ targets, onChange }: SetTargetsTableProps) {
+  const shared = useCopy(sharedCopy);
+  const copy = useCopy(planBuilderCopy);
   function update(key: string, changes: Partial<DraftSetTarget>) {
     onChange(targets.map((target) => (target.key === key ? { ...target, ...changes } : target)));
   }
@@ -29,15 +33,15 @@ export function SetTargetsTable({ targets, onChange }: SetTargetsTableProps) {
       <table className="set-targets-table">
         <thead>
           <tr>
-            <th scope="col">Set</th>
-            <th scope="col">Type</th>
-            <th scope="col">Reps</th>
-            <th scope="col">to</th>
-            <th scope="col">Seconds</th>
-            <th scope="col">Kg</th>
-            <th scope="col">Rest (sec)</th>
+            <th scope="col">{copy.set}</th>
+            <th scope="col">{copy.type}</th>
+            <th scope="col">{copy.reps}</th>
+            <th scope="col">{copy.to}</th>
+            <th scope="col">{copy.seconds}</th>
+            <th scope="col">{copy.kg}</th>
+            <th scope="col">{copy.restSec}</th>
             <th scope="col">
-              <span className="visually-hidden">Actions</span>
+              <span className="visually-hidden">{copy.actions}</span>
             </th>
           </tr>
         </thead>
@@ -50,24 +54,24 @@ export function SetTargetsTable({ targets, onChange }: SetTargetsTableProps) {
                 <td>
                   <select
                     className="set-targets-type"
-                    aria-label={`${setLabel} type`}
+                    aria-label={fill(copy.setTypeAria, { set: setLabel })}
                     value={target.type}
                     onChange={(event) => update(target.key, { type: event.target.value as SetType })}
                   >
-                    {SET_TYPE_OPTIONS.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.label}
+                    {SET_TYPE_IDS.map((option) => (
+                      <option key={option} value={option}>
+                        {shared.plan.setTypes[option]}
                       </option>
                     ))}
                   </select>
                 </td>
                 <td>
-                  <NumberField hideLabel label={`${setLabel} reps`} min={1} value={target.reps} onChange={(reps) => update(target.key, { reps })} />
+                  <NumberField hideLabel label={fill(copy.setRepsAria, { set: setLabel })} min={1} value={target.reps} onChange={(reps) => update(target.key, { reps })} />
                 </td>
                 <td>
                   <NumberField
                     hideLabel
-                    label={`${setLabel} max reps`}
+                    label={fill(copy.setMaxRepsAria, { set: setLabel })}
                     min={1}
                     value={target.repsMax}
                     onChange={(repsMax) => update(target.key, { repsMax })}
@@ -76,7 +80,7 @@ export function SetTargetsTable({ targets, onChange }: SetTargetsTableProps) {
                 <td>
                   <NumberField
                     hideLabel
-                    label={`${setLabel} seconds`}
+                    label={fill(copy.setSecondsAria, { set: setLabel })}
                     min={1}
                     value={target.durationSec}
                     onChange={(durationSec) => update(target.key, { durationSec })}
@@ -85,7 +89,7 @@ export function SetTargetsTable({ targets, onChange }: SetTargetsTableProps) {
                 <td>
                   <NumberField
                     hideLabel
-                    label={`${setLabel} weight in kg`}
+                    label={fill(copy.setWeightAria, { set: setLabel })}
                     step={0.5}
                     value={target.targetWeight}
                     onChange={(targetWeight) => update(target.key, { targetWeight })}
@@ -94,23 +98,23 @@ export function SetTargetsTable({ targets, onChange }: SetTargetsTableProps) {
                 <td>
                   <NumberField
                     hideLabel
-                    label={`${setLabel} rest in seconds`}
+                    label={fill(copy.setRestAria, { set: setLabel })}
                     value={target.restSec}
                     onChange={(restSec) => update(target.key, { restSec })}
                   />
                 </td>
                 <td className="set-targets-actions">
-                  <Button size="sm" aria-label={`Duplicate ${setLabel}`} onClick={() => duplicate(index)}>
-                    Copy
+                  <Button size="sm" aria-label={fill(copy.duplicateNamed, { name: setLabel })} onClick={() => duplicate(index)}>
+                    {copy.copy}
                   </Button>
                   <Button
                     size="sm"
                     variant="danger"
-                    aria-label={`Remove ${setLabel}`}
+                    aria-label={fill(copy.removeNamed, { name: setLabel })}
                     disabled={targets.length === 1}
                     onClick={() => onChange(targets.filter((other) => other.key !== target.key))}
                   >
-                    Remove
+                    {copy.remove}
                   </Button>
                 </td>
               </tr>
@@ -121,13 +125,13 @@ export function SetTargetsTable({ targets, onChange }: SetTargetsTableProps) {
 
       <div className="set-targets-add">
         <Button size="sm" onClick={() => onChange([...targets, newSetTarget('working', last)])}>
-          + Set
+          {copy.addSet}
         </Button>
         <Button size="sm" onClick={() => onChange([newSetTarget('warmup', first), ...targets])}>
-          + Warm-up set
+          {copy.addWarmupSet}
         </Button>
         <Button size="sm" onClick={() => onChange([...targets, newSetTarget('drop', last)])}>
-          + Drop set
+          {copy.addDropSet}
         </Button>
       </div>
     </div>

@@ -1,8 +1,11 @@
+import { type ServerMessage, msg } from '../../i18n';
+import { LANGUAGE_IDS } from '../users/units';
 interface RegisterInput {
   name?: string;
   email?: string;
   password?: string;
   timezone?: unknown;
+  language?: unknown;
 }
 
 interface LoginInput {
@@ -22,52 +25,55 @@ interface ResetPasswordInput {
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
 
-export function validateRegisterInput(input: RegisterInput): string | null {
+export function validateRegisterInput(input: RegisterInput): ServerMessage | null {
   const { name, email, password } = input;
 
   if (typeof name !== 'string' || name.trim().length === 0) {
-    return 'Name is required.';
+    return msg('name_required');
   }
   if (typeof email !== 'string' || !EMAIL_REGEX.test(email)) {
-    return 'A valid email is required.';
+    return msg('email_invalid');
   }
   if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
-    return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+    return msg('password_too_short', { min: MIN_PASSWORD_LENGTH });
   }
   if (input.timezone !== undefined && typeof input.timezone !== 'string') {
-    return 'Time zone must be a string.';
+    return msg('timezone_not_string');
+  }
+  if (input.language !== undefined && !(LANGUAGE_IDS as readonly unknown[]).includes(input.language)) {
+    return msg('language_invalid');
   }
 
   return null;
 }
 
-export function validateLoginInput(input: LoginInput): string | null {
+export function validateLoginInput(input: LoginInput): ServerMessage | null {
   const { email, password } = input;
 
   if (typeof email !== 'string' || !EMAIL_REGEX.test(email)) {
-    return 'A valid email is required.';
+    return msg('email_invalid');
   }
   if (typeof password !== 'string' || password.length === 0) {
-    return 'Password is required.';
+    return msg('password_required');
   }
 
   return null;
 }
 
-export function validateForgotPasswordInput(input: ForgotPasswordInput): string | null {
+export function validateForgotPasswordInput(input: ForgotPasswordInput): ServerMessage | null {
   if (typeof input.email !== 'string' || !EMAIL_REGEX.test(input.email)) {
-    return 'A valid email is required.';
+    return msg('email_invalid');
   }
 
   return null;
 }
 
-export function validateResetPasswordInput(input: ResetPasswordInput): string | null {
+export function validateResetPasswordInput(input: ResetPasswordInput): ServerMessage | null {
   if (typeof input.token !== 'string' || input.token.trim().length === 0) {
-    return 'Reset token is required.';
+    return msg('reset_token_required');
   }
   if (typeof input.password !== 'string' || input.password.length < MIN_PASSWORD_LENGTH) {
-    return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+    return msg('password_too_short', { min: MIN_PASSWORD_LENGTH });
   }
 
   return null;

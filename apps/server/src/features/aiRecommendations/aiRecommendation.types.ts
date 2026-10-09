@@ -1,5 +1,6 @@
 import type { Types } from 'mongoose';
 import type { AiRecommendationStatus, AiRecommendationTrigger, AiRecommendationType } from '@sistem/types';
+import type { ServerMessage } from '../../i18n';
 
 /** One call to the model: kept for cost and quality checks (coach-invisible). */
 export interface RecommendationAttempt {
@@ -34,7 +35,11 @@ export interface AiRecommendationDocument {
   output: Record<string, unknown> | null;
   model: string | null;
   attempts: RecommendationAttempt[];
-  error: { code: string; message: string } | null;
+  /**
+   * Why it failed. `message` is English (logs, rows saved before Phase 15); `text` is the
+   * message as a code + params, worded in the coach's language when read.
+   */
+  error: { code: string; message: string; text?: ServerMessage | null } | null;
   startedAt: Date | null;
   completedAt: Date | null;
   createdAt: Date;

@@ -10,7 +10,7 @@
 }
 
 .week-picker-title {
-  float: left;
+  float: inline-start;
   width: 100%;
   margin-bottom: var(--space-2);
   padding: 0;
@@ -23,11 +23,11 @@
   padding: 0;
   list-style: none;
   background-color: var(--color-bg);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-thin) solid var(--color-border);
 }
 
 .week-picker-list li + li {
-  border-top: 1px solid var(--color-border);
+  border-top: var(--border-width-thin) solid var(--color-border);
 }
 
 .week-picker-option {
@@ -60,7 +60,7 @@
   font-size: var(--text-sm);
   font-weight: var(--font-weight-semibold);
   text-decoration: none;
-  border: 1px solid var(--color-border);
+  border: var(--border-width-thin) solid var(--color-border);
   background-color: var(--color-bg);
 }
 

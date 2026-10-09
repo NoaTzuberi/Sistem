@@ -41,7 +41,7 @@
   font-size: var(--text-sm);
   color: var(--color-text);
   background-color: var(--color-bg);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-thin) solid var(--color-border);
   border-radius: var(--radius-none);
 }
 
@@ -85,7 +85,7 @@
 
 .calculation-summary-target {
   padding-top: var(--space-2);
-  border-top: 1px solid var(--color-border);
+  border-top: var(--border-width-thin) solid var(--color-border);
 }
 
 .calculation-summary-line {

@@ -1,5 +1,5 @@
 import type { WorkoutLog } from '@sistem/types';
-import { describePersonalRecord, logExerciseNames } from '@sistem/shared';
+import { describePersonalRecord, logExerciseNames, useLanguage } from '@sistem/shared';
 import './PersonalRecordList.css';
 
 interface PersonalRecordListProps {
@@ -9,6 +9,7 @@ interface PersonalRecordListProps {
 
 /** The PRs hit in this workout (computed by the server at finish); nothing when none. */
 export function PersonalRecordList({ log, title }: PersonalRecordListProps) {
+  const language = useLanguage();
   const records = log.personalRecords ?? [];
   if (records.length === 0) return null;
   const names = logExerciseNames(log);
@@ -18,7 +19,7 @@ export function PersonalRecordList({ log, title }: PersonalRecordListProps) {
       <ul className="personal-record-list-items">
         {records.map((record) => (
           <li key={record.exerciseId} className="personal-record-list-item">
-            {describePersonalRecord(record, names.get(record.exerciseId))}
+            {describePersonalRecord(record, names.get(record.exerciseId), language)}
           </li>
         ))}
       </ul>

@@ -46,8 +46,8 @@
 }
 
 .number-stepper-input:focus {
-  outline: 2px solid var(--color-primary);
-  outline-offset: -2px;
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: calc(-1 * var(--focus-ring-offset));
 }
 
 .number-stepper-input::placeholder {

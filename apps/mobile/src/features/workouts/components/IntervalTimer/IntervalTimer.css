@@ -55,7 +55,7 @@
 }
 
 .interval-timer-mute {
-  margin-left: auto;
+  margin-inline-start: auto;
 }
 
 .interval-timer-main {
@@ -88,7 +88,7 @@
 
 .interval-timer-paused {
   padding: 2px var(--space-2);
-  border: 2px solid currentColor;
+  border: var(--border-width-medium) solid currentColor;
   font-size: var(--text-sm);
   font-weight: var(--font-weight-bold);
   letter-spacing: var(--letter-spacing-wide);
@@ -125,7 +125,7 @@
 
 .interval-timer-control {
   min-height: 64px;
-  border: 2px solid currentColor;
+  border: var(--border-width-medium) solid currentColor;
   background: transparent;
   color: inherit;
   font-family: var(--font-family-body);

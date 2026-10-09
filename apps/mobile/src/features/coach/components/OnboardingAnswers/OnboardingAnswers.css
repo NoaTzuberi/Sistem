@@ -21,13 +21,13 @@
 
 .onboarding-answers-rows {
   margin: 0;
-  border-top: 1px solid var(--color-border);
+  border-top: var(--border-width-thin) solid var(--color-border);
 }
 
 /* Question above its answer: long free-text answers need the full width of a phone. */
 .onboarding-answers-row {
   padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: var(--border-width-thin) solid var(--color-border);
 }
 
 .onboarding-answers-row dt {

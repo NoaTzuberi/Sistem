@@ -1,6 +1,6 @@
 .coach-intro {
   background-color: var(--color-primary-soft);
-  border-inline-start: 3px solid var(--color-primary);
+  border-inline-start: var(--border-width-thick) solid var(--color-primary);
 }
 
 .coach-intro-header {

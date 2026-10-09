@@ -7,7 +7,7 @@
   height: 100%;
   padding: var(--space-3);
   background-color: var(--color-surface);
-  clip-path: polygon(0 0, calc(100% - var(--cut-size)) 0, 100% var(--cut-size), 100% 100%, 0 100%);
+  clip-path: var(--cut-corner);
 }
 
 .achievement-tile-name {

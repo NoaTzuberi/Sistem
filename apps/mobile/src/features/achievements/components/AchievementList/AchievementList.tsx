@@ -1,7 +1,7 @@
 import type { AchievementProgress } from '@sistem/types';
-import { describeAchievement, describeAchievementProgress, formatUnlockedDate } from '@sistem/shared';
+import { describeAchievement, describeAchievementProgress, fill, formatUnlockedDate, useCopy, useLanguage } from '@sistem/shared';
 import { AchievementBadge } from '../AchievementBadge/AchievementBadge';
-import { ACHIEVEMENT_COPY } from '../../data/achievementCopy';
+import { achievementCopy } from '../../copy';
 import './AchievementList.css';
 
 interface AchievementListProps {
@@ -10,20 +10,22 @@ interface AchievementListProps {
 }
 
 function Row({ entry }: { entry: AchievementProgress }) {
-  const text = describeAchievement(entry.type);
+  const language = useLanguage();
+  const copy = useCopy(achievementCopy);
+  const text = describeAchievement(entry.type, language);
   const unlocked = entry.count > 0;
-  const progressText = describeAchievementProgress(entry);
+  const progressText = describeAchievementProgress(entry, language);
   return (
     <li className={'achievement-row' + (unlocked ? ' achievement-row-unlocked' : '')}>
       <AchievementBadge type={entry.type} locked={!unlocked} />
       <div className="achievement-row-text">
         <span className="achievement-row-name">
           {text.name}
-          {entry.repeatable && entry.count > 1 && <span className="achievement-row-count"> {ACHIEVEMENT_COPY.times(entry.count)}</span>}
+          {entry.repeatable && entry.count > 1 && <span className="achievement-row-count"> {fill(copy.times, { count: entry.count })}</span>}
         </span>
         <span className="achievement-row-description">{text.description}</span>
         {unlocked && entry.unlockedAt && (
-          <span className="achievement-row-meta">{ACHIEVEMENT_COPY.unlockedOn(formatUnlockedDate(entry.unlockedAt))}</span>
+          <span className="achievement-row-meta">{fill(copy.unlockedOn, { date: formatUnlockedDate(entry.unlockedAt, language) })}</span>
         )}
         {!unlocked && !entry.repeatable && entry.threshold !== undefined && (
           <>
@@ -38,6 +40,7 @@ function Row({ entry }: { entry: AchievementProgress }) {
 
 /** Every achievement: unlocked first (newest first), then the rest with her progress. */
 export function AchievementList({ progress }: AchievementListProps) {
+  const copy = useCopy(achievementCopy);
   const unlocked = progress
     .filter((entry) => entry.count > 0)
     .sort((a, b) => (b.unlockedAt ?? '').localeCompare(a.unlockedAt ?? ''));
@@ -48,7 +51,7 @@ export function AchievementList({ progress }: AchievementListProps) {
       {unlocked.length > 0 && (
         <section aria-labelledby="achievements-unlocked">
           <h2 className="achievement-list-title" id="achievements-unlocked">
-            {ACHIEVEMENT_COPY.unlockedTitle}
+            {copy.unlockedTitle}
           </h2>
           <ul className="achievement-list-rows">
             {unlocked.map((entry) => (
@@ -60,7 +63,7 @@ export function AchievementList({ progress }: AchievementListProps) {
       {locked.length > 0 && (
         <section aria-labelledby="achievements-locked">
           <h2 className="achievement-list-title" id="achievements-locked">
-            {ACHIEVEMENT_COPY.lockedTitle}
+            {copy.lockedTitle}
           </h2>
           <ul className="achievement-list-rows">
             {locked.map((entry) => (

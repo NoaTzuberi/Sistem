@@ -1,12 +1,14 @@
+import type { Language } from '@sistem/types';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { formatDuration } from '@sistem/shared';
+import { fill, formatDuration, useCopy, useI18n, isolateLtr } from '@sistem/shared';
 import { Button } from '../../../../components/common/Button/Button';
 import { Modal } from '../../../../components/common/Modal/Modal';
 import { countRoundsDone, nextWork } from '../../data/intervalTimeline';
 import { unlockAudio } from '../../data/intervalSounds';
 import type { IntervalRun } from '../../data/intervalTimeline';
-import { INTERVAL_COPY, formatClock } from '../../data/workoutCopy';
+import { formatClock } from '../../data/workoutDisplay';
+import { workoutCopy } from '../../copy';
 import { CountdownBar } from '../CountdownBar/CountdownBar';
 import { SoundToggle } from '../SoundToggle/SoundToggle';
 import './IntervalTimer.css';
@@ -29,15 +31,17 @@ interface IntervalTimerProps {
 }
 
 /** "Next: Rest 10s → Burpees" — what comes after the current phase. */
-function describeNext(run: IntervalRun): string {
+function describeNext(run: IntervalRun, copy: (typeof workoutCopy)['he'], language: Language): string {
   const phase = run.phases[run.index];
   const following = run.phases[run.index + 1];
-  if (!following) return INTERVAL_COPY.lastOne;
+  if (!following) return copy.interval.lastOne;
   const upcomingWork = nextWork(run, run.index);
   if (following.kind === 'rest' && phase.kind === 'work') {
-    return INTERVAL_COPY.nextRestThen(formatDuration(following.durationSec), upcomingWork?.label ?? '');
+    // The arrow points along the reading direction (it is in the copy: → / ←).
+    const then = upcomingWork?.label ? fill(copy.interval.thenLabel, { label: upcomingWork.label }) : '';
+    return fill(copy.interval.nextRestThen, { rest: formatDuration(following.durationSec, language), label: then });
   }
-  return upcomingWork?.label || INTERVAL_COPY.nextWork;
+  return upcomingWork?.label || copy.interval.nextWork;
 }
 
 /**
@@ -57,6 +61,8 @@ export function IntervalTimer({
   onClose,
   onAgain,
 }: IntervalTimerProps) {
+  const { language, plural } = useI18n();
+  const copy = useCopy(workoutCopy);
   const [confirmStop, setConfirmStop] = useState(false);
   const phase = run.phases[run.index];
   const isPaused = run.pausedMs !== null;
@@ -67,7 +73,7 @@ export function IntervalTimer({
     phase.kind === 'work'
       ? phase.label
       : phase.kind === 'ready'
-        ? phase.label && INTERVAL_COPY.first(phase.label)
+        ? phase.label && fill(copy.interval.first, { label: phase.label })
         : '';
 
   return createPortal(
@@ -79,7 +85,7 @@ export function IntervalTimer({
     >
       <div className="interval-timer-top">
         {!showDone && (
-          <button type="button" className="interval-timer-icon" aria-label={INTERVAL_COPY.stop} onClick={() => setConfirmStop(true)}>
+          <button type="button" className="interval-timer-icon" aria-label={copy.interval.stop} onClick={() => setConfirmStop(true)}>
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M6 6l12 12M18 6L6 18" />
             </svg>
@@ -90,15 +96,15 @@ export function IntervalTimer({
 
       {showDone ? (
         <div className="interval-timer-main">
-          <span className="interval-timer-phase">{INTERVAL_COPY.doneTitle}</span>
+          <span className="interval-timer-phase">{copy.interval.doneTitle}</span>
           <span className="interval-timer-subtitle">
-            {INTERVAL_COPY.roundsDone(countRoundsDone(run), phase.rounds)}
+            {fill(copy.interval.roundsDone, { progress: isolateLtr(`${countRoundsDone(run)} / ${phase.rounds}`) })}
           </span>
           <div className="interval-timer-done-actions">
             <Button onClick={onClose}>{doneLabel}</Button>
             {onAgain && (
               <Button variant="secondary" onClick={onAgain}>
-                {INTERVAL_COPY.again}
+                {copy.interval.again}
               </Button>
             )}
           </div>
@@ -106,11 +112,11 @@ export function IntervalTimer({
       ) : (
         <>
           <div className="interval-timer-main" role="timer" aria-live="off">
-            <span className="interval-timer-phase">{INTERVAL_COPY.phase[phase.kind]}</span>
+            <span className="interval-timer-phase">{copy.interval.phase[phase.kind]}</span>
             <span className="interval-timer-clock">{formatClock(Math.ceil(remainingMs / 1000))}</span>
-            {isPaused && <span className="interval-timer-paused">{INTERVAL_COPY.paused}</span>}
+            {isPaused && <span className="interval-timer-paused">{copy.interval.paused}</span>}
             {subtitle && <span className="interval-timer-subtitle">{subtitle}</span>}
-            <span className="interval-timer-round">{INTERVAL_COPY.round(phase.round, phase.rounds)}</span>
+            <span className="interval-timer-round">{fill(copy.interval.round, { round: phase.round, rounds: phase.rounds })}</span>
             {/* Continuous: drawn every frame from the stored end time, not from the tick. */}
             <CountdownBar
               className="interval-timer-progress"
@@ -120,24 +126,24 @@ export function IntervalTimer({
               direction="fill"
             />
             <span className="interval-timer-next">
-              {INTERVAL_COPY.next} {describeNext(run)}
+              {copy.interval.next} {describeNext(run, copy, language)}
             </span>
           </div>
 
           <div className="interval-timer-controls">
             <button type="button" className="interval-timer-control" onClick={isPaused ? onResume : onPause}>
-              {isPaused ? `▶ ${INTERVAL_COPY.resume}` : `❚❚ ${INTERVAL_COPY.pause}`}
+              {isPaused ? `▶ ${copy.interval.resume}` : `❚❚ ${copy.interval.pause}`}
             </button>
             <button type="button" className="interval-timer-control" onClick={onSkip}>
-              ⏭ {INTERVAL_COPY.skip}
+              ⏭ {copy.interval.skip}
             </button>
           </div>
         </>
       )}
 
-      <Modal isOpen={confirmStop} onClose={() => setConfirmStop(false)} variant="flat" title={INTERVAL_COPY.confirmStopTitle}>
+      <Modal isOpen={confirmStop} onClose={() => setConfirmStop(false)} variant="flat" title={copy.interval.confirmStopTitle}>
         <div className="interval-timer-dialog">
-          <p className="interval-timer-dialog-text">{onAgain ? INTERVAL_COPY.confirmStopFree : INTERVAL_COPY.confirmStop}</p>
+          <p className="interval-timer-dialog-text">{onAgain ? copy.interval.confirmStopFree : copy.interval.confirmStop}</p>
           <Button
             variant="danger"
             onClick={() => {
@@ -145,21 +151,21 @@ export function IntervalTimer({
               onClose();
             }}
           >
-            {INTERVAL_COPY.stopConfirm}
+            {copy.interval.stopConfirm}
           </Button>
           <Button variant="ghost" onClick={() => setConfirmStop(false)}>
-            {INTERVAL_COPY.keepGoing}
+            {copy.interval.keepGoing}
           </Button>
         </div>
       </Modal>
 
       {/* Closing the sheet without choosing counts as "No": nothing is logged for her. */}
-      <Modal isOpen={catchUpCount > 0} onClose={() => onAnswerCatchUp(false)} variant="flat" title={INTERVAL_COPY.catchUpTitle}>
+      <Modal isOpen={catchUpCount > 0} onClose={() => onAnswerCatchUp(false)} variant="flat" title={copy.interval.catchUpTitle}>
         <div className="interval-timer-dialog">
-          <p className="interval-timer-dialog-text">{INTERVAL_COPY.catchUp(catchUpCount)}</p>
-          <Button onClick={() => onAnswerCatchUp(true)}>{INTERVAL_COPY.catchUpYes}</Button>
+          <p className="interval-timer-dialog-text">{plural(copy.interval.catchUp, catchUpCount)}</p>
+          <Button onClick={() => onAnswerCatchUp(true)}>{copy.interval.catchUpYes}</Button>
           <Button variant="ghost" onClick={() => onAnswerCatchUp(false)}>
-            {INTERVAL_COPY.catchUpNo}
+            {copy.interval.catchUpNo}
           </Button>
         </div>
       </Modal>

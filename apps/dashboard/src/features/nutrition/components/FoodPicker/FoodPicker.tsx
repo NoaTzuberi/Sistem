@@ -1,13 +1,13 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { FoodGroup, FoodItem } from '@sistem/types';
-import { FOOD_CATEGORY_LABELS, FOOD_GROUPS, searchByText } from '@sistem/shared';
+import { FOOD_GROUPS, searchByText, sharedCopy, useCopy } from '@sistem/shared';
 import { Button } from '../../../../components/common/Button/Button';
 import { CategoryChips } from '../CategoryChips/CategoryChips';
 import { matchesCategory } from '../../data/foodFilters';
 import type { CategoryFilter } from '../../data/foodFilters';
 import { GroupTabs } from '../GroupTabs/GroupTabs';
-import { NUTRITION_COPY } from '../../data/nutritionCopy';
+import { nutritionCopy } from '../../copy';
 import './FoodPicker.css';
 
 const RECENT_SHOWN = 8;
@@ -28,6 +28,8 @@ interface FoodPickerProps {
  * server as warnings after the autosave.
  */
 export function FoodPicker({ foods, recentFoodIds, initialGroup, onPick }: FoodPickerProps) {
+  const shared = useCopy(sharedCopy);
+  const copy = useCopy(nutritionCopy);
   const [isOpen, setIsOpen] = useState(false);
   const [group, setGroup] = useState<FoodGroup>(initialGroup);
   const [category, setCategory] = useState<CategoryFilter>(null);
@@ -96,16 +98,16 @@ export function FoodPicker({ foods, recentFoodIds, initialGroup, onPick }: FoodP
   if (!isOpen) {
     return (
       <Button size="sm" onClick={open}>
-        {NUTRITION_COPY.addFood}
+        {copy.addFood}
       </Button>
     );
   }
 
   return (
-    <div className="food-picker" role="dialog" aria-label={NUTRITION_COPY.pickerTitle} onKeyDown={handleEscape}>
+    <div className="food-picker" role="dialog" aria-label={copy.pickerTitle} onKeyDown={handleEscape}>
       <div className="food-picker-head">
-        <GroupTabs groups={groups} value={group} onChange={(next) => { setGroup(next); setCategory(null); }} label={NUTRITION_COPY.pickerGroups} />
-        <Button size="sm" onClick={() => setIsOpen(false)} aria-label={NUTRITION_COPY.pickerClose}>
+        <GroupTabs groups={groups} value={group} onChange={(next) => { setGroup(next); setCategory(null); }} label={copy.pickerGroups} />
+        <Button size="sm" onClick={() => setIsOpen(false)} aria-label={copy.pickerClose}>
           ✕
         </Button>
       </div>
@@ -116,8 +118,8 @@ export function FoodPicker({ foods, recentFoodIds, initialGroup, onPick }: FoodP
         type="search"
         dir="auto"
         value={query}
-        placeholder={NUTRITION_COPY.pickerSearch}
-        aria-label={NUTRITION_COPY.pickerSearch}
+        placeholder={copy.pickerSearch}
+        aria-label={copy.pickerSearch}
         role="combobox"
         aria-expanded="true"
         aria-controls={listId}
@@ -127,18 +129,18 @@ export function FoodPicker({ foods, recentFoodIds, initialGroup, onPick }: FoodP
       />
 
       {recent.length > 0 && !query && category === null && (
-        <div className="food-picker-recent" aria-label={NUTRITION_COPY.pickerRecent}>
-          <span className="food-picker-label">{NUTRITION_COPY.pickerRecent}</span>
+        <div className="food-picker-recent" aria-label={copy.pickerRecent}>
+          <span className="food-picker-label">{copy.pickerRecent}</span>
           {recent.map((food) => (
             <button key={food.id} type="button" className="food-picker-recent-item" dir="auto" onClick={() => pick(food)}>
-              {food.name}
+              <bdi>{food.name}</bdi>
             </button>
           ))}
         </div>
       )}
 
-      <ul ref={listRef} id={listId} className="food-picker-results" role="listbox" aria-label={NUTRITION_COPY.pickerResults}>
-        {results.length === 0 && <li className="food-picker-empty">{NUTRITION_COPY.pickerEmpty}</li>}
+      <ul ref={listRef} id={listId} className="food-picker-results" role="listbox" aria-label={copy.pickerResults}>
+        {results.length === 0 && <li className="food-picker-empty">{copy.pickerEmpty}</li>}
         {results.map((food, index) => (
           <li
             key={food.id}
@@ -151,16 +153,16 @@ export function FoodPicker({ foods, recentFoodIds, initialGroup, onPick }: FoodP
             onClick={() => pick(food)}
           >
             <span className="food-picker-name" dir="auto">
-              {food.name}
+              <bdi>{food.name}</bdi>
             </span>
             <span className="food-picker-portion" dir="auto">
-              {food.portion}
+              <bdi>{food.portion}</bdi>
             </span>
-            {category === null && food.category && <span className="food-picker-category">{FOOD_CATEGORY_LABELS[food.category]}</span>}
+            {category === null && food.category && <span className="food-picker-category">{shared.nutrition.categories[food.category]}</span>}
           </li>
         ))}
       </ul>
-      <p className="food-picker-hint">{NUTRITION_COPY.pickerHint}</p>
+      <p className="food-picker-hint">{copy.pickerHint}</p>
     </div>
   );
 }

@@ -17,7 +17,7 @@ import { NutritionPreferencesStep } from '../../steps/NutritionPreferencesStep/N
 import { ReviewStep } from '../../steps/ReviewStep/ReviewStep';
 import { INITIAL_ONBOARDING_STATE } from '../../types';
 import type { OnboardingFormState, OnboardingMedia } from '../../types';
-import { toDisplayWeight } from '@sistem/shared';
+import { toDisplayWeight, useCopy } from '@sistem/shared';
 import { extractErrorMessage } from '@sistem/api-client';
 import type { MyOnboarding } from '@sistem/types';
 import {
@@ -27,7 +27,7 @@ import {
   skipOnboardingStep,
 } from '../../../../services/onboarding/onboardingService';
 import { fromAnswers, isNutritionStepValid } from '../../data/nutritionForm';
-import { NUTRITION_PREFERENCES_COPY } from '../../data/nutritionPreferencesCopy';
+import { onboardingCopy } from '../../copy';
 import { useAuth } from '../../../../services/auth/AuthContext';
 import { ROUTES } from '../../../../app/config/routes';
 import { landingPath } from '../../../../app/router/landingPath';
@@ -168,6 +168,7 @@ function mapOnboardingToFormState(onboarding: MyOnboarding, fallbackName: string
 }
 
 export function OnboardingPage() {
+  const copy = useCopy(onboardingCopy);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, updateUser } = useAuth();
@@ -217,7 +218,7 @@ export function OnboardingPage() {
       })
       .catch((error) => {
         if (!cancelled) {
-          setAnswersLoadError(error instanceof Error ? error.message : "Couldn't load your answers.");
+          setAnswersLoadError((error instanceof Error && error.message) || copy.flow.loadError);
         }
       })
       .finally(() => {
@@ -273,7 +274,7 @@ export function OnboardingPage() {
       goToStep(stepIndex + 1);
     } catch (error) {
       // The server's own message (e.g. the weight range in her unit); generic when it sent none.
-      setSubmitError(extractErrorMessage(error, 'Could not save your answers. Please try again.'));
+      setSubmitError(extractErrorMessage(error, copy.flow.saveError));
     } finally {
       setIsSubmitting(false);
     }
@@ -310,7 +311,7 @@ export function OnboardingPage() {
       updateUser(savedUser);
       goToStep(stepIndex + 1);
     } catch (error) {
-      setSubmitError(extractErrorMessage(error, 'Could not save your answers. Please try again.'));
+      setSubmitError(extractErrorMessage(error, copy.flow.saveError));
     } finally {
       setIsSubmitting(false);
     }
@@ -329,7 +330,7 @@ export function OnboardingPage() {
       updateUser(savedUser);
       navigate(ROUTES.PROFILE);
     } catch (error) {
-      setSubmitError(extractErrorMessage(error, 'Could not save your profile. Please try again.'));
+      setSubmitError(extractErrorMessage(error, copy.flow.profileSaveError));
     } finally {
       setIsSubmitting(false);
     }
@@ -377,7 +378,7 @@ export function OnboardingPage() {
         footer={
           <>
             <Button variant="secondary" onClick={handleCancelEdit} disabled={isSubmitting}>
-              Cancel
+              {copy.flow.cancel}
             </Button>
             <Button
               variant="primary"
@@ -386,7 +387,7 @@ export function OnboardingPage() {
               loading={isSubmitting}
               disabled={Boolean(answersLoadError) || !isStepValid(stepIndex, formState)}
             >
-              Save changes
+              {copy.flow.saveChanges}
             </Button>
           </>
         }
@@ -408,7 +409,7 @@ export function OnboardingPage() {
             className="onboarding-footer-primary"
             onClick={() => setLoadAttempt((attempt) => attempt + 1)}
           >
-            Try again
+            {copy.flow.tryAgain}
           </Button>
         }
       >
@@ -420,7 +421,7 @@ export function OnboardingPage() {
   const isFirstStep = stepIndex === 0;
   const isLastStep = stepIndex === STEP_COUNT - 1;
   const showSkip = stepIndex === EXERCISE_PREFERENCES_STEP_INDEX;
-  const continueLabel = isFirstStep ? 'Start' : isLastStep ? 'Create my profile' : 'Continue';
+  const continueLabel = isFirstStep ? copy.flow.start : isLastStep ? copy.flow.createProfile : copy.flow.continue;
 
   return (
     <OnboardingScreen
@@ -430,17 +431,17 @@ export function OnboardingPage() {
         <>
           {!isFirstStep && (
             <Button variant="secondary" onClick={handleBack} disabled={isSubmitting}>
-              Back
+              {copy.flow.back}
             </Button>
           )}
           {showSkip && (
             <Button variant="ghost" onClick={handleSkip} disabled={isSubmitting}>
-              Skip for now
+              {copy.flow.skipForNow}
             </Button>
           )}
           {stepIndex === NUTRITION_STEP_INDEX && (
             <Button variant="ghost" onClick={handleSkipNutrition} disabled={isSubmitting}>
-              {NUTRITION_PREFERENCES_COPY.skip}
+              {copy.nutrition.skip}
             </Button>
           )}
           <Button

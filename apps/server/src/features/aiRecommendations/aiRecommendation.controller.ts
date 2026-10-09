@@ -9,22 +9,22 @@ import {
   startRecommendation,
 } from './aiRecommendation.service';
 import { parseRecommendationType, validateRecommendationIdParam } from './aiRecommendation.validation';
+import { requestLanguage, sendError, translate } from '../../i18n';
 
 // Coach-only (mounted on /api/coach behind requireRole('coach') + loadCoachTrainee).
 // No trainee route reads recommendations: an AI draft reaches her only as a plan the
 // coach saved and published.
 
-const TYPE_ERROR = 'type must be one of: training_plan, nutrition_plan.';
-
 export async function getLatestTraineeRecommendation(req: AuthenticatedRequest, res: Response) {
   const type = parseRecommendationType(req.query.type ?? 'training_plan');
   if (!type) {
-    res.status(400).json({ message: TYPE_ERROR });
+    sendError(res, 400, 'ai_type_invalid');
     return;
   }
+  const unavailable = aiUnavailableReason();
   const body: AiRecommendationLatest = {
-    recommendation: await getLatestRecommendation(req.traineeId!, type),
-    unavailableReason: aiUnavailableReason(),
+    recommendation: await getLatestRecommendation(req.traineeId!, type, requestLanguage(req)),
+    unavailableReason: unavailable ? translate(requestLanguage(req), unavailable) : null,
   };
   res.status(200).json(body);
 }
@@ -32,12 +32,12 @@ export async function getLatestTraineeRecommendation(req: AuthenticatedRequest, 
 export async function getTraineeRecommendation(req: AuthenticatedRequest, res: Response) {
   const validationError = validateRecommendationIdParam(req.params.recommendationId);
   if (validationError) {
-    res.status(400).json({ message: validationError });
+    sendError(res, 400, validationError);
     return;
   }
-  const recommendation = await getRecommendation(req.traineeId!, String(req.params.recommendationId));
+  const recommendation = await getRecommendation(req.traineeId!, String(req.params.recommendationId), requestLanguage(req));
   if (!recommendation) {
-    res.status(404).json({ message: 'Recommendation not found.' });
+    sendError(res, 404, 'ai_recommendation_not_found');
     return;
   }
   res.status(200).json({ recommendation });
@@ -47,19 +47,19 @@ export async function getTraineeRecommendation(req: AuthenticatedRequest, res: R
 export async function createTraineeRecommendation(req: AuthenticatedRequest, res: Response) {
   const type = parseRecommendationType(req.body?.type);
   if (!type) {
-    res.status(400).json({ message: TYPE_ERROR });
+    sendError(res, 400, 'ai_type_invalid');
     return;
   }
   const unavailable = aiUnavailableReason();
   if (unavailable) {
-    res.status(503).json({ message: unavailable });
+    sendError(res, 503, unavailable);
     return;
   }
 
   const started = await startRecommendation({ traineeId: req.traineeId!, coachId: req.userId!, type, trigger: 'coach' });
-  const recommendation = await presentRecommendation(started.recommendation);
+  const recommendation = await presentRecommendation(started.recommendation, requestLanguage(req));
   if (!started.created) {
-    res.status(409).json({ message: 'A draft is already being generated for this trainee.', recommendation });
+    sendError(res, 409, 'ai_already_running', { recommendation });
     return;
   }
   res.status(202).json({ recommendation });

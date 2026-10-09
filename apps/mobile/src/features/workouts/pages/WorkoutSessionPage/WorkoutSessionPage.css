@@ -10,7 +10,7 @@
 .workout-session-header {
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: var(--z-raised);
   display: grid;
   /* ✕ · title · sound · ⋯ */
   grid-template-columns: var(--touch-target-min) minmax(0, 1fr) var(--touch-target-min) var(--touch-target-min);
@@ -118,14 +118,14 @@
 
 .workout-session-footer {
   position: fixed;
-  left: 0;
-  right: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
   bottom: 0;
   z-index: var(--z-tab-bar);
   display: flex;
   flex-direction: column;
   background-color: var(--color-bg);
-  border-top: 1px solid var(--color-border);
+  border-top: var(--border-width-thin) solid var(--color-border);
 }
 
 .workout-session-rest-over {

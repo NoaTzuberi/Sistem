@@ -1,6 +1,6 @@
 import type { WorkoutLogStats } from '@sistem/types';
-import { formatDuration } from '@sistem/shared';
-import { SUMMARY_COPY } from '../../data/workoutCopy';
+import { formatDuration, formatVolume, useCopy, useLanguage } from '@sistem/shared';
+import { workoutCopy } from '../../copy';
 import './SummaryStats.css';
 
 interface SummaryStatsProps {
@@ -9,11 +9,13 @@ interface SummaryStatsProps {
 
 /** The four numbers the server computed at finish (PRD §5.3), as 2×2 tiles. */
 export function SummaryStats({ stats }: SummaryStatsProps) {
+  const language = useLanguage();
+  const copy = useCopy(workoutCopy);
   const tiles = [
-    { label: SUMMARY_COPY.statDuration, value: formatDuration(stats.durationSec) },
-    { label: SUMMARY_COPY.statVolume, value: `${stats.totalVolume.toLocaleString()} kg` },
-    { label: SUMMARY_COPY.statSets, value: String(stats.setsCompleted) },
-    { label: SUMMARY_COPY.statPrs, value: String(stats.prCount) },
+    { label: copy.summary.statDuration, value: formatDuration(stats.durationSec, language) },
+    { label: copy.summary.statVolume, value: formatVolume(stats.totalVolume, language) },
+    { label: copy.summary.statSets, value: String(stats.setsCompleted) },
+    { label: copy.summary.statPrs, value: String(stats.prCount) },
   ];
   return (
     <dl className="summary-stats">

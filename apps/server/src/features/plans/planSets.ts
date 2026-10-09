@@ -1,5 +1,6 @@
 import type { ResolvedPlanSet, SetType } from '@sistem/types';
 import { DEFAULT_SET_TYPE } from './plan.constants';
+import { msg, type ServerMessage } from '../../i18n';
 
 /** Target fields shared by a whole PlanExercise and by one entry of setTargets. */
 interface SetTargetInput {
@@ -59,13 +60,15 @@ export function deriveSetCount(exercise: PlanExerciseTargetsInput): number | und
   return isSet(exercise.sets) ? exercise.sets : undefined;
 }
 
-function validateTarget(target: SetTargetInput, label: string): string | null {
+/** `setNumber` null = the exercise's own targets (no per-set list). */
+function validateTarget(target: SetTargetInput, setNumber: number | null): ServerMessage | null {
+  const subject = setNumber === null ? msg('plan_subject_exercise') : msg('plan_subject_set', { n: setNumber });
   if (!isSet(target.reps) && !isSet(target.durationSec)) {
-    return `${label} needs reps or a duration.`;
+    return msg('plan_target_needs_amount', { subject });
   }
   if (isSet(target.repsMax)) {
-    if (!isSet(target.reps)) return `${label}: a rep range needs reps.`;
-    if (target.repsMax < target.reps) return `${label}: repsMax cannot be lower than reps.`;
+    if (!isSet(target.reps)) return msg('plan_target_range_needs_reps', { subject });
+    if (target.repsMax < target.reps) return msg('plan_target_range_inverted', { subject });
   }
   return null;
 }
@@ -74,7 +77,7 @@ function validateTarget(target: SetTargetInput, label: string): string | null {
  * Rules for a PlanExercise's targets (used by the schema and by request validation
  * in the plan builder). Returns the first problem, or null.
  */
-export function validatePlanExerciseTargets(exercise: PlanExerciseTargetsInput): string | null {
+export function validatePlanExerciseTargets(exercise: PlanExerciseTargetsInput): ServerMessage | null {
   const error = validateSetTargets(exercise);
   if (error) return error;
   // Interval mode runs on time alone: every set is a hold, none counts reps.
@@ -82,25 +85,25 @@ export function validatePlanExerciseTargets(exercise: PlanExerciseTargetsInput):
   // can't be spread like the plain objects the builder sends.
   const sets: SetTargetInput[] = hasSetTargets(exercise) ? exercise.setTargets : [exercise];
   if (exercise.interval && sets.some((set) => !isSet(set.durationSec) || isSet(set.reps))) {
-    return 'An interval exercise needs a duration on every set, and no reps.';
+    return msg('plan_interval_needs_durations');
   }
   return null;
 }
 
-function validateSetTargets(exercise: PlanExerciseTargetsInput): string | null {
+function validateSetTargets(exercise: PlanExerciseTargetsInput): ServerMessage | null {
   if (hasSetTargets(exercise)) {
     if (isSet(exercise.sets) && exercise.sets !== exercise.setTargets.length) {
-      return 'sets must equal the number of set targets.';
+      return msg('plan_sets_count_mismatch');
     }
     for (const [index, target] of exercise.setTargets.entries()) {
-      const error = validateTarget(target, `Set ${index + 1}`);
+      const error = validateTarget(target, index + 1);
       if (error) return error;
     }
     return null;
   }
 
   if (!isSet(exercise.sets) || exercise.sets < 1) {
-    return 'An exercise needs at least one set.';
+    return msg('plan_exercise_needs_set');
   }
-  return validateTarget(exercise, 'An exercise');
+  return validateTarget(exercise, null);
 }

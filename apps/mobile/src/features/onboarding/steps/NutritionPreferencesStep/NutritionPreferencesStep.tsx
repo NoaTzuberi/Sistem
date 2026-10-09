@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { DietType } from '@sistem/types';
-import { describeWeightGoal, parseDecimalInput, toKg } from '@sistem/shared';
+import { describeWeightGoal, fill, parseDecimalInput, sharedCopy, toKg, unitLabel, useCopy, useI18n } from '@sistem/shared';
 import { Input } from '../../../../components/common/Input/Input';
 import { SelectableChip } from '../../components/SelectableChip/SelectableChip';
 import { AccordionSection } from '../../components/AccordionSection/AccordionSection';
@@ -21,7 +21,7 @@ import {
   summarizeSections,
   toWeightGoalPayload,
 } from '../../data/nutritionForm';
-import { NUTRITION_PREFERENCES_COPY as COPY } from '../../data/nutritionPreferencesCopy';
+import { onboardingCopy } from '../../copy';
 import type { OnboardingFormState } from '../../types';
 import './NutritionPreferencesStep.css';
 
@@ -43,6 +43,9 @@ function dateBounds(): { min: string; max: string } {
 }
 
 export function NutritionPreferencesStep({ formState, updateFormState }: NutritionPreferencesStepProps) {
+  const labels = useCopy(sharedCopy).nutrition;
+  const { language } = useI18n();
+  const copy = useCopy(onboardingCopy);
   const preferences = formState.nutritionPreferences;
   const goal = formState.weightGoal;
   const showGoal = asksWeightGoal(formState.goals);
@@ -72,47 +75,47 @@ export function NutritionPreferencesStep({ formState, updateFormState }: Nutriti
     update({ dietType: preferences.dietType === dietType ? 'none' : dietType, dietTypeDetails: '' });
   }
 
-  const summaries = summarizeSections(preferences);
+  const summaries = summarizeSections(preferences, language);
   const goalPayload = toWeightGoalPayload(goal);
   const goalSummary =
     goalPayload && isGoalValid(goal)
-      ? describeWeightGoal({ targetWeightKg: toKg(goalPayload.targetWeight, unit), timeframe: goalPayload.timeframe }, unit)
-      : COPY.notAnswered;
+      ? describeWeightGoal({ targetWeightKg: toKg(goalPayload.targetWeight, unit), timeframe: goalPayload.timeframe }, unit, language)
+      : copy.nutrition.notAnswered;
   const currentWeight = parseDecimalInput(formState.weight);
   const bounds = dateBounds();
   const noDiet = preferences.dietType === 'none' && preferences.dietStyles.length === 0;
-  const dietTypeLabel = DIET_TYPE_OPTIONS.find((option) => option.id === preferences.dietType)?.label;
+  const dietTypeLabel = preferences.dietType !== 'none' ? labels.dietTypes[preferences.dietType] : undefined;
 
   return (
     <div className="onboarding-step nutrition-preferences-step">
-      <h1>{COPY.title}</h1>
-      <p className="text-body">{COPY.intro}</p>
+      <h1>{copy.nutrition.title}</h1>
+      <p className="text-body">{copy.nutrition.intro}</p>
 
       {showGoal && (
-        <AccordionSection title={COPY.goalTitle} summary={goalSummary} isOpen={open.has('goal')} onToggle={() => toggle('goal')}>
+        <AccordionSection title={copy.nutrition.goalTitle} summary={goalSummary} isOpen={open.has('goal')} onToggle={() => toggle('goal')}>
           {currentWeight !== null && (
             <p className="nutrition-preferences-current">
-              {COPY.currentWeight} <strong>{`${currentWeight} ${unit}`}</strong>
+              {copy.nutrition.currentWeight} <strong>{`${currentWeight} ${unitLabel(unit, language)}`}</strong>
             </p>
           )}
           <Input
-            label={`${COPY.targetWeight} (${unit})`}
+            label={`${copy.nutrition.targetWeight} (${unitLabel(unit, language)})`}
             inputMode="decimal"
             enterKeyHint="done"
             value={goal.targetWeight}
-            error={isGoalValid(goal) ? undefined : COPY.goalInvalid}
+            error={isGoalValid(goal) ? undefined : copy.nutrition.goalInvalid}
             onChange={(event) => updateGoal({ targetWeight: event.target.value })}
           />
           <div className="nutrition-preferences-group">
-            <span className="text-label">{COPY.byWhen}</span>
+            <span className="text-label">{copy.nutrition.byWhen}</span>
             <div className="nutrition-preferences-chips">
               <SelectableChip
-                label={COPY.inWeeks}
+                label={copy.nutrition.inWeeks}
                 selected={goal.timeframeKind === 'weeks'}
                 onClick={() => updateGoal({ timeframeKind: goal.timeframeKind === 'weeks' ? null : 'weeks' })}
               />
               <SelectableChip
-                label={COPY.byDate}
+                label={copy.nutrition.byDate}
                 selected={goal.timeframeKind === 'date'}
                 onClick={() => updateGoal({ timeframeKind: goal.timeframeKind === 'date' ? null : 'date' })}
               />
@@ -120,7 +123,7 @@ export function NutritionPreferencesStep({ formState, updateFormState }: Nutriti
           </div>
           {goal.timeframeKind === 'weeks' && (
             <Input
-              label={COPY.weeks}
+              label={copy.nutrition.weeks}
               inputMode="numeric"
               enterKeyHint="done"
               value={goal.weeks}
@@ -129,7 +132,7 @@ export function NutritionPreferencesStep({ formState, updateFormState }: Nutriti
           )}
           {goal.timeframeKind === 'date' && (
             <Input
-              label={COPY.date}
+              label={copy.nutrition.date}
               type="date"
               min={bounds.min}
               max={bounds.max}
@@ -141,36 +144,37 @@ export function NutritionPreferencesStep({ formState, updateFormState }: Nutriti
       )}
 
       <AccordionSection
-        title={COPY.howIEatTitle}
-        summary={summaries.howIEat || COPY.notAnswered}
+        title={copy.nutrition.howIEatTitle}
+        summary={summaries.howIEat || copy.nutrition.notAnswered}
         isOpen={open.has('howIEat')}
         onToggle={() => toggle('howIEat')}
       >
         {/* One "Diet style" group: veg / vegan / pescatarian (one at a time) + combinable styles. */}
         <div className="nutrition-preferences-group">
-          <span className="text-label">{COPY.dietLabel}</span>
+          <span className="text-label">{copy.nutrition.dietLabel}</span>
           <div className="nutrition-preferences-chips">
-            <SelectableChip label={COPY.dietNone} selected={noDiet} onClick={() => update({ dietType: 'none', dietTypeDetails: '', dietStyles: [] })} />
+            <SelectableChip label={copy.nutrition.dietNone} selected={noDiet} onClick={() => update({ dietType: 'none', dietTypeDetails: '', dietStyles: [] })} />
             {DIET_TYPE_OPTIONS.map((option) => (
               <SelectableChip
-                key={option.id}
-                label={option.label}
-                selected={preferences.dietType === option.id}
-                onClick={() => chooseDietType(option.id)}
+                key={option}
+                label={labels.dietTypes[option]}
+                selected={preferences.dietType === option}
+                onClick={() => chooseDietType(option)}
               />
             ))}
           </div>
           <PreferenceItemsField
-            label={COPY.dietLabel}
+            label={copy.nutrition.dietLabel}
             hideLabel
             options={DIET_STYLE_OPTIONS}
+            labels={labels.dietStyles}
             items={preferences.dietStyles}
             onChange={(dietStyles) => update({ dietStyles })}
           />
           {dietTypeLabel && (
             <Input
-              label={COPY.detailsLabel(dietTypeLabel)}
-              placeholder={COPY.detailsPlaceholder}
+              label={fill(copy.nutrition.detailsLabel, { label: dietTypeLabel })}
+              placeholder={copy.nutrition.detailsPlaceholder}
               maxLength={MAX_DETAILS_LENGTH}
               enterKeyHint="done"
               dir="auto"
@@ -180,14 +184,15 @@ export function NutritionPreferencesStep({ formState, updateFormState }: Nutriti
           )}
         </div>
         <PreferenceItemsField
-          label={COPY.religiousLabel}
+          label={copy.nutrition.religiousLabel}
           options={RELIGIOUS_OPTIONS}
+          labels={labels.religious}
           items={preferences.religious}
           onChange={(religious) => update({ religious })}
         />
 
         <div className="nutrition-preferences-group">
-          <span className="text-label">{COPY.mealsLabel}</span>
+          <span className="text-label">{copy.nutrition.mealsLabel}</span>
           <div className="nutrition-preferences-chips">
             {MEALS_PER_DAY_OPTIONS.map((count) => (
               <SelectableChip
@@ -199,7 +204,7 @@ export function NutritionPreferencesStep({ formState, updateFormState }: Nutriti
               />
             ))}
             <SelectableChip
-              label={COPY.mealsNoPreference}
+              label={copy.nutrition.mealsNoPreference}
               selected={preferences.mealsPerDay === null}
               onClick={() => update({ mealsPerDay: null })}
             />
@@ -207,8 +212,8 @@ export function NutritionPreferencesStep({ formState, updateFormState }: Nutriti
         </div>
 
         <Input
-          label={COPY.foodsLovedLabel}
-          placeholder={COPY.foodsLovedPlaceholder}
+          label={copy.nutrition.foodsLovedLabel}
+          placeholder={copy.nutrition.foodsLovedPlaceholder}
           maxLength={MAX_FOOD_TEXT_LENGTH}
           enterKeyHint="next"
           dir="auto"
@@ -216,8 +221,8 @@ export function NutritionPreferencesStep({ formState, updateFormState }: Nutriti
           onChange={(event) => update({ foodsLoved: event.target.value })}
         />
         <Input
-          label={COPY.foodsDislikedLabel}
-          placeholder={COPY.foodsDislikedPlaceholder}
+          label={copy.nutrition.foodsDislikedLabel}
+          placeholder={copy.nutrition.foodsDislikedPlaceholder}
           maxLength={MAX_FOOD_TEXT_LENGTH}
           enterKeyHint="done"
           dir="auto"
@@ -227,26 +232,28 @@ export function NutritionPreferencesStep({ formState, updateFormState }: Nutriti
       </AccordionSection>
 
       <AccordionSection
-        title={COPY.restrictionsTitle}
-        summary={summaries.restrictions || COPY.none}
+        title={copy.nutrition.restrictionsTitle}
+        summary={summaries.restrictions || copy.nutrition.none}
         isOpen={open.has('restrictions')}
         onToggle={() => toggle('restrictions')}
       >
         <PreferenceItemsField
-          label={COPY.intolerancesLabel}
+          label={copy.nutrition.intolerancesLabel}
           options={INTOLERANCE_OPTIONS}
+          labels={labels.intolerances}
           items={preferences.intolerances}
           onChange={(intolerances) => update({ intolerances })}
         />
         <PreferenceItemsField
-          label={COPY.allergiesLabel}
+          label={copy.nutrition.allergiesLabel}
           options={ALLERGY_OPTIONS}
+          labels={labels.allergies}
           items={preferences.allergies}
           onChange={(allergies) => update({ allergies })}
         />
       </AccordionSection>
 
-      <p className="text-caption nutrition-preferences-note">{COPY.privacyNote}</p>
+      <p className="text-caption nutrition-preferences-note">{copy.nutrition.privacyNote}</p>
     </div>
   );
 }

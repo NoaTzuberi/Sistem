@@ -4,13 +4,13 @@
   gap: var(--space-2);
   padding: var(--space-3);
   background-color: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-left: var(--space-1) solid var(--color-border);
+  border: var(--border-width-thin) solid var(--color-border);
+  border-inline-start: var(--space-1) solid var(--color-border);
 }
 
 /* A superset is drawn as one block: pink edge, no gap between its exercises. */
 .exercise-row-superset {
-  border-left-color: var(--color-primary);
+  border-inline-start-color: var(--color-primary);
 }
 
 .exercise-row-joins-previous {
@@ -24,7 +24,7 @@
 
 .exercise-row-dragging {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-raised);
   border-color: var(--color-primary);
 }
 
@@ -37,7 +37,7 @@
 .exercise-superset-label {
   flex: none;
   min-width: var(--space-4);
-  margin-left: var(--space-1);
+  margin-inline-start: var(--space-1);
   font-weight: var(--font-weight-bold);
   line-height: var(--space-4);
   color: var(--color-on-primary);
@@ -50,7 +50,7 @@
   flex: 1;
   flex-direction: column;
   min-width: 0;
-  margin-left: var(--space-2);
+  margin-inline-start: var(--space-2);
 }
 
 .exercise-name {
@@ -77,11 +77,11 @@
   min-height: var(--space-5);
   padding: 0 var(--space-2);
   font-size: var(--text-sm);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-thin) solid var(--color-border);
 }
 
 .exercise-mode-option + .exercise-mode-option {
-  border-left: none;
+  border-inline-start: none;
 }
 
 .exercise-mode-option[aria-pressed='true'] {
@@ -95,7 +95,7 @@
 }
 
 .exercise-mode-option:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: var(--border-width-medium) solid var(--color-primary);
 }
 
 .exercise-superset,
@@ -115,7 +115,7 @@
   padding: 0 var(--space-1);
   font-size: var(--text-sm);
   background-color: var(--color-bg);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-thin) solid var(--color-border);
   border-radius: var(--radius-none);
 }
 
@@ -142,7 +142,7 @@
 }
 
 .exercise-toggle {
-  margin-left: auto;
+  margin-inline-start: auto;
 }
 
 .exercise-notes-input {
@@ -151,13 +151,13 @@
   font-size: var(--text-sm);
   resize: vertical;
   background-color: var(--color-bg);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-thin) solid var(--color-border);
   border-radius: var(--radius-none);
 }
 
 .exercise-notes-input:focus-visible,
 .exercise-superset-select:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: var(--border-width-medium) solid var(--color-primary);
   outline-offset: 0;
 }
 

@@ -1,3 +1,6 @@
+import type { Language } from '@sistem/types';
+import { sharedCopy } from './copy';
+import { dateFormat } from './i18n/intl';
 import { addDaysToDate } from './format';
 
 // The math of the body tracking line chart (weight and each measurement), shared by the
@@ -81,20 +84,25 @@ function niceYDomain(min: number, max: number): { low: number; high: number; ste
   return { low: Math.floor(paddedMin / step) * step, high: Math.ceil(paddedMax / step) * step, step };
 }
 
-const dayLabel = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'short' });
-const monthLabel = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', month: 'short', year: '2-digit' });
+const DAY_LABEL: Intl.DateTimeFormatOptions = { timeZone: 'UTC', day: 'numeric', month: 'short' };
+const MONTH_LABEL: Intl.DateTimeFormatOptions = { timeZone: 'UTC', month: 'short', year: '2-digit' };
 
 /** '4 Oct' — the date of a chart point, for the readout. */
-export function formatChartDate(date: string): string {
-  return dayLabel.format(new Date(`${date}T00:00:00Z`));
+export function formatChartDate(date: string, language: Language): string {
+  return dateFormat(language, DAY_LABEL).format(new Date(`${date}T00:00:00Z`));
+}
+
+/** The range buttons' labels ('1M' … 'All'). */
+export function chartRangeLabel(range: ChartRange, language: Language): string {
+  return sharedCopy[language].body.chartRanges[range];
 }
 
 /**
  * Lays out a line chart; null with fewer than 2 points (a line needs two). Time runs
- * left to right over the points' own span, the y axis gets clean ticks (not from 0 —
+ * left to right over the points' own span — in both languages (owner, Phase 15), the y axis gets clean ticks (not from 0 —
  * body weight never is).
  */
-export function buildLineChart(points: ChartPoint[], size: ChartSize): ChartGeometry | null {
+export function buildLineChart(points: ChartPoint[], size: ChartSize, language: Language): ChartGeometry | null {
   if (points.length < 2) return null;
   const plot = {
     left: size.padding.left,
@@ -121,7 +129,7 @@ export function buildLineChart(points: ChartPoint[], size: ChartSize): ChartGeom
     yTicks.push({ value: clean, y: yOf(clean) });
   }
 
-  const format = daySpan > MONTH_LABELS_AFTER_DAYS ? monthLabel : dayLabel;
+  const format = dateFormat(language, daySpan > MONTH_LABELS_AFTER_DAYS ? MONTH_LABEL : DAY_LABEL);
   const xTicks = [0, 0.5, 1].map((fraction) => {
     const day = firstDay + Math.round(daySpan * fraction);
     return { label: format.format(new Date(day * DAY_MS)), x: xOf(day) };

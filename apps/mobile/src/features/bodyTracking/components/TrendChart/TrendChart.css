@@ -39,5 +39,5 @@
   padding: var(--space-4) var(--space-3);
   font-size: var(--text-sm);
   color: var(--color-text-muted);
-  border: 1px dashed var(--color-border);
+  border: var(--border-width-thin) dashed var(--color-border);
 }

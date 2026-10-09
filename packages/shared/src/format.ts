@@ -1,10 +1,19 @@
-// Display helpers. Functional placeholder formats — the owner decides final wording.
+import type { Language } from '@sistem/types';
+import { sharedCopy } from './copy';
+import { fill } from './i18n/copy';
+import { dateFormat, formatRelative } from './i18n/intl';
+
+// Display helpers, in the language on screen (Phase 15). Dates come from Intl; the
+// wording around them from the shared copy (placeholders — the owner decides).
 
 const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 
-/** 'build_muscle' → 'Build muscle'. Ids are shown as they are until real labels exist. */
+/**
+ * 'build_muscle' → 'Build muscle'. Only for values that have no translation: the imported
+ * exercise facts (English, PRD §14) and unknown ids.
+ */
 export function humanizeId(id: string): string {
   const text = id.replace(/_/g, ' ').trim();
   return text.charAt(0).toUpperCase() + text.slice(1);
@@ -12,6 +21,12 @@ export function humanizeId(id: string): string {
 
 export function humanizeList(ids: string[] | undefined): string {
   return ids && ids.length > 0 ? ids.map(humanizeId).join(', ') : '—';
+}
+
+/** Ids → their labels ('—' for none); an id without a label is humanized. */
+export function labelList(ids: string[] | undefined, labels: Readonly<Record<string, string>>, language: Language): string {
+  if (!ids || ids.length === 0) return '—';
+  return ids.map((id) => labels[id] ?? humanizeId(id)).join(sharedCopy[language].common.listSeparator);
 }
 
 /** Date-only strings ('YYYY-MM-DD') have no time zone: always format them in UTC. */
@@ -23,94 +38,87 @@ export function addDaysToDate(dateString: string, days: number): string {
   return new Date(parseDateOnly(dateString).getTime() + days * DAY_MS).toISOString().slice(0, 10);
 }
 
-const dateOnlyFormat = new Intl.DateTimeFormat('en-GB', {
-  timeZone: 'UTC',
-  weekday: 'short',
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-});
-
-export function formatDateOnly(dateString: string): string {
-  return dateOnlyFormat.format(parseDateOnly(dateString));
+/** 'Sun, 4 Oct 2026' / 'יום א׳, 4 באוק׳ 2026' */
+export function formatDateOnly(dateString: string, language: Language): string {
+  return dateFormat(language, { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).format(
+    parseDateOnly(dateString),
+  );
 }
-
-const dayMonthYearFormat = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' });
 
 /** '8 Sept 2026' — a date without the weekday, for tight spots (date pickers). */
-export function formatDateShort(dateString: string): string {
-  return dayMonthYearFormat.format(parseDateOnly(dateString));
+export function formatDateShort(dateString: string, language: Language): string {
+  return dateFormat(language, { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' }).format(parseDateOnly(dateString));
 }
 
-const dayMonthFormat = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'short' });
+/** '4 Oct' — day and month only. */
+export function formatDayMonth(dateString: string, language: Language): string {
+  return dateFormat(language, { timeZone: 'UTC', day: 'numeric', month: 'short' }).format(parseDateOnly(dateString));
+}
 
 /** A plan week from its Sunday: '27 Sept – 3 Oct'. */
-export function formatWeekRange(weekStartDate: string): string {
-  const lastDay = parseDateOnly(addDaysToDate(weekStartDate, 6));
-  return `${dayMonthFormat.format(parseDateOnly(weekStartDate))} – ${dayMonthFormat.format(lastDay)}`;
+export function formatWeekRange(weekStartDate: string, language: Language): string {
+  return fill(sharedCopy[language].time.weekRange, {
+    start: formatDayMonth(weekStartDate, language),
+    end: formatDayMonth(addDaysToDate(weekStartDate, 6), language),
+  });
 }
 
-const monthDayFormat = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
-const weekdayMonthDayFormat = new Intl.DateTimeFormat('en-US', {
-  timeZone: 'UTC',
-  weekday: 'short',
-  month: 'short',
-  day: 'numeric',
-});
-
-/** A plan week from its Sunday, short: 'Oct 4–10', or 'Sep 27 – Oct 3' across months. */
-export function formatWeekSpan(weekStartDate: string): string {
-  const first = parseDateOnly(weekStartDate);
-  const last = parseDateOnly(addDaysToDate(weekStartDate, 6));
-  if (first.getUTCMonth() === last.getUTCMonth()) {
-    return `${monthDayFormat.format(first)}–${last.getUTCDate()}`;
-  }
-  return `${monthDayFormat.format(first)} – ${monthDayFormat.format(last)}`;
+/** A plan week from its Sunday, short: 'Oct 4 – 10', or 'Sep 27 – Oct 3' across months (Intl ranges). */
+export function formatWeekSpan(weekStartDate: string, language: Language): string {
+  return dateFormat(language, { timeZone: 'UTC', month: 'short', day: 'numeric' }).formatRange(
+    parseDateOnly(weekStartDate),
+    parseDateOnly(addDaysToDate(weekStartDate, 6)),
+  );
 }
 
 /** A plan week with its days: 'Sun, Oct 4 – Sat, Oct 10'. */
-export function formatWeekSpanWithDays(weekStartDate: string): string {
-  const last = addDaysToDate(weekStartDate, 6);
-  return `${weekdayMonthDayFormat.format(parseDateOnly(weekStartDate))} – ${weekdayMonthDayFormat.format(parseDateOnly(last))}`;
+export function formatWeekSpanWithDays(weekStartDate: string, language: Language): string {
+  return dateFormat(language, { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' }).formatRange(
+    parseDateOnly(weekStartDate),
+    parseDateOnly(addDaysToDate(weekStartDate, 6)),
+  );
 }
 
-const dateTimeFormat = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-});
-
-export function formatDateTime(iso: string): string {
-  return dateTimeFormat.format(new Date(iso));
+export function formatDateTime(iso: string, language: Language): string {
+  return dateFormat(language, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(
+    new Date(iso),
+  );
 }
 
-function formatHoursMinutes(ms: number): string {
+/** '7 Oct 2026' — a moment's date in the viewer's zone. */
+export function formatDate(iso: string, language: Language): string {
+  return dateFormat(language, { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso));
+}
+
+function formatHoursMinutes(ms: number, language: Language): string {
   const hours = Math.floor(ms / HOUR_MS);
   const minutes = Math.floor((ms % HOUR_MS) / MINUTE_MS);
-  return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+  const copy = sharedCopy[language].duration;
+  return hours > 0 ? fill(copy.hoursMinutes, { h: hours, m: minutes }) : fill(copy.minutes, { m: minutes });
 }
 
 /** The 48h window: how long is left, or by how much it is overdue. */
-export function formatTimeLeft(dueAt: string, nowMs: number): { text: string; isOverdue: boolean } {
+export function formatTimeLeft(dueAt: string, nowMs: number, language: Language): { text: string; isOverdue: boolean } {
   const leftMs = new Date(dueAt).getTime() - nowMs;
+  const copy = sharedCopy[language].time;
   return leftMs >= 0
-    ? { text: `${formatHoursMinutes(leftMs)} left`, isOverdue: false }
-    : { text: `Overdue by ${formatHoursMinutes(-leftMs)}`, isOverdue: true };
+    ? { text: fill(copy.left, { time: formatHoursMinutes(leftMs, language) }), isOverdue: false }
+    : { text: fill(copy.overdue, { time: formatHoursMinutes(-leftMs, language) }), isOverdue: true };
 }
 
-export function formatTimeAgo(iso: string, nowMs: number): string {
+/** '5 min ago', 'yesterday', '3 days ago' (Intl.RelativeTimeFormat). */
+export function formatTimeAgo(iso: string, nowMs: number, language: Language): string {
   const agoMs = Math.max(0, nowMs - new Date(iso).getTime());
-  if (agoMs < HOUR_MS) return `${Math.max(1, Math.floor(agoMs / MINUTE_MS))} min ago`;
-  if (agoMs < DAY_MS) return `${Math.floor(agoMs / HOUR_MS)}h ago`;
-  const days = Math.floor(agoMs / DAY_MS);
-  return days === 1 ? '1 day ago' : `${days} days ago`;
+  if (agoMs < HOUR_MS) return formatRelative(-Math.max(1, Math.floor(agoMs / MINUTE_MS)), 'minute', language);
+  if (agoMs < DAY_MS) return formatRelative(-Math.floor(agoMs / HOUR_MS), 'hour', language);
+  return formatRelative(-Math.floor(agoMs / DAY_MS), 'day', language);
 }
 
-export function formatDuration(totalSec: number): string {
+/** '45s', '2 min', '1 min 30s' (Hebrew: '45 שנ׳' …). */
+export function formatDuration(totalSec: number, language: Language): string {
   const minutes = Math.floor(totalSec / 60);
   const seconds = totalSec % 60;
-  if (minutes === 0) return `${seconds}s`;
-  return seconds === 0 ? `${minutes} min` : `${minutes} min ${seconds}s`;
+  const copy = sharedCopy[language].duration;
+  if (minutes === 0) return fill(copy.seconds, { s: seconds });
+  return seconds === 0 ? fill(copy.minutes, { m: minutes }) : fill(copy.minutesSeconds, { m: minutes, s: seconds });
 }

@@ -1,4 +1,5 @@
 import type {
+  Language,
   NutritionPreferences,
   OnboardingAnswers,
   OnboardingAnswersPayload,
@@ -124,7 +125,7 @@ export function isNutritionStepValid(state: OnboardingFormState): boolean {
 }
 
 /** The collapsed "How I eat" / "Intolerances & allergies" lines ('' = nothing chosen). */
-export function summarizeSections(form: FormPreferences): { howIEat: string; restrictions: string } {
+export function summarizeSections(form: FormPreferences, language: Language): { howIEat: string; restrictions: string } {
   const preferences = toPreferencesPayload(form);
-  return { howIEat: summarizeHowIEat(preferences), restrictions: summarizeRestrictions(preferences) };
+  return { howIEat: summarizeHowIEat(preferences, language), restrictions: summarizeRestrictions(preferences, language) };
 }

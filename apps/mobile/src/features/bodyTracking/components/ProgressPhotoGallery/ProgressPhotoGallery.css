@@ -58,7 +58,7 @@
 
 .progress-photo-gallery-missing {
   aspect-ratio: 3 / 4;
-  border: 1px dashed var(--color-border);
+  border: var(--border-width-thin) dashed var(--color-border);
 }
 
 .progress-photo-gallery-pose {

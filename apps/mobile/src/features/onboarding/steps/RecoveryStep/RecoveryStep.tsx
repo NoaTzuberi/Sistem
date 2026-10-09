@@ -1,3 +1,5 @@
+import { sharedCopy, useCopy } from '@sistem/shared';
+import { onboardingCopy } from '../../copy';
 import { SelectableChip } from '../../components/SelectableChip/SelectableChip';
 import { Input } from '../../../../components/common/Input/Input';
 import { RECOVERY_FLAG_OPTIONS } from '../../data/options';
@@ -10,6 +12,8 @@ interface RecoveryStepProps {
 }
 
 export function RecoveryStep({ formState, updateFormState }: RecoveryStepProps) {
+  const copy = useCopy(onboardingCopy).recovery;
+  const labels = useCopy(sharedCopy).onboardingOptions.recoveryFlags;
   const { recovery } = formState;
 
   function toggleFlag(id: string) {
@@ -26,14 +30,14 @@ export function RecoveryStep({ formState, updateFormState }: RecoveryStepProps) 
 
   return (
     <div className="onboarding-step recovery-step">
-      <h1>Anything Sistem should consider?</h1>
-      <p className="text-body">Optional.</p>
+      <h1>{copy.title}</h1>
+      <p className="text-body">{copy.hint}</p>
 
       <div className="recovery-flags">
         {RECOVERY_FLAG_OPTIONS.map((flag) => (
           <SelectableChip
             key={flag.id}
-            label={flag.label}
+            label={labels[flag.id]}
             selected={recovery.flags.includes(flag.id)}
             onClick={() => toggleFlag(flag.id)}
           />
@@ -42,16 +46,15 @@ export function RecoveryStep({ formState, updateFormState }: RecoveryStepProps) 
 
       {showNotes && (
         <Input
-          label="Tell us anything helpful for adapting your training."
+          label={copy.notesLabel}
+          dir="auto"
           enterKeyHint="done"
           value={recovery.notes}
           onChange={(event) => updateFormState({ recovery: { ...recovery, notes: event.target.value } })}
         />
       )}
 
-      <p className="text-caption recovery-note">
-        Sistem can adapt training suggestions, but it does not diagnose medical conditions.
-      </p>
+      <p className="text-caption recovery-note">{copy.note}</p>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DAY_NAMES, formatWeekRange, useLoad } from '@sistem/shared';
+import { dayName, fill, formatWeekRange, useCopy, useI18n, useLanguage, useLoad } from '@sistem/shared';
 import { AppShell } from '../../../../components/layout/AppShell/AppShell';
 import { Button } from '../../../../components/common/Button/Button';
 import { StateMessage } from '../../../../components/common/StateMessage/StateMessage';
@@ -11,21 +11,27 @@ import { StreakRing } from '../../../achievements/components/StreakRing/StreakRi
 import { AchievementStrip } from '../../../achievements/components/AchievementStrip/AchievementStrip';
 import { useMyAchievements } from '../../../achievements/hooks/useMyAchievements';
 import { celebrate } from '../../../achievements/celebration';
-import { ACHIEVEMENT_COPY } from '../../../achievements/data/achievementCopy';
+import { achievementCopy } from '../../../achievements/copy';
 import { WorkoutRow } from '../../../workouts/components/WorkoutRow/WorkoutRow';
-import { WORKOUT_STATUS_LABELS, exerciseCountLabel } from '../../../workouts/data/workoutCopy';
+import { exerciseCountLabel } from '../../../workouts/data/workoutDisplay';
+import { workoutCopy } from '../../../workouts/copy';
 import { useStartWorkout } from '../../../workouts/hooks/useStartWorkout';
 import { StartConflictModal } from '../../../workouts/components/StartConflictModal/StartConflictModal';
 import { WeekStrip } from '../../components/WeekStrip/WeekStrip';
-import { HOME_COPY } from '../../data/homeCopy';
+import { homeCopy } from '../../copy';
 import './HomePage.css';
 
 // Trainee Home (PRD §5.1). Statuses and the next workout come from the server, which
 // computes them in the trainee's time zone — nothing here reads the device clock.
 export function HomePage() {
+  const language = useLanguage();
+  const workoutText = useCopy(workoutCopy);
+  const { plural } = useI18n();
+  const achievementText = useCopy(achievementCopy);
+  const copy = useCopy(homeCopy);
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { data: week, error, isLoading, reload } = useLoad(getWeek, HOME_COPY.loadError);
+  const { data: week, error, isLoading, reload } = useLoad(getWeek, copy.loadError);
   const starter = useStartWorkout();
   const { data: achievements } = useMyAchievements();
 
@@ -50,10 +56,10 @@ export function HomePage() {
       <div className="home-page">
         <header className="home-header">
           <div className="home-header-text">
-            <h1 className="home-greeting">{HOME_COPY.greeting(firstName)}</h1>
+            <h1 className="home-greeting">{fill(copy.greeting, { firstName })}</h1>
             {week && (
               <span className="home-week-range">
-                {HOME_COPY.weekOf} {formatWeekRange(week.weekStartDate)}
+                {copy.weekOf} {formatWeekRange(week.weekStartDate, language)}
               </span>
             )}
           </div>
@@ -62,24 +68,24 @@ export function HomePage() {
             <div className="home-streak">
               <StreakRing streak={achievements.streak} />
               <span className="home-streak-text">
-                <span className="home-streak-label">{ACHIEVEMENT_COPY.streak}</span>
-                <span className="home-streak-note">{ACHIEVEMENT_COPY.streakUnit(achievements.streak.current)}</span>
+                <span className="home-streak-label">{achievementText.streak}</span>
+                <span className="home-streak-note">{plural(achievementText.streakUnit, achievements.streak.current)}</span>
               </span>
             </div>
           )}
         </header>
 
-        {isLoading && !week && <StateMessage>{HOME_COPY.loading}</StateMessage>}
+        {isLoading && !week && <StateMessage>{copy.loading}</StateMessage>}
         {error && !week && <StateMessage onRetry={reload}>{error}</StateMessage>}
 
         {week && (
           <>
             <WeekStrip weekStartDate={week.weekStartDate} today={week.today} workouts={plan?.workouts ?? []} />
 
-            {!plan && <StateMessage>{HOME_COPY.noPlanThisWeek}</StateMessage>}
+            {!plan && <StateMessage>{copy.noPlanThisWeek}</StateMessage>}
             {!plan && activeLog && (
               <Button className="home-next-button" onClick={handleStartNext}>
-                {HOME_COPY.resumeWorkout(activeLog.workoutTitle)}
+                {fill(copy.resumeWorkout, { title: activeLog.workoutTitle })}
               </Button>
             )}
 
@@ -87,30 +93,30 @@ export function HomePage() {
               <>
                 <section className="home-next" aria-labelledby="home-next-title">
                   <h2 className="home-section-title" id="home-next-title">
-                    {HOME_COPY.nextWorkout}
+                    {copy.nextWorkout}
                   </h2>
                   {nextWorkout ? (
                     <>
-                      <span className="home-next-name">{nextWorkout.title}</span>
+                      <span className="home-next-name" dir="auto">{nextWorkout.title}</span>
                       <span className="home-next-meta">
-                        {nextWorkout.dayOfWeek !== undefined && `${DAY_NAMES[nextWorkout.dayOfWeek]} · `}
-                        {exerciseCountLabel(nextWorkout.exercises.length)}
-                        {nextWorkout.inProgress && ` · ${WORKOUT_STATUS_LABELS.inProgress}`}
-                        {!nextWorkout.inProgress && nextWorkout.status === 'missed' && ` · ${WORKOUT_STATUS_LABELS.missed}`}
+                        {nextWorkout.dayOfWeek !== undefined && `${dayName(nextWorkout.dayOfWeek, language)} · `}
+                        {exerciseCountLabel(nextWorkout.exercises.length, workoutText, language)}
+                        {nextWorkout.inProgress && ` · ${workoutText.status.inProgress}`}
+                        {!nextWorkout.inProgress && nextWorkout.status === 'missed' && ` · ${workoutText.status.missed}`}
                       </span>
                       <Button className="home-next-button" onClick={handleStartNext} loading={starter.isStarting}>
-                        {activeLog ? HOME_COPY.resumeWorkout(activeLog.workoutTitle) : HOME_COPY.startNextWorkout}
+                        {activeLog ? fill(copy.resumeWorkout, { title: activeLog.workoutTitle }) : copy.startNextWorkout}
                       </Button>
                       {starter.error && <p className="home-next-error">{starter.error}</p>}
                     </>
                   ) : activeLog ? (
                     // An open workout from another week (left unfinished) still resumes from here.
                     <Button className="home-next-button" onClick={handleStartNext}>
-                      {HOME_COPY.resumeWorkout(activeLog.workoutTitle)}
+                      {fill(copy.resumeWorkout, { title: activeLog.workoutTitle })}
                     </Button>
                   ) : (
                     <p className="home-next-empty">
-                      {plan.workouts.length === 0 ? HOME_COPY.noWorkoutsInPlan : HOME_COPY.allDone}
+                      {plan.workouts.length === 0 ? copy.noWorkoutsInPlan : copy.allDone}
                     </p>
                   )}
                 </section>
@@ -118,7 +124,7 @@ export function HomePage() {
                 {plan.workouts.length > 0 && (
                   <section aria-labelledby="home-week-title">
                     <h2 className="home-section-title home-section-title-ruled" id="home-week-title">
-                      {HOME_COPY.thisWeek}
+                      {copy.thisWeek}
                     </h2>
                     <ul>
                       {plan.workouts.map((workout) => (
@@ -137,7 +143,7 @@ export function HomePage() {
 
             {/* The free interval timer (logs nothing) — always at hand from Home. */}
             <Button variant="secondary" className="home-interval-timer" onClick={() => navigate(ROUTES.INTERVAL_TIMER)}>
-              {HOME_COPY.intervalTimer}
+              {copy.intervalTimer}
             </Button>
 
             {achievements && <AchievementStrip achievements={achievements.unlocked} titleId="home-achievements-title" />}

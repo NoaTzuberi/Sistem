@@ -11,6 +11,12 @@
   height: 100%;
   background-color: currentColor;
   transform: scaleX(0);
+  /* physical: transform-origin has no logical keyword — the fill shrinks toward the start side. */
   transform-origin: left center;
   will-change: transform;
+}
+
+[dir='rtl'] .countdown-bar-fill {
+  /* physical: the start side is the right in Hebrew. */
+  transform-origin: right center;
 }

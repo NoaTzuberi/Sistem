@@ -1,5 +1,4 @@
 import { useCallback } from 'react';
-import type { WorkoutLogStatus } from '@sistem/types';
 import {
   describeLogSet,
   describePersonalRecord,
@@ -7,7 +6,11 @@ import {
   formatDuration,
   groupLogSetsByExercise,
   logExerciseNames,
+  fill,
   prCountLabel,
+  sharedCopy,
+  useCopy,
+  useLanguage,
   useLoad,
 } from '@sistem/shared';
 import { IconCamera, IconChevronDown } from '@tabler/icons-react';
@@ -17,12 +20,6 @@ import { PrivatePhoto } from '../../../../components/common/PrivatePhoto/Private
 import { StateMessage } from '../../../../components/common/StateMessage/StateMessage';
 import './WorkoutLogList.css';
 
-const STATUS_LABELS: Record<WorkoutLogStatus, string> = {
-  in_progress: 'In progress',
-  completed: 'Completed',
-  abandoned: 'Abandoned',
-};
-
 interface WorkoutLogListProps {
   traineeId: string;
 }
@@ -30,12 +27,15 @@ interface WorkoutLogListProps {
 // The trainee's logs with their summaries (PRD §6): stats, PRs, rating, notes and the
 // Daily Pump photo — a short-lived signed link the server makes for her coach only.
 export function WorkoutLogList({ traineeId }: WorkoutLogListProps) {
+  const shared = useCopy(sharedCopy);
+  const copy = shared.coach;
+  const language = useLanguage();
   const load = useCallback(() => listTraineeWorkoutLogs(traineeId), [traineeId]);
-  const { data: logs, error, isLoading, reload } = useLoad(load, "Couldn't load the workout logs.");
+  const { data: logs, error, isLoading, reload } = useLoad(load, copy.logsLoadError);
 
-  if (isLoading && !logs) return <StateMessage>Loading…</StateMessage>;
+  if (isLoading && !logs) return <StateMessage>{shared.common.loading}</StateMessage>;
   if (!logs) return <StateMessage onRetry={reload}>{error}</StateMessage>;
-  if (logs.length === 0) return <StateMessage>No workout logs yet.</StateMessage>;
+  if (logs.length === 0) return <StateMessage>{copy.noLogs}</StateMessage>;
 
   return (
     <ul className="workout-logs">
@@ -47,14 +47,14 @@ export function WorkoutLogList({ traineeId }: WorkoutLogListProps) {
             <details className="workout-log">
               <summary className="workout-log-summary">
                 <span className="workout-log-heading">
-                  <span className="workout-log-title">{log.workoutTitle}</span>
-                  <span className="workout-log-date">{formatDateTime(log.startedAt)}</span>
+                  <span className="workout-log-title" dir="auto">{log.workoutTitle}</span>
+                  <span className="workout-log-date">{formatDateTime(log.startedAt, language)}</span>
                   <span className="workout-log-badges">
-                    <Badge variant={log.status === 'completed' ? 'accent' : 'neutral'}>{STATUS_LABELS[log.status]}</Badge>
-                    {log.rating !== undefined && <Badge variant="neutral">Rating {log.rating}</Badge>}
-                    {records.length > 0 && <Badge variant="accent">{prCountLabel(records.length)}</Badge>}
+                    <Badge variant={log.status === 'completed' ? 'accent' : 'neutral'}>{copy.logStatus[log.status]}</Badge>
+                    {log.rating !== undefined && <Badge variant="neutral">{fill(copy.rating, { rating: log.rating })}</Badge>}
+                    {records.length > 0 && <Badge variant="accent">{prCountLabel(records.length, language)}</Badge>}
                     {log.pumpPhoto && (
-                      <Badge variant="neutral" aria-label="Has a Daily Pump photo">
+                      <Badge variant="neutral" aria-label={copy.hasPumpPhoto}>
                         <IconCamera size={14} aria-hidden="true" />
                       </Badge>
                     )}
@@ -67,19 +67,21 @@ export function WorkoutLogList({ traineeId }: WorkoutLogListProps) {
                 {log.stats && (
                   <dl className="workout-log-stats">
                     <div>
-                      <dt>Duration</dt>
-                      <dd>{formatDuration(log.stats.durationSec)}</dd>
+                      <dt>{copy.duration}</dt>
+                      <dd>{formatDuration(log.stats.durationSec, language)}</dd>
                     </div>
                     <div>
-                      <dt>Total volume</dt>
-                      <dd>{log.stats.totalVolume} kg</dd>
+                      <dt>{copy.totalVolume}</dt>
+                      <dd>
+                        {log.stats.totalVolume} {shared.units.kg}
+                      </dd>
                     </div>
                     <div>
-                      <dt>Sets completed</dt>
+                      <dt>{copy.setsCompleted}</dt>
                       <dd>{log.stats.setsCompleted}</dd>
                     </div>
                     <div>
-                      <dt>Personal records</dt>
+                      <dt>{copy.personalRecords}</dt>
                       <dd>{log.stats.prCount}</dd>
                     </div>
                   </dl>
@@ -88,31 +90,35 @@ export function WorkoutLogList({ traineeId }: WorkoutLogListProps) {
                 {records.length > 0 && (
                   <ul className="workout-log-records">
                     {records.map((record) => (
-                      <li key={record.exerciseId}>{describePersonalRecord(record, names.get(record.exerciseId))}</li>
+                      <li key={record.exerciseId}>{describePersonalRecord(record, names.get(record.exerciseId), language)}</li>
                     ))}
                   </ul>
                 )}
 
-                {log.notes && <p className="workout-log-notes">{log.notes}</p>}
+                {log.notes && (
+                  <p className="workout-log-notes" dir="auto">
+                    {log.notes}
+                  </p>
+                )}
 
                 {log.pumpPhoto ? (
                   <PrivatePhoto
                     photo={log.pumpPhoto}
-                    alt={`Daily Pump photo — ${log.workoutTitle}`}
-                    openLabel="Open the Daily Pump photo"
-                    closeLabel="Close"
+                    alt={fill(copy.pumpPhotoAlt, { workout: log.workoutTitle })}
+                    openLabel={copy.openPumpPhoto}
+                    closeLabel={shared.common.close}
                     onLinkExpired={reload}
                   />
                 ) : (
-                  <p className="workout-log-photo-slot">No Daily Pump photo.</p>
+                  <p className="workout-log-photo-slot">{copy.noPumpPhoto}</p>
                 )}
 
                 {groupLogSetsByExercise(log.sets).map((group, index) => (
                   <div key={index} className="workout-log-exercise">
-                    <span className="workout-log-exercise-name">{names.get(group.exerciseId) ?? 'Exercise'}</span>
+                    <span className="workout-log-exercise-name" dir="auto">{names.get(group.exerciseId) ?? shared.log.exercise}</span>
                     {group.sets.map((set) => (
                       <span key={set.setIndex} className="workout-log-set">
-                        {describeLogSet(set)}
+                        {describeLogSet(set, language)}
                       </span>
                     ))}
                   </div>

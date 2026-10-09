@@ -1,15 +1,19 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { listTrainees } from '../../../../services/coach/coachService';
-import { useLoad, useServerNow, formatTimeAgo, NEEDS_NEXT_WEEK_LABEL, STATUS_FILTERS, matchesFilter, matchesSearch, sortByUrgency } from '@sistem/shared';
+import { formatTimeAgo, matchesFilter, matchesSearch, sharedCopy, sortByUrgency, statusFilters, useCopy, useLanguage, useLoad, useServerNow } from '@sistem/shared';
 import type { TraineeFilter } from '@sistem/shared';
 import { traineePath } from '../../../../app/config/routes';
 import { Button } from '../../../../components/common/Button/Button';
 import { TraineeStatusBadges, PlanWindow } from '../../components/TraineeStatusBadges/TraineeStatusBadges';
 import './TraineesPage.css';
+import { traineesCopy } from '../../copy';
 
 export function TraineesPage() {
-  const { data, error, isLoading, reload } = useLoad(listTrainees, "Couldn't load your trainees.");
+  const language = useLanguage();
+  const shared = useCopy(sharedCopy);
+  const copy = useCopy(traineesCopy);
+  const { data, error, isLoading, reload } = useLoad(listTrainees, shared.coach.loadTraineesError);
   const nowMs = useServerNow(data?.serverTime);
   const [filter, setFilter] = useState<TraineeFilter>('all');
   const [search, setSearch] = useState('');
@@ -21,14 +25,14 @@ export function TraineesPage() {
 
   return (
     <div className="trainees-page">
-      <h1 className="trainees-title">Trainees</h1>
+      <h1 className="trainees-title">{shared.coach.traineesTitle}</h1>
 
       <div className="trainees-toolbar">
         <input
           className="trainees-search"
           type="search"
-          placeholder="Search name or email"
-          aria-label="Search trainees"
+          placeholder={shared.coach.searchPlaceholder}
+          aria-label={shared.coach.searchLabel}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
@@ -38,13 +42,13 @@ export function TraineesPage() {
           aria-pressed={filter === 'needs_next_week'}
           onClick={() => setFilter(filter === 'needs_next_week' ? 'all' : 'needs_next_week')}
         >
-          {NEEDS_NEXT_WEEK_LABEL}
+          {shared.traineeStatus.needsNextWeek}
           <span className="needs-plan-count">{countFor('needs_next_week')}</span>
         </button>
       </div>
 
-      <div className="trainees-filters" role="group" aria-label="Filter by status">
-        {STATUS_FILTERS.map(({ id, label }) => (
+      <div className="trainees-filters" role="group" aria-label={shared.coach.filterLabel}>
+        {statusFilters(language).map(({ id, label }) => (
           <button
             key={id}
             className="trainees-filter"
@@ -57,14 +61,14 @@ export function TraineesPage() {
         ))}
       </div>
 
-      {isLoading && !data && <p className="trainees-message">Loading…</p>}
+      {isLoading && !data && <p className="trainees-message">{shared.common.loading}</p>}
       {error && (
         <p className="trainees-message" role="alert">
-          {error} <Button size="sm" onClick={reload}>Try again</Button>
+          {error} <Button size="sm" onClick={reload}>{shared.common.retry}</Button>
         </p>
       )}
       {data && visible.length === 0 && (
-        <p className="trainees-message">{trainees.length === 0 ? 'No trainees yet.' : 'No trainees match this filter.'}</p>
+        <p className="trainees-message">{trainees.length === 0 ? shared.coach.noTrainees : shared.coach.noMatch}</p>
       )}
 
       {visible.length > 0 && (
@@ -72,11 +76,11 @@ export function TraineesPage() {
           <table className="trainees-table">
             <thead>
               <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Email</th>
-                <th scope="col">Status</th>
-                <th scope="col">48h window</th>
-                <th scope="col">Last activity</th>
+                <th scope="col">{copy.name}</th>
+                <th scope="col">{copy.email}</th>
+                <th scope="col">{copy.status}</th>
+                <th scope="col">{copy.window48h}</th>
+                <th scope="col">{shared.coach.lastActivity}</th>
               </tr>
             </thead>
             <tbody>
@@ -94,7 +98,7 @@ export function TraineesPage() {
                   <td>
                     <PlanWindow planDueAt={trainee.planDueAt} nowMs={nowMs} />
                   </td>
-                  <td>{trainee.lastActivityAt ? formatTimeAgo(trainee.lastActivityAt, nowMs) : '—'}</td>
+                  <td>{trainee.lastActivityAt ? formatTimeAgo(trainee.lastActivityAt, nowMs, language) : '—'}</td>
                 </tr>
               ))}
             </tbody>

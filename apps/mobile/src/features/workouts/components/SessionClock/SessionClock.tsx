@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { formatClock } from '../../data/workoutCopy';
+import { formatClock } from '../../data/workoutDisplay';
 import './SessionClock.css';
 
 interface SessionClockProps {

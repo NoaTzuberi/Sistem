@@ -8,19 +8,22 @@ import { Input } from '../../../../components/common/Input/Input';
 import { Button } from '../../../../components/common/Button/Button';
 import { AuthCard } from '../../components/AuthCard/AuthCard';
 import { useAuth } from '../../../../services/auth/AuthContext';
-import { validateName, validateEmail, validatePassword } from '../../validation';
+import { authErrorText, validateName, validateEmail, validatePassword, type AuthErrorKey } from '../../validation';
+import { useCopy } from '@sistem/shared';
+import { authCopy } from '../../copy';
 import { ROUTES } from '../../../../app/config/routes';
 import './Register.css';
 
 export function Register() {
   const navigate = useNavigate();
   const { register } = useAuth();
+  const copy = useCopy(authCopy);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [nameError, setNameError] = useState<string>();
-  const [emailError, setEmailError] = useState<string>();
-  const [passwordError, setPasswordError] = useState<string>();
+  const [nameError, setNameError] = useState<AuthErrorKey>();
+  const [emailError, setEmailError] = useState<AuthErrorKey>();
+  const [passwordError, setPasswordError] = useState<AuthErrorKey>();
   const [formError, setFormError] = useState<string>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -42,9 +45,7 @@ export function Register() {
       await register({ name, email, password });
       navigate(ROUTES.ONBOARDING);
     } catch (error) {
-      setFormError(
-        error instanceof Error ? error.message : 'Registration failed. Please try again.',
-      );
+      setFormError((error instanceof Error && error.message) || copy.registerFailed);
     } finally {
       setIsSubmitting(false);
     }
@@ -54,50 +55,50 @@ export function Register() {
     <PageLayout>
       <Section className="auth-page">
         <Container>
-          <AuthCard title="Create Account">
+          <AuthCard title={copy.registerTitle}>
             <form className="auth-form" onSubmit={handleSubmit} noValidate>
               <Input
                 type="text"
-                label="Name"
-                placeholder="Your full name"
+                label={copy.name}
+                placeholder={copy.namePlaceholder}
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                error={nameError}
+                error={authErrorText(copy, nameError)}
                 autoComplete="name"
                 autoCapitalize="words"
                 enterKeyHint="next"
               />
               <Input
                 type="email"
-                label="Email"
+                label={copy.email}
                 inputMode="email"
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
                 enterKeyHint="next"
-                placeholder="you@example.com"
+                placeholder={copy.emailPlaceholder}
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                error={emailError}
+                error={authErrorText(copy, emailError)}
                 autoComplete="email"
               />
               <Input
                 type="password"
-                label="Password"
-                placeholder="At least 8 characters"
+                label={copy.password}
+                placeholder={copy.newPasswordPlaceholder}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                error={passwordError}
+                error={authErrorText(copy, passwordError)}
                 autoComplete="new-password"
                 enterKeyHint="go"
               />
               {formError && <p className="auth-form-error">{formError}</p>}
               <Button type="submit" variant="primary" loading={isSubmitting}>
-                Create Account
+                {copy.registerButton}
               </Button>
             </form>
             <p className="auth-switch">
-              Already have an account? <Link to={ROUTES.LOGIN}>Log In</Link>
+              {copy.haveAccount} <Link to={ROUTES.LOGIN}>{copy.loginLink}</Link>
             </p>
           </AuthCard>
         </Container>

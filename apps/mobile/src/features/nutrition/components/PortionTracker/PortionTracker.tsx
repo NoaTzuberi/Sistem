@@ -1,8 +1,8 @@
-import type { FoodGroup, MealLogDay, PortionGroup } from '@sistem/types';
-import { FOOD_GROUP_LABELS, PORTION_GROUPS, VEGETABLES_FREE_LABEL, describePortion, formatDateOnly } from '@sistem/shared';
+import type { FoodGroup, MealLogDay, PortionGroup, Language } from '@sistem/types';
+import { describePortion, fill, formatDateOnly, PORTION_GROUPS, sharedCopy, useCopy, useLanguage, dateFormat } from '@sistem/shared';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import { circlesFor, hasHalfMark, tapCircle, toggleHalf, withGroup } from '../../data/portionCircles';
-import { NUTRITION_COPY } from '../../data/nutritionCopy';
+import { nutritionCopy } from '../../copy';
 import type { TrackerSync } from '../../hooks/useMealTracker';
 import './PortionTracker.css';
 
@@ -19,10 +19,9 @@ interface PortionTrackerProps {
   offline: boolean;
 }
 
-const weekdayFormat = new Intl.DateTimeFormat('en-GB', { weekday: 'narrow', timeZone: 'UTC' });
-
-function weekdayOf(date: string): string {
-  return weekdayFormat.format(new Date(`${date}T00:00:00Z`));
+/** The day's narrow weekday name in the language on screen (Intl). */
+function weekdayOf(date: string, language: Language): string {
+  return dateFormat(language, { weekday: 'narrow', timeZone: 'UTC' }).format(new Date(`${date}T00:00:00Z`));
 }
 
 /**
@@ -31,6 +30,9 @@ function weekdayOf(date: string): string {
  * "½" for half a portion. Never more than planned; no calories; nothing about what she ate.
  */
 export function PortionTracker(props: PortionTrackerProps) {
+  const language = useLanguage();
+  const shared = useCopy(sharedCopy);
+  const copy = useCopy(nutritionCopy);
   const { days, date, today, onSelectDate, onChange, onOpenSwaps, vegetablesFree, hasVegetableSwaps, sync, offline } = props;
   const index = days.findIndex((day) => day.date === date);
   const day = days[index];
@@ -50,49 +52,49 @@ export function PortionTracker(props: PortionTrackerProps) {
           className="portion-tracker-arrow"
           onClick={() => onSelectDate(days[index - 1].date)}
           disabled={index <= 0}
-          aria-label={NUTRITION_COPY.previousDay}
+          aria-label={copy.previousDay}
         >
-          <IconChevronLeft size={20} aria-hidden="true" />
+          <IconChevronLeft className="flip-rtl" size={20} aria-hidden="true" />
         </button>
         <h2 className="portion-tracker-title" id="portion-tracker-title">
-          {date === today ? `${NUTRITION_COPY.today}, ${formatDateOnly(date)}` : formatDateOnly(date)}
+          {date === today ? `${copy.today}, ${formatDateOnly(date, language)}` : formatDateOnly(date, language)}
         </h2>
         <button
           type="button"
           className="portion-tracker-arrow"
           onClick={() => onSelectDate(days[index + 1].date)}
           disabled={index >= days.length - 1}
-          aria-label={NUTRITION_COPY.nextDay}
+          aria-label={copy.nextDay}
         >
-          <IconChevronRight size={20} aria-hidden="true" />
+          <IconChevronRight className="flip-rtl" size={20} aria-hidden="true" />
         </button>
       </div>
 
-      <div className="portion-tracker-days" role="group" aria-label={NUTRITION_COPY.dayTitle}>
+      <div className="portion-tracker-days" role="group" aria-label={copy.dayTitle}>
         {days.map((candidate) => (
           <button
             key={candidate.date}
             type="button"
             className={'portion-tracker-day' + (candidate.date === date ? ' portion-tracker-day-selected' : '')}
             aria-pressed={candidate.date === date}
-            aria-label={formatDateOnly(candidate.date)}
+            aria-label={formatDateOnly(candidate.date, language)}
             onClick={() => onSelectDate(candidate.date)}
           >
-            {weekdayOf(candidate.date)}
+            {weekdayOf(candidate.date, language)}
             {candidate.logged && <span className="portion-tracker-day-dot" aria-hidden="true" />}
           </button>
         ))}
       </div>
 
       {!hasPlan ? (
-        <p className="portion-tracker-note">{NUTRITION_COPY.trackerNoPlan}</p>
+        <p className="portion-tracker-note">{copy.trackerNoPlan}</p>
       ) : (
         <ul className="portion-tracker-groups">
           {PORTION_GROUPS.filter((group) => day.planned[group] > 0).map((group) => {
             const planned = day.planned[group];
             const eaten = day.eaten[group];
-            const groupLabel = FOOD_GROUP_LABELS[group];
-            const totalLabel = describePortion(group, planned);
+            const groupLabel = shared.nutrition.groups[group];
+            const totalLabel = describePortion(group, planned, language);
             const half = hasHalfMark(eaten);
             return (
               <li key={group} className="portion-tracker-row">
@@ -100,7 +102,7 @@ export function PortionTracker(props: PortionTrackerProps) {
                   type="button"
                   className="portion-tracker-total"
                   onClick={() => onOpenSwaps(group)}
-                  aria-label={NUTRITION_COPY.openSwaps(totalLabel)}
+                  aria-label={fill(copy.openSwaps, { label: totalLabel })}
                 >
                   {totalLabel}
                 </button>
@@ -117,7 +119,11 @@ export function PortionTracker(props: PortionTrackerProps) {
                         .filter(Boolean)
                         .join(' ')}
                       disabled={!canEdit}
-                      aria-label={NUTRITION_COPY.circleLabel(groupLabel, circleIndex, circle.filled > 0)}
+                      aria-label={fill(copy.circleLabel, {
+                        group: groupLabel,
+                        n: circleIndex + 1,
+                        state: circle.filled > 0 ? copy.circleMarked : copy.circleUnmarked,
+                      })}
                       onClick={() => set(group, tapCircle(circle, planned, eaten))}
                     >
                       <span className="portion-tracker-circle-mark" aria-hidden="true" />
@@ -129,7 +135,7 @@ export function PortionTracker(props: PortionTrackerProps) {
                   className={'portion-tracker-half' + (half ? ' portion-tracker-half-on' : '')}
                   disabled={!canEdit || (!half && eaten >= planned)}
                   aria-pressed={half}
-                  aria-label={half ? NUTRITION_COPY.halfRemove(groupLabel.toLowerCase()) : NUTRITION_COPY.halfAdd(groupLabel.toLowerCase())}
+                  aria-label={half ? fill(copy.halfRemove, { group: groupLabel.toLowerCase() }) : fill(copy.halfAdd, { group: groupLabel.toLowerCase() })}
                   onClick={() => set(group, toggleHalf(planned, eaten))}
                 >
                   ½
@@ -143,23 +149,23 @@ export function PortionTracker(props: PortionTrackerProps) {
       {vegetablesFree &&
         (hasVegetableSwaps ? (
           <button type="button" className="portion-tracker-vegetables portion-tracker-vegetables-button" onClick={() => onOpenSwaps('vegetable')}>
-            {VEGETABLES_FREE_LABEL}
+            {shared.nutrition.vegetablesFree}
           </button>
         ) : (
-          <p className="portion-tracker-vegetables">{VEGETABLES_FREE_LABEL}</p>
+          <p className="portion-tracker-vegetables">{shared.nutrition.vegetablesFree}</p>
         ))}
 
       <p className="portion-tracker-note" role="status">
         {offline
-          ? NUTRITION_COPY.trackerOffline
+          ? copy.trackerOffline
           : sync === 'pending'
-            ? NUTRITION_COPY.trackerSavedLocally
+            ? copy.trackerSavedLocally
             : sync === 'saving'
-              ? NUTRITION_COPY.trackerSaving
+              ? copy.trackerSaving
               : !day.editable && hasPlan
-                ? NUTRITION_COPY.trackerReadOnly
+                ? copy.trackerReadOnly
                 : hasPlan
-                  ? NUTRITION_COPY.trackerHint
+                  ? copy.trackerHint
                   : ''}
       </p>
     </section>

@@ -1,7 +1,7 @@
-import { formatDateTime } from '@sistem/shared';
+import { fill, formatDateTime, sharedCopy, useCopy, useLanguage } from '@sistem/shared';
 import { Badge } from '../../../../components/common/Badge/Badge';
 import { Button } from '../../../../components/common/Button/Button';
-import { AI_DRAFT_COPY, AI_STATUS_LABELS } from '../../data/aiDraftCopy';
+import { aiDraftCopy } from '../../copy';
 import type { useLatestAiDraft } from '../../hooks/useLatestAiDraft';
 import './AiDraftCard.css';
 
@@ -14,25 +14,28 @@ interface AiDraftCardProps {
 
 /** Trainee → Plans: the newest AI draft's status, with Generate / Regenerate. */
 export function AiDraftCard({ ai, onUseInNewPlan, disabled = false }: AiDraftCardProps) {
+  const language = useLanguage();
+  const shared = useCopy(sharedCopy);
+  const copy = useCopy(aiDraftCopy);
   const { latest, ready, running, unavailableReason } = ai;
   const canGenerate = !unavailableReason && !running && !ai.isStarting && !disabled;
 
   return (
     <section className="ai-draft-card" aria-live="polite">
       <header className="ai-draft-header">
-        <h2 className="ai-draft-title">{AI_DRAFT_COPY.title}</h2>
-        {latest && <Badge tone={latest.status === 'failed' ? 'alert' : latest.status === 'ready' ? 'accent' : 'neutral'}>{AI_STATUS_LABELS[latest.status]}</Badge>}
+        <h2 className="ai-draft-title">{copy.training.title}</h2>
+        {latest && <Badge tone={latest.status === 'failed' ? 'alert' : latest.status === 'ready' ? 'accent' : 'neutral'}>{copy.status[latest.status]}</Badge>}
       </header>
 
-      {ai.isLoading && <p className="ai-draft-muted">Loading…</p>}
+      {ai.isLoading && <p className="ai-draft-muted">{shared.common.loading}</p>}
       {ai.error && <p className="ai-draft-error">{ai.error}</p>}
       {unavailableReason && <p className="ai-draft-muted">{unavailableReason}</p>}
 
-      {!ai.isLoading && !latest && !unavailableReason && <p className="ai-draft-muted">{AI_DRAFT_COPY.none}</p>}
-      {running && <p className="ai-draft-muted">{AI_DRAFT_COPY.generating}</p>}
+      {!ai.isLoading && !latest && !unavailableReason && <p className="ai-draft-muted">{copy.training.none}</p>}
+      {running && <p className="ai-draft-muted">{copy.training.generating}</p>}
       {latest?.status === 'failed' && latest.error && (
         <p className="ai-draft-error">
-          {AI_DRAFT_COPY.failedPrefix} {latest.error.message}
+          {copy.training.failedPrefix} {latest.error.message}
         </p>
       )}
 
@@ -42,10 +45,10 @@ export function AiDraftCard({ ai, onUseInNewPlan, disabled = false }: AiDraftCar
             {ready.output.summary}
           </p>
           <p className="ai-draft-muted">
-            {ready.output.workouts.length} workouts · {formatDateTime(ready.completedAt ?? ready.createdAt)}
+            {fill(copy.training.workoutCount, { count: ready.output.workouts.length })} · {formatDateTime(ready.completedAt ?? ready.createdAt, language)}
             {ready.model ? ` · ${ready.model}` : ''}
           </p>
-          <p className="ai-draft-note">{AI_DRAFT_COPY.reviewNote}</p>
+          <p className="ai-draft-note">{copy.training.reviewNote}</p>
         </>
       )}
 
@@ -54,12 +57,12 @@ export function AiDraftCard({ ai, onUseInNewPlan, disabled = false }: AiDraftCar
       <div className="ai-draft-actions">
         {ready && (
           <Button variant="primary" disabled={disabled} onClick={onUseInNewPlan}>
-            {AI_DRAFT_COPY.useInNewPlan}
+            {copy.training.useInNewPlan}
           </Button>
         )}
         {!unavailableReason && !running && (
           <Button disabled={!canGenerate} onClick={() => void ai.generate()}>
-            {!latest ? AI_DRAFT_COPY.generate : latest.status === 'failed' ? AI_DRAFT_COPY.tryAgain : AI_DRAFT_COPY.regenerate}
+            {!latest ? copy.training.generate : latest.status === 'failed' ? copy.training.tryAgain : copy.training.regenerate}
           </Button>
         )}
       </div>

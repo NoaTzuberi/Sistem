@@ -17,15 +17,16 @@ import {
   validateMealLogDateParam,
   validateWeekStartQuery,
 } from './mealLog.validation';
+import { sendError } from '../../i18n';
 
 /** Maps the portion tracking errors to HTTP; anything else goes to the error handler. */
 function sendMealLogError(res: Response, error: unknown): void {
   if (error instanceof MealLogDayError || error instanceof InvalidMealPhotoError) {
-    res.status(400).json({ message: error.message });
+    sendError(res, 400, error.serverMessage);
   } else if (error instanceof MealLogNoPlanError) {
-    res.status(409).json({ message: error.message });
+    sendError(res, 409, error.serverMessage);
   } else if (error instanceof PhotoStorageUnavailableError) {
-    res.status(503).json({ message: error.message });
+    sendError(res, 503, error.serverMessage);
   } else {
     throw error;
   }
@@ -37,7 +38,7 @@ function withDate(handler: (req: AuthenticatedRequest, res: Response, date: stri
     const validationError =
       validateMealLogDateParam(req.params.date) ?? (req.params.mealId !== undefined ? validateMealIdParam(req.params.mealId) : null);
     if (validationError) {
-      res.status(400).json({ message: validationError });
+      sendError(res, 400, validationError);
       return;
     }
     try {
@@ -55,7 +56,7 @@ export async function getMyMealLogs(req: AuthenticatedRequest, res: Response) {
 export const putMyMealLog = withDate(async (req, res, date) => {
   const parsed = parseSaveMealLogPayload(req.body);
   if (!parsed.value) {
-    res.status(400).json({ message: parsed.error });
+    sendError(res, 400, parsed.error);
     return;
   }
   res.status(200).json({ day: await saveMyMealLog(req.userId!, date, parsed.value.eaten) });
@@ -74,7 +75,7 @@ export const deleteMyMealPhoto = withDate(async (req, res, date) => {
 export async function getTraineeMealLogs(req: AuthenticatedRequest, res: Response) {
   const error = validateWeekStartQuery(req.query.weekStart);
   if (error) {
-    res.status(400).json({ message: error });
+    sendError(res, 400, error);
     return;
   }
   res.status(200).json(await getCoachMealLogWeek(req.traineeId!, (req.query.weekStart as string | undefined) ?? null));

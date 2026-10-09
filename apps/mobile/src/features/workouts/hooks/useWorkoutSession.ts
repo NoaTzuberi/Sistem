@@ -1,3 +1,4 @@
+import { getActiveLanguage } from '@sistem/shared';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import type { WorkoutLog, WorkoutLogSetUpdate, WorkoutLogStatus, WorkoutSession } from '@sistem/types';
@@ -20,7 +21,7 @@ import {
   toSetUpdate,
 } from '../data/sessionSets';
 import type { SessionModel, SetValues, SetValuesByKey } from '../data/sessionSets';
-import { SESSION_COPY } from '../data/workoutCopy';
+import { workoutCopy } from '../copy';
 
 export type SyncState = 'saved' | 'saving' | 'offline';
 
@@ -191,9 +192,9 @@ export function useWorkoutSession(logId: string) {
           scheduleFlush(SYNC_RETRY_MS);
         } else if (statusOf(error) === 404) {
           clearCachedSession(logId);
-          setLoadError(SESSION_COPY.notFound);
+          setLoadError(workoutCopy[getActiveLanguage()].session.notFound);
         } else {
-          setLoadError(extractErrorMessage(error, SESSION_COPY.loadError));
+          setLoadError(extractErrorMessage(error, workoutCopy[getActiveLanguage()].session.loadError));
         }
       });
 
@@ -289,7 +290,7 @@ export function useWorkoutSession(logId: string) {
 
   const finish = useCallback(async (): Promise<FinishResult> => {
     const cached = cacheRef.current;
-    if (!cached || finishingRef.current) return { kind: 'error', message: SESSION_COPY.finishError };
+    if (!cached || finishingRef.current) return { kind: 'error', message: workoutCopy[getActiveLanguage()].session.finishError };
     finishingRef.current = true;
     window.clearTimeout(timerRef.current);
     try {
@@ -303,10 +304,10 @@ export function useWorkoutSession(logId: string) {
       const status = statusOf(error);
       if (status === 409) {
         void handleNotActive();
-        return { kind: 'error', message: SESSION_COPY.notActive };
+        return { kind: 'error', message: workoutCopy[getActiveLanguage()].session.notActive };
       }
       if (status !== undefined && status < 500) {
-        return { kind: 'error', message: extractErrorMessage(error, SESSION_COPY.finishError) };
+        return { kind: 'error', message: extractErrorMessage(error, workoutCopy[getActiveLanguage()].session.finishError) };
       }
       cached.finishRequested = true;
       persist();
@@ -328,7 +329,7 @@ export function useWorkoutSession(logId: string) {
         void handleNotActive();
         return null;
       }
-      return isNetworkError(error) ? SESSION_COPY.discardOffline : extractErrorMessage(error, SESSION_COPY.discardError);
+      return isNetworkError(error) ? workoutCopy[getActiveLanguage()].session.discardOffline : extractErrorMessage(error, workoutCopy[getActiveLanguage()].session.discardError);
     }
   }, [endSession, handleNotActive, logId]);
 

@@ -38,7 +38,7 @@ const aiRecommendationSchema = new Schema<AiRecommendationDocument>(
     output: { type: Schema.Types.Mixed, default: null },
     model: { type: String, default: null },
     attempts: { type: [attemptSchema], default: [] },
-    error: { type: new Schema({ code: String, message: String }, { _id: false }), default: null },
+    error: { type: new Schema({ code: String, message: String, text: { type: Schema.Types.Mixed, default: null } }, { _id: false }), default: null },
     startedAt: { type: Date, default: null },
     completedAt: { type: Date, default: null },
   },

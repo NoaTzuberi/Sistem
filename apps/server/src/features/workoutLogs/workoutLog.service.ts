@@ -6,8 +6,9 @@ import { achievementsByLog } from '../achievements/achievement.service';
 import { toPublicPhoto } from '../privatePhotos/privatePhoto.service';
 import { WorkoutLog } from './workoutLog.model';
 import type { WorkoutLogDocument } from './workoutLog.types';
+import { LocalizedError } from '../../i18n';
 
-export class WorkoutLogNotFoundError extends Error {}
+export class WorkoutLogNotFoundError extends LocalizedError {}
 
 type LeanWorkoutLog = WorkoutLogDocument & { _id: Types.ObjectId };
 
@@ -77,7 +78,7 @@ export async function listWorkoutLogsForTrainee(traineeId: string): Promise<Publ
 export async function getWorkoutLogForTrainee(logId: string, traineeId: string): Promise<PublicWorkoutLog> {
   const log = await WorkoutLog.findOne({ _id: logId, traineeId }).lean<LeanWorkoutLog>();
   if (!log) {
-    throw new WorkoutLogNotFoundError('Workout log not found.');
+    throw new WorkoutLogNotFoundError('workout_log_not_found');
   }
   const publicLog = toPublicWorkoutLog(log);
   await attachLogDetails([publicLog]);

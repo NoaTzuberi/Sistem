@@ -2,7 +2,7 @@
   display: flex;
   gap: var(--space-3);
   margin-bottom: var(--space-4);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: var(--border-width-thin) solid var(--color-border);
 }
 
 .nutrition-subnav-link {
@@ -10,7 +10,7 @@
   font-weight: var(--font-weight-semibold);
   color: var(--color-text);
   text-decoration: none;
-  border-bottom: 2px solid transparent;
+  border-bottom: var(--border-width-medium) solid transparent;
 }
 
 .nutrition-subnav-link.active {

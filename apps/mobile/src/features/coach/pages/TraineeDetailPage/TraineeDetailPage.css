@@ -18,7 +18,7 @@
   justify-content: center;
   width: var(--touch-target-min);
   height: var(--touch-target-min);
-  margin-left: calc(-1 * var(--space-2));
+  margin-inline-start: calc(-1 * var(--space-2));
 }
 
 .coach-trainee-back:active {
@@ -50,7 +50,7 @@
 
 .coach-trainee-tabs {
   display: flex;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: var(--border-width-thin) solid var(--color-border);
   /* Six tabs: they share the width, and scroll sideways when the labels can't all fit (375 px). */
   overflow-x: auto;
   scrollbar-width: none;
@@ -68,7 +68,7 @@
   font-size: var(--text-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-muted);
-  border-bottom: 3px solid transparent;
+  border-bottom: var(--border-width-thick) solid transparent;
 }
 
 .coach-trainee-tab[aria-selected='true'] {

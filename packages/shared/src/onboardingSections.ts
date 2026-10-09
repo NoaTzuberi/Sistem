@@ -1,5 +1,8 @@
-import type { MyOnboarding } from '@sistem/types';
-import { formatDateTime, humanizeId, humanizeList } from './format';
+import type { Language, MyOnboarding } from '@sistem/types';
+import { sharedCopy } from './copy';
+import { fill } from './i18n/copy';
+import { isolateLtr } from './i18n/bidi';
+import { formatDateShort, formatDateTime, humanizeId, labelList } from './format';
 import { describeNutritionPreferences, describeWeightGoal } from './nutritionDisplay';
 
 export interface OnboardingAnswerRow {
@@ -12,69 +15,84 @@ export interface OnboardingAnswerSection {
   rows: OnboardingAnswerRow[];
 }
 
-// Answers are stored as option ids; they are shown humanized ('build_muscle' →
-// 'Build muscle') until the owner supplies the coach-side wording.
-export function buildOnboardingSections(onboarding: MyOnboarding): OnboardingAnswerSection[] {
+// Answers are stored as option ids; the coach reads the same option labels the trainee
+// chose from (shared copy), in the coach's language. Free text is shown as written.
+export function buildOnboardingSections(onboarding: MyOnboarding, language: Language): OnboardingAnswerSection[] {
+  const copy = sharedCopy[language];
+  const labels = copy.onboardingSections;
+  const options = copy.onboardingOptions;
   const answers = onboarding.answers;
   const frequency = answers?.trainingFrequency;
   const text = (value: string | undefined) => value?.trim() || '—';
+  const unitLabel = (unit: string | undefined) => (unit ? (copy.units as Record<string, string>)[unit] ?? unit : undefined);
 
   return [
     {
-      title: 'Basic profile',
+      title: labels.basicProfile,
       rows: [
-        { label: 'Name', value: onboarding.name },
-        { label: 'Birth date', value: text(answers?.birthDate?.slice(0, 10)) },
-        { label: 'Height', value: answers?.height !== undefined ? `${answers.height} cm` : '—' },
-        { label: 'Weight', value: answers?.weight !== undefined ? `${answers.weight} kg` : '—' },
-        { label: 'Gender', value: answers?.gender ? humanizeId(answers.gender) : '—' },
+        { label: labels.name, value: onboarding.name },
+        { label: labels.birthDate, value: answers?.birthDate ? formatDateShort(answers.birthDate.slice(0, 10), language) : '—' },
+        { label: labels.height, value: answers?.height !== undefined ? `${answers.height} ${copy.units.cm}` : '—' },
+        { label: labels.weight, value: answers?.weight !== undefined ? `${answers.weight} ${copy.units.kg}` : '—' },
         {
-          label: 'Preferred units',
-          value: onboarding.units ? [onboarding.units.weight, onboarding.units.distance].filter(Boolean).join(' / ') || '—' : '—',
+          label: labels.gender,
+          value: answers?.gender ? ((options.gender as Record<string, string>)[answers.gender] ?? humanizeId(answers.gender)) : '—',
+        },
+        {
+          label: labels.preferredUnits,
+          value: onboarding.units
+            ? [unitLabel(onboarding.units.weight), unitLabel(onboarding.units.distance)].filter(Boolean).join(' / ') || '—'
+            : '—',
         },
       ],
     },
-    { title: 'Goals', rows: [{ label: 'Goals', value: humanizeList(answers?.goals) }] },
+    { title: labels.goals, rows: [{ label: labels.goals, value: labelList(answers?.goals, options.goals, language) }] },
     {
-      title: 'Training frequency',
+      title: labels.trainingFrequency,
       rows: [
-        { label: 'Days per week', value: frequency ? `${frequency.minDays}–${frequency.maxDays}` : '—' },
-        { label: 'Flexible schedule', value: frequency ? (frequency.flexibleSchedule ? 'Yes' : 'No') : '—' },
-      ],
-    },
-    { title: 'Activities', rows: [{ label: 'Preferred activities', value: humanizeList(answers?.preferredActivities) }] },
-    {
-      title: 'Exercise preferences',
-      rows: [
-        { label: 'Favorite exercises', value: text(answers?.exercisePreferences?.favoriteExerciseNotes) },
-        { label: 'Wants to improve', value: text(answers?.exercisePreferences?.improvementExerciseNotes) },
-        { label: 'Muscle focus', value: humanizeList(answers?.exercisePreferences?.muscleFocus) },
+        { label: labels.daysPerWeek, value: frequency ? isolateLtr(`${frequency.minDays}–${frequency.maxDays}`) : '—' },
+        { label: labels.flexibleSchedule, value: frequency ? (frequency.flexibleSchedule ? copy.common.yes : copy.common.no) : '—' },
       ],
     },
     {
-      title: 'Recovery',
+      title: labels.activities,
+      rows: [{ label: labels.preferredActivities, value: labelList(answers?.preferredActivities, options.activities, language) }],
+    },
+    {
+      title: labels.exercisePreferences,
       rows: [
-        { label: 'Flags', value: humanizeList(answers?.recovery?.flags) },
-        { label: 'Notes', value: text(answers?.recovery?.notes) },
+        { label: labels.favoriteExercises, value: text(answers?.exercisePreferences?.favoriteExerciseNotes) },
+        { label: labels.wantsToImprove, value: text(answers?.exercisePreferences?.improvementExerciseNotes) },
+        { label: labels.muscleFocus, value: labelList(answers?.exercisePreferences?.muscleFocus, options.muscleFocus, language) },
       ],
     },
-    { title: 'Equipment', rows: [{ label: 'Equipment', value: humanizeList(answers?.equipment) }] },
+    {
+      title: labels.recovery,
+      rows: [
+        { label: labels.flags, value: labelList(answers?.recovery?.flags, options.recoveryFlags, language) },
+        { label: labels.notes, value: text(answers?.recovery?.notes) },
+      ],
+    },
+    { title: labels.equipment, rows: [{ label: labels.equipment, value: labelList(answers?.equipment, options.equipment, language) }] },
     // Phase 13a. Trainees who finished onboarding before this step show "Not answered".
     // The coach always reads kg.
     {
-      title: 'Nutrition & goal',
+      title: labels.nutritionAndGoal,
       rows: [
-        { label: 'Weight goal', value: answers?.weightGoal ? describeWeightGoal(answers.weightGoal) : '—' },
-        ...describeNutritionPreferences(answers?.nutritionPreferences),
+        { label: labels.weightGoal, value: answers?.weightGoal ? describeWeightGoal(answers.weightGoal, 'kg', language) : '—' },
+        ...describeNutritionPreferences(answers?.nutritionPreferences, language),
       ],
     },
   ];
 }
 
 /** The line above the answers: finished (and when), or how far she got. */
-export function describeOnboardingProgress(onboarding: MyOnboarding): string {
+export function describeOnboardingProgress(onboarding: MyOnboarding, language: Language): string {
+  const labels = sharedCopy[language].onboardingSections;
   if (onboarding.status === 'completed' && onboarding.completedAt) {
-    return `Completed ${formatDateTime(onboarding.completedAt)}`;
+    return fill(labels.completed, { date: formatDateTime(onboarding.completedAt, language) });
   }
-  return `In progress${onboarding.lastStep ? ` — last step saved: ${humanizeId(onboarding.lastStep)}` : ''}`;
+  if (!onboarding.lastStep) return labels.inProgress;
+  const step = (sharedCopy[language].onboardingOptions.steps as Record<string, string>)[onboarding.lastStep] ?? humanizeId(onboarding.lastStep);
+  return fill(labels.inProgressLastStep, { step });
 }

@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import type { FoodGroup, NutritionViewMeal } from '@sistem/types';
-import { FOOD_GROUP_LABELS, VEGETABLES_FREE_LABEL, describePortion, describeViewLine, mealPortionList } from '@sistem/shared';
+import { describePortion, describeViewLine, fill, mealPortionList, sharedCopy, useCopy, useLanguage } from '@sistem/shared';
 import { IconChevronRight } from '@tabler/icons-react';
-import { NUTRITION_COPY } from '../../data/nutritionCopy';
+import { nutritionCopy } from '../../copy';
 import './MealCard.css';
 
 interface MealCardProps {
@@ -17,25 +17,28 @@ interface MealCardProps {
 
 /** One meal: its portions per group (the focus), then the coach's options, as written. */
 export function MealCard({ meal, onOpenSwaps, hasVegetableSwaps, footer }: MealCardProps) {
+  const language = useLanguage();
+  const shared = useCopy(sharedCopy);
+  const copy = useCopy(nutritionCopy);
   const portions = mealPortionList(meal.portions);
 
   return (
     <article className="meal-card">
       <h2 className="meal-card-name" dir="auto">
-        {meal.name}
+        <bdi>{meal.name}</bdi>
       </h2>
 
       {(portions.length > 0 || meal.vegetablesFree) && (
         <div className="meal-card-portions">
           {portions.map(({ group, count }) => {
-            const label = describePortion(group, count);
+            const label = describePortion(group, count, language);
             return (
               <button
                 key={group}
                 type="button"
                 className={`meal-card-portion meal-card-portion-${group}`}
                 onClick={() => onOpenSwaps(group)}
-                aria-label={NUTRITION_COPY.openSwaps(label)}
+                aria-label={fill(copy.openSwaps, { label })}
               >
                 {label}
               </button>
@@ -44,10 +47,10 @@ export function MealCard({ meal, onOpenSwaps, hasVegetableSwaps, footer }: MealC
           {meal.vegetablesFree &&
             (hasVegetableSwaps ? (
               <button type="button" className="meal-card-portion meal-card-portion-vegetable" onClick={() => onOpenSwaps('vegetable')}>
-                {VEGETABLES_FREE_LABEL}
+                {shared.nutrition.vegetablesFree}
               </button>
             ) : (
-              <span className="meal-card-portion meal-card-portion-static">{VEGETABLES_FREE_LABEL}</span>
+              <span className="meal-card-portion meal-card-portion-static">{shared.nutrition.vegetablesFree}</span>
             ))}
         </div>
       )}
@@ -55,11 +58,11 @@ export function MealCard({ meal, onOpenSwaps, hasVegetableSwaps, footer }: MealC
       {meal.options.map((option) => (
         <section key={option.id} className="meal-card-option" aria-label={option.label}>
           <h3 className="meal-card-option-label" dir="auto">
-            {option.label}
+            <bdi>{option.label}</bdi>
           </h3>
           <ul className="meal-card-lines">
             {option.lines.map((line) => {
-              const { title, detail } = describeViewLine(line);
+              const { title, detail } = describeViewLine(line, language);
               const content = (
                 <>
                   <span className="meal-card-line-text">
@@ -72,7 +75,7 @@ export function MealCard({ meal, onOpenSwaps, hasVegetableSwaps, footer }: MealC
                       </span>
                     )}
                   </span>
-                  {line.food && <IconChevronRight className="meal-card-line-icon" size={18} aria-hidden="true" />}
+                  {line.food && <IconChevronRight className="flip-rtl meal-card-line-icon" size={18} aria-hidden="true" />}
                 </>
               );
               return (
@@ -82,7 +85,7 @@ export function MealCard({ meal, onOpenSwaps, hasVegetableSwaps, footer }: MealC
                       type="button"
                       className="meal-card-line meal-card-line-button"
                       onClick={() => onOpenSwaps(line.food!.group, line.food!.id)}
-                      aria-label={`${title} — ${NUTRITION_COPY.swapsTitle(FOOD_GROUP_LABELS[line.food.group])}`}
+                      aria-label={`${title} — ${fill(copy.swapsTitle, { group: shared.nutrition.groups[line.food.group] })}`}
                     >
                       {content}
                     </button>

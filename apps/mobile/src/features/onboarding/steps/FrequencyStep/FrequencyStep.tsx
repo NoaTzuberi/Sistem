@@ -1,3 +1,5 @@
+import { useCopy } from '@sistem/shared';
+import { onboardingCopy } from '../../copy';
 import { SelectableChip } from '../../components/SelectableChip/SelectableChip';
 import type { OnboardingFormState } from '../../types';
 import './FrequencyStep.css';
@@ -11,6 +13,7 @@ const DAY_OPTIONS = [1, 2, 3, 4, 5, 6, 7];
 
 export function FrequencyStep({ formState, updateFormState }: FrequencyStepProps) {
   const { trainingFrequency } = formState;
+  const copy = useCopy(onboardingCopy).frequency;
 
   function setMinDays(day: number) {
     updateFormState({
@@ -34,10 +37,10 @@ export function FrequencyStep({ formState, updateFormState }: FrequencyStepProps
 
   return (
     <div className="onboarding-step frequency-step">
-      <h1>How often would you like to train?</h1>
+      <h1>{copy.title}</h1>
 
       <div className="frequency-field">
-        <span className="text-label">Minimum days per week</span>
+        <span className="text-label">{copy.minDays}</span>
         <div className="frequency-options">
           {DAY_OPTIONS.map((day) => (
             <SelectableChip
@@ -51,7 +54,7 @@ export function FrequencyStep({ formState, updateFormState }: FrequencyStepProps
       </div>
 
       <div className="frequency-field">
-        <span className="text-label">Maximum days per week</span>
+        <span className="text-label">{copy.maxDays}</span>
         <div className="frequency-options">
           {DAY_OPTIONS.map((day) => (
             <SelectableChip
@@ -65,7 +68,7 @@ export function FrequencyStep({ formState, updateFormState }: FrequencyStepProps
       </div>
 
       <SelectableChip
-        label="My schedule changes week to week"
+        label={copy.flexible}
         selected={trainingFrequency.flexibleSchedule}
         onClick={() =>
           updateFormState({
@@ -77,9 +80,7 @@ export function FrequencyStep({ formState, updateFormState }: FrequencyStepProps
         }
       />
 
-      <p className="text-caption frequency-note">
-        Sistem can adapt recommendations when your available time changes.
-      </p>
+      <p className="text-caption frequency-note">{copy.note}</p>
     </div>
   );
 }

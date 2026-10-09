@@ -62,3 +62,9 @@
 .auth-link:active {
   color: var(--color-primary);
 }
+
+.auth-card-language {
+  display: flex;
+  justify-content: center;
+  margin-block-start: var(--space-4);
+}

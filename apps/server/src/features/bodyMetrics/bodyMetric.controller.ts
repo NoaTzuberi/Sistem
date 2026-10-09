@@ -13,13 +13,14 @@ import {
   saveBodyMetric,
   setProgressPhoto,
 } from './bodyMetric.service';
+import { sendError } from '../../i18n';
 
 /** Maps the body tracking errors to HTTP; anything else goes to the error handler. */
 function sendBodyMetricError(res: Response, error: unknown): void {
   if (error instanceof BodyMetricDateError || error instanceof InvalidProgressPhotoError) {
-    res.status(400).json({ message: error.message });
+    sendError(res, 400, error.serverMessage);
   } else if (error instanceof PhotoStorageUnavailableError) {
-    res.status(503).json({ message: error.message });
+    sendError(res, 503, error.serverMessage);
   } else {
     throw error;
   }
@@ -30,7 +31,7 @@ function withDate(handler: (req: AuthenticatedRequest, res: Response, date: stri
   return async (req: AuthenticatedRequest, res: Response) => {
     const validationError = validateBodyMetricDateParam(req.params.date);
     if (validationError) {
-      res.status(400).json({ message: validationError });
+      sendError(res, 400, validationError);
       return;
     }
     try {
@@ -58,7 +59,7 @@ export async function getMyBodyMetrics(req: AuthenticatedRequest, res: Response)
 export const putMyBodyMetric = withDate(async (req, res, date) => {
   const parsed = parseSaveBodyMetricPayload(req.body);
   if (parsed.error !== undefined) {
-    res.status(400).json({ message: parsed.error });
+    sendError(res, 400, parsed.error);
     return;
   }
   await sendSavedDay(res, req.userId!, await saveBodyMetric(req.userId!, date, parsed.value));
@@ -73,7 +74,7 @@ export const deleteMyBodyMetric = withDate(async (req, res, date) => {
 export const putMyProgressPhoto = withDate(async (req, res, date) => {
   const pose = parsePoseParam(req.params.pose);
   if (pose.error !== undefined) {
-    res.status(400).json({ message: pose.error });
+    sendError(res, 400, pose.error);
     return;
   }
   await sendSavedDay(res, req.userId!, await setProgressPhoto(req.userId!, date, pose.value, req.body as Buffer));
@@ -82,7 +83,7 @@ export const putMyProgressPhoto = withDate(async (req, res, date) => {
 export const deleteMyProgressPhoto = withDate(async (req, res, date) => {
   const pose = parsePoseParam(req.params.pose);
   if (pose.error !== undefined) {
-    res.status(400).json({ message: pose.error });
+    sendError(res, 400, pose.error);
     return;
   }
   sendDay(res, await removeProgressPhoto(req.userId!, date, pose.value));

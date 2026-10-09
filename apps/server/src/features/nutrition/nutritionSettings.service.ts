@@ -3,8 +3,9 @@ import { DEFAULT_NUTRITION_CONFIG } from './nutrition.config';
 import { PORTION_GROUP_IDS } from './nutrition.constants';
 import { NutritionSettings } from './nutritionSettings.model';
 import type { NutritionSettingsDocument } from './nutrition.types';
+import { LocalizedError } from '../../i18n';
 
-export class NutritionSettingsConflictError extends Error {}
+export class NutritionSettingsConflictError extends LocalizedError {}
 
 function cloneDefaults(): NutritionConfig {
   return {
@@ -78,9 +79,9 @@ export async function saveNutritionSettings(
 ): Promise<NutritionSettingsResponse> {
   const above = await foodsAboveCaps(input.groupKcal);
   if (above > 0) {
-    throw new NutritionSettingsConflictError(
-      `${above} food item${above === 1 ? ' has' : 's have'} more calories than the new group value — lower ${above === 1 ? 'it' : 'them'} first.`,
-    );
+    throw new NutritionSettingsConflictError(above === 1 ? 'settings_food_above_cap_one' : 'settings_food_above_cap_other', {
+      count: above,
+    });
   }
   await NutritionSettings.updateOne(
     { coachId },

@@ -1,6 +1,6 @@
 import type { TraineePlanWorkout, WorkoutStatus } from '@sistem/types';
-import { DAY_NAMES, addDaysToDate } from '@sistem/shared';
-import { WORKOUT_STATUS_LABELS } from '../../../workouts/data/workoutCopy';
+import { addDaysToDate, dayName, useCopy, useLanguage, weekdayName } from '@sistem/shared';
+import { workoutCopy } from '../../../workouts/copy';
 import './WeekStrip.css';
 
 const DAYS_IN_WEEK = 7;
@@ -24,12 +24,14 @@ function dayStatus(workouts: TraineePlanWorkout[]): WorkoutStatus | null {
  * a mark per day with a planned workout. Workouts without a day are not shown here.
  */
 export function WeekStrip({ weekStartDate, today, workouts }: WeekStripProps) {
+  const language = useLanguage();
+  const copy = useCopy(workoutCopy);
   return (
     <ol className="week-strip">
       {Array.from({ length: DAYS_IN_WEEK }, (_, dayOfWeek) => {
         const status = dayStatus(workouts.filter((workout) => workout.dayOfWeek === dayOfWeek));
         const isToday = addDaysToDate(weekStartDate, dayOfWeek) === today;
-        const label = `${DAY_NAMES[dayOfWeek]}${status ? `: ${WORKOUT_STATUS_LABELS[status]}` : ''}`;
+        const label = `${dayName(dayOfWeek, language)}${status ? `: ${copy.status[status]}` : ''}`;
 
         return (
           <li
@@ -39,7 +41,7 @@ export function WeekStrip({ weekStartDate, today, workouts }: WeekStripProps) {
             aria-current={isToday ? 'date' : undefined}
           >
             <span className="week-strip-letter" aria-hidden="true">
-              {DAY_NAMES[dayOfWeek].charAt(0)}
+              {weekdayName(dayOfWeek, language, 'narrow')}
             </span>
             <span className={'week-strip-mark' + (status ? ` week-strip-mark-${status}` : '')} aria-hidden="true" />
           </li>

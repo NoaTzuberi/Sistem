@@ -3,7 +3,7 @@
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-3);
-  border-left: 3px solid var(--color-primary);
+  border-inline-start: var(--border-width-thick) solid var(--color-primary);
   background-color: var(--color-primary-soft);
 }
 

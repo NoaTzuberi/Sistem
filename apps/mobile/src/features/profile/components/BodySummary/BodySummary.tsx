@@ -2,23 +2,12 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { BodyMetricList, UnitPreferences } from '@sistem/types';
 import { IconChevronRight } from '@tabler/icons-react';
-import {
-  formatChartDate,
-  formatLength,
-  formatSignedChange,
-  formatWeight,
-  latestMeasurements,
-  measurementLabel,
-  photoDays,
-  rangeChange,
-  weighIns,
-  weightPoints,
-} from '@sistem/shared';
+import { fill, formatChartDate, formatLength, formatSignedChange, formatWeight, latestMeasurements, measurementLabel, photoDays, rangeChange, useCopy, useLanguage, weighIns, weightPoints } from '@sistem/shared';
 import { ROUTES } from '../../../../app/config/routes';
 import { StateMessage } from '../../../../components/common/StateMessage/StateMessage';
 import { Sparkline } from '../../../bodyTracking/components/Sparkline/Sparkline';
-import { BODY_COPY } from '../../../bodyTracking/data/bodyCopy';
-import { PROFILE_COPY } from '../../data/profileCopy';
+import { bodyCopy } from '../../../bodyTracking/copy';
+import { profileCopy } from '../../copy';
 import './BodySummary.css';
 
 // How many measurements / weigh-ins the cards show before "+N more" / the sparkline.
@@ -39,14 +28,17 @@ function SummaryCard({ to, title, children }: { to: string; title: string; child
         <span className="body-summary-card-title">{title}</span>
         {children}
       </span>
-      <IconChevronRight size={20} aria-hidden="true" />
+      <IconChevronRight className="flip-rtl" size={20} aria-hidden="true" />
     </Link>
   );
 }
 
 /** The Body section of Profile: latest weight + trend, latest measurements, newest photos. */
 export function BodySummary({ list, error, units, onRetry }: BodySummaryProps) {
-  if (!list) return error ? <StateMessage onRetry={onRetry}>{error}</StateMessage> : <StateMessage>{BODY_COPY.loading}</StateMessage>;
+  const language = useLanguage();
+  const copy = useCopy(profileCopy);
+  const bodyText = useCopy(bodyCopy);
+  if (!list) return error ? <StateMessage onRetry={onRetry}>{error}</StateMessage> : <StateMessage>{bodyText.loading}</StateMessage>;
 
   const latestWeight = weighIns(list.items)[0];
   const trend = weightPoints(list.items, units.weight).slice(-SPARKLINE_POINTS);
@@ -56,42 +48,42 @@ export function BodySummary({ list, error, units, onRetry }: BodySummaryProps) {
 
   return (
     <div className="body-summary">
-      <SummaryCard to={ROUTES.PROFILE_WEIGHT} title={PROFILE_COPY.weightCard}>
+      <SummaryCard to={ROUTES.PROFILE_WEIGHT} title={copy.weightCard}>
         {latestWeight ? (
           <span className="body-summary-weight">
             <span className="body-summary-text">
-              <span className="body-summary-value">{formatWeight(latestWeight.weight, units.weight)}</span>
+              <span className="body-summary-value">{formatWeight(latestWeight.weight, units.weight, language)}</span>
               <span className="body-summary-meta">
-                {change !== null ? formatSignedChange(change, units.weight) : PROFILE_COPY.lastLogged(formatChartDate(latestWeight.date))}
+                {change !== null ? formatSignedChange(change, units.weight, language) : fill(copy.lastLogged, { date: formatChartDate(latestWeight.date, language) })}
               </span>
             </span>
             <Sparkline points={trend} />
           </span>
         ) : (
-          <span className="body-summary-meta">{PROFILE_COPY.noEntries}</span>
+          <span className="body-summary-meta">{copy.noEntries}</span>
         )}
       </SummaryCard>
 
-      <SummaryCard to={ROUTES.PROFILE_MEASUREMENTS} title={PROFILE_COPY.measurementsCard}>
+      <SummaryCard to={ROUTES.PROFILE_MEASUREMENTS} title={copy.measurementsCard}>
         {measurements.length > 0 ? (
           <span className="body-summary-text">
             <span className="body-summary-line">
               {measurements
                 .slice(0, MEASUREMENTS_SHOWN)
-                .map((item) => `${measurementLabel(item.id)} ${formatLength(item.cm, units.length)}`)
+                .map((item) => `${measurementLabel(item.id, language)} ${formatLength(item.cm, units.length, language)}`)
                 .join(' · ')}
-              {measurements.length > MEASUREMENTS_SHOWN && ` · ${PROFILE_COPY.moreMeasurements(measurements.length - MEASUREMENTS_SHOWN)}`}
+              {measurements.length > MEASUREMENTS_SHOWN && ` · ${fill(copy.moreMeasurements, { count: measurements.length - MEASUREMENTS_SHOWN })}`}
             </span>
             <span className="body-summary-meta">
-              {PROFILE_COPY.lastLogged(formatChartDate(measurements.reduce((a, b) => (a.date > b.date ? a : b)).date))}
+              {fill(copy.lastLogged, { date: formatChartDate(measurements.reduce((a, b) => (a.date > b.date ? a : b)).date, language) })}
             </span>
           </span>
         ) : (
-          <span className="body-summary-meta">{PROFILE_COPY.noEntries}</span>
+          <span className="body-summary-meta">{copy.noEntries}</span>
         )}
       </SummaryCard>
 
-      <SummaryCard to={ROUTES.PROFILE_PHOTOS} title={PROFILE_COPY.photosCard}>
+      <SummaryCard to={ROUTES.PROFILE_PHOTOS} title={copy.photosCard}>
         {newestPhotos ? (
           <span className="body-summary-text">
             <span className="body-summary-photos" aria-hidden="true">
@@ -100,10 +92,10 @@ export function BodySummary({ list, error, units, onRetry }: BodySummaryProps) {
                 <img key={photo.pose} className="body-summary-photo" src={photo.url} alt="" loading="lazy" />
               ))}
             </span>
-            <span className="body-summary-meta">{PROFILE_COPY.lastLogged(formatChartDate(newestPhotos.date))}</span>
+            <span className="body-summary-meta">{fill(copy.lastLogged, { date: formatChartDate(newestPhotos.date, language) })}</span>
           </span>
         ) : (
-          <span className="body-summary-meta">{PROFILE_COPY.noEntries}</span>
+          <span className="body-summary-meta">{copy.noEntries}</span>
         )}
       </SummaryCard>
     </div>

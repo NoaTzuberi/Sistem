@@ -1,6 +1,7 @@
 import express from 'express';
 import type { NextFunction, Request, Response } from 'express';
 import { ACCEPTED_PHOTO_TYPES, MAX_PHOTO_BYTES } from './privatePhoto.constants';
+import { sendError, msg } from '../../i18n';
 
 const parseRawPhoto = express.raw({ type: [...ACCEPTED_PHOTO_TYPES], limit: MAX_PHOTO_BYTES });
 
@@ -13,11 +14,11 @@ export function readPhotoBody(req: Request, res: Response, next: NextFunction): 
   parseRawPhoto(req, res, (error?: unknown) => {
     if (error) {
       const tooLarge = (error as { type?: string }).type === 'entity.too.large';
-      res.status(tooLarge ? 413 : 400).json({ message: tooLarge ? 'The photo is too large.' : "Couldn't read the photo." });
+      res.status(tooLarge ? 413 : 400).json({ message: tooLarge ? msg('photo_too_large') : "Couldn't read the photo." });
       return;
     }
     if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
-      res.status(415).json({ message: 'Send the photo as image/jpeg, image/png or image/webp.' });
+      sendError(res, 415, 'photo_wrong_type');
       return;
     }
     next();

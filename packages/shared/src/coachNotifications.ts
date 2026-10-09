@@ -1,4 +1,7 @@
-import type { AppNotification } from '@sistem/types';
+import type { AppNotification, Language } from '@sistem/types';
+import { sharedCopy } from './copy';
+import { fill } from './i18n/copy';
+import { isolateAuto } from './i18n/bidi';
 
 export interface CoachNotificationView {
   text: string;
@@ -10,13 +13,14 @@ export interface CoachNotificationView {
 
 /**
  * Notifications store no wording (type + data only): the coach's text and tap target
- * are built here, for the dashboard bell and the mobile Inbox alike. Types the coach
- * never receives (or does not know yet) return null and are not shown.
+ * are built here, in her language, for the dashboard bell and the mobile Inbox alike.
+ * Types the coach never receives (or does not know yet) return null and are not shown.
  */
-export function describeCoachNotification(notification: AppNotification): CoachNotificationView | null {
+export function describeCoachNotification(notification: AppNotification, language: Language): CoachNotificationView | null {
+  const copy = sharedCopy[language].coachNotifications;
   if (notification.type === 'trainee_onboarded') {
     return {
-      text: `New trainee: ${notification.data.traineeName}`,
+      text: fill(copy.traineeOnboarded, { name: isolateAuto(notification.data.traineeName) }),
       traineeId: notification.data.traineeId,
       section: null,
     };
@@ -24,7 +28,10 @@ export function describeCoachNotification(notification: AppNotification): CoachN
   if (notification.type === 'workout_completed') {
     // Placeholder wording — the owner decides the final text.
     return {
-      text: `${notification.data.traineeName} finished ${notification.data.workoutTitle}`,
+      text: fill(copy.workoutCompleted, {
+        name: isolateAuto(notification.data.traineeName),
+        workout: isolateAuto(notification.data.workoutTitle),
+      }),
       traineeId: notification.data.traineeId,
       section: 'logs',
     };

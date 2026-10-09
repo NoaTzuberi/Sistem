@@ -8,17 +8,20 @@ import { Input } from '../../../../components/common/Input/Input';
 import { Button } from '../../../../components/common/Button/Button';
 import { AuthCard } from '../../components/AuthCard/AuthCard';
 import { useAuth } from '../../../../services/auth/AuthContext';
-import { validateEmail, validateLoginPassword } from '../../validation';
+import { authErrorText, validateEmail, validateLoginPassword, type AuthErrorKey } from '../../validation';
+import { useCopy } from '@sistem/shared';
+import { authCopy } from '../../copy';
 import { ROUTES } from '../../../../app/config/routes';
 import './Login.css';
 
 export function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const copy = useCopy(authCopy);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [emailError, setEmailError] = useState<string>();
-  const [passwordError, setPasswordError] = useState<string>();
+  const [emailError, setEmailError] = useState<AuthErrorKey>();
+  const [passwordError, setPasswordError] = useState<AuthErrorKey>();
   const [formError, setFormError] = useState<string>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -39,7 +42,8 @@ export function Login() {
       // "/" sends the user to the landing screen for their server-decided state.
       navigate(ROUTES.HOME);
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Login failed. Please try again.');
+      // The server's message is already in the language on screen; '' = no answer.
+      setFormError((error instanceof Error && error.message) || copy.loginFailed);
     } finally {
       setIsSubmitting(false);
     }
@@ -49,42 +53,42 @@ export function Login() {
     <PageLayout>
       <Section className="auth-page">
         <Container>
-          <AuthCard title="Log In">
+          <AuthCard title={copy.loginTitle}>
             <form className="auth-form" onSubmit={handleSubmit} noValidate>
               <Input
                 type="email"
-                label="Email"
+                label={copy.email}
                 inputMode="email"
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
                 enterKeyHint="next"
-                placeholder="you@example.com"
+                placeholder={copy.emailPlaceholder}
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                error={emailError}
+                error={authErrorText(copy, emailError)}
                 autoComplete="email"
               />
               <Input
                 type="password"
-                label="Password"
-                placeholder="Enter your password"
+                label={copy.password}
+                placeholder={copy.passwordPlaceholder}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                error={passwordError}
+                error={authErrorText(copy, passwordError)}
                 autoComplete="current-password"
                 enterKeyHint="go"
               />
               <Link to={ROUTES.FORGOT_PASSWORD} className="auth-link login-forgot-password">
-                Forgot password?
+                {copy.forgotLink}
               </Link>
               {formError && <p className="auth-form-error">{formError}</p>}
               <Button type="submit" variant="primary" loading={isSubmitting}>
-                Log In
+                {copy.loginButton}
               </Button>
             </form>
             <p className="auth-switch">
-              Don&apos;t have an account? <Link to={ROUTES.REGISTER}>Register</Link>
+              {copy.noAccount} <Link to={ROUTES.REGISTER}>{copy.registerLink}</Link>
             </p>
           </AuthCard>
         </Container>

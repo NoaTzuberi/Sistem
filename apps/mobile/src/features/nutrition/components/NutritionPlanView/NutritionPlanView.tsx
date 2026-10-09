@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import type { FoodGroup, NutritionPlanView as PlanView, NutritionViewMeal } from '@sistem/types';
-import { formatDateTime } from '@sistem/shared';
+import { formatDateTime, useCopy, useLanguage } from '@sistem/shared';
 import { MealCard } from '../MealCard/MealCard';
 import { SwapSheet } from '../SwapSheet/SwapSheet';
 import { CoachIntro } from '../CoachIntro/CoachIntro';
 import { DayTotals } from '../DayTotals/DayTotals';
-import { NUTRITION_COPY } from '../../data/nutritionCopy';
+import { nutritionCopy } from '../../copy';
 import './NutritionPlanView.css';
 
 interface OpenSwaps {
@@ -31,6 +31,8 @@ interface NutritionPlanViewProps {
  * read-only by coach mode. No calories.
  */
 export function NutritionPlanView({ plan, introInitiallyOpen = false, onIntroRead, renderHeader, renderMealFooter }: NutritionPlanViewProps) {
+  const language = useLanguage();
+  const copy = useCopy(nutritionCopy);
   const [open, setOpen] = useState<OpenSwaps | null>(null);
   const hasVegetableSwaps = plan.swaps.vegetable.length > 0;
   const openGroup = (group: FoodGroup) => setOpen({ group });
@@ -38,7 +40,7 @@ export function NutritionPlanView({ plan, introInitiallyOpen = false, onIntroRea
   return (
     <div className="nutrition-plan">
       <p className="nutrition-plan-updated">
-        {NUTRITION_COPY.updated} {formatDateTime(plan.publishedAt)}
+        {copy.updated} {formatDateTime(plan.publishedAt, language)}
       </p>
 
       {/* Keyed by version: a new note opens again. */}
@@ -68,7 +70,7 @@ export function NutritionPlanView({ plan, introInitiallyOpen = false, onIntroRea
       {plan.tips.length > 0 && (
         <section className="nutrition-plan-tips" aria-labelledby="nutrition-plan-tips-title">
           <h2 className="nutrition-plan-tips-title" id="nutrition-plan-tips-title">
-            {NUTRITION_COPY.tipsTitle}
+            {copy.tipsTitle}
           </h2>
           <ul className="nutrition-plan-tips-list">
             {plan.tips.map((tip, index) => (

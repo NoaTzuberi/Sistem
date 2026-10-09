@@ -1,3 +1,4 @@
+import { sharedCopy, useCopy } from '@sistem/shared';
 import type { HTMLAttributes } from 'react';
 import './Spinner.css';
 
@@ -9,6 +10,7 @@ interface SpinnerProps extends HTMLAttributes<HTMLSpanElement> {
 
 export function Spinner({ size = 'md', className, ...rest }: SpinnerProps) {
   const classNames = ['spinner', `spinner-${size}`, className].filter(Boolean).join(' ');
+  const copy = useCopy(sharedCopy);
 
-  return <span className={classNames} role="status" aria-label="Loading" {...rest} />;
+  return <span className={classNames} role="status" aria-label={copy.common.loading} {...rest} />;
 }

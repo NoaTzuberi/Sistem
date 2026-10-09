@@ -3,6 +3,12 @@ import { Types } from 'mongoose';
 import { resolvePlanExerciseSets, validatePlanExerciseTargets, deriveSetCount } from '../planSets';
 import { Plan } from '../plan.model';
 import { Template } from '../../templates/template.model';
+import { translate, type ServerMessage } from '../../../i18n';
+
+// Messages are codes (Phase 15); these tests read them in English.
+function expectEn(message: ServerMessage | string | null | undefined) {
+  return expect(message && typeof message === 'object' ? translate('en', message) : message);
+}
 
 describe('resolvePlanExerciseSets', () => {
   it('repeats the uniform targets for every set', () => {
@@ -73,26 +79,26 @@ describe('validatePlanExerciseTargets', () => {
   });
 
   it('rejects an exercise with neither reps nor a duration', () => {
-    expect(validatePlanExerciseTargets({ sets: 3, targetWeight: 20 })).toMatch(/reps or a duration/);
+    expectEn(validatePlanExerciseTargets({ sets: 3, targetWeight: 20 })).toMatch(/reps or a duration/);
   });
 
   it('rejects a missing or zero set count', () => {
-    expect(validatePlanExerciseTargets({ reps: 10 })).toMatch(/at least one set/);
-    expect(validatePlanExerciseTargets({ sets: 0, reps: 10 })).toMatch(/at least one set/);
+    expectEn(validatePlanExerciseTargets({ reps: 10 })).toMatch(/at least one set/);
+    expectEn(validatePlanExerciseTargets({ sets: 0, reps: 10 })).toMatch(/at least one set/);
   });
 
   it('rejects an inverted or orphan rep range', () => {
-    expect(validatePlanExerciseTargets({ sets: 3, reps: 12, repsMax: 8 })).toMatch(/repsMax/);
-    expect(validatePlanExerciseTargets({ sets: 3, durationSec: 30, repsMax: 8 })).toMatch(/rep range needs reps/);
+    expectEn(validatePlanExerciseTargets({ sets: 3, reps: 12, repsMax: 8 })).toMatch(/repsMax/);
+    expectEn(validatePlanExerciseTargets({ sets: 3, durationSec: 30, repsMax: 8 })).toMatch(/rep range needs reps/);
   });
 
   it('checks every set target', () => {
-    expect(validatePlanExerciseTargets({ setTargets: [{ reps: 10 }, { targetWeight: 20 }] })).toMatch(/^Set 2/);
+    expectEn(validatePlanExerciseTargets({ setTargets: [{ reps: 10 }, { targetWeight: 20 }] })).toMatch(/^Set 2/);
     expect(validatePlanExerciseTargets({ setTargets: [{ reps: 10 }, { durationSec: 20 }] })).toBeNull();
   });
 
   it('rejects a set count that disagrees with setTargets', () => {
-    expect(validatePlanExerciseTargets({ sets: 3, setTargets: [{ reps: 10 }] })).toMatch(/sets must equal/);
+    expectEn(validatePlanExerciseTargets({ sets: 3, setTargets: [{ reps: 10 }] })).toMatch(/sets must equal/);
   });
 });
 

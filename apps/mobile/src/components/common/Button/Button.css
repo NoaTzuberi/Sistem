@@ -6,7 +6,7 @@
   min-height: var(--touch-target-min);
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-none);
-  border: 1px solid transparent;
+  border: var(--border-width-thin) solid transparent;
   font-family: var(--font-family-body);
   font-size: var(--text-base);
   font-weight: var(--font-weight-semibold);
@@ -40,8 +40,8 @@
   min-height: max(var(--touch-target-min), 3.2em);
   padding-inline: var(--space-5);
   border: none;
-  border-left: 3px solid var(--color-primary);
-  border-right: 3px solid var(--color-primary);
+  border-inline-start: var(--border-width-thick) solid var(--color-primary);
+  border-inline-end: var(--border-width-thick) solid var(--color-primary);
   background-color: transparent;
   color: var(--color-primary-deep);
   font-weight: var(--font-weight-bold);
@@ -88,7 +88,7 @@
 
 .btn-primary .btn-label {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-raised);
 }
 
 .btn-secondary {

@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { PlanWeekOption, PlanWeekOptions } from '@sistem/types';
-import { WEEK_RELATION_LABELS, formatWeekSpan } from '@sistem/shared';
+import type { PlanWeekOption, PlanWeekOptions, Language } from '@sistem/types';
+import { fill, formatWeekSpan, sharedCopy, useCopy, useLanguage } from '@sistem/shared';
 import { planPath } from '../../../../app/config/routes';
 import { Badge } from '../../../../components/common/Badge/Badge';
 import { Button } from '../../../../components/common/Button/Button';
 import './WeekPicker.css';
+import { traineesCopy } from '../../copy';
 
 export type WeekPickerMode = 'new' | 'duplicate';
 
@@ -19,17 +20,14 @@ interface WeekPickerProps {
   onCancel: () => void;
 }
 
-// Functional placeholder wording — the owner sends the final text.
-const TITLES: Record<WeekPickerMode, string> = { new: 'New plan — choose the week', duplicate: 'Duplicate last week — choose the week' };
-
-function weekLabel(week: PlanWeekOption): string {
-  const span = formatWeekSpan(week.weekStartDate);
-  return week.relation === 'later' ? span : `${WEEK_RELATION_LABELS[week.relation]} · ${span}`;
+function weekLabel(week: PlanWeekOption, language: Language): string {
+  const span = formatWeekSpan(week.weekStartDate, language);
+  return week.relation === 'later' ? span : `${sharedCopy[language].weekRelation[week.relation]} · ${span}`;
 }
 
-function statusLabel(week: PlanWeekOption): string | null {
+function statusLabel(week: PlanWeekOption, language: Language): string | null {
   if (!week.plan) return null;
-  return week.plan.status === 'published' ? 'Published' : 'Draft';
+  return sharedCopy[language].coach.planStatus[week.plan.status];
 }
 
 /**
@@ -38,6 +36,9 @@ function statusLabel(week: PlanWeekOption): string | null {
  * offered as "Open", never replaced by another week behind the coach's back.
  */
 export function WeekPicker({ traineeId, mode, options, isCreating, onConfirm, onCancel }: WeekPickerProps) {
+  const language = useLanguage();
+  const shared = useCopy(sharedCopy);
+  const copy = useCopy(traineesCopy);
   const defaultWeek = mode === 'new' ? options.defaultNewWeek : options.defaultDuplicateWeek;
   const [selected, setSelected] = useState(defaultWeek);
   const [showLater, setShowLater] = useState(false);
@@ -49,11 +50,11 @@ export function WeekPicker({ traineeId, mode, options, isCreating, onConfirm, on
 
   return (
     <fieldset className="week-picker">
-      <legend className="week-picker-title">{TITLES[mode]}</legend>
+      <legend className="week-picker-title">{(mode === 'new' ? copy.pickNewTitle : copy.pickDuplicateTitle)}</legend>
 
       <ul className="week-picker-list">
         {visibleWeeks.map((week) => {
-          const status = statusLabel(week);
+          const status = statusLabel(week, language);
           return (
             <li key={week.weekStartDate}>
               <label className="week-picker-option">
@@ -64,12 +65,12 @@ export function WeekPicker({ traineeId, mode, options, isCreating, onConfirm, on
                   checked={selected === week.weekStartDate}
                   onChange={() => setSelected(week.weekStartDate)}
                 />
-                <span className="week-picker-label">{weekLabel(week)}</span>
+                <span className="week-picker-label">{weekLabel(week, language)}</span>
                 {status && week.plan && (
                   <>
                     <Badge tone={week.plan.status === 'published' ? 'accent' : 'neutral'}>{status}</Badge>
                     <Link className="week-picker-open" to={planPath(traineeId, week.plan.id)}>
-                      Open
+                      {copy.open}
                     </Link>
                   </>
                 )}
@@ -81,7 +82,7 @@ export function WeekPicker({ traineeId, mode, options, isCreating, onConfirm, on
 
       {visibleWeeks.length < options.weeks.length && laterWeeks.length > 0 && (
         <button className="week-picker-later" type="button" onClick={() => setShowLater(true)}>
-          Later…
+          {copy.later}
         </button>
       )}
 
@@ -90,10 +91,10 @@ export function WeekPicker({ traineeId, mode, options, isCreating, onConfirm, on
           {selectedWeek.plan ? (
             <>
               <p className="week-picker-note">
-                {weekLabel(selectedWeek)} already has a {statusLabel(selectedWeek)?.toLowerCase()} plan.
+                {fill(copy.weekTaken, { week: weekLabel(selectedWeek, language), status: statusLabel(selectedWeek, language) ?? '' })}
               </p>
               <Link className="week-picker-open week-picker-open-primary" to={planPath(traineeId, selectedWeek.plan.id)}>
-                Open plan
+                {copy.openPlan}
               </Link>
             </>
           ) : (
@@ -101,8 +102,8 @@ export function WeekPicker({ traineeId, mode, options, isCreating, onConfirm, on
               {mode === 'duplicate' && (
                 <p className="week-picker-note">
                   {selectedWeek.copiesFromWeek
-                    ? `Copies the plan of ${formatWeekSpan(selectedWeek.copiesFromWeek)}.`
-                    : 'There is no earlier plan to copy into this week.'}
+                    ? fill(copy.copiesFrom, { week: formatWeekSpan(selectedWeek.copiesFromWeek, language) })
+                    : copy.nothingToCopy}
                 </p>
               )}
               <Button
@@ -110,12 +111,12 @@ export function WeekPicker({ traineeId, mode, options, isCreating, onConfirm, on
                 disabled={isCreating || (mode === 'duplicate' && !selectedWeek.copiesFromWeek)}
                 onClick={() => onConfirm(selectedWeek.weekStartDate)}
               >
-                {mode === 'new' ? 'Create plan' : 'Duplicate'} · {formatWeekSpan(selectedWeek.weekStartDate)}
+                {mode === 'new' ? copy.createPlan : copy.duplicate} · {formatWeekSpan(selectedWeek.weekStartDate, language)}
               </Button>
             </>
           )}
           <Button onClick={onCancel} disabled={isCreating}>
-            Cancel
+            {shared.common.cancel}
           </Button>
         </div>
       )}

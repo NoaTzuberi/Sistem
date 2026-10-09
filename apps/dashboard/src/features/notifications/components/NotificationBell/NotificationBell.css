@@ -16,7 +16,7 @@
 }
 
 .bell-button:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: var(--border-width-medium) solid var(--color-primary);
 }
 
 .bell-icon {
@@ -28,7 +28,7 @@
 .bell-count {
   position: absolute;
   top: var(--space-1);
-  right: 0;
+  inset-inline-end: 0;
   min-width: var(--space-3);
   padding: 0 var(--space-1);
   font-size: var(--text-xs);
@@ -46,7 +46,7 @@
 .bell-panel {
   position: absolute;
   top: 100%;
-  right: 0;
+  inset-inline-end: 0;
   z-index: var(--z-modal);
   width: min(360px, calc(100vw - var(--space-5)));
   max-height: min(70vh, calc(100vh - var(--space-8)));
@@ -54,21 +54,21 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   background-color: var(--color-bg);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-thin) solid var(--color-border);
 }
 
 /* Narrow windows: the bell sits too close to the left edge for a 360px panel to open
    leftwards from it. The panel is placed against the top bar instead (the sticky
    .shell-bar is the positioned ancestor once the bell is not): full width, with the
    bar's side margin. */
-@media (max-width: 768px) {
+@media (max-width: 768px) { /* = --breakpoint-lg */
   .notification-bell {
     position: static;
   }
 
   .bell-panel {
-    right: var(--space-3);
-    left: var(--space-3);
+    inset-inline-end: var(--space-3);
+    inset-inline-start: var(--space-3);
     width: auto;
   }
 }
@@ -79,7 +79,7 @@
   justify-content: space-between;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: var(--border-width-thin) solid var(--color-border);
 }
 
 .bell-panel-title {
@@ -116,8 +116,8 @@
   gap: var(--space-1);
   width: 100%;
   padding: var(--space-2) var(--space-3);
-  text-align: left;
-  border-bottom: 1px solid var(--color-border);
+  text-align: start;
+  border-bottom: var(--border-width-thin) solid var(--color-border);
 }
 
 .bell-item:active {

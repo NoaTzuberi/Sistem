@@ -20,14 +20,14 @@
 
 .body-trend-chart-ranges {
   display: flex;
-  border: 1px solid var(--color-border);
+  border: var(--border-width-thin) solid var(--color-border);
 }
 
 .body-trend-chart-range {
   min-width: 40px;
   padding: var(--space-1) var(--space-2);
   border: 0;
-  border-left: 1px solid var(--color-border);
+  border-inline-start: var(--border-width-thin) solid var(--color-border);
   background: var(--color-bg);
   color: var(--color-text);
   font: inherit;
@@ -36,7 +36,7 @@
 }
 
 .body-trend-chart-range:first-child {
-  border-left: 0;
+  border-inline-start: 0;
 }
 
 @media (hover: hover) {
@@ -77,8 +77,8 @@
 }
 
 .body-trend-chart-plot svg:focus-visible {
-  outline: 2px solid var(--color-primary-deep);
-  outline-offset: 2px;
+  outline: var(--border-width-medium) solid var(--color-primary-deep);
+  outline-offset: var(--focus-ring-offset);
 }
 
 .body-trend-chart-empty {
@@ -86,7 +86,7 @@
   padding: var(--space-4);
   font-size: var(--text-sm);
   color: var(--color-text-muted);
-  border: 1px dashed var(--color-border);
+  border: var(--border-width-thin) dashed var(--color-border);
 }
 
 .body-trend-chart-grid {

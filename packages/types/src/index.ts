@@ -27,6 +27,8 @@ export interface AuthUser {
   timezone: string;
   /** Display units for body tracking, defaults filled in by the server. */
   units: UnitPreferences;
+  /** UI language (Phase 15), default 'he'. Server-built texts follow it too. */
+  language: Language;
   createdAt: string;
 }
 
@@ -46,11 +48,21 @@ export interface RegisterPayload {
   password: string;
   /** Device time zone (IANA). An unknown value falls back to the server default. */
   timezone?: string;
+  /** The language on screen when she signed up (Phase 15); default Hebrew. */
+  language?: Language;
 }
 
+/**
+ * Every error response (Phase 15): a stable `code` clients may map to their own text,
+ * and `message` already in the request's language (Accept-Language).
+ */
 export interface ApiErrorBody {
+  code: string;
   message: string;
 }
+
+/** UI language (Phase 15): Hebrew is the default, right-to-left. */
+export type Language = 'he' | 'en';
 
 // ---------------------------------------------------------------------------
 // Onboarding (PRD §10 OnboardingResponse)
@@ -81,9 +93,10 @@ export interface UnitPreferences {
   length: LengthUnit;
 }
 
-/** Body of PATCH /users/preferences — a missing key leaves that unit unchanged. */
+/** Body of PATCH /users/preferences — a missing key leaves that setting unchanged. */
 export interface UpdatePreferencesPayload {
-  units: Partial<UnitPreferences>;
+  units?: Partial<UnitPreferences>;
+  language?: Language;
 }
 
 /** The questionnaire answers — the same shape ATLAS stored in User.profile. */
@@ -437,6 +450,8 @@ export interface PlanWeekOptions {
 
 /** One problem in a plan, pointing at the workout / exercise it belongs to (0-based). */
 export interface PlanIssue {
+  /** Stable code (Phase 15); `message` is in the request's language. */
+  code: string;
   message: string;
   workoutIndex?: number;
   exerciseIndex?: number;

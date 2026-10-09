@@ -57,7 +57,7 @@ export async function getTraineePlan(planId: string, traineeId: string, now: Dat
     Plan.findOne({ _id: planId, traineeId, status: 'published' }).lean<LeanPlan>(),
   ]);
   if (!plan) {
-    throw new PlanNotFoundError('Plan not found.');
+    throw new PlanNotFoundError('plan_not_found');
   }
   const [traineePlan] = await toTraineePlans(traineeId, [plan], today);
   return traineePlan;

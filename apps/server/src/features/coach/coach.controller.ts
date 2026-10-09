@@ -14,7 +14,7 @@ import {
   PlanValidationError,
   PlanConflictError,
 } from '../plans/planBuilder.service';
-import { validatePlanIdParam, parseCreatePlanPayload, parseSavePlanPayload } from '../plans/plan.validation';
+import { validatePlanIdParam, parseCreatePlanPayload, parseSavePlanPayload, type PlanProblem } from '../plans/plan.validation';
 import { listWorkoutLogsForTrainee } from '../workoutLogs/workoutLog.service';
 import { listBodyMetricsForTrainee } from '../bodyMetrics/bodyMetric.service';
 import { getAchievementOverview } from '../achievements/achievement.service';
@@ -23,6 +23,7 @@ import type { ListCoachExercisesParams } from '../exercises/exercise.service';
 import { validateExerciseListQuery } from '../exercises/exercise.validation';
 import type { Muscle, Equipment, Difficulty } from '../exercises/exercise.constants';
 import { listPlanWeekOptions } from '../plans/planWeekOptions.service';
+import { localizeIssues, requestLanguage, sendError } from '../../i18n';
 
 export async function getTrainees(req: AuthenticatedRequest, res: Response) {
   const now = new Date();
@@ -34,7 +35,7 @@ export async function getTrainees(req: AuthenticatedRequest, res: Response) {
 export async function getExercises(req: AuthenticatedRequest, res: Response) {
   const validationError = validateExerciseListQuery(req.query);
   if (validationError) {
-    res.status(400).json({ message: validationError });
+    sendError(res, 400, validationError);
     return;
   }
 
@@ -85,19 +86,25 @@ export async function getTraineeAchievements(req: AuthenticatedRequest, res: Res
 
 // --- Plan builder -----------------------------------------------------------
 
+/** 400 with every problem worded in the request's language; the body's message is the first one. */
+function sendPlanIssues(res: Response, problems: PlanProblem[]): void {
+  const issues = localizeIssues(problems, requestLanguage(res.req));
+  const body: PlanIssuesBody = { code: issues[0].code, message: issues[0].message, issues };
+  res.status(400).json(body);
+}
+
 /** Answers the request for a known plan error; anything else is rethrown (500). */
 function sendPlanError(res: Response, error: unknown): void {
   if (error instanceof PlanNotFoundError) {
-    res.status(404).json({ message: error.message });
+    sendError(res, 404, error.serverMessage);
     return;
   }
   if (error instanceof PlanValidationError) {
-    const body: PlanIssuesBody = { message: error.message, issues: error.issues };
-    res.status(400).json(body);
+    sendPlanIssues(res, error.issues);
     return;
   }
   if (error instanceof PlanConflictError) {
-    res.status(409).json({ message: error.message });
+    sendError(res, 409, error.serverMessage);
     return;
   }
   throw error;
@@ -107,7 +114,7 @@ function sendPlanError(res: Response, error: unknown): void {
 function readPlanId(req: AuthenticatedRequest, res: Response): string | null {
   const validationError = validatePlanIdParam(req.params.planId);
   if (validationError) {
-    res.status(400).json({ message: validationError });
+    sendError(res, 400, validationError);
     return null;
   }
   return String(req.params.planId);
@@ -116,7 +123,7 @@ function readPlanId(req: AuthenticatedRequest, res: Response): string | null {
 export async function createTraineePlan(req: AuthenticatedRequest, res: Response) {
   const { value, error } = parseCreatePlanPayload(req.body);
   if (!value) {
-    res.status(400).json({ message: error });
+    sendError(res, 400, error);
     return;
   }
 
@@ -145,8 +152,7 @@ export async function saveTraineePlan(req: AuthenticatedRequest, res: Response) 
 
   const { value, issues } = parseSavePlanPayload(req.body);
   if (!value) {
-    const body: PlanIssuesBody = { message: issues[0].message, issues };
-    res.status(400).json(body);
+    sendPlanIssues(res, issues);
     return;
   }
 

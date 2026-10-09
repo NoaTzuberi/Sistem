@@ -1,3 +1,4 @@
+import { useCopy } from '@sistem/shared';
 import { useEffect, useState } from 'react';
 import { AppShell } from '../../../../components/layout/AppShell/AppShell';
 import { Logo } from '../../../../components/common/Logo/Logo';
@@ -7,7 +8,7 @@ import { useAuth } from '../../../../services/auth/AuthContext';
 import { getWaitingStatus } from '../../../../services/waiting/waitingService';
 import { Countdown } from '../../components/Countdown/Countdown';
 import { IconSlot } from '../../components/IconSlot/IconSlot';
-import { WAITING_COPY } from '../../data/waitingCopy';
+import { waitingCopy } from '../../copy';
 import { WAITING_ICONS } from '../../data/waitingIcons';
 import './WaitingPage.css';
 
@@ -31,6 +32,7 @@ function remainingMsFrom(clock: ServerClock): number {
 
 /** "Your plan is being built" (PRD §4.1): full screen, no tab bar, until a plan is published. */
 export function WaitingPage() {
+  const copy = useCopy(waitingCopy);
   const { updateUser } = useAuth();
   const [clock, setClock] = useState<ServerClock | null>(null);
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
@@ -102,18 +104,18 @@ export function WaitingPage() {
             ))}
           </div>
 
-          <h1 className="waiting-title">{WAITING_COPY.title}</h1>
+          <h1 className="waiting-title">{copy.title}</h1>
 
           {remainingMs === null && <Spinner size="lg" />}
 
           {remainingMs !== null && !isOverdue && (
             <>
-              <Countdown remainingMs={remainingMs} label={WAITING_COPY.countdownLabel} />
-              <p className="waiting-message">{WAITING_COPY.message}</p>
+              <Countdown remainingMs={remainingMs} label={copy.countdownLabel} />
+              <p className="waiting-message">{copy.message}</p>
             </>
           )}
 
-          {isOverdue && <p className="waiting-message">{WAITING_COPY.overdueMessage}</p>}
+          {isOverdue && <p className="waiting-message">{copy.overdueMessage}</p>}
         </div>
 
         <LogoutButton />

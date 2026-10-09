@@ -13,7 +13,7 @@
   background: var(--color-surface);
   color: var(--color-text);
   text-decoration: none;
-  clip-path: polygon(0 0, calc(100% - var(--cut-size)) 0, 100% var(--cut-size), 100% 100%, 0 100%);
+  clip-path: var(--cut-corner);
 }
 
 .body-summary-card:active {

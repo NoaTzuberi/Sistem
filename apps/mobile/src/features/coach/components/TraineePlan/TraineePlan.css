@@ -40,7 +40,7 @@
   font-size: var(--text-sm);
   color: var(--color-error);
   background-color: var(--color-error-soft);
-  border-left: 3px solid var(--color-error);
+  border-inline-start: var(--border-width-thick) solid var(--color-error);
 }
 
 .trainee-plan-failure-message {
@@ -48,7 +48,7 @@
 }
 
 .trainee-plan-issues {
-  padding-left: var(--space-3);
+  padding-inline-start: var(--space-3);
   list-style: disc;
 }
 

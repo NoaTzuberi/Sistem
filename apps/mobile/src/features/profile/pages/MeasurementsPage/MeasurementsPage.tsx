@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { measurementDays, measurementLabel, measurementPoints } from '@sistem/shared';
+import { measurementDays, measurementLabel, measurementPoints, useCopy, useLanguage } from '@sistem/shared';
 import { IconPlus } from '@tabler/icons-react';
 import { AppShell } from '../../../../components/layout/AppShell/AppShell';
 import { Button } from '../../../../components/common/Button/Button';
@@ -9,13 +9,15 @@ import { ROUTES, measurementsLogPath } from '../../../../app/config/routes';
 import { MeasurementHistory } from '../../../bodyTracking/components/MeasurementHistory/MeasurementHistory';
 import { MeasurementPicker } from '../../../bodyTracking/components/MeasurementPicker/MeasurementPicker';
 import { TrendChart } from '../../../bodyTracking/components/TrendChart/TrendChart';
-import { BODY_COPY } from '../../../bodyTracking/data/bodyCopy';
+import { bodyCopy } from '../../../bodyTracking/copy';
 import { SubPageHeader } from '../../components/SubPageHeader/SubPageHeader';
 import { useMyBodyMetrics, useMyUnits } from '../../hooks/useMyBody';
 import './MeasurementsPage.css';
 
 // Body measurements over time (PRD §5.5): pick one for the chart; every day listed.
 export function MeasurementsPage() {
+  const language = useLanguage();
+  const copy = useCopy(bodyCopy);
   const navigate = useNavigate();
   const { list, error, isLoading, reload } = useMyBodyMetrics();
   const { units, today } = useMyUnits();
@@ -28,21 +30,21 @@ export function MeasurementsPage() {
     <AppShell>
       <div className="measurements-page">
         <SubPageHeader
-          title={BODY_COPY.measurementsTitle}
+          title={copy.measurementsTitle}
           fallbackPath={ROUTES.PROFILE}
           action={
             <Button
               variant="secondary"
               icon={<IconPlus size={18} aria-hidden="true" />}
-              aria-label={BODY_COPY.logMeasurements}
+              aria-label={copy.logMeasurements}
               onClick={() => navigate(measurementsLogPath())}
             >
-              {BODY_COPY.logShort}
+              {copy.logShort}
             </Button>
           }
         />
 
-        {isLoading && !list && <StateMessage>{BODY_COPY.loading}</StateMessage>}
+        {isLoading && !list && <StateMessage>{copy.loading}</StateMessage>}
         {error && !list && <StateMessage onRetry={reload}>{error}</StateMessage>}
 
         {list && (
@@ -52,7 +54,7 @@ export function MeasurementsPage() {
               key={measurementId}
               points={measurementPoints(list.items, measurementId, units.length)}
               unit={units.length}
-              title={measurementLabel(measurementId)}
+              title={measurementLabel(measurementId, language)}
               today={today}
             />
             <MeasurementHistory

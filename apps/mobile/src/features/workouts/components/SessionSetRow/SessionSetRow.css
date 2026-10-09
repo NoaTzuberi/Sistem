@@ -3,7 +3,7 @@
   flex-direction: column;
   gap: var(--space-1);
   padding: var(--space-1);
-  border: 2px solid transparent;
+  border: var(--border-width-medium) solid transparent;
   scroll-margin: var(--space-8);
 }
 
@@ -36,7 +36,7 @@
   justify-content: center;
   width: var(--touch-target-min);
   height: var(--touch-target-min);
-  border: 2px solid var(--color-border);
+  border: var(--border-width-medium) solid var(--color-border);
   background-color: var(--color-bg);
   color: var(--color-text-muted);
   cursor: pointer;
@@ -65,7 +65,7 @@
 
 .session-set-hold {
   min-height: var(--touch-target-min);
-  border: 1px solid var(--color-primary);
+  border: var(--border-width-thin) solid var(--color-primary);
   background-color: var(--color-bg);
   color: var(--color-primary-deep);
   font-family: var(--font-family-body);

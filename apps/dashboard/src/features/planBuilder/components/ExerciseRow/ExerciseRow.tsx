@@ -2,13 +2,14 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from '../../../../components/common/Button/Button';
 import { NumberField } from '../../../../components/common/NumberField/NumberField';
-import { humanizeId } from '@sistem/shared';
+import { fill, humanizeId, useCopy } from '@sistem/shared';
 import { SUPERSET_LABELS } from '../../data/planDefaults';
 import { isTimedExercise, toPerSetTargets, toSimpleTargets } from '../../planDraft';
 import type { DraftExercise } from '../../types';
 import { DragHandle } from '../DragHandle/DragHandle';
 import { SetTargetsTable } from '../SetTargetsTable/SetTargetsTable';
 import './ExerciseRow.css';
+import { planBuilderCopy } from '../../copy';
 
 interface ExerciseRowProps {
   exercise: DraftExercise;
@@ -41,17 +42,18 @@ export function ExerciseRow({
   onMove,
   onRemove,
 }: ExerciseRowProps) {
+  const copy = useCopy(planBuilderCopy);
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
     id: exercise.key,
   });
-  const name = exercise.facts?.name ?? 'Exercise no longer in the library';
+  const name = exercise.facts?.name ?? copy.missingExercise;
   const facts = exercise.facts
     ? [...exercise.facts.primaryMuscles, ...exercise.facts.equipment, exercise.facts.difficulty].map(humanizeId).join(' · ')
     : '';
   const isPerSet = exercise.setTargets !== null;
 
   function handleBackToSimple() {
-    if (window.confirm('Back to simple targets? The per-set values will be replaced by one value for every set.')) {
+    if (window.confirm(copy.backToSimpleConfirm)) {
       onChange(toSimpleTargets(exercise));
     }
   }
@@ -70,36 +72,38 @@ export function ExerciseRow({
     // Inline style: the drag position changes every frame and can only come from dnd-kit.
     <li className={classNames} ref={setNodeRef} style={{ transform: CSS.Translate.toString(transform), transition }}>
       <div className="exercise-header">
-        <DragHandle label={`Drag ${name}`} attributes={attributes} listeners={listeners} setRef={setActivatorNodeRef} />
-        <Button size="sm" aria-label={`Move ${name} up`} disabled={index === 0} onClick={() => onMove(-1)}>
+        <DragHandle label={fill(copy.dragNamed, { name: name })} attributes={attributes} listeners={listeners} setRef={setActivatorNodeRef} />
+        <Button size="sm" aria-label={fill(copy.moveUpNamed, { name: name })} disabled={index === 0} onClick={() => onMove(-1)}>
           ↑
         </Button>
-        <Button size="sm" aria-label={`Move ${name} down`} disabled={index === count - 1} onClick={() => onMove(1)}>
+        <Button size="sm" aria-label={fill(copy.moveDownNamed, { name: name })} disabled={index === count - 1} onClick={() => onMove(1)}>
           ↓
         </Button>
         {exercise.supersetGroup && <span className="exercise-superset-label">{exercise.supersetGroup}</span>}
         <div className="exercise-title">
-          <span className="exercise-name">{name}</span>
+          <span className="exercise-name" dir="auto">
+            {name}
+          </span>
           {facts && <span className="exercise-facts">{facts}</span>}
         </div>
-        <Button size="sm" variant="danger" aria-label={`Remove ${name}`} onClick={onRemove}>
-          Remove
+        <Button size="sm" variant="danger" aria-label={fill(copy.removeNamed, { name: name })} onClick={onRemove}>
+          {copy.remove}
         </Button>
       </div>
 
       <div className="exercise-fields">
         {!isPerSet && (
           <>
-            <NumberField label="Sets" min={1} value={exercise.sets} onChange={(sets) => onChange({ ...exercise, sets })} />
+            <NumberField label={copy.sets} min={1} value={exercise.sets} onChange={(sets) => onChange({ ...exercise, sets })} />
 
-            <div className="exercise-mode" role="group" aria-label="Count reps or time">
+            <div className="exercise-mode" role="group" aria-label={copy.countBy}>
               <button
                 className="exercise-mode-option"
                 type="button"
                 aria-pressed={exercise.mode === 'reps'}
                 onClick={() => onChange({ ...exercise, mode: 'reps' })}
               >
-                Reps
+                {copy.reps}
               </button>
               <button
                 className="exercise-mode-option"
@@ -107,15 +111,15 @@ export function ExerciseRow({
                 aria-pressed={exercise.mode === 'time'}
                 onClick={() => onChange({ ...exercise, mode: 'time' })}
               >
-                Time
+                {copy.time}
               </button>
             </div>
 
             {exercise.mode === 'reps' ? (
               <>
-                <NumberField label="Reps" min={1} value={exercise.reps} onChange={(reps) => onChange({ ...exercise, reps })} />
+                <NumberField label={copy.reps} min={1} value={exercise.reps} onChange={(reps) => onChange({ ...exercise, reps })} />
                 <NumberField
-                  label="to (optional)"
+                  label={copy.toOptional}
                   min={1}
                   value={exercise.repsMax}
                   onChange={(repsMax) => onChange({ ...exercise, repsMax })}
@@ -123,7 +127,7 @@ export function ExerciseRow({
               </>
             ) : (
               <NumberField
-                label="Seconds"
+                label={copy.seconds}
                 min={1}
                 value={exercise.durationSec}
                 onChange={(durationSec) => onChange({ ...exercise, durationSec })}
@@ -131,17 +135,17 @@ export function ExerciseRow({
             )}
 
             <NumberField
-              label="Weight (kg)"
+              label={copy.weightKg}
               step={0.5}
               value={exercise.targetWeight}
               onChange={(targetWeight) => onChange({ ...exercise, targetWeight })}
             />
-            <NumberField label="Rest (sec)" value={exercise.restSec} onChange={(restSec) => onChange({ ...exercise, restSec })} />
+            <NumberField label={copy.restSec} value={exercise.restSec} onChange={(restSec) => onChange({ ...exercise, restSec })} />
           </>
         )}
 
         <label className="exercise-superset">
-          <span className="exercise-field-label">Superset</span>
+          <span className="exercise-field-label">{copy.superset}</span>
           <select
             className="exercise-superset-select"
             value={exercise.supersetGroup}
@@ -168,20 +172,21 @@ export function ExerciseRow({
               checked={exercise.interval}
               onChange={(event) => onIntervalChange(event.target.checked)}
             />
-            <span>Interval</span>
+            <span>{copy.interval}</span>
             <span className="exercise-interval-hint">
-              {exercise.supersetGroup ? `whole superset ${exercise.supersetGroup} · ` : ''}seconds = work, rest = rest, sets = rounds
+              {exercise.supersetGroup ? fill(copy.wholeSuperset, { group: exercise.supersetGroup }) : ''}
+              {copy.intervalHint}
             </span>
           </label>
         )}
 
         {isPerSet ? (
           <Button size="sm" className="exercise-toggle" onClick={handleBackToSimple}>
-            Back to simple
+            {copy.backToSimple}
           </Button>
         ) : (
           <Button size="sm" className="exercise-toggle" onClick={() => onChange({ ...exercise, setTargets: toPerSetTargets(exercise) })}>
-            Per-set targets
+            {copy.perSetTargets}
           </Button>
         )}
       </div>
@@ -191,7 +196,7 @@ export function ExerciseRow({
       )}
 
       <label className="exercise-notes">
-        <span className="exercise-field-label">Notes — the trainee sees these as the instructions</span>
+        <span className="exercise-field-label">{copy.notesLabel}</span>
         <textarea
           className="exercise-notes-input"
           rows={2}

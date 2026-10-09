@@ -25,11 +25,12 @@ import {
   setPumpPhoto,
   updateWorkoutSummary,
 } from './workoutSummary.service';
+import { sendError } from '../../i18n';
 
 /** Maps the session and summary errors to HTTP; anything else goes to the error handler. */
 function sendSessionError(res: Response, error: unknown): void {
   if (error instanceof WorkoutLogNotFoundError || error instanceof PlanNotFoundError) {
-    res.status(404).json({ message: error.message });
+    sendError(res, 404, error.serverMessage);
   } else if (error instanceof OtherWorkoutActiveError) {
     const body: ActiveWorkoutConflictBody = {
       message: error.message,
@@ -42,11 +43,11 @@ function sendSessionError(res: Response, error: unknown): void {
     error instanceof WorkoutLogNotActiveError ||
     error instanceof WorkoutLogNotCompletedError
   ) {
-    res.status(409).json({ message: error.message });
+    sendError(res, 409, error.serverMessage);
   } else if (error instanceof NothingCompletedError || error instanceof UnknownLogSetError || error instanceof InvalidPhotoError) {
-    res.status(400).json({ message: error.message });
+    sendError(res, 400, error.serverMessage);
   } else if (error instanceof PhotoStorageUnavailableError) {
-    res.status(503).json({ message: error.message });
+    sendError(res, 503, error.serverMessage);
   } else {
     throw error;
   }
@@ -57,7 +58,7 @@ function withLogId(handler: (req: AuthenticatedRequest, res: Response, logId: st
   return async (req: AuthenticatedRequest, res: Response) => {
     const validationError = validateWorkoutLogIdParam(req.params.id);
     if (validationError) {
-      res.status(400).json({ message: validationError });
+      sendError(res, 400, validationError);
       return;
     }
     try {
@@ -85,7 +86,7 @@ export async function getMyActiveSession(req: AuthenticatedRequest, res: Respons
 export async function postStartWorkout(req: AuthenticatedRequest, res: Response) {
   const parsed = parseStartWorkoutPayload(req.body);
   if (parsed.error !== undefined) {
-    res.status(400).json({ message: parsed.error });
+    sendError(res, 400, parsed.error);
     return;
   }
   try {
@@ -103,7 +104,7 @@ export const getMySession = withLogId(async (req, res, logId) => {
 export const patchMySets = withLogId(async (req, res, logId) => {
   const parsed = parseSetUpdates(req.body);
   if (parsed.error !== undefined) {
-    res.status(400).json({ message: parsed.error });
+    sendError(res, 400, parsed.error);
     return;
   }
   res.status(200).json({ log: await updateWorkoutSets(logId, req.userId!, parsed.value) });
@@ -112,7 +113,7 @@ export const patchMySets = withLogId(async (req, res, logId) => {
 export const postFinishWorkout = withLogId(async (req, res, logId) => {
   const parsed = parseSetUpdates(req.body, { optional: true });
   if (parsed.error !== undefined) {
-    res.status(400).json({ message: parsed.error });
+    sendError(res, 400, parsed.error);
     return;
   }
   res.status(200).json({ log: await finishWorkout(logId, req.userId!, parsed.value) });
@@ -127,7 +128,7 @@ export const postAbandonWorkout = withLogId(async (req, res, logId) => {
 export const patchMySummary = withLogId(async (req, res, logId) => {
   const parsed = parseSummaryPayload(req.body);
   if (parsed.error !== undefined) {
-    res.status(400).json({ message: parsed.error });
+    sendError(res, 400, parsed.error);
     return;
   }
   res.status(200).json({ log: await updateWorkoutSummary(logId, req.userId!, parsed.value) });

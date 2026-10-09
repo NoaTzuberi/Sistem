@@ -19,15 +19,16 @@ import { WorkoutLog } from './workoutLog.model';
 import { WorkoutLogNotFoundError, attachLogDetails, attachLogExerciseFacts, toPublicWorkoutLog } from './workoutLog.service';
 import type { WorkoutLogDocument, WorkoutLogSetFields } from './workoutLog.types';
 import { LAST_PERFORMANCE_LOG_SCAN } from './workoutLog.constants';
+import { LocalizedError } from '../../i18n';
 
 // The active workout session (PRD §5.2). The log is created the moment a workout
 // starts and every set change is saved as it happens, so a closed app, a lost
 // connection or a second device never loses logged sets. All times are server times.
 
-export class WorkoutNotStartableError extends Error {}
-export class WorkoutLogNotActiveError extends Error {}
-export class NothingCompletedError extends Error {}
-export class UnknownLogSetError extends Error {}
+export class WorkoutNotStartableError extends LocalizedError {}
+export class WorkoutLogNotActiveError extends LocalizedError {}
+export class NothingCompletedError extends LocalizedError {}
+export class UnknownLogSetError extends LocalizedError {}
 export class OtherWorkoutActiveError extends Error {
   constructor(readonly activeLog: ActiveWorkoutRef) {
     super('Another workout is still open. Resume it or discard it first.');
@@ -123,7 +124,7 @@ async function toSession(log: LeanWorkoutLog, now: Date): Promise<WorkoutSession
 
 async function findOwnLog(logId: string, traineeId: string): Promise<LeanWorkoutLog> {
   const log = await WorkoutLog.findOne({ _id: logId, traineeId }).lean<LeanWorkoutLog>();
-  if (!log) throw new WorkoutLogNotFoundError('Workout log not found.');
+  if (!log) throw new WorkoutLogNotFoundError('workout_log_not_found');
   return log;
 }
 
@@ -161,16 +162,16 @@ export async function startWorkout(
     Plan.findOne({ _id: planId, traineeId, status: 'published' }).lean<LeanPlan>(),
     todayFor(traineeId, now),
   ]);
-  if (!plan) throw new PlanNotFoundError('Plan not found.');
+  if (!plan) throw new PlanNotFoundError('plan_not_found');
   const workout = await loadPlannedWorkout(plan, workoutId);
-  if (!workout) throw new PlanNotFoundError('Workout not found.');
+  if (!workout) throw new PlanNotFoundError('workout_not_found');
 
   // Same rule as Home: a workout is doable until its week ends, never before it starts.
   if (plan.weekStartDate !== weekStartOf(today)) {
-    throw new WorkoutNotStartableError("Only this week's workouts can be started.");
+    throw new WorkoutNotStartableError('workout_not_this_week');
   }
   if (await WorkoutLog.exists({ traineeId, planId, workoutId, status: 'completed' })) {
-    throw new WorkoutNotStartableError('This workout is already done.');
+    throw new WorkoutNotStartableError('workout_already_done');
   }
 
   const exerciseIds = [...new Set(workout.exercises.map((exercise) => exercise.exerciseId))];
@@ -210,7 +211,7 @@ export async function startWorkout(
 async function assertActive(logId: string, traineeId: string): Promise<LeanWorkoutLog> {
   const log = await findOwnLog(logId, traineeId);
   if (log.status !== 'in_progress') {
-    throw new WorkoutLogNotActiveError('This workout is no longer in progress.');
+    throw new WorkoutLogNotActiveError('workout_not_in_progress');
   }
   return log;
 }
@@ -230,7 +231,7 @@ async function applySetUpdates(log: LeanWorkoutLog, updates: WorkoutLogSetUpdate
       (set) => String(set.planExerciseId) === update.planExerciseId && set.setIndex === update.setIndex,
     );
     if (index === -1) {
-      throw new UnknownLogSetError(`Set ${update.setIndex + 1} is not part of this workout.`);
+      throw new UnknownLogSetError('workout_set_unknown', { n: update.setIndex + 1 });
     }
     const path = `sets.${index}`;
     for (const field of ['reps', 'weight', 'durationSec'] as const) {
@@ -249,7 +250,7 @@ async function applySetUpdates(log: LeanWorkoutLog, updates: WorkoutLogSetUpdate
     { runValidators: true },
   );
   if (result.matchedCount === 0) {
-    throw new WorkoutLogNotActiveError('This workout is no longer in progress.');
+    throw new WorkoutLogNotActiveError('workout_not_in_progress');
   }
 }
 
@@ -286,7 +287,7 @@ export async function finishWorkout(
 
   const done = log.sets.filter((set) => set.completed);
   if (done.length === 0) {
-    throw new NothingCompletedError('Mark at least one set done, or discard the workout.');
+    throw new NothingCompletedError('workout_nothing_completed');
   }
   const records = await detectPersonalRecordsForLog(
     log.traineeId,
@@ -310,7 +311,7 @@ export async function finishWorkout(
     { $set: { status: 'completed', finishedAt: now, stats } },
   );
   if (result.matchedCount === 0) {
-    throw new WorkoutLogNotActiveError('This workout is no longer in progress.');
+    throw new WorkoutLogNotActiveError('workout_not_in_progress');
   }
   // After the conditional update: only the one finish that closed the log records PRs.
   await savePersonalRecords(log.traineeId, log._id, records, now);
@@ -332,7 +333,7 @@ export async function abandonWorkout(logId: string, traineeId: string, now: Date
     { $set: { status: 'abandoned', finishedAt: now } },
   );
   if (result.matchedCount === 0) {
-    throw new WorkoutLogNotActiveError('This workout is no longer in progress.');
+    throw new WorkoutLogNotActiveError('workout_not_in_progress');
   }
   return toPublicWorkoutLog(await findOwnLog(logId, traineeId));
 }

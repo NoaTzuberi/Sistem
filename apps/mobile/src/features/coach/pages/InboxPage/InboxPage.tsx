@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { AppNotification } from '@sistem/types';
-import { describeCoachNotification, formatDateTime } from '@sistem/shared';
+import { describeCoachNotification, formatDateTime, sharedCopy, useCopy, useLanguage } from '@sistem/shared';
 import { IconChevronRight } from '@tabler/icons-react';
 import { AppShell } from '../../../../components/layout/AppShell/AppShell';
 import { Button } from '../../../../components/common/Button/Button';
@@ -17,11 +17,15 @@ const PAGE_SIZE = 20;
 // Coach mode Inbox (PRD §6): the in-app notifications of Phase 5a. Push (Phase 5b)
 // will open the same targets.
 export function InboxPage() {
+  const shared = useCopy(sharedCopy);
+  const copy = shared.coach.inbox;
+  const language = useLanguage();
   const navigate = useNavigate();
   const unreadCount = useUnreadCount();
   const [items, setItems] = useState<AppNotification[]>();
   const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [error, setError] = useState<string>();
+  // A key, so the message follows the language on screen.
+  const [error, setError] = useState<'load' | 'loadMore' | 'markRead'>();
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const loadFirstPage = useCallback(async () => {
@@ -32,7 +36,7 @@ export function InboxPage() {
       setUnreadCount(list.unreadCount);
       setError(undefined);
     } catch {
-      setError("Couldn't load your inbox.");
+      setError('load');
     }
   }, []);
 
@@ -52,7 +56,7 @@ export function InboxPage() {
       setNextCursor(list.nextCursor);
       setError(undefined);
     } catch {
-      setError("Couldn't load more notifications.");
+      setError('loadMore');
     } finally {
       setIsLoadingMore(false);
     }
@@ -73,12 +77,12 @@ export function InboxPage() {
       setUnreadCount(0);
       setItems((current) => current?.map((item) => ({ ...item, readAt: item.readAt ?? new Date().toISOString() })));
     } catch {
-      setError("Couldn't mark notifications as read.");
+      setError('markRead');
     }
   }
 
   const visible = (items ?? []).flatMap((notification) => {
-    const described = describeCoachNotification(notification);
+    const described = describeCoachNotification(notification, language);
     return described ? [{ notification, ...described }] : [];
   });
 
@@ -86,15 +90,19 @@ export function InboxPage() {
     <AppShell>
       <div className="coach-inbox">
         <header className="coach-inbox-header">
-          <h1 className="coach-inbox-title">Inbox</h1>
+          <h1 className="coach-inbox-title">{copy.title}</h1>
           <button className="coach-inbox-read-all" type="button" disabled={unreadCount === 0} onClick={handleMarkAllRead}>
-            Mark all read
+            {copy.markAllRead}
           </button>
         </header>
 
-        {error && <StateMessage onRetry={loadFirstPage}>{error}</StateMessage>}
-        {!error && !items && <StateMessage>Loading…</StateMessage>}
-        {!error && items && visible.length === 0 && <StateMessage>No notifications yet.</StateMessage>}
+        {error && (
+          <StateMessage onRetry={loadFirstPage}>
+            {error === 'load' ? copy.loadError : error === 'loadMore' ? copy.loadMoreError : copy.markReadError}
+          </StateMessage>
+        )}
+        {!error && !items && <StateMessage>{shared.common.loading}</StateMessage>}
+        {!error && items && visible.length === 0 && <StateMessage>{copy.empty}</StateMessage>}
 
         <ul className="coach-inbox-list">
           {visible.map(({ notification, text, traineeId, section }) => (
@@ -108,11 +116,11 @@ export function InboxPage() {
                 <span className="coach-inbox-item-main">
                   <span className="coach-inbox-item-text">
                     {text}
-                    {!notification.readAt && <span className="coach-inbox-unread-label"> (unread)</span>}
+                    {!notification.readAt && <span className="coach-inbox-unread-label">{copy.unread}</span>}
                   </span>
-                  <span className="coach-inbox-item-time">{formatDateTime(notification.createdAt)}</span>
+                  <span className="coach-inbox-item-time">{formatDateTime(notification.createdAt, language)}</span>
                 </span>
-                <IconChevronRight className="coach-inbox-chevron" size={20} aria-hidden="true" />
+                <IconChevronRight className="flip-rtl coach-inbox-chevron" size={20} aria-hidden="true" />
               </button>
             </li>
           ))}
@@ -120,7 +128,7 @@ export function InboxPage() {
 
         {nextCursor && (
           <Button variant="secondary" className="coach-inbox-more" loading={isLoadingMore} onClick={handleLoadMore}>
-            Load more
+            {copy.loadMore}
           </Button>
         )}
       </div>

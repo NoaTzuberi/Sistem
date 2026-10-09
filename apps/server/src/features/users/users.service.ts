@@ -2,8 +2,9 @@ import type { AuthUser, UpdatePreferencesPayload } from '@sistem/types';
 import { User, isOnboardingCompleted } from './user.model';
 import { toPublicUser } from '../auth/auth.service';
 import { OnboardingResponse } from '../onboarding/onboardingResponse.model';
+import { LocalizedError } from '../../i18n';
 
-export class UserNotFoundError extends Error {}
+export class UserNotFoundError extends LocalizedError {}
 
 /**
  * Read model for the Profile page. Same response shape as ATLAS's User.profile, now
@@ -12,7 +13,7 @@ export class UserNotFoundError extends Error {}
 export async function getUserProfileById(userId: string) {
   const user = await User.findById(userId).select('name preferences onboardingStatus').lean();
   if (!user) {
-    throw new UserNotFoundError('User not found.');
+    throw new UserNotFoundError('user_not_found');
   }
   const response = await OnboardingResponse.findOne({ userId }).select('answers').lean();
 
@@ -24,14 +25,18 @@ export async function getUserProfileById(userId: string) {
   };
 }
 
-/** Changes her display units (Phase 10); each unit is set on its own, the others stay. */
+/**
+ * Changes her display units (Phase 10) and / or the UI language (Phase 15); each setting is
+ * set on its own, the others stay.
+ */
 export async function updateUserPreferences(userId: string, payload: UpdatePreferencesPayload): Promise<AuthUser> {
   const $set: Record<string, string> = {};
-  if (payload.units.weight) $set['preferences.units.weight'] = payload.units.weight;
-  if (payload.units.length) $set['preferences.units.length'] = payload.units.length;
+  if (payload.units?.weight) $set['preferences.units.weight'] = payload.units.weight;
+  if (payload.units?.length) $set['preferences.units.length'] = payload.units.length;
+  if (payload.language) $set['preferences.language'] = payload.language;
   const user = await User.findByIdAndUpdate(userId, { $set }, { returnDocument: 'after', runValidators: true });
   if (!user) {
-    throw new UserNotFoundError('User not found.');
+    throw new UserNotFoundError('user_not_found');
   }
   return toPublicUser(user);
 }

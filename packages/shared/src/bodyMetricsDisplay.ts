@@ -1,19 +1,20 @@
-import type { BodyMetric, LengthUnit, ProgressPhoto, ProgressPhotoPose, WeightUnit } from '@sistem/types';
+import type { BodyMetric, Language, LengthUnit, ProgressPhoto, ProgressPhotoPose, WeightUnit } from '@sistem/types';
 import type { ChartPoint } from './bodyChart';
+import { sharedCopy } from './copy';
 import { humanizeId } from './format';
 import { toDisplayLength, toDisplayWeight } from './units';
 
 // Reading body tracking days (GET /body-metrics, newest first) for the screens of both
-// apps: chart points, latest values, photo days. Placeholder labels (humanized ids).
+// apps: chart points, latest values, photo days. Placeholder labels (shared copy).
 
 export const PROGRESS_PHOTO_POSES: ProgressPhotoPose[] = ['front', 'side', 'back'];
 
-export function measurementLabel(id: string): string {
-  return humanizeId(id);
+export function measurementLabel(id: string, language: Language): string {
+  return (sharedCopy[language].body.measurements as Record<string, string>)[id] ?? humanizeId(id);
 }
 
-export function poseLabel(pose: ProgressPhotoPose): string {
-  return humanizeId(pose);
+export function poseLabel(pose: ProgressPhotoPose, language: Language): string {
+  return sharedCopy[language].body.poses[pose];
 }
 
 /** 'YYYY-MM-DD' today in a time zone — the default date of a new entry. */

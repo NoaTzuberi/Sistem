@@ -1,14 +1,19 @@
-import type { LogPersonalRecord, WorkoutLog, WorkoutLogSet } from '@sistem/types';
+import type { Language, LogPersonalRecord, WorkoutLog, WorkoutLogSet } from '@sistem/types';
+import { sharedCopy } from './copy';
+import { fill, formatPlural } from './i18n/copy';
+import { isolateAuto } from './i18n/bidi';
 import { formatDuration } from './format';
 
 // Read-only wording for a workout log, shared by the coach's and the trainee's screens.
 // Placeholder formats — the owner decides the final ones.
 
 /** '1 · 10 reps × 40 kg' — one performed set. */
-export function describeLogSet(set: WorkoutLogSet): string {
-  const amount = set.durationSec !== undefined ? formatDuration(set.durationSec) : `${set.reps ?? '—'} reps`;
-  const performed = set.weight !== undefined ? `${amount} × ${set.weight} kg` : amount;
-  return `${set.setIndex + 1} · ${performed}${set.completed ? '' : ' · not done'}`;
+export function describeLogSet(set: WorkoutLogSet, language: Language): string {
+  const copy = sharedCopy[language];
+  const amount =
+    set.durationSec !== undefined ? formatDuration(set.durationSec, language) : fill(copy.log.reps, { reps: set.reps ?? '—' });
+  const performed = set.weight !== undefined ? `${amount} × ${set.weight} ${copy.units.kg}` : amount;
+  return `${set.setIndex + 1} · ${performed}${set.completed ? '' : ` · ${copy.log.notDone}`}`;
 }
 
 export interface LogExerciseGroup {
@@ -36,18 +41,27 @@ export function logExerciseNames(log: WorkoutLog): Map<string, string> {
  * 'Hip thrust — 62.5 kg (was 60 kg)' · 'Push-up — 20 reps (was 15)' ·
  * 'Plank — 1 min 15s hold (was 1 min)'. Placeholder wording.
  */
-export function describePersonalRecord(record: LogPersonalRecord, exerciseName = 'Exercise'): string {
-  const at = record.weight !== undefined ? ` at ${record.weight} kg` : '';
+export function describePersonalRecord(record: LogPersonalRecord, exerciseName: string | undefined, language: Language): string {
+  const copy = sharedCopy[language];
+  // Number then unit reads right in both directions; only arithmetic needs an isolate.
+  const kg = (value: number) => `${value} ${copy.units.kg}`;
+  const name = exerciseName ? isolateAuto(exerciseName) : copy.log.exercise;
+  const at = record.weight !== undefined ? fill(copy.log.prAt, { weight: kg(record.weight) }) : '';
   switch (record.type) {
     case 'weight':
-      return `${exerciseName} — ${record.newValue} kg (was ${record.previousValue} kg)`;
+      return fill(copy.log.prWeight, { name, value: kg(record.newValue), previous: kg(record.previousValue) });
     case 'reps':
-      return `${exerciseName} — ${record.newValue} reps${at} (was ${record.previousValue})`;
+      return fill(copy.log.prReps, { name, value: record.newValue, previous: record.previousValue, at });
     case 'duration':
-      return `${exerciseName} — ${formatDuration(record.newValue)} hold${at} (was ${formatDuration(record.previousValue)})`;
+      return fill(copy.log.prDuration, {
+        name,
+        value: formatDuration(record.newValue, language),
+        previous: formatDuration(record.previousValue, language),
+        at,
+      });
   }
 }
 
-export function prCountLabel(count: number): string {
-  return `${count} ${count === 1 ? 'PR' : 'PRs'}`;
+export function prCountLabel(count: number, language: Language): string {
+  return formatPlural(language, sharedCopy[language].log.prCount, count);
 }

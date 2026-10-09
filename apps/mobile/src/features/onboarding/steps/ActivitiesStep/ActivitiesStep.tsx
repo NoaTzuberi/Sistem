@@ -1,3 +1,5 @@
+import { sharedCopy, useCopy } from '@sistem/shared';
+import { onboardingCopy } from '../../copy';
 import { SelectableChip } from '../../components/SelectableChip/SelectableChip';
 import { ACTIVITIES, ACTIVITY_CATEGORIES } from '../../data/activities';
 import type { OnboardingFormState } from '../../types';
@@ -10,6 +12,8 @@ interface ActivitiesStepProps {
 }
 
 export function ActivitiesStep({ formState, updateFormState, onPreviewActivity }: ActivitiesStepProps) {
+  const copy = useCopy(onboardingCopy);
+  const labels = useCopy(sharedCopy).onboardingOptions;
   function toggleActivity(id: string) {
     const isSelected = formState.preferredActivities.includes(id);
     updateFormState({
@@ -22,17 +26,17 @@ export function ActivitiesStep({ formState, updateFormState, onPreviewActivity }
 
   return (
     <div className="onboarding-step activities-step">
-      <h1>What activities are part of your life?</h1>
-      <p className="text-body">Choose all that apply.</p>
+      <h1>{copy.activities.title}</h1>
+      <p className="text-body">{copy.chooseAll}</p>
 
       {ACTIVITY_CATEGORIES.map((category) => (
         <div key={category.id} className="activities-category">
-          <span className="text-label">{category.label}</span>
+          <span className="text-label">{labels.activityCategories[category.id]}</span>
           <div className="activities-grid">
             {ACTIVITIES.filter((activity) => activity.category === category.id).map((activity) => (
               <SelectableChip
                 key={activity.id}
-                label={activity.label}
+                label={labels.activities[activity.id]}
                 emoji={activity.emoji}
                 selected={formState.preferredActivities.includes(activity.id)}
                 onClick={() => toggleActivity(activity.id)}

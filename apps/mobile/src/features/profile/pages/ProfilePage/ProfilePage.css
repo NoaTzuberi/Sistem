@@ -14,7 +14,7 @@
   min-width: 0;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 900px) { /* = --breakpoint-xl */
   .profile-layout {
     grid-template-columns: 1fr;
   }
@@ -36,7 +36,7 @@
   align-items: center;
   padding-bottom: var(--space-3);
   margin-bottom: var(--space-3);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: var(--border-width-thin) solid var(--color-border);
 }
 
 /* The account row is the last thing on the header card now (no password link). */
@@ -103,7 +103,7 @@
 
 .profile-header-banner {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-raised);
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);
@@ -113,7 +113,7 @@
 
 .profile-header-footer {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-raised);
   padding: var(--space-4);
   color: var(--color-on-primary);
 }
@@ -126,7 +126,7 @@
 
 .profile-header-avatar {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-raised);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -134,7 +134,7 @@
   height: 52px;
   flex-shrink: 0;
   border-radius: var(--radius-round);
-  border: 2px solid var(--color-primary);
+  border: var(--border-width-medium) solid var(--color-primary);
   background-color: var(--color-primary-soft);
   color: var(--color-primary-deep);
   font-family: var(--font-family-body);
@@ -144,7 +144,7 @@
 
 .profile-header-text {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-raised);
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -190,7 +190,7 @@
   grid-column: 1 / -1;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 900px) { /* = --breakpoint-xl */
   .training-block-goals,
   .training-block-frequency,
   .training-block-activities,
@@ -226,23 +226,23 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  border-left-width: 3px;
+  border-inline-start-width: var(--border-width-thick);
 }
 
 .training-block-orange {
-  border-left-color: var(--color-primary);
+  border-inline-start-color: var(--color-primary);
 }
 
 .training-block-blue {
-  border-left-color: var(--color-border);
+  border-inline-start-color: var(--color-border);
 }
 
 .training-block-teal {
-  border-left-color: var(--color-primary-deep);
+  border-inline-start-color: var(--color-primary-deep);
 }
 
 .training-block-gray {
-  border-left-color: var(--color-border);
+  border-inline-start-color: var(--color-border);
 }
 
 .training-block-header {
@@ -257,10 +257,10 @@
   justify-content: center;
   min-width: var(--touch-target-min);
   min-height: var(--touch-target-min);
-  margin-left: auto;
+  margin-inline-start: auto;
   flex-shrink: 0;
   border-radius: var(--radius-none);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-thin) solid var(--color-border);
   color: var(--color-text-muted);
   transition:
     border-color var(--transition-fast) var(--ease-standard),
@@ -295,25 +295,25 @@
 }
 
 .training-block-icon-orange {
-  border: 1px solid var(--color-primary);
+  border: var(--border-width-thin) solid var(--color-primary);
   background-color: var(--color-primary-soft);
   color: var(--color-primary-deep);
 }
 
 .training-block-icon-blue {
-  border: 1px solid var(--color-border);
+  border: var(--border-width-thin) solid var(--color-border);
   background-color: var(--color-surface);
   color: var(--color-text);
 }
 
 .training-block-icon-teal {
-  border: 1px solid var(--color-primary);
+  border: var(--border-width-thin) solid var(--color-primary);
   background-color: var(--color-primary-soft);
   color: var(--color-primary-deep);
 }
 
 .training-block-icon-gray {
-  border: 1px solid var(--color-border);
+  border: var(--border-width-thin) solid var(--color-border);
   background-color: var(--color-border);
   color: var(--color-text);
 }
@@ -376,19 +376,19 @@
 
 .profile-tag-accent {
   background-color: var(--color-primary-soft);
-  border: 1px solid var(--color-primary);
+  border: var(--border-width-thin) solid var(--color-primary);
   color: var(--color-primary-deep);
 }
 
 .profile-tag-neutral {
   background-color: var(--color-border);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-thin) solid var(--color-border);
   color: var(--color-text);
 }
 
 .profile-tag-success {
   background-color: var(--color-primary-soft);
-  border: 1px solid var(--color-primary);
+  border: var(--border-width-thin) solid var(--color-primary);
   color: var(--color-primary-deep);
 }
 

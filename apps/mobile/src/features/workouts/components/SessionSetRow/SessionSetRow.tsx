@@ -1,6 +1,8 @@
+import { fill, useCopy } from '@sistem/shared';
 import type { SessionSet, SetValues } from '../../data/sessionSets';
 import { DURATION_STEP_SEC, MAX_DURATION_SEC, MAX_REPS, MAX_WEIGHT_KG, REPS_STEP } from '../../data/sessionConfig';
-import { SESSION_COPY, formatClock } from '../../data/workoutCopy';
+import { formatClock } from '../../data/workoutDisplay';
+import { workoutCopy } from '../../copy';
 import { NumberStepper } from '../NumberStepper/NumberStepper';
 import './SessionSetRow.css';
 
@@ -38,6 +40,7 @@ export function SessionSetRow({
   onStartHold,
   onStopHold,
 }: SessionSetRowProps) {
+  const copy = useCopy(workoutCopy);
   const setLabel = tag || String(set.setIndex + 1);
   const isHolding = holdRemainingMs !== null;
   const classNames = ['session-set', isCurrent && 'session-set-current', values.completed && 'session-set-done']
@@ -47,7 +50,7 @@ export function SessionSetRow({
   return (
     <div className={classNames} id={`session-set-${set.key}`}>
       <div className="session-set-row">
-        <span className="session-set-tag" aria-label={`Set ${setLabel}`}>
+        <span className="session-set-tag" aria-label={fill(copy.session.setAria, { set: setLabel })}>
           {tag}
         </span>
 
@@ -57,7 +60,7 @@ export function SessionSetRow({
             step={weightStep}
             max={MAX_WEIGHT_KG}
             decimal
-            label={`${SESSION_COPY.columnKg}, set ${setLabel}`}
+            label={fill(copy.session.setColumnAria, { column: copy.session.columnKg, set: setLabel })}
             onChange={(weight) => onEdit({ weight })}
           />
         ) : (
@@ -69,7 +72,7 @@ export function SessionSetRow({
             value={values.durationSec}
             step={DURATION_STEP_SEC}
             max={MAX_DURATION_SEC}
-            label={`${SESSION_COPY.columnSec}, set ${setLabel}`}
+            label={fill(copy.session.setColumnAria, { column: copy.session.columnSec, set: setLabel })}
             onChange={(durationSec) => onEdit({ durationSec })}
           />
         ) : (
@@ -77,7 +80,7 @@ export function SessionSetRow({
             value={values.reps}
             step={REPS_STEP}
             max={MAX_REPS}
-            label={`${SESSION_COPY.columnReps}, set ${setLabel}`}
+            label={fill(copy.session.setColumnAria, { column: copy.session.columnReps, set: setLabel })}
             onChange={(reps) => onEdit({ reps })}
           />
         )}
@@ -86,7 +89,7 @@ export function SessionSetRow({
           type="button"
           className="session-set-check"
           aria-pressed={values.completed}
-          aria-label={values.completed ? SESSION_COPY.markNotDone(setLabel) : SESSION_COPY.markDone(setLabel)}
+          aria-label={values.completed ? fill(copy.session.markNotDone, { setLabel }) : fill(copy.session.markDone, { setLabel })}
           onClick={onToggle}
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -103,8 +106,8 @@ export function SessionSetRow({
           disabled={!isHolding && !values.durationSec}
         >
           {isHolding
-            ? `${formatClock(Math.ceil(holdRemainingMs / 1000))} · ${SESSION_COPY.stopHold}`
-            : `▶ ${SESSION_COPY.startHold(formatClock(values.durationSec ?? 0))}`}
+            ? `${formatClock(Math.ceil(holdRemainingMs / 1000))} · ${copy.session.stopHold}`
+            : `▶ ${fill(copy.session.startHold, { seconds: formatClock(values.durationSec ?? 0) })}`}
         </button>
       )}
     </div>

@@ -1,5 +1,5 @@
 import type { MyOnboarding } from '@sistem/types';
-import { buildOnboardingSections, describeOnboardingProgress } from '@sistem/shared';
+import { buildOnboardingSections, describeOnboardingProgress, sharedCopy, useCopy, useLanguage } from '@sistem/shared';
 import './OnboardingAnswers.css';
 
 interface OnboardingAnswersProps {
@@ -7,17 +7,19 @@ interface OnboardingAnswersProps {
 }
 
 export function OnboardingAnswers({ onboarding }: OnboardingAnswersProps) {
+  const language = useLanguage();
+  const shared = useCopy(sharedCopy);
   if (!onboarding) {
-    return <p className="onboarding-empty">This trainee has not started onboarding yet.</p>;
+    return <p className="onboarding-empty">{shared.coach.onboardingNotStarted}</p>;
   }
 
   return (
     <div className="onboarding-answers">
       <p className="onboarding-status">
-        {describeOnboardingProgress(onboarding)}
+        {describeOnboardingProgress(onboarding, language)}
       </p>
 
-      {buildOnboardingSections(onboarding).map((section) => (
+      {buildOnboardingSections(onboarding, language).map((section) => (
         <section key={section.title} className="onboarding-section">
           <h2 className="onboarding-section-title">{section.title}</h2>
           <dl className="onboarding-rows">

@@ -4,6 +4,11 @@ import { NutritionRequestError } from '@sistem/api-client';
 import { applyNutritionTemplate, publishNutritionPlan, saveNutritionPlan } from '../../../services/coach/coachService';
 import { assignSavedIds, draftFromPlan, emptyDraft, keysOf, toPayload } from '../nutritionDraft';
 import type { NutritionDraft } from '../nutritionDraft';
+import { getActiveLanguage } from '@sistem/shared';
+import { nutritionCopy } from '../copy';
+
+// Read when the text is needed (callbacks run later): the language on screen at that moment.
+const text = () => nutritionCopy[getActiveLanguage()];
 
 export type SaveStatus = 'saved' | 'unsaved' | 'saving' | 'error';
 
@@ -19,7 +24,7 @@ const AUTOSAVE_DELAY_MS = 1500;
 export function useNutritionEditor(traineeId: string, initial: CoachNutritionPlanResponse) {
   const [response, setResponse] = useState(initial);
   const [draft, setDraftState] = useState<NutritionDraft>(() =>
-    initial.plan ? draftFromPlan(initial.plan) : emptyDraft(initial.defaultGoal),
+    initial.plan ? draftFromPlan(initial.plan) : emptyDraft(initial.defaultGoal, text().defaultMeals),
   );
   const [isSaving, setIsSaving] = useState(false);
   const [saveIssues, setSaveIssues] = useState<NutritionIssue[]>([]);
@@ -39,7 +44,7 @@ export function useNutritionEditor(traineeId: string, initial: CoachNutritionPla
 
   /** Starts over from what the server holds (after a template is applied). */
   const resetFrom = useCallback((next: CoachNutritionPlanResponse) => {
-    const fresh = next.plan ? draftFromPlan(next.plan) : emptyDraft(next.defaultGoal);
+    const fresh = next.plan ? draftFromPlan(next.plan) : emptyDraft(next.defaultGoal, text().defaultMeals);
     draftRef.current = fresh;
     setDraftState(fresh);
     savedJsonRef.current = JSON.stringify(toPayload(fresh));
@@ -79,7 +84,7 @@ export function useNutritionEditor(traineeId: string, initial: CoachNutritionPla
         return true;
       } catch (failure) {
         setFailedJson(sentJson);
-        fail(failure, "Couldn't save the nutrition plan.");
+        fail(failure, text().saveError);
         return false;
       } finally {
         inFlight.current = null;
@@ -117,7 +122,7 @@ export function useNutritionEditor(traineeId: string, initial: CoachNutritionPla
       setError(undefined);
       return true;
     } catch (failure) {
-      fail(failure, "Couldn't publish the nutrition plan.");
+      fail(failure, text().publishError);
       return false;
     }
   }, [traineeId, save, fail]);
@@ -131,7 +136,7 @@ export function useNutritionEditor(traineeId: string, initial: CoachNutritionPla
         setError(undefined);
         return true;
       } catch (failure) {
-        fail(failure, "Couldn't start from that template.");
+        fail(failure, text().templateApplyError);
         return false;
       }
     },

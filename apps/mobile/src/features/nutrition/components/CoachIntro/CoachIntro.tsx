@@ -1,6 +1,7 @@
+import { useCopy } from '@sistem/shared';
 import { useEffect, useId, useRef, useState } from 'react';
 import { IconChevronDown } from '@tabler/icons-react';
-import { NUTRITION_COPY } from '../../data/nutritionCopy';
+import { nutritionCopy } from '../../copy';
 import './CoachIntro.css';
 
 interface CoachIntroProps {
@@ -13,6 +14,7 @@ interface CoachIntroProps {
 
 /** The coach's note at the top of the Nutrition tab (13a+) — plain text, line breaks kept. */
 export function CoachIntro({ text, initiallyOpen, onRead }: CoachIntroProps) {
+  const copy = useCopy(nutritionCopy);
   const [isOpen, setIsOpen] = useState(initiallyOpen);
   const bodyId = useId();
   const reported = useRef(false);
@@ -31,10 +33,10 @@ export function CoachIntro({ text, initiallyOpen, onRead }: CoachIntroProps) {
         className="coach-intro-header"
         aria-expanded={isOpen}
         aria-controls={bodyId}
-        aria-label={isOpen ? NUTRITION_COPY.introHide : NUTRITION_COPY.introShow}
+        aria-label={isOpen ? copy.introHide : copy.introShow}
         onClick={() => setIsOpen((open) => !open)}
       >
-        <span className="coach-intro-title">{NUTRITION_COPY.introTitle}</span>
+        <span className="coach-intro-title">{copy.introTitle}</span>
         <IconChevronDown className="coach-intro-chevron" size={20} aria-hidden="true" />
       </button>
       {isOpen && (

@@ -1,5 +1,6 @@
+import { fill, formatNumber, useCopy, useLanguage } from '@sistem/shared';
 import { useId } from 'react';
-import { NUTRITION_COPY } from '../../data/nutritionCopy';
+import { nutritionCopy } from '../../copy';
 import './IntroEditor.css';
 
 // The server's limit (nutrition.constants MAX_INTRO_MESSAGE_LENGTH).
@@ -12,13 +13,15 @@ interface IntroEditorProps {
 
 /** The coach's note at the top of her Nutrition tab (13a+) — plain text, line breaks kept. */
 export function IntroEditor({ value, onChange }: IntroEditorProps) {
+  const language = useLanguage();
+  const copy = useCopy(nutritionCopy);
   const id = useId();
   return (
     <section className="intro-editor" aria-labelledby={`${id}-title`}>
       <h2 className="nutrition-panel-title" id={`${id}-title`}>
-        {NUTRITION_COPY.introTitle}
+        {copy.introTitle}
       </h2>
-      <p className="intro-editor-hint">{NUTRITION_COPY.introHint}</p>
+      <p className="intro-editor-hint">{copy.introHint}</p>
       <textarea
         className="intro-editor-input"
         aria-labelledby={`${id}-title`}
@@ -28,7 +31,7 @@ export function IntroEditor({ value, onChange }: IntroEditorProps) {
         value={value}
         onChange={(event) => onChange(event.target.value)}
       />
-      <span className="intro-editor-count">{NUTRITION_COPY.introCount(value.length, MAX_INTRO_LENGTH)}</span>
+      <span className="intro-editor-count">{fill(copy.introCount, { count: formatNumber(value.length, language), max: formatNumber(MAX_INTRO_LENGTH, language) })}</span>
     </section>
   );
 }

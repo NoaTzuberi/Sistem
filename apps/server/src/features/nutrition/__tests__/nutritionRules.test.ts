@@ -11,6 +11,12 @@ import {
   parseSaveNutritionPlanPayload,
 } from '../nutrition.validation';
 import type { PublishCheckContext } from '../nutrition.validation';
+import { translate, type ServerMessage } from '../../../i18n';
+
+// Messages are codes (Phase 15); these tests read them in English.
+function expectEn(message: ServerMessage | string | null | undefined) {
+  return expect(message && typeof message === 'object' ? translate('en', message) : message);
+}
 
 // Phase 13a: preference checks, the save payload rules and the publish rules — pure, so
 // they are tested without the API (the API tests cover the wiring).
@@ -94,17 +100,17 @@ describe('food items', () => {
       name: 'Cottage',
       portion: '150 g',
     });
-    expect(parseFoodItemPayload({ name: 'Cottage' }, false).error).toMatch(/Group/);
-    expect(parseFoodItemPayload({ dietTags: ['bacon'] }, true).error).toMatch(/Diet tags/);
+    expectEn(parseFoodItemPayload({ name: 'Cottage' }, false).error).toMatch(/Group/);
+    expectEn(parseFoodItemPayload({ dietTags: ['bacon'] }, true).error).toMatch(/Diet tags/);
     expect(parseFoodItemPayload({ grams: null, kcal: 120 }, true).value).toEqual({ grams: null, kcal: 120 });
-    expect(parseFoodItemPayload({}, true).error).toMatch(/Nothing/);
+    expectEn(parseFoodItemPayload({}, true).error).toMatch(/Nothing/);
   });
 
   it("kcal may never be above the group's value; vegetables have none", () => {
     expect(foodKcalProblem('protein', 150, DEFAULT_NUTRITION_CONFIG)).toBeNull();
-    expect(foodKcalProblem('protein', 151, DEFAULT_NUTRITION_CONFIG)).toMatch(/150/);
-    expect(foodKcalProblem('fat', 91, DEFAULT_NUTRITION_CONFIG)).toMatch(/90/);
-    expect(foodKcalProblem('vegetable', 10, DEFAULT_NUTRITION_CONFIG)).toMatch(/free/);
+    expectEn(foodKcalProblem('protein', 151, DEFAULT_NUTRITION_CONFIG)).toMatch(/150/);
+    expectEn(foodKcalProblem('fat', 91, DEFAULT_NUTRITION_CONFIG)).toMatch(/90/);
+    expectEn(foodKcalProblem('vegetable', 10, DEFAULT_NUTRITION_CONFIG)).toMatch(/free/);
     expect(foodKcalProblem('carb', null, DEFAULT_NUTRITION_CONFIG)).toBeNull();
   });
 });
@@ -125,12 +131,12 @@ describe('settings payload', () => {
 
   it('accepts the whole config and refuses values out of bounds', () => {
     expect(parseNutritionSettingsPayload(valid).value).toEqual(valid);
-    expect(parseNutritionSettingsPayload({ ...valid, floorKcal: 500 }).error).toMatch(/floor/);
-    expect(parseNutritionSettingsPayload({ ...valid, activityFactors: [1.5] }).error).toMatch(/Activity/);
-    expect(parseNutritionSettingsPayload({ ...valid, goalAdjustments: { ...valid.goalAdjustments, fat_loss: -60 } }).error).toMatch(/Goal/);
-    expect(parseNutritionSettingsPayload({ ...valid, maxLossRatePctPerWeek: 5 }).error).toMatch(/loss rate/);
-    expect(parseNutritionSettingsPayload({ ...valid, maxDeficitPct: 60 }).error).toMatch(/deficit/);
-    expect(parseNutritionSettingsPayload({ ...valid, portionSplit: { protein: 50, carb: 30, fat: 30, snack: 0 } }).error).toMatch(/100/);
+    expectEn(parseNutritionSettingsPayload({ ...valid, floorKcal: 500 }).error).toMatch(/floor/);
+    expectEn(parseNutritionSettingsPayload({ ...valid, activityFactors: [1.5] }).error).toMatch(/Activity/);
+    expectEn(parseNutritionSettingsPayload({ ...valid, goalAdjustments: { ...valid.goalAdjustments, fat_loss: -60 } }).error).toMatch(/Goal/);
+    expectEn(parseNutritionSettingsPayload({ ...valid, maxLossRatePctPerWeek: 5 }).error).toMatch(/loss rate/);
+    expectEn(parseNutritionSettingsPayload({ ...valid, maxDeficitPct: 60 }).error).toMatch(/deficit/);
+    expectEn(parseNutritionSettingsPayload({ ...valid, portionSplit: { protein: 50, carb: 30, fat: 30, snack: 0 } }).error).toMatch(/100/);
   });
 });
 
@@ -245,8 +251,8 @@ describe('publish rules', () => {
       ['preference_conflict', 1],
       ['kosher_conflict', undefined],
     ]);
-    expect(issues[0].message).toMatch(/\(vegetarian\)/);
-    expect(issues[1].message).toMatch(/her allergy/);
+    expectEn(issues[0].message).toMatch(/\(vegetarian\)/);
+    expectEn(issues[1].message).toMatch(/her allergy/);
   });
 
   it('warns when a keto / low-carb trainee has more carb portions a day than the limit', () => {
@@ -356,10 +362,10 @@ describe('save payload', () => {
       },
       CLOSED,
     );
-    expect(withRecipe.issues[0].message).toMatch(/Recipes are not available/);
+    expectEn(withRecipe.issues[0].message).toMatch(/Recipes are not available/);
 
     const withWater = parseSaveNutritionPlanPayload({ calorieTarget: target, meals: [], tips: [], waterGoalMl: 2000 }, CLOSED);
-    expect(withWater.issues[0].message).toMatch(/Water tracking is not available/);
+    expectEn(withWater.issues[0].message).toMatch(/Water tracking is not available/);
 
     const open = parseSaveNutritionPlanPayload({ calorieTarget: target, meals: [], tips: [], waterGoalMl: 2000 }, { ...CLOSED, waterTracking: true });
     expect(open.value?.waterGoalMl).toBe(2000);

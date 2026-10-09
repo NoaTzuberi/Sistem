@@ -3,6 +3,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import type { PrivatePhoto as PublicPrivatePhoto } from '@sistem/types';
 import { config } from '../../config/env';
 import { MAX_STORED_PHOTO_EDGE_PX, PHOTO_URL_TTL_SEC } from './privatePhoto.constants';
+import { LocalizedError } from '../../i18n';
 
 // The one place that talks to Cloudinary about personal photos. Assets are uploaded as
 // `authenticated` (never reachable by a public URL) and viewed only through expiring
@@ -12,12 +13,12 @@ import { MAX_STORED_PHOTO_EDGE_PX, PHOTO_URL_TTL_SEC } from './privatePhoto.cons
 
 const STORED_FORMAT = 'jpg';
 
-export class PhotoStorageUnavailableError extends Error {}
+export class PhotoStorageUnavailableError extends LocalizedError {}
 
 function cloudinaryOptions() {
   const { cloudName, apiKey, apiSecret } = config.cloudinary;
   if (!cloudName || !apiKey || !apiSecret) {
-    throw new PhotoStorageUnavailableError('Photo storage is not configured.');
+    throw new PhotoStorageUnavailableError('photo_storage_unavailable');
   }
   return { cloud_name: cloudName, api_key: apiKey, api_secret: apiSecret, secure: true };
 }

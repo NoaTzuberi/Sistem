@@ -13,15 +13,16 @@ import { isAcceptedImage } from '../privatePhotos/privatePhoto.validation';
 import { MealLog } from './mealLog.model';
 import { MEAL_LOG_EDITABLE_DAYS } from './mealLog.constants';
 import type { MealLogDocument, MealPhotoFields } from './mealLog.types';
+import { LocalizedError } from '../../i18n';
 
 // Portion tracking (PRD §5.6, Phase 13a+): one MealLog per trainee and day. She marks
 // portions per group against the day's plan — never what she ate, never calories — and
 // may add a private photo per meal. Today follows the newest published version; a past
 // day keeps the version it was logged against (or, if never logged, the one live then).
 
-export class MealLogDayError extends Error {}
-export class MealLogNoPlanError extends Error {}
-export class InvalidMealPhotoError extends Error {}
+export class MealLogDayError extends LocalizedError {}
+export class MealLogNoPlanError extends LocalizedError {}
+export class InvalidMealPhotoError extends LocalizedError {}
 
 type LeanVersion = Pick<NutritionPlanVersionDocument, 'planId' | 'coachId' | 'version' | 'publishedAt' | 'meals'> & {
   _id: Types.ObjectId;
@@ -135,11 +136,11 @@ async function loadEditableDay(traineeId: string, date: string, now: Date): Prom
   const timezone = await traineeTimezone(traineeId);
   const today = localDateString(now, timezone);
   if (!isEditable(date, today)) {
-    throw new MealLogDayError(`Only today and the ${MEAL_LOG_EDITABLE_DAYS - 1} days before can be changed.`);
+    throw new MealLogDayError('meal_log_day_out_of_window', { days: MEAL_LOG_EDITABLE_DAYS - 1 });
   }
   const [versions, log] = await Promise.all([loadVersions(traineeId), MealLog.findOne({ traineeId, date }).lean<LeanMealLog>()]);
   const version = versionForDay(date, today, log, versions, timezone);
-  if (!version) throw new MealLogNoPlanError('There was no nutrition plan on that day.');
+  if (!version) throw new MealLogNoPlanError('meal_log_no_plan');
   return { today, timezone, version, log };
 }
 
@@ -191,8 +192,8 @@ export async function setMyMealPhoto(
 ): Promise<MealLogDay> {
   const context = await loadEditableDay(traineeId, date, now);
   const meal = context.version.meals.find((candidate) => String(candidate._id) === mealId);
-  if (!meal) throw new InvalidMealPhotoError('That meal is not in the plan for this day.');
-  if (!isAcceptedImage(data)) throw new InvalidMealPhotoError('The photo must be a JPEG, PNG or WebP image.');
+  if (!meal) throw new InvalidMealPhotoError('meal_log_meal_unknown');
+  if (!isAcceptedImage(data)) throw new InvalidMealPhotoError('photo_invalid_image');
 
   const publicId = await uploadPrivatePhoto(data, `${MEAL_PHOTO_FOLDER}/${traineeId}`, `${date}-${mealId}`);
   const photo: MealPhotoFields = { mealId: meal._id, mealName: meal.name, publicId, uploadedAt: now };

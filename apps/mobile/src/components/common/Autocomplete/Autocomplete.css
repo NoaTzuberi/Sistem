@@ -7,7 +7,7 @@
 .autocomplete-list {
   margin-top: var(--space-1);
   background-color: var(--color-bg);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-thin) solid var(--color-border);
   max-height: calc(var(--touch-target-min) * 4);
   overflow-y: auto;
 }
@@ -16,11 +16,11 @@
   display: block;
   width: 100%;
   min-height: var(--touch-target-min);
-  text-align: left;
+  text-align: start;
   padding: var(--space-2) var(--space-3);
   background: none;
   border: none;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: var(--border-width-thin) solid var(--color-border);
   color: var(--color-text);
   font-family: var(--font-family-body);
   font-size: var(--text-base);

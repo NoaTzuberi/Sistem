@@ -1,6 +1,7 @@
 import { Schema } from 'mongoose';
 import { SET_TYPE_IDS, DEFAULT_SET_TYPE, MIN_DAY_OF_WEEK, MAX_DAY_OF_WEEK, SUPERSET_GROUP_PATTERN } from './plan.constants';
 import { deriveSetCount, validatePlanExerciseTargets } from './planSets';
+import { translate } from '../../i18n';
 import type { PlanExerciseFields, PlanSetTargetFields, PlanWorkoutFields } from './plan.types';
 
 // Shared by Plan and Template, so a template workout drops straight into a plan.
@@ -48,7 +49,8 @@ planExerciseSchema.pre('validate', function derivePlanExerciseSets() {
   if (sets !== undefined) this.sets = sets;
 
   const error = validatePlanExerciseTargets(this);
-  if (error) this.invalidate('sets', error);
+  // A database-level guard (the builder checks first): logs read English.
+  if (error) this.invalidate('sets', translate('en', error));
 });
 
 // Keeps its _id: WorkoutLog.workoutId points at it, so edits must preserve it.

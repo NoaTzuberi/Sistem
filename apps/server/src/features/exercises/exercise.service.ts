@@ -13,6 +13,7 @@ import type {
   ExerciseGoal,
 } from './exercise.constants';
 import type { ExerciseMedia } from './exercise.types';
+import { LocalizedError } from '../../i18n';
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;
@@ -69,7 +70,7 @@ export interface PaginatedExercises {
   totalPages: number;
 }
 
-export class ExerciseNotFoundError extends Error {}
+export class ExerciseNotFoundError extends LocalizedError {}
 
 interface ExerciseLeanDoc {
   _id: unknown;
@@ -221,7 +222,7 @@ async function listPublicExercisesWithSearch(
 export async function getPublicExerciseBySlug(slug: string): Promise<PublicExercise> {
   const doc = await Exercise.findOne({ slug, reviewStatus: 'published', isActive: true }).lean<ExerciseLeanDoc>();
   if (!doc) {
-    throw new ExerciseNotFoundError('Exercise not found.');
+    throw new ExerciseNotFoundError('exercise_not_found');
   }
   return toPublicExercise(doc);
 }

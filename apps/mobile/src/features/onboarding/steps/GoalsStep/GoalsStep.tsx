@@ -1,3 +1,5 @@
+import { sharedCopy, useCopy } from '@sistem/shared';
+import { onboardingCopy } from '../../copy';
 import { SelectableChip } from '../../components/SelectableChip/SelectableChip';
 import { GOAL_OPTIONS } from '../../data/options';
 import type { OnboardingFormState } from '../../types';
@@ -9,6 +11,8 @@ interface GoalsStepProps {
 }
 
 export function GoalsStep({ formState, updateFormState }: GoalsStepProps) {
+  const copy = useCopy(onboardingCopy);
+  const labels = useCopy(sharedCopy).onboardingOptions.goals;
   function toggleGoal(id: string) {
     const isSelected = formState.goals.includes(id);
     updateFormState({
@@ -18,13 +22,13 @@ export function GoalsStep({ formState, updateFormState }: GoalsStepProps) {
 
   return (
     <div className="onboarding-step goals-step">
-      <h1>What are you working toward?</h1>
-      <p className="text-body">Choose all that apply.</p>
+      <h1>{copy.goals.title}</h1>
+      <p className="text-body">{copy.chooseAll}</p>
       <div className="goals-grid">
         {GOAL_OPTIONS.map((goal) => (
           <SelectableChip
             key={goal.id}
-            label={goal.label}
+            label={labels[goal.id]}
             emoji={goal.emoji}
             selected={formState.goals.includes(goal.id)}
             onClick={() => toggleGoal(goal.id)}

@@ -1,9 +1,9 @@
 import { useCallback } from 'react';
-import type { AiTraineeProfile, AiTrainingRecommendation } from '@sistem/types';
-import { DAY_NAMES, humanizeId, humanizeList, useLoad } from '@sistem/shared';
+import type { AiTraineeProfile, AiTrainingRecommendation, Language } from '@sistem/types';
+import { dayName, fill, humanizeId, isolateLtr, labelList, sharedCopy, useCopy, useLanguage, useLoad } from '@sistem/shared';
 import { getAiRecommendation } from '../../../../services/coach/coachService';
 import { Badge } from '../../../../components/common/Badge/Badge';
-import { AI_DRAFT_COPY } from '../../data/aiDraftCopy';
+import { aiDraftCopy } from '../../copy';
 import './AiRationalePanel.css';
 
 interface AiRationalePanelProps {
@@ -13,33 +13,40 @@ interface AiRationalePanelProps {
   recommendation?: AiTrainingRecommendation | null;
 }
 
-function profileRows(profile: AiTraineeProfile): { label: string; value: string }[] {
+// Her answers are option ids: the coach reads the questionnaire's own labels (shared copy).
+function profileRows(profile: AiTraineeProfile, copy: AiDraftText, language: Language): { label: string; value: string }[] {
+  const labels = copy.profile;
+  const options = sharedCopy[language].onboardingOptions;
   const days = profile.trainingDays;
   const rows = [
-    { label: 'Age', value: profile.ageYears !== undefined ? String(profile.ageYears) : '—' },
-    { label: 'Height / weight', value: `${profile.heightCm ?? '—'} cm / ${profile.weightKg ?? '—'} kg` },
-    { label: 'Gender', value: profile.gender ? humanizeId(profile.gender) : '—' },
-    { label: 'Goals', value: humanizeList(profile.goals) },
-    { label: 'Days per week', value: days ? `${days.min}–${days.max}${days.flexible ? ' (flexible)' : ''}` : '—' },
-    { label: 'Muscle focus', value: humanizeList(profile.muscleFocus) },
-    { label: 'Equipment', value: humanizeList(profile.equipment) },
-    { label: 'Activities', value: humanizeList(profile.preferredActivities) },
-    { label: 'Recovery flags', value: humanizeList(profile.recoveryFlags) },
-    { label: 'Favorite exercises', value: profile.notes.favoriteExercises ?? '—' },
-    { label: 'Wants to improve', value: profile.notes.exercisesToImprove ?? '—' },
-    { label: 'Recovery notes', value: profile.notes.recovery ?? '—' },
+    { label: labels.age, value: profile.ageYears !== undefined ? String(profile.ageYears) : '—' },
+    { label: labels.heightWeight, value: fill(labels.heightWeightValue, { height: profile.heightCm ?? '—', weight: profile.weightKg ?? '—' }) },
+    { label: labels.gender, value: profile.gender ? ((options.gender as Record<string, string>)[profile.gender] ?? humanizeId(profile.gender)) : '—' },
+    { label: labels.goals, value: labelList(profile.goals, options.goals, language) },
+    { label: labels.daysPerWeek, value: days ? `${isolateLtr(`${days.min}–${days.max}`)}${days.flexible ? labels.flexible : ''}` : '—' },
+    { label: labels.muscleFocus, value: labelList(profile.muscleFocus, options.muscleFocus, language) },
+    { label: labels.equipment, value: labelList(profile.equipment, options.equipment, language) },
+    { label: labels.activities, value: labelList(profile.preferredActivities, options.activities, language) },
+    { label: labels.recoveryFlags, value: labelList(profile.recoveryFlags, options.recoveryFlags, language) },
+    { label: labels.favoriteExercises, value: profile.notes.favoriteExercises ?? '—' },
+    { label: labels.wantsToImprove, value: profile.notes.exercisesToImprove ?? '—' },
+    { label: labels.recoveryNotes, value: profile.notes.recovery ?? '—' },
   ];
   return rows;
 }
 
+type AiDraftText = (typeof aiDraftCopy)['he'];
+
 /** Plan builder: why the AI drafted this plan, and what it was given. Coach-only. */
 export function AiRationalePanel({ traineeId, recommendationId, recommendation }: AiRationalePanelProps) {
+  const language = useLanguage();
+  const copy = useCopy(aiDraftCopy);
   const known = recommendation?.id === recommendationId ? recommendation : null;
   const load = useCallback(
     () => (known ? Promise.resolve(known) : getAiRecommendation(traineeId, recommendationId)),
     [known, traineeId, recommendationId],
   );
-  const { data: loaded, error } = useLoad(load, AI_DRAFT_COPY.loadError);
+  const { data: loaded, error } = useLoad(load, copy.training.loadError);
   // A plan only links training drafts; anything else reads as "couldn't load".
   const data = loaded?.type === 'training_plan' ? loaded : loaded ? { ...loaded, input: null, output: null } : undefined;
   const output = data?.output;
@@ -47,12 +54,12 @@ export function AiRationalePanel({ traineeId, recommendationId, recommendation }
   return (
     <details className="ai-rationale" open>
       <summary className="ai-rationale-summary">
-        <span className="ai-rationale-title">{AI_DRAFT_COPY.rationaleTitle}</span>
-        <Badge tone="alert">{AI_DRAFT_COPY.reviewBadge}</Badge>
+        <span className="ai-rationale-title">{copy.training.rationaleTitle}</span>
+        <Badge tone="alert">{copy.training.reviewBadge}</Badge>
       </summary>
 
       {error && <p className="ai-rationale-muted">{error}</p>}
-      {data && !output && <p className="ai-rationale-muted">{AI_DRAFT_COPY.loadError}</p>}
+      {data && !output && <p className="ai-rationale-muted">{copy.training.loadError}</p>}
 
       {output && (
         <div className="ai-rationale-body">
@@ -60,14 +67,14 @@ export function AiRationalePanel({ traineeId, recommendationId, recommendation }
             {output.summary}
           </p>
 
-          <h3 className="ai-rationale-heading">{AI_DRAFT_COPY.split}</h3>
+          <h3 className="ai-rationale-heading">{copy.training.split}</h3>
           <p className="ai-rationale-text" dir="auto">
             {output.split}
           </p>
 
           {output.considerations.length > 0 && (
             <>
-              <h3 className="ai-rationale-heading">{AI_DRAFT_COPY.considerations}</h3>
+              <h3 className="ai-rationale-heading">{copy.training.considerations}</h3>
               <ul className="ai-rationale-list">
                 {output.considerations.map((item) => (
                   <li key={item} dir="auto">
@@ -78,12 +85,12 @@ export function AiRationalePanel({ traineeId, recommendationId, recommendation }
             </>
           )}
 
-          <h3 className="ai-rationale-heading">{AI_DRAFT_COPY.workouts}</h3>
+          <h3 className="ai-rationale-heading">{copy.training.workouts}</h3>
           {output.workouts.map((workout, index) => (
             <div key={`${workout.title}-${index}`} className="ai-rationale-workout">
               <p className="ai-rationale-workout-title">
                 {workout.title}
-                {workout.dayOfWeek !== undefined ? ` · ${DAY_NAMES[workout.dayOfWeek]}` : ''}
+                {workout.dayOfWeek !== undefined ? ` · ${dayName(workout.dayOfWeek, language)}` : ''}
               </p>
               <p className="ai-rationale-muted" dir="auto">
                 {workout.focus}
@@ -91,7 +98,7 @@ export function AiRationalePanel({ traineeId, recommendationId, recommendation }
               <ul className="ai-rationale-list">
                 {workout.exercises.map((exercise, exerciseIndex) => (
                   <li key={`${exercise.exerciseId}-${exerciseIndex}`}>
-                    <span className="ai-rationale-exercise">{exercise.exercise?.name ?? AI_DRAFT_COPY.missingExercise}</span>
+                    <span className="ai-rationale-exercise" dir="auto">{exercise.exercise?.name ?? copy.training.missingExercise}</span>
                     {' — '}
                     <span dir="auto">{exercise.why}</span>
                   </li>
@@ -102,10 +109,10 @@ export function AiRationalePanel({ traineeId, recommendationId, recommendation }
 
           {data?.input && (
             <details className="ai-rationale-input">
-              <summary className="ai-rationale-heading">{AI_DRAFT_COPY.inputTitle}</summary>
-              <p className="ai-rationale-muted">{AI_DRAFT_COPY.inputNoIdentity}</p>
+              <summary className="ai-rationale-heading">{copy.training.inputTitle}</summary>
+              <p className="ai-rationale-muted">{copy.training.inputNoIdentity}</p>
               <dl className="ai-rationale-facts">
-                {profileRows(data.input.profile).map((row) => (
+                {profileRows(data.input.profile, copy, language).map((row) => (
                   <div key={row.label} className="ai-rationale-fact">
                     <dt>{row.label}</dt>
                     <dd dir="auto">{row.value}</dd>
@@ -113,10 +120,10 @@ export function AiRationalePanel({ traineeId, recommendationId, recommendation }
                 ))}
               </dl>
               <p className="ai-rationale-muted">
-                {data.input.candidateCount} library exercises offered ·{' '}
+                {fill(copy.training.candidates, { count: data.input.candidateCount })} ·{' '}
                 {data.input.guidanceSources.length > 0
-                  ? `Guidance: ${data.input.guidanceSources.join('; ')}`
-                  : data.input.guidanceNote ?? 'No guidance passages.'}
+                  ? fill(copy.training.guidance, { sources: data.input.guidanceSources.join('; ') })
+                  : data.input.guidanceNote ?? copy.training.noGuidance}
                 {' · '}
                 {data.input.promptVersion}
                 {data.model ? ` · ${data.model}` : ''}

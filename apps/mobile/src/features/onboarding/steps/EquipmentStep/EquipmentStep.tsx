@@ -1,3 +1,5 @@
+import { sharedCopy, useCopy } from '@sistem/shared';
+import { onboardingCopy } from '../../copy';
 import { SelectableChip } from '../../components/SelectableChip/SelectableChip';
 import { EQUIPMENT_OPTIONS } from '../../data/options';
 import type { OnboardingFormState } from '../../types';
@@ -9,6 +11,8 @@ interface EquipmentStepProps {
 }
 
 export function EquipmentStep({ formState, updateFormState }: EquipmentStepProps) {
+  const copy = useCopy(onboardingCopy);
+  const labels = useCopy(sharedCopy).onboardingOptions.equipment;
   function toggleEquipment(id: string) {
     const isSelected = formState.equipment.includes(id);
     updateFormState({
@@ -20,13 +24,13 @@ export function EquipmentStep({ formState, updateFormState }: EquipmentStepProps
 
   return (
     <div className="onboarding-step equipment-step">
-      <h1>What equipment can you use?</h1>
-      <p className="text-body">Choose all that apply.</p>
+      <h1>{copy.equipment.title}</h1>
+      <p className="text-body">{copy.chooseAll}</p>
       <div className="equipment-grid">
         {EQUIPMENT_OPTIONS.map((equipment) => (
           <SelectableChip
             key={equipment.id}
-            label={equipment.label}
+            label={labels[equipment.id]}
             emoji={equipment.emoji}
             selected={formState.equipment.includes(equipment.id)}
             onClick={() => toggleEquipment(equipment.id)}

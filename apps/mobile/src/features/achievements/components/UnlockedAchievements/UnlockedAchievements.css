@@ -26,7 +26,7 @@
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
-  border-left: 3px solid var(--color-primary-deep);
+  border-inline-start: var(--border-width-thick) solid var(--color-primary-deep);
   background-color: var(--color-primary-soft);
 }
 

@@ -1,13 +1,8 @@
+import type { LengthUnit, WeightUnit } from '@sistem/types';
 import { useState } from 'react';
-import {
-  defaultChartRange,
-  formatChartDate,
-  formatSignedChange,
-  pointsInRange,
-  rangeChange,
-} from '@sistem/shared';
+import { defaultChartRange, fill, formatChartDate, formatSignedChange, pointsInRange, rangeChange, useCopy, useLanguage, unitLabel } from '@sistem/shared';
 import type { ChartPoint, ChartRange } from '@sistem/shared';
-import { BODY_COPY } from '../../data/bodyCopy';
+import { bodyCopy } from '../../copy';
 import { LineChart } from '../LineChart/LineChart';
 import { RangePicker } from '../RangePicker/RangePicker';
 import './TrendChart.css';
@@ -15,7 +10,7 @@ import './TrendChart.css';
 interface TrendChartProps {
   /** Every point, oldest first, in the viewer's unit. */
   points: ChartPoint[];
-  unit: string;
+  unit: WeightUnit | LengthUnit;
   /** What is charted, for the screen reader label ('Weight', 'Waist'). */
   title: string;
   today: string;
@@ -26,6 +21,8 @@ interface TrendChartProps {
  * the range toggles and the chart. Under 2 points in the range: a hint instead.
  */
 export function TrendChart({ points, unit, title, today }: TrendChartProps) {
+  const language = useLanguage();
+  const copy = useCopy(bodyCopy);
   const [range, setRange] = useState<ChartRange>(() => defaultChartRange(points, today));
   const visible = pointsInRange(points, range, today);
   const [selected, setSelected] = useState<number | null>(null);
@@ -39,27 +36,27 @@ export function TrendChart({ points, unit, title, today }: TrendChartProps) {
   }
 
   return (
-    <section className="trend-chart" aria-label={BODY_COPY.chartLabel(title)}>
+    <section className="trend-chart" aria-label={fill(copy.chartLabel, { what: title })}>
       <div className="trend-chart-readout" aria-live="polite">
         {shown && (
           <>
             <span className="trend-chart-value">
-              {shown.value} <span className="trend-chart-unit">{unit}</span>
+              {shown.value} <span className="trend-chart-unit">{unitLabel(unit, language)}</span>
             </span>
-            <span className="trend-chart-date">{formatChartDate(shown.date)}</span>
+            <span className="trend-chart-date">{formatChartDate(shown.date, language)}</span>
           </>
         )}
         {change !== null && (
           <span className="trend-chart-change">
-            {formatSignedChange(change, unit)} {BODY_COPY.rangeChange}
+            {formatSignedChange(change, unit, language)} {copy.rangeChange}
           </span>
         )}
       </div>
       <RangePicker value={range} onChange={changeRange} />
       {visible.length >= 2 ? (
-        <LineChart points={visible} ariaLabel={BODY_COPY.chartLabel(title)} selectedIndex={selectedIndex} onSelect={setSelected} />
+        <LineChart points={visible} ariaLabel={fill(copy.chartLabel, { what: title })} selectedIndex={selectedIndex} onSelect={setSelected} />
       ) : (
-        <p className="trend-chart-empty">{BODY_COPY.chartEmpty}</p>
+        <p className="trend-chart-empty">{copy.chartEmpty}</p>
       )}
     </section>
   );

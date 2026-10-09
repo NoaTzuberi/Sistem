@@ -1,6 +1,7 @@
+import { useCopy } from '@sistem/shared';
 import { useEffect, useState } from 'react';
 import type { ChangeEvent } from 'react';
-import { SESSION_COPY } from '../../data/workoutCopy';
+import { workoutCopy } from '../../copy';
 import './NumberStepper.css';
 
 interface NumberStepperProps {
@@ -28,6 +29,7 @@ function clamp(value: number, max: number): number {
  * the numeric keypad. Empty means "no value" (e.g. no weight on a bodyweight set).
  */
 export function NumberStepper({ value, step, max, decimal = false, label, onChange }: NumberStepperProps) {
+  const copy = useCopy(workoutCopy);
   const [draft, setDraft] = useState(format(value));
 
   useEffect(() => {
@@ -62,7 +64,7 @@ export function NumberStepper({ value, step, max, decimal = false, label, onChan
       <button
         type="button"
         className="number-stepper-button"
-        aria-label={`${SESSION_COPY.decrease} ${label}`}
+        aria-label={`${copy.session.decrease} ${label}`}
         disabled={value === undefined || value <= 0}
         onClick={() => onChange(clamp((value ?? 0) - step, max))}
       >
@@ -86,7 +88,7 @@ export function NumberStepper({ value, step, max, decimal = false, label, onChan
       <button
         type="button"
         className="number-stepper-button"
-        aria-label={`${SESSION_COPY.increase} ${label}`}
+        aria-label={`${copy.session.increase} ${label}`}
         disabled={value !== undefined && value >= max}
         onClick={() => onChange(clamp((value ?? 0) + step, max))}
       >

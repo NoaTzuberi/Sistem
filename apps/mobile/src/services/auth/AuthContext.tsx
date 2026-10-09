@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
+import { getActiveLanguage, useUserLanguage } from '@sistem/shared';
 import {
   login as loginRequest,
   register as registerRequest,
@@ -44,6 +45,8 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // Her saved language (Settings) wins over the device's once she is signed in (Phase 15).
+  useUserLanguage(user?.language);
 
   useEffect(() => {
     async function restoreSession() {
@@ -73,7 +76,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function register(payload: RegisterPayload) {
-    const { token, user: registeredUser } = await registerRequest({ ...payload, timezone: getDeviceTimezone() });
+    const { token, user: registeredUser } = await registerRequest({
+      ...payload,
+      timezone: getDeviceTimezone(),
+      language: getActiveLanguage(),
+    });
     setToken(token);
     setUser(registeredUser);
   }

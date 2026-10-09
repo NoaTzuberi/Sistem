@@ -28,6 +28,7 @@ import {
   REQUIRED_ON_COMPLETE,
 } from './onboarding.constants';
 import type { OnboardingField } from './onboarding.constants';
+import { type ServerMessage, msg } from '../../i18n';
 
 // Moved from users.validation.ts (Phase 3) and split per field, so a single step and
 // the final submit share the same rules and messages.
@@ -46,15 +47,18 @@ interface ValidationContext {
   weightUnit: WeightUnit;
 }
 
-type FieldValidator = (value: unknown, context: ValidationContext) => string | null;
+type FieldValidator = (value: unknown, context: ValidationContext) => ServerMessage | null;
 
 function roundOneDecimal(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
-function weightRangeMessage(unit: WeightUnit): string {
-  if (unit === 'kg') return `Weight must be a number between ${MIN_WEIGHT_KG} and ${MAX_WEIGHT_KG}.`;
-  return `Weight must be a number between ${roundOneDecimal(MIN_WEIGHT_KG / KG_PER_LB)} and ${roundOneDecimal(MAX_WEIGHT_KG / KG_PER_LB)} lb.`;
+function weightRangeMessage(unit: WeightUnit, target = false): ServerMessage {
+  if (unit === 'kg') return msg(target ? 'onboarding_target_weight_invalid' : 'onboarding_weight_invalid', { min: MIN_WEIGHT_KG, max: MAX_WEIGHT_KG });
+  return msg(target ? 'onboarding_target_weight_invalid_lb' : 'onboarding_weight_invalid_lb', {
+    min: roundOneDecimal(MIN_WEIGHT_KG / KG_PER_LB),
+    max: roundOneDecimal(MAX_WEIGHT_KG / KG_PER_LB),
+  });
 }
 
 function isWeightUnit(value: unknown): value is WeightUnit {
@@ -96,19 +100,19 @@ function isObject(value: unknown): value is Record<string, unknown> {
 const FIELD_VALIDATORS: Record<OnboardingField, FieldValidator> = {
   name(value) {
     if (typeof value !== 'string' || value.trim().length === 0) {
-      return 'Name must be a non-empty string.';
+      return msg('onboarding_name_invalid');
     }
     return null;
   },
 
   birthDate(value) {
-    return isValidBirthDate(value) ? null : `Birth date must indicate an age between ${MIN_AGE} and ${MAX_AGE}.`;
+    return isValidBirthDate(value) ? null : msg('onboarding_birth_date_invalid', { min: MIN_AGE, max: MAX_AGE });
   },
 
   height(value) {
     return isNumberInRange(value, MIN_HEIGHT_CM, MAX_HEIGHT_CM)
       ? null
-      : `Height must be a number between ${MIN_HEIGHT_CM} and ${MAX_HEIGHT_CM}.`;
+      : msg('onboarding_height_invalid', { min: MIN_HEIGHT_CM, max: MAX_HEIGHT_CM });
   },
 
   weight(value, { weightUnit }) {
@@ -120,96 +124,99 @@ const FIELD_VALIDATORS: Record<OnboardingField, FieldValidator> = {
 
   gender(value) {
     if (value !== '' && !(GENDER_IDS as readonly string[]).includes(value as string)) {
-      return 'Gender must be one of the valid options.';
+      return msg('onboarding_gender_invalid');
     }
     return null;
   },
 
   units(value) {
-    if (!isObject(value)) return 'Units preference is required.';
-    if (value.weight !== 'kg' && value.weight !== 'lb') return "Weight unit must be 'kg' or 'lb'.";
-    if (value.distance !== 'km' && value.distance !== 'miles') return "Distance unit must be 'km' or 'miles'.";
+    if (!isObject(value)) return msg('onboarding_units_required');
+    if (value.weight !== 'kg' && value.weight !== 'lb') return msg('weight_unit_invalid');
+    if (value.distance !== 'km' && value.distance !== 'miles') return msg('distance_unit_invalid');
     return null;
   },
 
   goals(value) {
     if (!isStringArrayWithinSet(value, GOAL_IDS) || (value as unknown[]).length === 0) {
-      return 'Goals must include at least one valid goal.';
+      return msg('onboarding_goals_invalid');
     }
     return null;
   },
 
   trainingFrequency(value) {
-    if (!isObject(value)) return 'Training frequency is required.';
-    if (!isNumberInRange(value.minDays, 1, 7)) return 'Minimum training days must be between 1 and 7.';
-    if (!isNumberInRange(value.maxDays, 1, 7)) return 'Maximum training days must be between 1 and 7.';
+    if (!isObject(value)) return msg('onboarding_frequency_required');
+    if (!isNumberInRange(value.minDays, 1, 7)) return msg('onboarding_min_days_invalid');
+    if (!isNumberInRange(value.maxDays, 1, 7)) return msg('onboarding_max_days_invalid');
     if ((value.minDays as number) > (value.maxDays as number)) {
-      return 'Minimum training days cannot exceed maximum training days.';
+      return msg('onboarding_days_inverted');
     }
-    if (typeof value.flexibleSchedule !== 'boolean') return 'Flexible schedule must be true or false.';
+    if (typeof value.flexibleSchedule !== 'boolean') return msg('onboarding_flexible_invalid');
     return null;
   },
 
   preferredActivities(value) {
     if (!isStringArrayWithinSet(value, ACTIVITY_IDS) || (value as unknown[]).length === 0) {
-      return 'Preferred activities must include at least one valid activity.';
+      return msg('onboarding_activities_invalid');
     }
     return null;
   },
 
   exercisePreferences(value) {
-    if (!isObject(value)) return 'Exercise preferences must be an object.';
+    if (!isObject(value)) return msg('onboarding_exercise_preferences_invalid');
     if (value.favoriteExerciseNotes !== undefined && typeof value.favoriteExerciseNotes !== 'string') {
-      return 'Favorite exercise notes must be a string.';
+      return msg('onboarding_favorite_notes_invalid');
     }
     if (value.improvementExerciseNotes !== undefined && typeof value.improvementExerciseNotes !== 'string') {
-      return 'Improvement exercise notes must be a string.';
+      return msg('onboarding_improvement_notes_invalid');
     }
     if (value.muscleFocus !== undefined && !isStringArrayWithinSet(value.muscleFocus, MUSCLE_FOCUS_IDS)) {
-      return 'Muscle focus contains an invalid value.';
+      return msg('onboarding_muscle_focus_invalid');
     }
     return null;
   },
 
   equipment(value) {
     if (!isStringArrayWithinSet(value, EQUIPMENT_IDS) || (value as unknown[]).length === 0) {
-      return 'Equipment must include at least one valid option.';
+      return msg('onboarding_equipment_invalid');
     }
     return null;
   },
 
   recovery(value) {
-    if (!isObject(value)) return 'Recovery must be an object.';
+    if (!isObject(value)) return msg('onboarding_recovery_invalid');
     if (value.flags !== undefined && !isStringArrayWithinSet(value.flags, RECOVERY_FLAG_IDS)) {
-      return 'Recovery flags contain an invalid value.';
+      return msg('onboarding_recovery_flags_invalid');
     }
     if (value.notes !== undefined && typeof value.notes !== 'string') {
-      return 'Recovery notes must be a string.';
+      return msg('onboarding_recovery_notes_invalid');
     }
     return null;
   },
 
   nutritionPreferences(value) {
-    if (!isObject(value)) return 'Nutrition preferences must be an object.';
+    if (!isObject(value)) return msg('onboarding_nutrition_invalid');
     if (!(DIET_TYPE_IDS as readonly unknown[]).includes(value.dietType)) {
-      return 'Diet type must be none, vegetarian, vegan or pescatarian.';
+      return msg('onboarding_diet_type_invalid');
     }
     if (!isOptionalText(value.dietTypeDetails, MAX_PREFERENCE_DETAILS_LENGTH)) {
-      return `Details are text of at most ${MAX_PREFERENCE_DETAILS_LENGTH} characters.`;
+      return msg('onboarding_details_too_long', { max: MAX_PREFERENCE_DETAILS_LENGTH });
     }
     const lists = [
-      ['dietStyles', DIET_STYLE_IDS, 'Diet styles'],
-      ['religious', RELIGIOUS_IDS, 'Religious preferences'],
-      ['intolerances', INTOLERANCE_IDS, 'Intolerances'],
-      ['allergies', ALLERGY_IDS, 'Allergies'],
+      ['dietStyles', DIET_STYLE_IDS, msg('onboarding_label_diet_styles')],
+      ['religious', RELIGIOUS_IDS, msg('onboarding_label_religious')],
+      ['intolerances', INTOLERANCE_IDS, msg('onboarding_label_intolerances')],
+      ['allergies', ALLERGY_IDS, msg('onboarding_label_allergies')],
     ] as const;
     for (const [field, ids, label] of lists) {
       const error = preferenceItemsError(value[field], ids, label);
       if (error) return error;
     }
-    for (const [field, label] of [['foodsLoved', 'Foods you love'], ['foodsDisliked', 'Foods you dislike']] as const) {
+    for (const [field, label] of [
+      ['foodsLoved', msg('onboarding_label_foods_loved')],
+      ['foodsDisliked', msg('onboarding_label_foods_disliked')],
+    ] as const) {
       if (!isOptionalText(value[field], MAX_PREFERENCE_TEXT_LENGTH)) {
-        return `${label} must be text of at most ${MAX_PREFERENCE_TEXT_LENGTH} characters.`;
+        return msg('onboarding_text_too_long', { label, max: MAX_PREFERENCE_TEXT_LENGTH });
       }
     }
     const meals = value.mealsPerDay;
@@ -218,7 +225,7 @@ const FIELD_VALIDATORS: Record<OnboardingField, FieldValidator> = {
       meals !== null &&
       !(Number.isInteger(meals) && isNumberInRange(meals, MEALS_PER_DAY_RANGE.min, MEALS_PER_DAY_RANGE.max))
     ) {
-      return `Meals per day must be between ${MEALS_PER_DAY_RANGE.min} and ${MEALS_PER_DAY_RANGE.max}, or no preference.`;
+      return msg('onboarding_meals_invalid', { min: MEALS_PER_DAY_RANGE.min, max: MEALS_PER_DAY_RANGE.max });
     }
     return null;
   },
@@ -226,27 +233,27 @@ const FIELD_VALIDATORS: Record<OnboardingField, FieldValidator> = {
   weightGoal(value, { weightUnit }) {
     // null clears her goal.
     if (value === null) return null;
-    if (!isObject(value)) return 'The weight goal must be an object.';
+    if (!isObject(value)) return msg('onboarding_weight_goal_invalid');
     // The same limits as her weight, in the unit she typed.
     const targetError = FIELD_VALIDATORS.weight(value.targetWeight, { weightUnit });
-    if (targetError) return `Target ${targetError.charAt(0).toLowerCase()}${targetError.slice(1)}`;
+    if (targetError) return weightRangeMessage(weightUnit, true);
     const timeframe = value.timeframe;
     if (timeframe === null || timeframe === undefined) return null;
-    if (!isObject(timeframe)) return 'The timeframe must be weeks or a date.';
+    if (!isObject(timeframe)) return msg('onboarding_timeframe_invalid');
     if (timeframe.kind === 'weeks') {
       const { min, max } = WEIGHT_GOAL_WEEKS_RANGE;
       return Number.isInteger(timeframe.weeks) && isNumberInRange(timeframe.weeks, min, max)
         ? null
-        : `The timeframe must be between ${min} and ${max} weeks.`;
+        : msg('onboarding_timeframe_weeks_invalid', { min, max });
     }
     if (timeframe.kind === 'date') {
-      if (!isDateString(timeframe.date)) return 'The target date must be a date.';
+      if (!isDateString(timeframe.date)) return msg('onboarding_target_date_invalid');
       // Her zone isn't known here: a day of slack around "today" (UTC).
       const today = new Date().toISOString().slice(0, 10);
       const ahead = daysBetween(today, timeframe.date);
-      return ahead >= 0 && ahead <= WEIGHT_GOAL_MAX_DAYS_AHEAD ? null : 'The target date must be in the next two years.';
+      return ahead >= 0 && ahead <= WEIGHT_GOAL_MAX_DAYS_AHEAD ? null : msg('onboarding_target_date_range');
     }
-    return 'The timeframe must be weeks or a date.';
+    return msg('onboarding_timeframe_invalid');
   },
 };
 
@@ -255,18 +262,18 @@ function isOptionalText(value: unknown, maxLength: number): boolean {
 }
 
 /** [{ id, details? }] with known ids (a repeat is dropped on save); "other" needs its text. */
-function preferenceItemsError(value: unknown, ids: readonly string[], label: string): string | null {
+function preferenceItemsError(value: unknown, ids: readonly string[], label: ServerMessage): ServerMessage | null {
   if (value === undefined) return null;
-  if (!Array.isArray(value)) return `${label} must be a list.`;
+  if (!Array.isArray(value)) return msg('onboarding_list_not_list', { label });
   for (const item of value) {
     if (!isObject(item) || typeof item.id !== 'string' || !ids.includes(item.id)) {
-      return `${label} contain an invalid value.`;
+      return msg('onboarding_list_invalid_value', { label });
     }
     if (!isOptionalText(item.details, MAX_PREFERENCE_DETAILS_LENGTH)) {
-      return `Details are text of at most ${MAX_PREFERENCE_DETAILS_LENGTH} characters.`;
+      return msg('onboarding_details_too_long', { max: MAX_PREFERENCE_DETAILS_LENGTH });
     }
     if (item.id === 'other' && !(typeof item.details === 'string' && item.details.trim().length > 0)) {
-      return `${label}: describe "other".`;
+      return msg('onboarding_list_other_needs_text', { label });
     }
   }
   return null;
@@ -276,9 +283,9 @@ function preferenceItemsError(value: unknown, ids: readonly string[], label: str
  * POST /onboarding/complete — every required answer, same rules as the ATLAS submit.
  * `storedWeightUnit`: her saved unit, used when the body carries no units.
  */
-export function validateCompleteOnboardingPayload(body: unknown, storedWeightUnit: WeightUnit = 'kg'): string | null {
+export function validateCompleteOnboardingPayload(body: unknown, storedWeightUnit: WeightUnit = 'kg'): ServerMessage | null {
   if (!isObject(body)) {
-    return 'Invalid request body.';
+    return msg('invalid_body');
   }
 
   const context = { weightUnit: resolveWeightUnit(body, storedWeightUnit) };
@@ -296,23 +303,23 @@ function isStepId(value: unknown): value is OnboardingStepId {
 }
 
 /** PATCH /onboarding — `{ step, answers }` with only that step's fields. */
-export function validateOnboardingStepPayload(body: unknown, storedWeightUnit: WeightUnit = 'kg'): string | null {
+export function validateOnboardingStepPayload(body: unknown, storedWeightUnit: WeightUnit = 'kg'): ServerMessage | null {
   if (!isObject(body)) {
-    return 'Invalid request body.';
+    return msg('invalid_body');
   }
   if (!isStepId(body.step)) {
-    return 'Step must be one of the onboarding steps.';
+    return msg('onboarding_step_invalid');
   }
   const answers = body.answers ?? {};
   if (!isObject(answers)) {
-    return 'Answers must be an object.';
+    return msg('onboarding_answers_invalid');
   }
 
   const allowed = ONBOARDING_STEP_FIELDS[body.step];
   const context = { weightUnit: resolveWeightUnit(answers, storedWeightUnit) };
   for (const [field, value] of Object.entries(answers)) {
     if (!(allowed as readonly string[]).includes(field)) {
-      return `'${field}' is not part of the ${body.step} step.`;
+      return msg('onboarding_field_not_in_step', { field, step: body.step });
     }
     if (value === undefined) continue;
     const error = FIELD_VALIDATORS[field as OnboardingField](value, context);

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, PointerEvent } from 'react';
-import { buildLineChart, nearestPointIndex } from '@sistem/shared';
+import { buildLineChart, nearestPointIndex, useLanguage } from '@sistem/shared';
 import type { ChartPoint, ChartSize } from '@sistem/shared';
 import './LineChart.css';
 
@@ -22,6 +22,7 @@ const MAX_DOTS = 40;
  * that point's value above the chart. Arrow keys do the same.
  */
 export function LineChart({ points, ariaLabel, selectedIndex, onSelect }: LineChartProps) {
+  const language = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
 
@@ -33,7 +34,7 @@ export function LineChart({ points, ariaLabel, selectedIndex, onSelect }: LineCh
     return () => observer.disconnect();
   }, []);
 
-  const geometry = width > 0 ? buildLineChart(points, { width, height: HEIGHT, padding: PADDING }) : null;
+  const geometry = width > 0 ? buildLineChart(points, { width, height: HEIGHT, padding: PADDING }, language) : null;
   const selected = geometry?.points[selectedIndex];
 
   function selectAt(event: PointerEvent<SVGSVGElement>) {
@@ -52,7 +53,7 @@ export function LineChart({ points, ariaLabel, selectedIndex, onSelect }: LineCh
   return (
     <div className="line-chart" ref={containerRef}>
       {geometry && (
-        <svg
+        <svg direction="ltr"
           className="line-chart-svg"
           width={width}
           height={HEIGHT}
@@ -67,6 +68,7 @@ export function LineChart({ points, ariaLabel, selectedIndex, onSelect }: LineCh
           }}
           onKeyDown={handleKeyDown}
         >
+          {/* Time runs left to right in both languages (owner, Phase 15); labels follow the language on screen. */}
           {geometry.yTicks.map((tick) => (
             <g key={tick.value}>
               <line className="line-chart-grid" x1={geometry.plot.left} x2={geometry.plot.right} y1={tick.y} y2={tick.y} />

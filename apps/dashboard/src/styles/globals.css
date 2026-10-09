@@ -49,3 +49,25 @@ button {
   border: none;
   cursor: pointer;
 }
+
+/* Direction icons (back / forward chevrons and arrows) point along the reading direction:
+   mirrored in right-to-left. Icons of real-world things (play, clock, check, logos) never get it. */
+[dir='rtl'] .flip-rtl {
+  scale: -1 1;
+}
+
+/* Numbers, emails and passwords are typed left to right in Hebrew too (Phase 15); they line up
+   with the right-to-left labels around them. */
+:root[dir='rtl']
+  :is(
+    input[type='number'],
+    input[type='email'],
+    input[type='password'],
+    input[type='tel'],
+    input[type='url'],
+    input[inputmode='decimal'],
+    input[inputmode='numeric']
+  ) {
+  direction: ltr;
+  text-align: end;
+}

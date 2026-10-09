@@ -1,18 +1,19 @@
 import { useNavigate } from 'react-router-dom';
-import { photoDays } from '@sistem/shared';
+import { photoDays, useCopy } from '@sistem/shared';
 import { IconPlus } from '@tabler/icons-react';
 import { AppShell } from '../../../../components/layout/AppShell/AppShell';
 import { Button } from '../../../../components/common/Button/Button';
 import { StateMessage } from '../../../../components/common/StateMessage/StateMessage';
 import { ROUTES, progressPhotosDayPath } from '../../../../app/config/routes';
 import { ProgressPhotoGallery } from '../../../bodyTracking/components/ProgressPhotoGallery/ProgressPhotoGallery';
-import { BODY_COPY } from '../../../bodyTracking/data/bodyCopy';
+import { bodyCopy } from '../../../bodyTracking/copy';
 import { SubPageHeader } from '../../components/SubPageHeader/SubPageHeader';
 import { useMyBodyMetrics } from '../../hooks/useMyBody';
 import './ProgressPhotosPage.css';
 
 // Progress photos (PRD §5.5): dated front / side / back, newest first; add, edit, compare.
 export function ProgressPhotosPage() {
+  const copy = useCopy(bodyCopy);
   const navigate = useNavigate();
   const { list, error, isLoading, reload } = useMyBodyMetrics();
   const canCompare = list !== undefined && photoDays(list.items).length >= 2;
@@ -21,32 +22,32 @@ export function ProgressPhotosPage() {
     <AppShell>
       <div className="progress-photos-page">
         <SubPageHeader
-          title={BODY_COPY.photosTitle}
+          title={copy.photosTitle}
           fallbackPath={ROUTES.PROFILE}
           action={
             <Button
               variant="secondary"
               icon={<IconPlus size={18} aria-hidden="true" />}
-              aria-label={BODY_COPY.addPhotos}
+              aria-label={copy.addPhotos}
               onClick={() => navigate(progressPhotosDayPath())}
             >
-              {BODY_COPY.addShort}
+              {copy.addShort}
             </Button>
           }
         />
 
-        {isLoading && !list && <StateMessage>{BODY_COPY.loading}</StateMessage>}
+        {isLoading && !list && <StateMessage>{copy.loading}</StateMessage>}
         {error && !list && <StateMessage onRetry={reload}>{error}</StateMessage>}
 
         {list && (
           <>
             {canCompare && (
               <Button variant="secondary" onClick={() => navigate(ROUTES.PROFILE_PHOTOS_COMPARE)}>
-                {BODY_COPY.compare}
+                {copy.compare}
               </Button>
             )}
             <ProgressPhotoGallery metrics={list.items} onLinkExpired={reload} onEditDay={(date) => navigate(progressPhotosDayPath(date))} />
-            <p className="progress-photos-page-privacy">{BODY_COPY.privacy}</p>
+            <p className="progress-photos-page-privacy">{copy.privacy}</p>
           </>
         )}
       </div>

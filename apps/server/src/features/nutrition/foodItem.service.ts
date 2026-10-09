@@ -8,12 +8,13 @@ import { compareFoods, toPublicFoodItem } from './nutritionMapping';
 import type { LeanFoodItem } from './nutritionMapping';
 import { getEffectiveNutritionConfig } from './nutritionSettings.service';
 import { foodKcalProblem } from './nutrition.validation';
+import { LocalizedError } from '../../i18n';
 
 // The coach's food list (dashboard). Every query is scoped by coachId: another coach's
 // item is simply not found.
 
-export class FoodItemNotFoundError extends Error {}
-export class FoodItemValidationError extends Error {}
+export class FoodItemNotFoundError extends LocalizedError {}
+export class FoodItemValidationError extends LocalizedError {}
 
 export async function listCoachFoods(coachId: string): Promise<FoodItem[]> {
   const items = await FoodItemModel.find({ coachId }).lean<LeanFoodItem[]>();
@@ -42,7 +43,7 @@ export async function createCoachFood(coachId: string, input: FoodItemPayload): 
   const group = input.group!;
   await checkKcal(coachId, group, input.kcal);
   const category = input.category ?? null;
-  if (category !== null && !isCategoryOf(group, category)) throw new FoodItemValidationError('That category is not in this group.');
+  if (category !== null && !isCategoryOf(group, category)) throw new FoodItemValidationError('food_category_wrong_group');
   // New items go to the end of their group unless an order was given.
   const order =
     input.order ??
@@ -64,7 +65,7 @@ export async function createCoachFood(coachId: string, input: FoodItemPayload): 
 
 export async function updateCoachFood(coachId: string, foodId: string, input: FoodItemPayload): Promise<FoodItem> {
   const item = await FoodItemModel.findOne({ _id: foodId, coachId });
-  if (!item) throw new FoodItemNotFoundError('Food item not found.');
+  if (!item) throw new FoodItemNotFoundError('food_not_found');
 
   const group = input.group ?? item.group;
   await checkKcal(coachId, group, input.kcal !== undefined ? input.kcal : item.kcal);
@@ -78,7 +79,7 @@ export async function updateCoachFood(coachId: string, foodId: string, input: Fo
   if (input.order !== undefined) item.order = input.order;
   if (input.category !== undefined) {
     if (input.category !== null && !isCategoryOf(group, input.category)) {
-      throw new FoodItemValidationError('That category is not in this group.');
+      throw new FoodItemValidationError('food_category_wrong_group');
     }
     item.category = input.category;
   } else if (item.category && !isCategoryOf(group, item.category)) {
@@ -104,7 +105,7 @@ export async function isFoodItemUsed(foodId: string): Promise<boolean> {
 /** Items a plan or template uses are archived (they keep resolving), never deleted (PRD §5.6). */
 export async function deleteCoachFood(coachId: string, foodId: string): Promise<DeleteFoodItemResult> {
   const item = await FoodItemModel.findOne({ _id: foodId, coachId });
-  if (!item) throw new FoodItemNotFoundError('Food item not found.');
+  if (!item) throw new FoodItemNotFoundError('food_not_found');
 
   if (await isFoodItemUsed(foodId)) {
     item.archivedAt ??= new Date();
@@ -121,7 +122,7 @@ export async function restoreCoachFood(coachId: string, foodId: string): Promise
     { $set: { archivedAt: null } },
     { returnDocument: 'after' },
   ).lean<LeanFoodItem>();
-  if (!item) throw new FoodItemNotFoundError('Food item not found.');
+  if (!item) throw new FoodItemNotFoundError('food_not_found');
   return toPublicFoodItem(item);
 }
 

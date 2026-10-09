@@ -1,3 +1,4 @@
+import { fill, useCopy } from '@sistem/shared';
 import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import axios from 'axios';
@@ -8,7 +9,7 @@ import { Modal } from '../../../../components/common/Modal/Modal';
 import { PrivatePhoto } from '../../../../components/common/PrivatePhoto/PrivatePhoto';
 import { removePumpPhoto, uploadPumpPhoto } from '../../../../services/workoutLogs/workoutLogsService';
 import { PhotoTooLargeError, compressPhoto } from '../../../privatePhotos/data/photoCompression';
-import { PUMP_PHOTO_COPY, SUMMARY_COPY } from '../../data/workoutCopy';
+import { workoutCopy } from '../../copy';
 import './PumpPhotoField.css';
 
 type Busy = { kind: 'preparing' } | { kind: 'uploading'; percent: number } | { kind: 'removing' } | null;
@@ -20,14 +21,14 @@ interface PumpPhotoFieldProps {
   onLinkExpired: () => void;
 }
 
-function uploadErrorMessage(error: unknown): string {
-  if (error instanceof PhotoTooLargeError) return PUMP_PHOTO_COPY.tooLarge;
+function uploadErrorMessage(error: unknown, copy: (typeof workoutCopy)['he']): string {
+  if (error instanceof PhotoTooLargeError) return copy.pumpPhoto.tooLarge;
   if (axios.isAxiosError(error)) {
-    if (!error.response) return PUMP_PHOTO_COPY.offline;
-    if (error.response.status === 413) return PUMP_PHOTO_COPY.tooLarge;
-    return PUMP_PHOTO_COPY.uploadError;
+    if (!error.response) return copy.pumpPhoto.offline;
+    if (error.response.status === 413) return copy.pumpPhoto.tooLarge;
+    return copy.pumpPhoto.uploadError;
   }
-  return PUMP_PHOTO_COPY.readError;
+  return copy.pumpPhoto.readError;
 }
 
 /**
@@ -37,6 +38,7 @@ function uploadErrorMessage(error: unknown): string {
  * upload never blocks them.
  */
 export function PumpPhotoField({ log, onLogChange, onLinkExpired }: PumpPhotoFieldProps) {
+  const copy = useCopy(workoutCopy);
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<Busy>(null);
@@ -62,7 +64,7 @@ export function PumpPhotoField({ log, onLogChange, onLinkExpired }: PumpPhotoFie
       setPending(null);
       onLogChange(updated);
     } catch (caught) {
-      setError(uploadErrorMessage(caught));
+      setError(uploadErrorMessage(caught, copy));
     } finally {
       setBusy(null);
     }
@@ -80,7 +82,7 @@ export function PumpPhotoField({ log, onLogChange, onLinkExpired }: PumpPhotoFie
       photo = await compressPhoto(file);
     } catch (caught) {
       setBusy(null);
-      setError(uploadErrorMessage(caught));
+      setError(uploadErrorMessage(caught, copy));
       return;
     }
     await upload(photo);
@@ -94,7 +96,7 @@ export function PumpPhotoField({ log, onLogChange, onLinkExpired }: PumpPhotoFie
       onLogChange(await removePumpPhoto(log.id));
       setLocalSrc(null);
     } catch {
-      setError(PUMP_PHOTO_COPY.removeError);
+      setError(copy.pumpPhoto.removeError);
     } finally {
       setBusy(null);
     }
@@ -102,24 +104,24 @@ export function PumpPhotoField({ log, onLogChange, onLinkExpired }: PumpPhotoFie
 
   const status =
     busy?.kind === 'preparing'
-      ? PUMP_PHOTO_COPY.preparing
+      ? copy.pumpPhoto.preparing
       : busy?.kind === 'uploading'
-        ? PUMP_PHOTO_COPY.uploading(busy.percent)
+        ? fill(copy.pumpPhoto.uploading, { percent: busy.percent })
         : null;
 
   return (
     <section className="pump-photo-field" aria-labelledby="pump-photo-title">
       <h2 id="pump-photo-title" className="pump-photo-field-title">
-        {PUMP_PHOTO_COPY.title}
+        {copy.pumpPhoto.title}
       </h2>
 
       {log.pumpPhoto && (
         <PrivatePhoto
           photo={log.pumpPhoto}
           localSrc={localSrc ?? undefined}
-          alt={PUMP_PHOTO_COPY.alt}
-          openLabel={PUMP_PHOTO_COPY.open}
-          closeLabel={SUMMARY_COPY.close}
+          alt={copy.pumpPhoto.alt}
+          openLabel={copy.pumpPhoto.open}
+          closeLabel={copy.summary.close}
           onLinkExpired={onLinkExpired}
         />
       )}
@@ -134,7 +136,7 @@ export function PumpPhotoField({ log, onLogChange, onLinkExpired }: PumpPhotoFie
           <span>{error}</span>
           {pending && (
             <Button variant="secondary" onClick={() => void upload(pending)}>
-              {PUMP_PHOTO_COPY.retry}
+              {copy.pumpPhoto.retry}
             </Button>
           )}
         </div>
@@ -147,7 +149,7 @@ export function PumpPhotoField({ log, onLogChange, onLinkExpired }: PumpPhotoFie
           onClick={() => cameraRef.current?.click()}
           disabled={busy !== null}
         >
-          {PUMP_PHOTO_COPY.takePhoto}
+          {copy.pumpPhoto.takePhoto}
         </Button>
         <Button
           variant="secondary"
@@ -155,7 +157,7 @@ export function PumpPhotoField({ log, onLogChange, onLinkExpired }: PumpPhotoFie
           onClick={() => galleryRef.current?.click()}
           disabled={busy !== null}
         >
-          {PUMP_PHOTO_COPY.chooseFromGallery}
+          {copy.pumpPhoto.chooseFromGallery}
         </Button>
         {log.pumpPhoto && (
           <Button
@@ -165,24 +167,24 @@ export function PumpPhotoField({ log, onLogChange, onLinkExpired }: PumpPhotoFie
             loading={busy?.kind === 'removing'}
             disabled={busy !== null}
           >
-            {PUMP_PHOTO_COPY.remove}
+            {copy.pumpPhoto.remove}
           </Button>
         )}
       </div>
 
-      <p className="pump-photo-field-privacy">{PUMP_PHOTO_COPY.privacy}</p>
+      <p className="pump-photo-field-privacy">{copy.pumpPhoto.privacy}</p>
 
       {/* `capture` opens the camera directly; without it the phone offers its photo library. */}
       <input ref={cameraRef} className="pump-photo-field-input" type="file" accept="image/*" capture onChange={handlePicked} />
       <input ref={galleryRef} className="pump-photo-field-input" type="file" accept="image/*" onChange={handlePicked} />
 
-      <Modal isOpen={confirmRemove} onClose={() => setConfirmRemove(false)} variant="flat" title={PUMP_PHOTO_COPY.removeTitle}>
+      <Modal isOpen={confirmRemove} onClose={() => setConfirmRemove(false)} variant="flat" title={copy.pumpPhoto.removeTitle}>
         <div className="pump-photo-field-dialog">
           <Button variant="danger" onClick={() => void handleRemove()}>
-            {PUMP_PHOTO_COPY.removeConfirm}
+            {copy.pumpPhoto.removeConfirm}
           </Button>
           <Button variant="ghost" onClick={() => setConfirmRemove(false)}>
-            {PUMP_PHOTO_COPY.cancel}
+            {copy.pumpPhoto.cancel}
           </Button>
         </div>
       </Modal>

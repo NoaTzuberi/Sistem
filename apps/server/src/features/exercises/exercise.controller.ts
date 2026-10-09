@@ -12,11 +12,12 @@ import type {
   Mechanic,
   ForceType,
 } from './exercise.constants';
+import { sendError } from '../../i18n';
 
 export async function listExercises(req: Request, res: Response) {
   const validationError = validateExerciseListQuery(req.query);
   if (validationError) {
-    res.status(400).json({ message: validationError });
+    sendError(res, 400, validationError);
     return;
   }
 
@@ -43,7 +44,7 @@ export async function listExercises(req: Request, res: Response) {
 export async function getExerciseBySlug(req: Request, res: Response) {
   const validationError = validateSlugParam(req.params.slug);
   if (validationError) {
-    res.status(400).json({ message: validationError });
+    sendError(res, 400, validationError);
     return;
   }
 
@@ -52,7 +53,7 @@ export async function getExerciseBySlug(req: Request, res: Response) {
     res.status(200).json({ exercise });
   } catch (error) {
     if (error instanceof ExerciseNotFoundError) {
-      res.status(404).json({ message: error.message });
+      sendError(res, 404, error.serverMessage);
       return;
     }
     throw error;

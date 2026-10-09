@@ -1,3 +1,5 @@
+import { sharedCopy, useCopy } from '@sistem/shared';
+import { onboardingCopy } from '../../copy';
 import { Autocomplete } from '../../../../components/common/Autocomplete/Autocomplete';
 import { SelectableChip } from '../../components/SelectableChip/SelectableChip';
 import { MUSCLE_FOCUS_OPTIONS } from '../../data/options';
@@ -14,6 +16,8 @@ export function ExercisePreferencesStep({
   formState,
   updateFormState,
 }: ExercisePreferencesStepProps) {
+  const copy = useCopy(onboardingCopy).exercisePreferences;
+  const labels = useCopy(sharedCopy).onboardingOptions.muscleFocus;
   const { exercisePreferences } = formState;
 
   function toggleMuscle(id: string) {
@@ -30,12 +34,12 @@ export function ExercisePreferencesStep({
 
   return (
     <div className="onboarding-step exercise-preferences-step">
-      <h1>What would you like Sistem to prioritize?</h1>
-      <p className="text-body">All answers are optional — you can edit this later.</p>
+      <h1>{copy.title}</h1>
+      <p className="text-body">{copy.hint}</p>
 
       <Autocomplete
-        label="Exercises you enjoy"
-        placeholder="e.g. Bench Press, Deadlift"
+        label={copy.enjoyLabel}
+        placeholder={copy.enjoyPlaceholder}
         value={exercisePreferences.favoriteExerciseNotes}
         onChange={(value) =>
           updateFormState({
@@ -49,8 +53,8 @@ export function ExercisePreferencesStep({
       />
 
       <Autocomplete
-        label="Exercises you want to improve"
-        placeholder="e.g. Pull-ups, Squats"
+        label={copy.improveLabel}
+        placeholder={copy.improvePlaceholder}
         value={exercisePreferences.improvementExerciseNotes}
         onChange={(value) =>
           updateFormState({
@@ -64,12 +68,12 @@ export function ExercisePreferencesStep({
       />
 
       <div className="exercise-preferences-muscles">
-        <span className="text-label">Muscle groups you want to focus on</span>
+        <span className="text-label">{copy.muscleLabel}</span>
         <div className="exercise-preferences-muscles-grid">
           {MUSCLE_FOCUS_OPTIONS.map((muscle) => (
             <SelectableChip
               key={muscle.id}
-              label={muscle.label}
+              label={labels[muscle.id]}
               selected={exercisePreferences.muscleFocus.includes(muscle.id)}
               onClick={() => toggleMuscle(muscle.id)}
             />

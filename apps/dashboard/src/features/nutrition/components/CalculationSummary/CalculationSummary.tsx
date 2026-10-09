@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import type { CalculationOverrides, CalorieSuggestion, FormulaSex, NutritionGoal, PortionCounts } from '@sistem/types';
-import { NUTRITION_GOAL_LABELS, describeMealPortions, formatKcal } from '@sistem/shared';
+import type { CalculationOverrides, CalorieSuggestion, FormulaSex, Language, NutritionGoal, PortionCounts } from '@sistem/types';
+import { describeMealPortions, fill, formatKcal, formatNumber, isolateLtr, sharedCopy, useCopy, useI18n, formatDateShort } from '@sistem/shared';
 import { extractErrorMessage } from '@sistem/api-client';
 import { getCalorieSuggestion } from '../../../../services/coach/coachService';
 import { NumberField } from '../../../../components/common/NumberField/NumberField';
 import { Button } from '../../../../components/common/Button/Button';
-import { NUTRITION_COPY } from '../../data/nutritionCopy';
+import { nutritionCopy } from '../../copy';
 import { NO_OVERRIDES } from '../../nutritionDraft';
 import type { NutritionDraft } from '../../nutritionDraft';
 import './CalculationSummary.css';
@@ -13,12 +13,6 @@ import './CalculationSummary.css';
 const GOALS: NutritionGoal[] = ['fat_loss', 'fat_loss_aggressive', 'recomp', 'muscle_gain', 'maintenance'];
 // The owner's activity levels (calorie-formula.md); "" = from her training days.
 const ACTIVITY_LEVELS = [1.2, 1.375, 1.55, 1.725] as const;
-const MISSING_LABELS: Record<CalorieSuggestion['missing'][number], string> = {
-  weight: 'weight',
-  height: 'height',
-  birthDate: 'age',
-  trainingFrequency: 'training days',
-};
 // Waits for typing to settle before asking the server again.
 const REFRESH_DELAY_MS = 300;
 
@@ -32,8 +26,9 @@ interface CalculationSummaryProps {
   dayPortions: PortionCounts | null;
 }
 
-function signed(value: number, unit: string): string {
-  return `${value > 0 ? '+' : value < 0 ? '−' : ''}${Math.abs(value).toLocaleString('en-US')}${unit}`;
+/** '+250 kcal', '−1,200' — the sign stays in front of the number in Hebrew text too. */
+function signed(value: number, unit: string, language: Language): string {
+  return isolateLtr(`${value > 0 ? '+' : value < 0 ? '−' : ''}${formatNumber(Math.abs(value), language)}`) + unit;
 }
 
 /**
@@ -43,6 +38,9 @@ function signed(value: number, unit: string): string {
  * input, the target and the meals.
  */
 export function CalculationSummary({ traineeId, target, onChange, floorKcal, dayKcal, dayPortions }: CalculationSummaryProps) {
+  const shared = useCopy(sharedCopy);
+  const copy = useCopy(nutritionCopy);
+  const { language, plural } = useI18n();
   // The last good answer stays on screen while a new one is on its way (or was refused).
   const [suggestion, setSuggestion] = useState<CalorieSuggestion | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
@@ -59,7 +57,7 @@ export function CalculationSummary({ traineeId, target, onChange, floorKcal, day
           setSuggestion(next);
           setRequestError(null);
         })
-        .catch((failure: unknown) => current && setRequestError(extractErrorMessage(failure, NUTRITION_COPY.summaryError)));
+        .catch((failure: unknown) => current && setRequestError(extractErrorMessage(failure, copy.summaryError)));
     }, REFRESH_DELAY_MS);
     return () => {
       current = false;
@@ -87,65 +85,76 @@ export function CalculationSummary({ traineeId, target, onChange, floorKcal, day
     <section className="calculation-summary" aria-labelledby="calculation-summary-title">
       <div className="calculation-summary-head">
         <h2 className="nutrition-panel-title" id="calculation-summary-title">
-          {NUTRITION_COPY.summaryTitle}
+          {copy.summaryTitle}
         </h2>
         {hasOverrides && (
           <Button size="sm" onClick={() => onChange({ overrides: { ...NO_OVERRIDES } })}>
-            {NUTRITION_COPY.resetToHerData}
+            {copy.resetToHerData}
           </Button>
         )}
       </div>
 
-      <h3 className="calculation-summary-subtitle">{NUTRITION_COPY.herData}</h3>
+      <h3 className="calculation-summary-subtitle">{copy.herData}</h3>
       <div className="calculation-summary-fields">
-        <NumberField label={mark('weightKg', NUTRITION_COPY.weightKg)} value={fieldValue('weightKg')} step={0.1} onChange={(value) => setOverride('weightKg', value)} />
-        <NumberField label={mark('heightCm', NUTRITION_COPY.heightCm)} value={fieldValue('heightCm')} onChange={(value) => setOverride('heightCm', value)} />
-        <NumberField label={mark('ageYears', NUTRITION_COPY.age)} value={fieldValue('ageYears')} onChange={(value) => setOverride('ageYears', value)} />
+        <NumberField label={mark('weightKg', copy.weightKg)} value={fieldValue('weightKg')} step={0.1} onChange={(value) => setOverride('weightKg', value)} />
+        <NumberField label={mark('heightCm', copy.heightCm)} value={fieldValue('heightCm')} onChange={(value) => setOverride('heightCm', value)} />
+        <NumberField label={mark('ageYears', copy.age)} value={fieldValue('ageYears')} onChange={(value) => setOverride('ageYears', value)} />
         <label className="calculation-summary-field">
-          <span>{NUTRITION_COPY.sex}</span>
+          <span>{copy.sex}</span>
           {inputs?.sex === 'male' || inputs?.sex === 'female' ? (
-            <span className="calculation-summary-value">{inputs.sex === 'male' ? 'Male' : 'Female'}</span>
+            <span className="calculation-summary-value">{shared.onboardingOptions.gender[inputs.sex]}</span>
           ) : (
             <select value={formulaSex ?? ''} onChange={(event) => onChange({ formulaSex: (event.target.value || null) as FormulaSex | null })}>
-              <option value="">{NUTRITION_COPY.formulaPick}</option>
-              <option value="female">Female</option>
-              <option value="male">Male</option>
+              <option value="">{copy.formulaPick}</option>
+              <option value="female">{shared.onboardingOptions.gender.female}</option>
+              <option value="male">{shared.onboardingOptions.gender.male}</option>
             </select>
           )}
         </label>
         <label className="calculation-summary-field">
-          <span>{mark('activityFactor', NUTRITION_COPY.activity)}</span>
+          <span>{mark('activityFactor', copy.activity)}</span>
           <select
             value={overrides.activityFactor ?? ''}
             onChange={(event) => setOverride('activityFactor', event.target.value === '' ? undefined : Number(event.target.value))}
           >
             <option value="">
-              {inputs?.trainingDays ? NUTRITION_COPY.activityFromDays(inputs.trainingDays) : NUTRITION_COPY.activityFromDays(null)}
+              {inputs?.trainingDays ? fill(copy.activityFromDays, { days: inputs.trainingDays }) : copy.activityFromDaysUnknown}
             </option>
             {ACTIVITY_LEVELS.map((level) => (
               <option key={level} value={level}>
-                {NUTRITION_COPY.activityLevels[level]}
+                {copy.activityLevels[level]}
               </option>
             ))}
           </select>
         </label>
         <label className="calculation-summary-field">
-          <span>{NUTRITION_COPY.goal}</span>
+          <span>{copy.goal}</span>
           <select value={goal} onChange={(event) => onChange({ goal: event.target.value as NutritionGoal })}>
             {GOALS.map((option) => (
               <option key={option} value={option}>
-                {NUTRITION_GOAL_LABELS[option]}
+                {shared.nutrition.goals[option]}
               </option>
             ))}
           </select>
         </label>
-        <NumberField label={mark('targetWeightKg', NUTRITION_COPY.targetWeight)} value={fieldValue('targetWeightKg')} step={0.5} onChange={(value) => setOverride('targetWeightKg', value)} />
-        <NumberField label={mark('timelineWeeks', NUTRITION_COPY.timelineWeeks)} value={fieldValue('timelineWeeks')} onChange={(value) => setOverride('timelineWeeks', value)} />
+        <NumberField label={mark('targetWeightKg', copy.targetWeight)} value={fieldValue('targetWeightKg')} step={0.5} onChange={(value) => setOverride('targetWeightKg', value)} />
+        <NumberField label={mark('timelineWeeks', copy.timelineWeeks)} value={fieldValue('timelineWeeks')} onChange={(value) => setOverride('timelineWeeks', value)} />
       </div>
       {inputs && (
         <p className="calculation-summary-note">
-          {NUTRITION_COPY.inputsSource(inputs.weightSource, inputs.weightDate, inputs.targetDate)}
-          {overridden.size > 0 && ` ${NUTRITION_COPY.overriddenMark}`}
+          {[
+            inputs.weightSource === 'weigh_in'
+              ? fill(copy.sourceWeighIn, { date: inputs.weightDate ? formatDateShort(inputs.weightDate, language) : '' })
+              : inputs.weightSource === 'onboarding'
+                ? copy.sourceOnboarding
+                : inputs.weightSource === 'coach'
+                  ? copy.sourceCoach
+                  : null,
+            inputs.targetDate ? fill(copy.sourceTargetDate, { date: formatDateShort(inputs.targetDate, language) }) : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+          {overridden.size > 0 && ` ${copy.overriddenMark}`}
         </p>
       )}
 
@@ -154,72 +163,77 @@ export function CalculationSummary({ traineeId, target, onChange, floorKcal, day
           {requestError}
         </p>
       )}
-      {suggestion?.status === 'needs_formula' && <p className="calculation-summary-note">{NUTRITION_COPY.suggestionNeedsFormula}</p>}
+      {suggestion?.status === 'needs_formula' && <p className="calculation-summary-note">{copy.suggestionNeedsFormula}</p>}
       {suggestion?.status === 'missing_inputs' && (
-        <p className="calculation-summary-note">{NUTRITION_COPY.suggestionMissing(suggestion.missing.map((field) => MISSING_LABELS[field]).join(', '))}</p>
+        <p className="calculation-summary-note">{fill(copy.suggestionMissing, { fields: suggestion.missing.map((field) => copy.missing[field]).join(shared.common.listSeparator) })}</p>
       )}
 
       {suggestion?.status === 'ok' && suggestion.bmr !== null && suggestion.tdee !== null && (
         <>
           <dl className="calculation-summary-numbers">
             <div>
-              <dt>BMR</dt>
-              <dd>{formatKcal(suggestion.bmr)}</dd>
+              <dt>{copy.bmr}</dt>
+              <dd>{formatKcal(suggestion.bmr, language)}</dd>
             </div>
             <div>
-              <dt>TDEE</dt>
+              <dt>{copy.tdee}</dt>
               <dd>
-                {formatKcal(suggestion.tdee)} <span className="calculation-summary-muted">(× {inputs?.activityFactor})</span>
+                {formatKcal(suggestion.tdee, language)} <span className="calculation-summary-muted">(× {inputs?.activityFactor})</span>
               </dd>
             </div>
             <div>
-              <dt>{(suggestion.deltaKcal ?? 0) < 0 ? NUTRITION_COPY.deficit : NUTRITION_COPY.surplus}</dt>
+              <dt>{(suggestion.deltaKcal ?? 0) < 0 ? copy.deficit : copy.surplus}</dt>
               <dd>
-                {signed(suggestion.deltaKcal ?? 0, ' kcal/day')} <span className="calculation-summary-muted">({signed(suggestion.deltaPct ?? 0, '%')})</span>
+                {signed(suggestion.deltaKcal ?? 0, copy.kcalPerDay, language)} <span className="calculation-summary-muted">({signed(suggestion.deltaPct ?? 0, '%', language)})</span>
               </dd>
             </div>
             <div>
-              <dt>{NUTRITION_COPY.weeklyRate}</dt>
-              <dd>{signed(suggestion.weeklyRateKg ?? 0, ' kg/week')}</dd>
+              <dt>{copy.weeklyRate}</dt>
+              <dd>{signed(suggestion.weeklyRateKg ?? 0, copy.kgPerWeek, language)}</dd>
             </div>
             <div>
-              <dt>{NUTRITION_COPY.expectedTimeline}</dt>
-              <dd>{suggestion.expectedWeeks !== null ? NUTRITION_COPY.weeks(suggestion.expectedWeeks) : '—'}</dd>
+              <dt>{copy.expectedTimeline}</dt>
+              <dd>{suggestion.expectedWeeks !== null ? plural(copy.weeks, suggestion.expectedWeeks) : '—'}</dd>
             </div>
             <div>
-              <dt>{NUTRITION_COPY.method}</dt>
-              <dd>{suggestion.method === 'timeline' ? NUTRITION_COPY.methodTimeline : NUTRITION_COPY.methodPercent(inputs?.adjustmentPct ?? 0)}</dd>
+              <dt>{copy.method}</dt>
+              <dd>{suggestion.method === 'timeline' ? copy.methodTimeline : fill(copy.methodPercent, { pct: signed(inputs?.adjustmentPct ?? 0, '', language) })}</dd>
             </div>
           </dl>
 
           {timeline?.unsafe && (
             <div className="calculation-summary-warning" role="alert">
               <p>
-                <strong>{NUTRITION_COPY.unsafePace(timeline.recommendedWeeks)}</strong>
+                <strong>{fill(copy.unsafePace, { weeks: timeline.recommendedWeeks ?? '—' })}</strong>
               </p>
-              <p>{NUTRITION_COPY.unsafeDetail(timeline.requestedWeeks, timeline.requiredRateKg, timeline.safeRateKg, timeline.limitedBy)}</p>
+              <p>{fill(copy.unsafeDetail, {
+                  weeks: timeline.requestedWeeks,
+                  required: timeline.requiredRateKg,
+                  safe: timeline.safeRateKg,
+                  limit: timeline.limitedBy === 'rate' ? copy.limitRate : timeline.limitedBy === 'max_deficit' ? copy.limitMaxDeficit : copy.limitFloor,
+                })}</p>
             </div>
           )}
-          {suggestion.timelineNote && <p className="calculation-summary-note">{NUTRITION_COPY.timelineNotes[suggestion.timelineNote]}</p>}
-          {suggestion.raisedToFloor && <p className="calculation-summary-note">{NUTRITION_COPY.raisedToFloor(floorKcal)}</p>}
+          {suggestion.timelineNote && <p className="calculation-summary-note">{copy.timelineNotes[suggestion.timelineNote]}</p>}
+          {suggestion.raisedToFloor && <p className="calculation-summary-note">{fill(copy.raisedToFloor, { floor: formatNumber(floorKcal, language) })}</p>}
 
           {suggestion.kcal !== null && (
             <div className="calculation-summary-recommended">
               <p className="calculation-summary-line">
-                {NUTRITION_COPY.recommended} <strong>{formatKcal(suggestion.kcal)}</strong>
+                {copy.recommended} <strong>{formatKcal(suggestion.kcal, language)}</strong>
                 {usingSuggestion ? (
-                  <span className="calculation-summary-using"> · {NUTRITION_COPY.usingSuggestion}</span>
+                  <span className="calculation-summary-using"> · {copy.usingSuggestion}</span>
                 ) : (
                   <Button size="sm" onClick={() => onChange({ kcal: suggestion.kcal!, source: 'suggested', confirmBelowFloor: false })}>
-                    {NUTRITION_COPY.useSuggestion}
+                    {copy.useSuggestion}
                   </Button>
                 )}
               </p>
               {suggestion.portions && (
                 <p className="calculation-summary-line">
-                  {NUTRITION_COPY.portionsPerDay} <strong>{describeMealPortions(suggestion.portions, false)}</strong>
-                  {suggestion.portionsKcal !== null && <span className="calculation-summary-muted"> (≈ {formatKcal(suggestion.portionsKcal)})</span>}
-                  <span className="calculation-summary-muted">· {NUTRITION_COPY.portionsPlaceholderNote}</span>
+                  {copy.portionsPerDay} <strong>{describeMealPortions(suggestion.portions, false, language)}</strong>
+                  {suggestion.portionsKcal !== null && <span className="calculation-summary-muted"> (≈ {formatKcal(suggestion.portionsKcal, language)})</span>}
+                  <span className="calculation-summary-muted">· {copy.portionsPlaceholderNote}</span>
                 </p>
               )}
             </div>
@@ -229,25 +243,25 @@ export function CalculationSummary({ traineeId, target, onChange, floorKcal, day
 
       <div className="calculation-summary-target">
         <NumberField
-          label={`${NUTRITION_COPY.target}${target.source === 'override' && target.kcal !== undefined ? ` (${NUTRITION_COPY.override})` : ''}`}
+          label={`${copy.target}${target.source === 'override' && target.kcal !== undefined ? ` (${copy.override})` : ''}`}
           value={target.kcal}
           step={10}
           onChange={(kcal) => onChange({ kcal, source: kcal === undefined ? null : 'override', confirmBelowFloor: false })}
         />
         {dayKcal !== null && dayPortions && (
           <p className="calculation-summary-line">
-            {NUTRITION_COPY.planNow} <strong>{describeMealPortions(dayPortions, false)}</strong> = {formatKcal(dayKcal)}
-            {target.kcal !== undefined && <span className="calculation-summary-muted"> ({NUTRITION_COPY.versusTarget(dayKcal - target.kcal)})</span>}
+            {copy.planNow} <strong>{describeMealPortions(dayPortions, false, language)}</strong> = {formatKcal(dayKcal, language)}
+            {target.kcal !== undefined && <span className="calculation-summary-muted"> ({fill(copy.versusTarget, { diff: signed(dayKcal - target.kcal, '', language) })})</span>}
           </p>
         )}
       </div>
 
       {belowFloor && (
         <div className="calculation-summary-warning" role="alert">
-          <p>{NUTRITION_COPY.belowFloor(floorKcal)}</p>
+          <p>{fill(copy.belowFloor, { floor: formatNumber(floorKcal, language) })}</p>
           <label>
             <input type="checkbox" checked={target.confirmBelowFloor} onChange={(event) => onChange({ confirmBelowFloor: event.target.checked })} />{' '}
-            {NUTRITION_COPY.confirmBelowFloor}
+            {copy.confirmBelowFloor}
           </label>
         </div>
       )}

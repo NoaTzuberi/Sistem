@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import type { NutritionFeatures } from '@sistem/types';
+import { sendError } from '../i18n';
 
 // Feature flags for built-but-closed features (Phase 13b). One server-wide switch per
 // feature, read from the environment, default OFF. The server enforces them (a closed
@@ -41,7 +42,7 @@ export function setFeatureFlagsForTests(overrides: Partial<NutritionFeatures> | 
 export function requireFeature(flag: FeatureFlag) {
   return (_req: Request, res: Response, next: NextFunction) => {
     if (!isFeatureEnabled(flag)) {
-      res.status(404).json({ message: 'Not found.' });
+      sendError(res, 404, 'not_found');
       return;
     }
     next();

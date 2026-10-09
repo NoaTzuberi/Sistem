@@ -8,11 +8,12 @@ import {
   markAllNotificationsRead,
   NotificationNotFoundError,
 } from './notification.service';
+import { sendError } from '../../i18n';
 
 export async function getMyNotifications(req: AuthenticatedRequest, res: Response) {
   const parsed = parseNotificationListQuery(req.query as Record<string, unknown>);
   if ('error' in parsed) {
-    res.status(400).json({ message: parsed.error });
+    sendError(res, 400, parsed.error);
     return;
   }
 
@@ -28,7 +29,7 @@ export async function getMyUnreadCount(req: AuthenticatedRequest, res: Response)
 export async function markMyNotificationRead(req: AuthenticatedRequest, res: Response) {
   const validationError = validateNotificationIdParam(req.params.id);
   if (validationError) {
-    res.status(400).json({ message: validationError });
+    sendError(res, 400, validationError);
     return;
   }
 
@@ -37,7 +38,7 @@ export async function markMyNotificationRead(req: AuthenticatedRequest, res: Res
     res.status(200).json({ notification });
   } catch (error) {
     if (error instanceof NotificationNotFoundError) {
-      res.status(404).json({ message: error.message });
+      sendError(res, 404, error.serverMessage);
       return;
     }
     throw error;

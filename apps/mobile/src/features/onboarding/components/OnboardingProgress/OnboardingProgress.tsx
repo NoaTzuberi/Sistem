@@ -1,3 +1,5 @@
+import { fill, useCopy } from '@sistem/shared';
+import { onboardingCopy } from '../../copy';
 import './OnboardingProgress.css';
 
 interface OnboardingProgressProps {
@@ -6,6 +8,7 @@ interface OnboardingProgressProps {
 }
 
 export function OnboardingProgress({ currentStep, totalSteps }: OnboardingProgressProps) {
+  const copy = useCopy(onboardingCopy);
   return (
     <div className="onboarding-progress">
       <div className="onboarding-progress-track">
@@ -21,7 +24,7 @@ export function OnboardingProgress({ currentStep, totalSteps }: OnboardingProgre
         ))}
       </div>
       <span className="onboarding-progress-label text-caption">
-        Step {currentStep} of {totalSteps}
+        {fill(copy.flow.step, { current: currentStep, total: totalSteps })}
       </span>
     </div>
   );

@@ -1,10 +1,11 @@
 import { useCallback } from 'react';
-import { useLoad } from '@sistem/shared';
+import { sharedCopy, useCopy, useLoad } from '@sistem/shared';
 import { IconInfoCircle } from '@tabler/icons-react';
 import { getNutritionPlan } from '../../../../services/coach/coachService';
 import { StateMessage } from '../../../../components/common/StateMessage/StateMessage';
 import { NutritionPlanView } from '../../../nutrition/components/NutritionPlanView/NutritionPlanView';
-import { NUTRITION_COPY } from '../../../nutrition/data/nutritionCopy';
+import { nutritionCopy } from '../../../nutrition/copy';
+import { coachCopy } from '../../copy';
 import './TraineeNutrition.css';
 
 /**
@@ -12,22 +13,25 @@ import './TraineeNutrition.css';
  * happen on the web dashboard.
  */
 export function TraineeNutrition({ traineeId }: { traineeId: string }) {
+  const copy = useCopy(nutritionCopy);
+  const coachText = useCopy(coachCopy);
+  const shared = useCopy(sharedCopy);
   const load = useCallback(() => getNutritionPlan(traineeId), [traineeId]);
-  const { data, error, isLoading, reload } = useLoad(load, "Couldn't load the nutrition plan.");
+  const { data, error, isLoading, reload } = useLoad(load, coachText.nutritionLoadError);
 
-  if (isLoading && !data) return <StateMessage>Loading…</StateMessage>;
+  if (isLoading && !data) return <StateMessage>{shared.common.loading}</StateMessage>;
   if (!data) return <StateMessage onRetry={reload}>{error}</StateMessage>;
 
   return (
     <div className="coach-trainee-nutrition">
       <p className="coach-trainee-nutrition-hint">
         <IconInfoCircle size={18} aria-hidden="true" />
-        <span>{NUTRITION_COPY.coachEditHint}</span>
+        <span>{copy.coachEditHint}</span>
       </p>
       {data.plan?.changedSincePublish && data.published && (
-        <p className="coach-trainee-nutrition-note">{NUTRITION_COPY.coachUnpublished}</p>
+        <p className="coach-trainee-nutrition-note">{copy.coachUnpublished}</p>
       )}
-      {data.published ? <NutritionPlanView plan={data.published} /> : <StateMessage>{NUTRITION_COPY.coachEmpty}</StateMessage>}
+      {data.published ? <NutritionPlanView plan={data.published} /> : <StateMessage>{copy.coachEmpty}</StateMessage>}
     </div>
   );
 }

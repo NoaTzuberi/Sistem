@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import type {
+  Language,
   ApplyNutritionTemplatePayload,
   CalculationOverrides,
   CreateNutritionTemplatePayload,
@@ -52,6 +53,7 @@ import {
 import { NUTRITION_SETTING_BOUNDS } from './nutrition.config';
 import { findFoodConflicts, followsKeto, hasKetoConflict, hasKosherConflict, keepsKosher } from './nutritionPreferences';
 import type { FoodConflictReason } from './nutritionPreferences';
+import { msg, translate, type MessageCode, type ServerMessage } from '../../i18n';
 
 // Nutrition plan rules live only here, on the server (like plan.validation.ts): the
 // dashboard shows `issues` next to the meal / option / line they point at and never
@@ -95,84 +97,82 @@ function trimmedText(value: unknown, maxLength: number): string | null {
   return text.length > 0 && text.length <= maxLength ? text : null;
 }
 
-export function validateIdParam(id: unknown, label: string): string | null {
-  return isObjectId(id) ? null : `Invalid ${label} id.`;
+export function validateIdParam(id: unknown, label: string): ServerMessage | null {
+  return isObjectId(id) ? null : msg('id_invalid', { label });
 }
 
 // ---------------------------------------------------------------------------
 // Food items
 // ---------------------------------------------------------------------------
 
-type FoodItemParse = { value: FoodItemPayload; error: null } | { value: null; error: string };
+type FoodItemParse = { value: FoodItemPayload; error: null } | { value: null; error: ServerMessage };
 
 /**
  * POST (`partial` = false: group, name and portion required) and PATCH (any subset).
  * The kcal cap depends on the coach's config and the item's group, so the service checks it.
  */
 export function parseFoodItemPayload(body: unknown, partial: boolean): FoodItemParse {
-  if (!isRecord(body)) return { value: null, error: 'Invalid request body.' };
+  if (!isRecord(body)) return { value: null, error: msg('invalid_body') };
   const value: FoodItemPayload = {};
 
   if (body.group !== undefined || !partial) {
-    if (!isOneOf(body.group, FOOD_GROUP_IDS)) return { value: null, error: 'Group must be protein, carb, fat or vegetable.' };
+    if (!isOneOf(body.group, FOOD_GROUP_IDS)) return { value: null, error: msg('food_group_invalid') };
     value.group = body.group;
   }
   if (body.name !== undefined || !partial) {
     const name = trimmedText(body.name, MAX_FOOD_NAME_LENGTH);
-    if (!name) return { value: null, error: `Name is required (max ${MAX_FOOD_NAME_LENGTH} characters).` };
+    if (!name) return { value: null, error: msg('food_name_required', { max: MAX_FOOD_NAME_LENGTH }) };
     value.name = name;
   }
   if (body.portion !== undefined || !partial) {
     const portion = trimmedText(body.portion, MAX_FOOD_PORTION_LENGTH);
-    if (!portion) return { value: null, error: `Portion is required (max ${MAX_FOOD_PORTION_LENGTH} characters).` };
+    if (!portion) return { value: null, error: msg('food_portion_required', { max: MAX_FOOD_PORTION_LENGTH }) };
     value.portion = portion;
   }
   if (body.grams !== undefined) {
     if (body.grams !== null && !(typeof body.grams === 'number' && body.grams > 0 && body.grams <= MAX_FOOD_GRAMS)) {
-      return { value: null, error: `Grams must be a number above 0 and at most ${MAX_FOOD_GRAMS}, or empty.` };
+      return { value: null, error: msg('food_grams_invalid', { max: MAX_FOOD_GRAMS }) };
     }
     value.grams = body.grams;
   }
   if (body.kcal !== undefined) {
     if (body.kcal !== null && !(typeof body.kcal === 'number' && Number.isFinite(body.kcal) && body.kcal >= 0)) {
-      return { value: null, error: 'Calories must be a number of at least 0, or empty.' };
+      return { value: null, error: msg('food_kcal_invalid') };
     }
     value.kcal = body.kcal;
   }
   if (body.isNew !== undefined) {
-    if (typeof body.isNew !== 'boolean') return { value: null, error: 'isNew must be true or false.' };
+    if (typeof body.isNew !== 'boolean') return { value: null, error: msg('food_is_new_invalid') };
     value.isNew = body.isNew;
   }
   if (body.dietTags !== undefined) {
     if (!Array.isArray(body.dietTags) || !body.dietTags.every((tag) => isOneOf(tag, DIET_TAG_IDS))) {
-      return { value: null, error: 'Diet tags contain an invalid value.' };
+      return { value: null, error: msg('food_diet_tags_invalid') };
     }
     value.dietTags = [...new Set(body.dietTags as DietTag[])];
   }
   if (body.category !== undefined) {
     // Which group it must belong to is checked in the service (the group may come from the item).
     const known = Object.values(FOOD_CATEGORY_IDS).some((ids) => (ids as readonly unknown[]).includes(body.category));
-    if (body.category !== null && !known) return { value: null, error: 'Unknown category.' };
+    if (body.category !== null && !known) return { value: null, error: msg('food_category_unknown') };
     value.category = body.category as FoodItemPayload['category'];
   }
   if (body.order !== undefined) {
     if (typeof body.order !== 'number' || !Number.isInteger(body.order) || body.order < 0) {
-      return { value: null, error: 'Order must be a whole number of at least 0.' };
+      return { value: null, error: msg('food_order_invalid') };
     }
     value.order = body.order;
   }
-  if (partial && Object.keys(value).length === 0) return { value: null, error: 'Nothing to change.' };
+  if (partial && Object.keys(value).length === 0) return { value: null, error: msg('food_nothing_to_change') };
   return { value, error: null };
 }
 
 /** null = fine; else why this kcal is above the group's cap (or a vegetable has kcal). */
-export function foodKcalProblem(group: FoodGroup, kcal: number | null | undefined, config: NutritionConfig): string | null {
+export function foodKcalProblem(group: FoodGroup, kcal: number | null | undefined, config: NutritionConfig): ServerMessage | null {
   if (kcal === null || kcal === undefined) return null;
   const cap = config.groupKcal[group];
   if (kcal > cap) {
-    return group === 'vegetable'
-      ? 'Vegetables are free — leave calories empty.'
-      : `Calories can't be above the ${group} portion value (${cap} kcal).`;
+    return group === 'vegetable' ? msg('food_vegetable_kcal') : msg('food_kcal_above_cap', { group: msg(`group_${group}`), cap });
   }
   return null;
 }
@@ -181,7 +181,7 @@ export function foodKcalProblem(group: FoodGroup, kcal: number | null | undefine
 // Settings
 // ---------------------------------------------------------------------------
 
-type SettingsParse = { value: NutritionSettingsPayload; error: null } | { value: null; error: string };
+type SettingsParse = { value: NutritionSettingsPayload; error: null } | { value: null; error: ServerMessage };
 
 function inRange(value: unknown, { min, max }: { min: number; max: number }): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max;
@@ -193,12 +193,12 @@ function countsOf(record: Record<string, unknown>): PortionCounts {
 }
 
 export function parseNutritionSettingsPayload(body: unknown): SettingsParse {
-  if (!isRecord(body)) return { value: null, error: 'Invalid request body.' };
+  if (!isRecord(body)) return { value: null, error: msg('invalid_body') };
   const { groupKcal, goalAdjustments, activityFactors, floorKcal, portionSplit } = body;
   const bounds = NUTRITION_SETTING_BOUNDS;
 
   if (!isRecord(groupKcal) || !PORTION_GROUP_IDS.every((group) => inRange(groupKcal[group], bounds.groupKcal))) {
-    return { value: null, error: `Group values must be between ${bounds.groupKcal.min} and ${bounds.groupKcal.max} kcal.` };
+    return { value: null, error: msg('settings_group_kcal_range', bounds.groupKcal) };
   }
   if (
     !isRecord(goalAdjustments) ||
@@ -206,7 +206,7 @@ export function parseNutritionSettingsPayload(body: unknown): SettingsParse {
   ) {
     return {
       value: null,
-      error: `Goal adjustments must be between ${bounds.goalAdjustmentPct.min}% and ${bounds.goalAdjustmentPct.max}%.`,
+      error: msg('settings_goal_range', bounds.goalAdjustmentPct),
     };
   }
   if (
@@ -216,28 +216,28 @@ export function parseNutritionSettingsPayload(body: unknown): SettingsParse {
   ) {
     return {
       value: null,
-      error: `Activity factors: one per training day count (1–7), each between ${bounds.activityFactor.min} and ${bounds.activityFactor.max}.`,
+      error: msg('settings_activity_range', bounds.activityFactor),
     };
   }
   if (!inRange(floorKcal, bounds.floorKcal) || !Number.isInteger(floorKcal)) {
-    return { value: null, error: `The floor must be a whole number between ${bounds.floorKcal.min} and ${bounds.floorKcal.max} kcal.` };
+    return { value: null, error: msg('settings_floor_range', bounds.floorKcal) };
   }
   const scalars = [
-    ['kcalPerKg', bounds.kcalPerKg, 'kcal per kg'],
-    ['maxLossRatePctPerWeek', bounds.lossRatePct, 'The safe loss rate (% per week)'],
-    ['maxGainRatePctPerWeek', bounds.gainRatePct, 'The safe gain rate (% per week)'],
-    ['maxDeficitPct', bounds.maxDeficitPct, 'The largest deficit (%)'],
-    ['ketoMaxCarbPortions', bounds.ketoMaxCarbPortions, 'Keto carb portions'],
+    ['kcalPerKg', bounds.kcalPerKg, msg('settings_label_kcal_per_kg')],
+    ['maxLossRatePctPerWeek', bounds.lossRatePct, msg('settings_label_loss_rate')],
+    ['maxGainRatePctPerWeek', bounds.gainRatePct, msg('settings_label_gain_rate')],
+    ['maxDeficitPct', bounds.maxDeficitPct, msg('settings_label_max_deficit')],
+    ['ketoMaxCarbPortions', bounds.ketoMaxCarbPortions, msg('settings_label_keto_carbs')],
   ] as const;
   for (const [key, range, label] of scalars) {
-    if (!inRange(body[key], range)) return { value: null, error: `${label} must be between ${range.min} and ${range.max}.` };
+    if (!inRange(body[key], range)) return { value: null, error: msg('settings_value_range', { label, min: range.min, max: range.max }) };
   }
   if (
     !isRecord(portionSplit) ||
     !PORTION_GROUP_IDS.every((group) => inRange(portionSplit[group], bounds.portionSplitPct)) ||
     Math.abs(PORTION_GROUP_IDS.reduce((sum, group) => sum + (portionSplit[group] as number), 0) - 100) > 0.01
   ) {
-    return { value: null, error: 'The portion split is a % per group and adds up to 100.' };
+    return { value: null, error: msg('settings_portion_split') };
   }
   return {
     value: {
@@ -260,30 +260,37 @@ export function parseNutritionSettingsPayload(body: unknown): SettingsParse {
 // Nutrition plan — save payload (the coach's working copy, autosaved)
 // ---------------------------------------------------------------------------
 
-type PlanParse = { value: SaveNutritionPlanPayload; issues: [] } | { value: null; issues: NutritionIssue[] };
+type PlanParse = { value: SaveNutritionPlanPayload; issues: [] } | { value: null; issues: NutritionProblem[] };
 
-function invalid(message: string, at: Partial<Pick<NutritionIssue, 'mealIndex' | 'optionIndex' | 'lineIndex'>> = {}): NutritionIssue {
+/** A NutritionIssue whose message is still a code — worded per response (localizeNutritionIssues). */
+export type NutritionProblem = Omit<NutritionIssue, 'message'> & { message: ServerMessage };
+
+function invalid(message: ServerMessage, at: Partial<Pick<NutritionIssue, 'mealIndex' | 'optionIndex' | 'lineIndex'>> = {}): NutritionProblem {
   return { severity: 'error', code: 'invalid', message, ...at };
 }
 
+export function localizeNutritionIssues(problems: readonly NutritionProblem[], language: Language): NutritionIssue[] {
+  return problems.map((problem) => ({ ...problem, message: translate(language, problem.message) }));
+}
+
 // The coach's values in the calculation summary — wide limits, like her onboarding answers.
-const OVERRIDE_BOUNDS: Record<keyof CalculationOverrides, { min: number; max: number; integer?: boolean; label: string }> = {
-  weightKg: { min: 20, max: 400, label: 'Weight (kg)' },
-  heightCm: { min: 50, max: 300, label: 'Height (cm)' },
-  ageYears: { min: 5, max: 120, integer: true, label: 'Age' },
-  activityFactor: { ...NUTRITION_SETTING_BOUNDS.activityFactor, label: 'The activity factor' },
-  targetWeightKg: { min: 20, max: 400, label: 'Target weight (kg)' },
-  timelineWeeks: { ...WEIGHT_GOAL_WEEKS_RANGE, integer: true, label: 'The timeframe (weeks)' },
+const OVERRIDE_BOUNDS: Record<keyof CalculationOverrides, { min: number; max: number; integer?: boolean; label: MessageCode }> = {
+  weightKg: { min: 20, max: 400, label: 'overrides_label_weight' },
+  heightCm: { min: 50, max: 300, label: 'overrides_label_height' },
+  ageYears: { min: 5, max: 120, integer: true, label: 'overrides_label_age' },
+  activityFactor: { ...NUTRITION_SETTING_BOUNDS.activityFactor, label: 'overrides_label_activity' },
+  targetWeightKg: { min: 20, max: 400, label: 'overrides_label_target_weight' },
+  timelineWeeks: { ...WEIGHT_GOAL_WEEKS_RANGE, integer: true, label: 'overrides_label_timeline' },
 };
 
 /** Each override a number in its range, or null (her data). Missing keys = null. */
-export function parseCalculationOverrides(value: unknown): { value: CalculationOverrides; error: null } | { value: null; error: string } {
-  if (!isRecord(value)) return { value: null, error: 'Invalid calculation overrides.' };
+export function parseCalculationOverrides(value: unknown): { value: CalculationOverrides; error: null } | { value: null; error: ServerMessage } {
+  if (!isRecord(value)) return { value: null, error: msg('overrides_invalid') };
   const overrides = {} as CalculationOverrides;
   for (const [key, bounds] of Object.entries(OVERRIDE_BOUNDS) as [keyof CalculationOverrides, (typeof OVERRIDE_BOUNDS)[keyof CalculationOverrides]][]) {
     const raw = value[key] ?? null;
     if (raw !== null && (!inRange(raw, bounds) || (bounds.integer && !Number.isInteger(raw)))) {
-      return { value: null, error: `${bounds.label} must be between ${bounds.min} and ${bounds.max}.` };
+      return { value: null, error: msg('settings_value_range', { label: msg(bounds.label), min: bounds.min, max: bounds.max }) };
     }
     overrides[key] = raw as number | null;
   }
@@ -306,14 +313,14 @@ function parsePortionCounts(value: unknown): PortionCounts | null {
  * whether the plan can be published is findNutritionPublishIssues().
  */
 export function parseSaveNutritionPlanPayload(body: unknown, features: NutritionFeatures): PlanParse {
-  if (!isRecord(body)) return { value: null, issues: [invalid('Invalid request body.')] };
-  const issues: NutritionIssue[] = [];
+  if (!isRecord(body)) return { value: null, issues: [invalid(msg('invalid_body'))] };
+  const issues: NutritionProblem[] = [];
 
   // Calorie target.
   const target = body.calorieTarget;
   let calorieTarget: SaveNutritionPlanPayload['calorieTarget'] | null = null;
   if (!isRecord(target)) {
-    issues.push(invalid('The calorie target is missing.'));
+    issues.push(invalid(msg('nutrition_target_missing_field')));
   } else {
     const kcal = target.kcal ?? null;
     const source = target.source ?? null;
@@ -321,15 +328,15 @@ export function parseSaveNutritionPlanPayload(body: unknown, features: Nutrition
     // Omitted = keep the stored ones.
     const overrides = target.overrides !== undefined ? parseCalculationOverrides(target.overrides) : null;
     if (kcal !== null && !(typeof kcal === 'number' && Number.isInteger(kcal) && kcal >= MIN_TARGET_KCAL && kcal <= MAX_TARGET_KCAL)) {
-      issues.push(invalid(`The target must be a whole number between ${MIN_TARGET_KCAL} and ${MAX_TARGET_KCAL} kcal.`));
+      issues.push(invalid(msg('nutrition_target_range', { min: MIN_TARGET_KCAL, max: MAX_TARGET_KCAL })));
     } else if (source !== null && !isOneOf(source, CALORIE_TARGET_SOURCE_IDS)) {
-      issues.push(invalid('The target source must be suggested or override.'));
+      issues.push(invalid(msg('nutrition_target_source_invalid')));
     } else if (!isOneOf(target.goal, NUTRITION_GOAL_IDS)) {
-      issues.push(invalid('The goal must be fat loss, aggressive fat loss, recomp, muscle gain or maintenance.'));
+      issues.push(invalid(msg('nutrition_goal_invalid')));
     } else if (formulaSex !== null && !isOneOf(formulaSex, FORMULA_SEX_IDS)) {
-      issues.push(invalid('The formula must be male or female.'));
+      issues.push(invalid(msg('nutrition_formula_invalid')));
     } else if (target.confirmBelowFloor !== undefined && typeof target.confirmBelowFloor !== 'boolean') {
-      issues.push(invalid('confirmBelowFloor must be true or false.'));
+      issues.push(invalid(msg('nutrition_floor_flag_invalid')));
     } else if (overrides?.error) {
       issues.push(invalid(overrides.error));
     } else {
@@ -348,66 +355,66 @@ export function parseSaveNutritionPlanPayload(body: unknown, features: Nutrition
   // Meals → options → lines.
   const meals: SaveNutritionPlanPayload['meals'] = [];
   if (!Array.isArray(body.meals)) {
-    issues.push(invalid('Meals must be a list.'));
+    issues.push(invalid(msg('nutrition_meals_not_list')));
   } else if (body.meals.length > MAX_MEALS) {
-    issues.push(invalid(`A plan has at most ${MAX_MEALS} meals.`));
+    issues.push(invalid(msg('nutrition_too_many_meals', { max: MAX_MEALS })));
   } else {
     body.meals.forEach((rawMeal, mealIndex) => {
       if (!isRecord(rawMeal)) {
-        issues.push(invalid('Invalid meal.', { mealIndex }));
+        issues.push(invalid(msg('nutrition_meal_invalid'), { mealIndex }));
         return;
       }
       const name = trimmedText(rawMeal.name, MAX_MEAL_NAME_LENGTH);
       const portions = parsePortionCounts(rawMeal.portions);
-      if (!name) issues.push(invalid(`A meal needs a name (max ${MAX_MEAL_NAME_LENGTH} characters).`, { mealIndex }));
+      if (!name) issues.push(invalid(msg('nutrition_meal_name_required', { max: MAX_MEAL_NAME_LENGTH }), { mealIndex }));
       if (!portions) {
-        issues.push(invalid(`Portions go in steps of ${PORTION_STEP}, from 0 to ${MAX_MEAL_PORTIONS}.`, { mealIndex }));
+        issues.push(invalid(msg('nutrition_meal_portion_step', { step: PORTION_STEP, max: MAX_MEAL_PORTIONS }), { mealIndex }));
       }
       const rawOptions = rawMeal.options ?? [];
       if (!Array.isArray(rawOptions) || rawOptions.length > MAX_MEAL_OPTIONS) {
-        issues.push(invalid(`A meal has at most ${MAX_MEAL_OPTIONS} options.`, { mealIndex }));
+        issues.push(invalid(msg('nutrition_too_many_options', { max: MAX_MEAL_OPTIONS }), { mealIndex }));
         return;
       }
       const options = rawOptions.flatMap((rawOption: unknown, optionIndex: number) => {
         if (!isRecord(rawOption)) {
-          issues.push(invalid('Invalid option.', { mealIndex, optionIndex }));
+          issues.push(invalid(msg('nutrition_option_invalid'), { mealIndex, optionIndex }));
           return [];
         }
         const label = trimmedText(rawOption.label, MAX_OPTION_LABEL_LENGTH);
         if (!label) {
-          issues.push(invalid(`An option needs a label (max ${MAX_OPTION_LABEL_LENGTH} characters).`, { mealIndex, optionIndex }));
+          issues.push(invalid(msg('nutrition_option_label_required', { max: MAX_OPTION_LABEL_LENGTH }), { mealIndex, optionIndex }));
         }
         const rawLines = rawOption.lines ?? [];
         if (!Array.isArray(rawLines) || rawLines.length > MAX_OPTION_LINES) {
-          issues.push(invalid(`An option has at most ${MAX_OPTION_LINES} lines.`, { mealIndex, optionIndex }));
+          issues.push(invalid(msg('nutrition_too_many_lines', { max: MAX_OPTION_LINES }), { mealIndex, optionIndex }));
           return [];
         }
         const lines = rawLines.flatMap((rawLine: unknown, lineIndex: number): NutritionOptionLineInput[] => {
           const at = { mealIndex, optionIndex, lineIndex };
           if (!isRecord(rawLine) || !isOneOf(rawLine.kind, LINE_KIND_IDS)) {
-            issues.push(invalid('A line is a food item, a recipe or text.', at));
+            issues.push(invalid(msg('nutrition_line_kind_invalid'), at));
             return [];
           }
           const portionsValue = rawLine.portions ?? null;
           const id = optionalId(rawLine.id);
           if (rawLine.kind === 'food') {
             if (!isObjectId(rawLine.foodItemId)) {
-              issues.push(invalid('Pick a food item.', at));
+              issues.push(invalid(msg('nutrition_line_food_required'), at));
               return [];
             }
             if (!isPortionCount(portionsValue, MAX_LINE_PORTIONS) || portionsValue === 0) {
-              issues.push(invalid(`Portions go in steps of ${PORTION_STEP}, above 0 and up to ${MAX_LINE_PORTIONS}.`, at));
+              issues.push(invalid(msg('nutrition_line_portion_step', { step: PORTION_STEP, max: MAX_LINE_PORTIONS }), at));
               return [];
             }
             return [{ id, kind: 'food' as const, foodItemId: rawLine.foodItemId, portions: portionsValue }];
           }
           if (rawLine.kind === 'recipe') {
             if (!features.nutritionRecipes) {
-              issues.push(invalid('Recipes are not available.', at));
+              issues.push(invalid(msg('nutrition_recipes_unavailable'), at));
               return [];
             }
             if (!isObjectId(rawLine.recipeId) || !isPortionCount(portionsValue, MAX_LINE_PORTIONS) || portionsValue === 0) {
-              issues.push(invalid('Pick a recipe and its servings.', at));
+              issues.push(invalid(msg('nutrition_line_recipe_required'), at));
               return [];
             }
             return [{ id, kind: 'recipe' as const, recipeId: rawLine.recipeId, portions: portionsValue }];
@@ -416,16 +423,16 @@ export function parseSaveNutritionPlanPayload(body: unknown, features: Nutrition
           const text = trimmedText(rawLine.text, MAX_LINE_TEXT_LENGTH);
           const group = rawLine.group ?? null;
           if (!text) {
-            issues.push(invalid(`A text line needs text (max ${MAX_LINE_TEXT_LENGTH} characters).`, at));
+            issues.push(invalid(msg('nutrition_line_text_required', { max: MAX_LINE_TEXT_LENGTH }), at));
             return [];
           }
           if (group !== null && !isOneOf(group, FOOD_GROUP_IDS)) {
-            issues.push(invalid('Invalid group.', at));
+            issues.push(invalid(msg('nutrition_line_group_invalid'), at));
             return [];
           }
           const counted = group !== null && group !== 'vegetable';
           if (counted && (!isPortionCount(portionsValue, MAX_LINE_PORTIONS) || portionsValue === 0)) {
-            issues.push(invalid(`A text line in a group needs portions in steps of ${PORTION_STEP}.`, at));
+            issues.push(invalid(msg('nutrition_line_text_portion_step', { step: PORTION_STEP }), at));
             return [];
           }
           return [{ id, kind: 'text' as const, text, group: group as FoodGroup | null, portions: counted ? (portionsValue as number) : null }];
@@ -442,12 +449,12 @@ export function parseSaveNutritionPlanPayload(body: unknown, features: Nutrition
   const tips: SaveNutritionPlanPayload['tips'] = [];
   const rawTips = body.tips ?? [];
   if (!Array.isArray(rawTips) || rawTips.length > MAX_TIPS) {
-    issues.push(invalid(`At most ${MAX_TIPS} tips.`));
+    issues.push(invalid(msg('nutrition_too_many_tips', { max: MAX_TIPS })));
   } else {
     for (const rawTip of rawTips) {
       const text = isRecord(rawTip) ? trimmedText(rawTip.text, MAX_TIP_LENGTH) : null;
       if (!text) {
-        issues.push(invalid(`A tip needs text (max ${MAX_TIP_LENGTH} characters).`));
+        issues.push(invalid(msg('nutrition_tip_required', { max: MAX_TIP_LENGTH })));
         continue;
       }
       tips.push({ id: optionalId((rawTip as Record<string, unknown>).id), text });
@@ -458,12 +465,12 @@ export function parseSaveNutritionPlanPayload(body: unknown, features: Nutrition
   let waterGoalMl: number | null | undefined;
   if (body.waterGoalMl !== undefined) {
     if (!features.waterTracking) {
-      issues.push(invalid('Water tracking is not available.'));
+      issues.push(invalid(msg('nutrition_water_unavailable')));
     } else if (
       body.waterGoalMl !== null &&
       !(typeof body.waterGoalMl === 'number' && Number.isInteger(body.waterGoalMl) && body.waterGoalMl >= 0 && body.waterGoalMl <= MAX_WATER_GOAL_ML)
     ) {
-      issues.push(invalid(`The water goal must be a whole number of ml up to ${MAX_WATER_GOAL_ML}.`));
+      issues.push(invalid(msg('nutrition_water_goal_invalid', { max: MAX_WATER_GOAL_ML })));
     } else {
       waterGoalMl = body.waterGoalMl as number | null;
     }
@@ -474,7 +481,7 @@ export function parseSaveNutritionPlanPayload(body: unknown, features: Nutrition
   if (body.introMessage !== undefined) {
     if (body.introMessage === null) introMessage = null;
     else if (typeof body.introMessage !== 'string' || body.introMessage.trim().length > MAX_INTRO_MESSAGE_LENGTH) {
-      issues.push(invalid(`The intro message is text of at most ${MAX_INTRO_MESSAGE_LENGTH} characters.`));
+      issues.push(invalid(msg('nutrition_intro_too_long', { max: MAX_INTRO_MESSAGE_LENGTH })));
     } else {
       introMessage = body.introMessage.replace(/\r\n/g, '\n').trim() || null;
     }
@@ -485,11 +492,11 @@ export function parseSaveNutritionPlanPayload(body: unknown, features: Nutrition
   if (body.aiRecommendationId === null) aiRecommendationId = null;
   else if (body.aiRecommendationId !== undefined) {
     if (isObjectId(body.aiRecommendationId)) aiRecommendationId = body.aiRecommendationId;
-    else issues.push(invalid('Invalid AI recommendation id.'));
+    else issues.push(invalid(msg('nutrition_ai_id_invalid')));
   }
 
   if (issues.length > 0 || !calorieTarget) {
-    return { value: null, issues: issues.length > 0 ? issues : [invalid('Invalid request body.')] };
+    return { value: null, issues: issues.length > 0 ? issues : [invalid(msg('invalid_body'))] };
   }
   return {
     value: {
@@ -535,17 +542,11 @@ export interface PublishCheckContext {
   recipeIds: Set<string>;
 }
 
-// Coach-facing wording for the answer behind a conflict (placeholder, like the rest).
-const CONFLICT_SOURCE_LABELS: Record<string, string> = {
-  lactose_free: 'lactose-free',
-  gluten_free: 'gluten-free',
-  low_fodmap: 'low-FODMAP',
-};
-
-function describeConflict(reason: FoodConflictReason): string {
-  const tag = reason.tag.replace('_', ' ');
-  if (reason.kind === 'allergy') return `contains ${tag} (her allergy)`;
-  return `contains ${tag} (${CONFLICT_SOURCE_LABELS[reason.source] ?? reason.source.replace('_', ' ')})`;
+// Coach-facing wording for a conflict (placeholder, like the rest): the tag and the answer behind it.
+function describeConflict(reason: FoodConflictReason): ServerMessage {
+  const tag = msg(`tag_${reason.tag}` as MessageCode);
+  if (reason.kind === 'allergy') return msg('conflict_allergy', { tag });
+  return msg('conflict_preference', { tag, source: msg(`source_${reason.source}` as MessageCode) });
 }
 
 /** The meals' portions summed over the day. */
@@ -559,34 +560,34 @@ export function sumDayPortions(meals: readonly Pick<NutritionMeal, 'portions'>[]
  * Errors block publishing; warnings are shown and don't. Every problem points at the
  * meal / option / line it belongs to.
  */
-export function findNutritionPublishIssues(plan: PublishCheckInput, context: PublishCheckContext): NutritionIssue[] {
-  const issues: NutritionIssue[] = [];
+export function findNutritionPublishIssues(plan: PublishCheckInput, context: PublishCheckContext): NutritionProblem[] {
+  const issues: NutritionProblem[] = [];
   const { foods, config, preferences } = context;
   const { kcal, floorConfirmation } = plan.calorieTarget;
 
   if (kcal === null) {
-    issues.push({ severity: 'error', code: 'target_missing', message: 'Set a calorie target.' });
+    issues.push({ severity: 'error', code: 'target_missing', message: msg('target_missing') });
   } else if (kcal < config.floorKcal && floorConfirmation?.kcal !== kcal) {
     issues.push({
       severity: 'error',
       code: 'floor_unconfirmed',
-      message: `The target is below ${config.floorKcal} kcal — confirm it to publish.`,
+      message: msg('below_floor_unconfirmed', { floor: config.floorKcal }),
     });
   }
   if (plan.meals.length === 0) {
-    issues.push({ severity: 'error', code: 'no_meals', message: 'Add at least one meal.' });
+    issues.push({ severity: 'error', code: 'no_meals', message: msg('no_meals') });
   }
 
   plan.meals.forEach((meal, mealIndex) => {
     const mealPortions = PORTION_GROUP_IDS.reduce((sum, group) => sum + meal.portions[group], 0);
     if (mealPortions === 0) {
-      issues.push({ severity: 'warning', code: 'meal_no_portions', message: `${meal.name}: no portions set.`, mealIndex });
+      issues.push({ severity: 'warning', code: 'meal_no_portions', message: msg('meal_no_portions', { meal: meal.name }), mealIndex });
     }
 
     meal.options.forEach((option, optionIndex) => {
       const where = `${meal.name} · ${option.label}`;
       if (option.lines.length === 0) {
-        issues.push({ severity: 'error', code: 'option_empty', message: `${where}: the option has no lines.`, mealIndex, optionIndex });
+        issues.push({ severity: 'error', code: 'option_empty', message: msg('option_empty', { where }), mealIndex, optionIndex });
         return;
       }
 
@@ -596,7 +597,7 @@ export function findNutritionPublishIssues(plan: PublishCheckInput, context: Pub
         const at = { mealIndex, optionIndex, lineIndex };
         if (line.kind === 'recipe') {
           if (!context.features.nutritionRecipes || !line.recipeId || !context.recipeIds.has(line.recipeId)) {
-            issues.push({ severity: 'error', code: 'recipe_unavailable', message: `${where}: that recipe is not available.`, ...at });
+            issues.push({ severity: 'error', code: 'recipe_unavailable', message: msg('recipe_unavailable', { where }), ...at });
           }
           return;
         }
@@ -606,17 +607,17 @@ export function findNutritionPublishIssues(plan: PublishCheckInput, context: Pub
         }
         const food = line.foodItemId ? foods.get(line.foodItemId) : undefined;
         if (!food) {
-          issues.push({ severity: 'error', code: 'food_missing', message: `${where}: a food item is no longer in the list.`, ...at });
+          issues.push({ severity: 'error', code: 'food_missing', message: msg('food_missing', { where }), ...at });
           return;
         }
         if (food.archivedAt) {
-          issues.push({ severity: 'error', code: 'food_archived', message: `${where}: "${food.name}" is archived — replace it.`, ...at });
+          issues.push({ severity: 'error', code: 'food_archived', message: msg('food_archived', { where, food: food.name }), ...at });
         }
         if (line.group !== food.group) {
           issues.push({
             severity: 'error',
             code: 'food_group_mismatch',
-            message: `${where}: "${food.name}" is now in the ${food.group} group — re-add it.`,
+            message: msg('food_group_changed', { where, food: food.name, group: msg(`group_${food.group}`) }),
             ...at,
           });
         }
@@ -628,7 +629,7 @@ export function findNutritionPublishIssues(plan: PublishCheckInput, context: Pub
             issues.push({
               severity: 'warning',
               code: 'preference_conflict',
-              message: `${where}: "${food.name}" ${conflicts.map(describeConflict).join(', ')}.`,
+              message: msg('food_conflict', { where, food: food.name, conflicts: conflicts.map(describeConflict) }),
               ...at,
             });
           }
@@ -639,7 +640,7 @@ export function findNutritionPublishIssues(plan: PublishCheckInput, context: Pub
         issues.push({
           severity: 'warning',
           code: 'kosher_conflict',
-          message: `${where}: meat and dairy in the same option (she keeps kosher).`,
+          message: msg('kosher_meat_dairy', { where }),
           mealIndex,
           optionIndex,
         });
@@ -648,11 +649,12 @@ export function findNutritionPublishIssues(plan: PublishCheckInput, context: Pub
       if (differs.length > 0) {
         // Snack only when either side has some (most meals have none).
         const shown = PORTION_GROUP_IDS.filter((group) => group !== 'snack' || totals.snack > 0 || meal.portions.snack > 0);
-        const describe = (counts: PortionCounts) => shown.map((group) => `${counts[group]} ${group}`).join(' · ');
+        const describe = (counts: PortionCounts) =>
+          shown.map((group) => msg('portion_count', { count: counts[group], group: msg(`group_${group}`) }));
         issues.push({
           severity: 'warning',
           code: 'option_portions_mismatch',
-          message: `${where}: ${describe(totals)} — the meal has ${describe(meal.portions)}.`,
+          message: msg('option_portions_mismatch', { where, option: describe(totals), meal: describe(meal.portions) }),
           mealIndex,
           optionIndex,
         });
@@ -665,14 +667,14 @@ export function findNutritionPublishIssues(plan: PublishCheckInput, context: Pub
     issues.push({
       severity: 'warning',
       code: 'keto_conflict',
-      message: `${dayPortions.carb + dayPortions.snack} carb / snack portions a day — she eats keto / low-carb (your limit: ${config.ketoMaxCarbPortions}).`,
+      message: msg('keto_carb_portions', { count: dayPortions.carb + dayPortions.snack, limit: config.ketoMaxCarbPortions }),
     });
   }
 
   return issues;
 }
 
-export function hasBlockingIssues(issues: readonly NutritionIssue[]): boolean {
+export function hasBlockingIssues(issues: readonly Pick<NutritionIssue, 'severity'>[]): boolean {
   return issues.some((issue) => issue.severity === 'error');
 }
 
@@ -680,20 +682,20 @@ export function hasBlockingIssues(issues: readonly NutritionIssue[]): boolean {
 // Templates
 // ---------------------------------------------------------------------------
 
-type Parse<T> = { value: T; error: null } | { value: null; error: string };
+type Parse<T> = { value: T; error: null } | { value: null; error: ServerMessage };
 
 export function parseCreateNutritionTemplatePayload(body: unknown): Parse<CreateNutritionTemplatePayload> {
-  if (!isRecord(body)) return { value: null, error: 'Invalid request body.' };
+  if (!isRecord(body)) return { value: null, error: msg('invalid_body') };
   const name = trimmedText(body.name, MAX_TEMPLATE_NAME_LENGTH);
-  if (!name) return { value: null, error: `A template needs a name (max ${MAX_TEMPLATE_NAME_LENGTH} characters).` };
+  if (!name) return { value: null, error: msg('nutrition_template_name_required', { max: MAX_TEMPLATE_NAME_LENGTH }) };
   if (!isMissing(body.description) && (typeof body.description !== 'string' || body.description.length > MAX_TEMPLATE_DESCRIPTION_LENGTH)) {
-    return { value: null, error: `The description is at most ${MAX_TEMPLATE_DESCRIPTION_LENGTH} characters.` };
+    return { value: null, error: msg('nutrition_template_description_too_long', { max: MAX_TEMPLATE_DESCRIPTION_LENGTH }) };
   }
   const description = typeof body.description === 'string' ? body.description.trim() || undefined : undefined;
   return { value: { name, description }, error: null };
 }
 
 export function parseApplyNutritionTemplatePayload(body: unknown): Parse<ApplyNutritionTemplatePayload> {
-  if (!isRecord(body) || !isObjectId(body.templateId)) return { value: null, error: 'Pick a template.' };
+  if (!isRecord(body) || !isObjectId(body.templateId)) return { value: null, error: msg('nutrition_template_required') };
   return { value: { templateId: body.templateId }, error: null };
 }

@@ -1,3 +1,4 @@
+import { fill, useCopy } from '@sistem/shared';
 import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import axios from 'axios';
@@ -7,7 +8,7 @@ import { Button } from '../../../../components/common/Button/Button';
 import { PrivatePhoto } from '../../../../components/common/PrivatePhoto/PrivatePhoto';
 import { removeMealPhoto, uploadMealPhoto } from '../../../../services/nutrition/nutritionService';
 import { PhotoTooLargeError, compressPhoto } from '../../../privatePhotos/data/photoCompression';
-import { NUTRITION_COPY } from '../../data/nutritionCopy';
+import { nutritionCopy } from '../../copy';
 import './MealPhotoField.css';
 
 type Busy = { kind: 'preparing' } | { kind: 'uploading'; percent: number } | { kind: 'removing' } | null;
@@ -24,14 +25,14 @@ interface MealPhotoFieldProps {
   onLinkExpired: () => void;
 }
 
-function errorMessage(error: unknown): string {
-  if (error instanceof PhotoTooLargeError) return NUTRITION_COPY.photoTooLarge;
+function errorMessage(error: unknown, copy: (typeof nutritionCopy)['he']): string {
+  if (error instanceof PhotoTooLargeError) return copy.photoTooLarge;
   if (axios.isAxiosError(error)) {
-    if (!error.response) return NUTRITION_COPY.photoOffline;
-    if (error.response.status === 413) return NUTRITION_COPY.photoTooLarge;
-    return NUTRITION_COPY.photoError;
+    if (!error.response) return copy.photoOffline;
+    if (error.response.status === 413) return copy.photoTooLarge;
+    return copy.photoError;
   }
-  return NUTRITION_COPY.photoReadError;
+  return copy.photoReadError;
 }
 
 /**
@@ -40,6 +41,7 @@ function errorMessage(error: unknown): string {
  * Photos need a connection; marks don't.
  */
 export function MealPhotoField({ date, mealId, mealName, photo, editable, onDayChange, onLinkExpired }: MealPhotoFieldProps) {
+  const copy = useCopy(nutritionCopy);
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<Busy>(null);
@@ -71,7 +73,7 @@ export function MealPhotoField({ date, mealId, mealName, photo, editable, onDayC
       setLocalSrc(URL.createObjectURL(compressed));
       onDayChange(day);
     } catch (caught) {
-      setError(errorMessage(caught));
+      setError(errorMessage(caught, copy));
     } finally {
       setBusy(null);
     }
@@ -84,7 +86,7 @@ export function MealPhotoField({ date, mealId, mealName, photo, editable, onDayC
       onDayChange(await removeMealPhoto(date, mealId));
       setLocalSrc(null);
     } catch (caught) {
-      setError(axios.isAxiosError(caught) && !caught.response ? NUTRITION_COPY.photoOffline : NUTRITION_COPY.photoRemoveError);
+      setError(axios.isAxiosError(caught) && !caught.response ? copy.photoOffline : copy.photoRemoveError);
     } finally {
       setBusy(null);
     }
@@ -92,7 +94,7 @@ export function MealPhotoField({ date, mealId, mealName, photo, editable, onDayC
 
   if (!editable && !photo) return null;
   const status =
-    busy?.kind === 'preparing' ? NUTRITION_COPY.photoPreparing : busy?.kind === 'uploading' ? NUTRITION_COPY.photoUploading(busy.percent) : null;
+    busy?.kind === 'preparing' ? copy.photoPreparing : busy?.kind === 'uploading' ? fill(copy.photoUploading, { percent: busy.percent }) : null;
 
   return (
     <div className="meal-photo-field">
@@ -101,9 +103,9 @@ export function MealPhotoField({ date, mealId, mealName, photo, editable, onDayC
           <PrivatePhoto
             photo={photo}
             localSrc={localSrc ?? undefined}
-            alt={NUTRITION_COPY.photoAlt(mealName)}
-            openLabel={NUTRITION_COPY.photoOpen}
-            closeLabel={NUTRITION_COPY.photoClose}
+            alt={fill(copy.photoAlt, { meal: mealName })}
+            openLabel={copy.photoOpen}
+            closeLabel={copy.photoClose}
             onLinkExpired={onLinkExpired}
             thumbnail
           />
@@ -111,17 +113,17 @@ export function MealPhotoField({ date, mealId, mealName, photo, editable, onDayC
       )}
       {editable && (
         <>
-          {!photo && <span className="meal-photo-field-label">{NUTRITION_COPY.photoAdd}</span>}
+          {!photo && <span className="meal-photo-field-label">{copy.photoAdd}</span>}
           <div className="meal-photo-field-actions">
             <Button variant="secondary" icon={<IconCamera size={18} aria-hidden="true" />} onClick={() => cameraRef.current?.click()} disabled={busy !== null}>
-              {NUTRITION_COPY.photoCamera}
+              {copy.photoCamera}
             </Button>
             <Button variant="secondary" icon={<IconPhoto size={18} aria-hidden="true" />} onClick={() => galleryRef.current?.click()} disabled={busy !== null}>
-              {NUTRITION_COPY.photoGallery}
+              {copy.photoGallery}
             </Button>
             {photo && (
               <Button variant="ghost" onClick={() => void handleRemove()} loading={busy?.kind === 'removing'} disabled={busy !== null}>
-                {NUTRITION_COPY.photoRemove}
+                {copy.photoRemove}
               </Button>
             )}
           </div>
@@ -137,7 +139,7 @@ export function MealPhotoField({ date, mealId, mealName, photo, editable, onDayC
           {error}
         </p>
       )}
-      <p className="meal-photo-field-privacy">{NUTRITION_COPY.photoPrivacy}</p>
+      <p className="meal-photo-field-privacy">{copy.photoPrivacy}</p>
       {/* `capture` opens the camera directly; without it the phone offers its photo library. */}
       <input ref={cameraRef} className="meal-photo-field-input" type="file" accept="image/*" capture onChange={handlePicked} />
       <input ref={galleryRef} className="meal-photo-field-input" type="file" accept="image/*" onChange={handlePicked} />

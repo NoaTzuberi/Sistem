@@ -1,7 +1,6 @@
 import type { AxiosInstance } from 'axios';
 import type {
   AchievementOverview,
-  AuthUser,
   BodyMetric,
   BodyMetricList,
   BodyMetricResponse,
@@ -20,7 +19,6 @@ import type {
   WorkoutLogSetUpdate,
   WorkoutSession,
   WorkoutSummaryPayload,
-  UpdatePreferencesPayload,
 } from '@sistem/types';
 
 // The trainee's own plans and workout logs (/api/plans, /api/workout-logs). The
@@ -157,12 +155,6 @@ export function createTraineeApi(client: AxiosInstance) {
     return data.metric;
   }
 
-  /** Her display units (Settings); answers the updated user. */
-  async function updatePreferences(payload: UpdatePreferencesPayload): Promise<AuthUser> {
-    const { data } = await client.patch<{ user: AuthUser }>('/users/preferences', payload);
-    return data.user;
-  }
-
   // --- Achievements & streak (Phase 11): awarded by the server after saves.
 
   async function getAchievements(): Promise<AchievementOverview> {
@@ -251,7 +243,6 @@ export function createTraineeApi(client: AxiosInstance) {
     deleteBodyMetricDay,
     uploadProgressPhoto,
     removeProgressPhoto,
-    updatePreferences,
     getAchievements,
     markAchievementsSeen,
     getNutritionPlan,

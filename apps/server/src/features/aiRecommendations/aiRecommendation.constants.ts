@@ -14,3 +14,6 @@ export const RECOMMENDATION_ERROR = {
   interrupted: 'interrupted',
   internal: 'internal',
 } as const;
+
+/** The language the model writes the coach's texts in (Phase 15: the coach's own UI language). */
+export const LANGUAGE_NAMES = { he: 'Hebrew', en: 'English' } as const;

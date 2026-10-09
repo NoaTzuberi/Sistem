@@ -8,9 +8,11 @@ import type { RecommendationKind } from '../aiRecommendation.kind';
 import { KNOWLEDGE_TOP_K, MIN_CANDIDATES } from './trainingPlan.constants';
 import { loadCandidates } from './trainingPlanCandidates';
 import { buildKnowledgeQuery, buildTraineeProfile } from './trainingPlanProfile';
-import { TRAINING_PLAN_PROMPT_VERSION, TRAINING_PLAN_SYSTEM_PROMPT, buildTrainingPlanSchema, buildTrainingPlanUserMessage } from './trainingPlanPrompt';
+import { TRAINING_PLAN_PROMPT_VERSION, buildTrainingPlanSchema, buildTrainingPlanSystemPrompt, buildTrainingPlanUserMessage } from './trainingPlanPrompt';
+import { getUserLanguage } from '../../users/userLanguage';
 import { validateTrainingPlanReply } from './trainingPlanValidation';
 import type { StoredTrainingPlan, TrainingPlanValidationContext } from './trainingPlanValidation';
+import { msg } from '../../../i18n';
 
 /** Optional numbers come back from MongoDB as null (a Mixed field stores undefined as null). */
 function optional<T>(value: T | null | undefined): T | undefined {
@@ -38,7 +40,7 @@ export const trainingPlanKind: RecommendationKind<TrainingPlanValidationContext,
   async prepare({ traineeId, coachId }, now) {
     const response = await OnboardingResponse.findOne({ userId: traineeId }).select('answers').lean();
     if (!response) {
-      return { ok: false, code: RECOMMENDATION_ERROR.notEnoughData, message: 'She has no onboarding answers yet.', input: null };
+      return { ok: false, code: RECOMMENDATION_ERROR.notEnoughData, message: msg('ai_no_onboarding'), input: null };
     }
 
     const profile = buildTraineeProfile(response.answers, now);
@@ -57,7 +59,7 @@ export const trainingPlanKind: RecommendationKind<TrainingPlanValidationContext,
       return {
         ok: false,
         code: RECOMMENDATION_ERROR.notEnoughData,
-        message: `Only ${candidates.length} library exercises fit her equipment — too few for a draft. Build this plan by hand.`,
+        message: msg('ai_too_few_exercises', { count: candidates.length }),
         input,
       };
     }
@@ -65,7 +67,7 @@ export const trainingPlanKind: RecommendationKind<TrainingPlanValidationContext,
     return {
       ok: true,
       promptVersion: TRAINING_PLAN_PROMPT_VERSION,
-      system: TRAINING_PLAN_SYSTEM_PROMPT,
+      system: buildTrainingPlanSystemPrompt(await getUserLanguage(coachId)),
       userMessage: buildTrainingPlanUserMessage(profile, guidance.chunks, candidates),
       schema: buildTrainingPlanSchema(),
       input,

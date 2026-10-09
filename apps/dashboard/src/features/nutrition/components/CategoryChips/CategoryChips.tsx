@@ -1,6 +1,6 @@
 import type { FoodCategory, FoodGroup } from '@sistem/types';
-import { FOOD_CATEGORIES, FOOD_CATEGORY_LABELS, NO_CATEGORY_LABEL } from '@sistem/shared';
-import { NUTRITION_COPY } from '../../data/nutritionCopy';
+import { FOOD_CATEGORIES, sharedCopy, useCopy } from '@sistem/shared';
+import { nutritionCopy } from '../../copy';
 import type { CategoryFilter } from '../../data/foodFilters';
 import './CategoryChips.css';
 
@@ -14,6 +14,8 @@ interface CategoryChipsProps {
 
 /** "All" + the group's categories that have items (single-select). Used by the food picker and the food list. */
 export function CategoryChips({ group, items, value, onChange }: CategoryChipsProps) {
+  const shared = useCopy(sharedCopy);
+  const copy = useCopy(nutritionCopy);
   const present = FOOD_CATEGORIES[group].filter((category) => items.some((item) => item.category === category));
   const hasNone = items.some((item) => item.category === null);
   if (present.length === 0) return null;
@@ -31,10 +33,10 @@ export function CategoryChips({ group, items, value, onChange }: CategoryChipsPr
   );
 
   return (
-    <div className="category-chips" role="group" aria-label={NUTRITION_COPY.categoryFilter}>
-      {chip('all', NUTRITION_COPY.categoryAll, null)}
-      {present.map((category) => chip(category, FOOD_CATEGORY_LABELS[category], category))}
-      {hasNone && chip('none', NO_CATEGORY_LABEL, 'none')}
+    <div className="category-chips" role="group" aria-label={copy.categoryFilter}>
+      {chip('all', copy.categoryAll, null)}
+      {present.map((category) => chip(category, shared.nutrition.categories[category], category))}
+      {hasNone && chip('none', shared.nutrition.noCategory, 'none')}
     </div>
   );
 }

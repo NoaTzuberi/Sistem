@@ -2,7 +2,7 @@
 .unread-badge {
   position: absolute;
   top: var(--space-1);
-  left: calc(50% + var(--space-1));
+  inset-inline-start: calc(50% + var(--space-1));
   min-width: 18px;
   padding: 0 var(--space-1);
   background-color: var(--color-primary-deep);

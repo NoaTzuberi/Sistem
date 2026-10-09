@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import { User } from '../features/users/user.model';
 import type { AuthenticatedRequest } from './auth.middleware';
+import { sendError } from '../i18n';
 
 /**
  * Use after requireAuth + requireRole('coach') on routes with :traineeId. Lets the
@@ -11,13 +12,13 @@ import type { AuthenticatedRequest } from './auth.middleware';
 export async function loadCoachTrainee(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   const { traineeId } = req.params;
   if (typeof traineeId !== 'string' || !mongoose.isValidObjectId(traineeId)) {
-    res.status(400).json({ message: 'Invalid trainee id.' });
+    sendError(res, 400, 'invalid_trainee_id');
     return;
   }
 
   const trainee = await User.exists({ _id: traineeId, role: 'trainee', coachId: req.userId });
   if (!trainee) {
-    res.status(404).json({ message: 'Trainee not found.' });
+    sendError(res, 404, 'trainee_not_found');
     return;
   }
 

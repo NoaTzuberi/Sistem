@@ -9,11 +9,6 @@ export const AUTOSAVE_DELAY_MS = 2500;
 
 export const SUPERSET_LABELS = ['A', 'B', 'C', 'D', 'E', 'F'] as const;
 
-// 0 = Sunday — weeks start on Sunday (owner decision).
-export const DAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
-
-export const SET_TYPE_OPTIONS: { id: SetType; label: string }[] = [
-  { id: 'warmup', label: 'Warm-up' },
-  { id: 'working', label: 'Working' },
-  { id: 'drop', label: 'Drop' },
-];
+// The set types in picker order; their labels are in the shared copy (plan.setTypes). Day names
+// come from Intl (dayNames) — 0 = Sunday, weeks start on Sunday (owner decision).
+export const SET_TYPE_IDS: SetType[] = ['warmup', 'working', 'drop'];

@@ -1,4 +1,5 @@
 import { aiUnavailableReason } from './ai.config';
+import { translate } from '../../i18n';
 import { generateGeminiJson } from './gemini.provider';
 import { AiProviderError } from './ai.types';
 import type { AiJsonRequest, AiJsonResponse } from './ai.types';
@@ -11,7 +12,7 @@ export const aiClient = {
   /** A JSON reply that follows `schema`. Throws AiProviderError when no model could answer. */
   async generateJson(request: AiJsonRequest): Promise<AiJsonResponse> {
     const unavailable = aiUnavailableReason();
-    if (unavailable) throw new AiProviderError('not_configured', unavailable);
+    if (unavailable) throw new AiProviderError('not_configured', translate('en', unavailable));
     return generateGeminiJson(request);
   },
 };

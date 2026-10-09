@@ -15,6 +15,11 @@ interface RequestOptions {
   body?: unknown;
   /** A raw body (e.g. a photo upload) instead of JSON. */
   raw?: { data: Buffer; contentType: string };
+  /**
+   * Accept-Language (Phase 15). Tests read English messages by default; 'he' checks the
+   * Hebrew ones, null sends no header (the server's default, Hebrew).
+   */
+  language?: 'he' | 'en' | null;
 }
 
 export interface ApiResponse<T = any> {
@@ -34,8 +39,9 @@ export async function startApiTestClient(): Promise<ApiTestClient> {
   const { port } = server.address() as AddressInfo;
 
   return {
-    async request(method, path, { token, body, raw } = {}) {
+    async request(method, path, { token, body, raw, language = 'en' } = {}) {
       const headers: Record<string, string> = {};
+      if (language) headers['Accept-Language'] = language;
       if (token) headers.Authorization = `Bearer ${token}`;
       if (body !== undefined) headers['Content-Type'] = 'application/json';
       if (raw) headers['Content-Type'] = raw.contentType;

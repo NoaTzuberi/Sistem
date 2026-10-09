@@ -1,5 +1,5 @@
 .accordion-section {
-  border: 1px solid var(--color-border);
+  border: var(--border-width-thin) solid var(--color-border);
   background-color: var(--color-bg);
   /* Leaves room for the progress bar when scrolled into view. */
   scroll-margin-top: var(--space-6);
@@ -20,7 +20,7 @@
   background: none;
   color: var(--color-text);
   font-family: var(--font-family-body);
-  text-align: left;
+  text-align: start;
   cursor: pointer;
   transition: background-color var(--transition-fast) var(--ease-standard);
 }

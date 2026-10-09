@@ -15,7 +15,7 @@
 }
 
 .drag-handle:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: var(--border-width-medium) solid var(--color-primary);
 }
 
 .drag-handle-icon {

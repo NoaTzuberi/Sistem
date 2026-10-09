@@ -8,6 +8,7 @@ import {
   MECHANIC_IDS,
   FORCE_TYPE_IDS,
 } from './exercise.constants';
+import { type ServerMessage, msg } from '../../i18n';
 
 const MIN_PAGE = 1;
 const MIN_LIMIT = 1;
@@ -17,9 +18,9 @@ function isStringInSet(value: unknown, allowed: readonly string[]): boolean {
   return typeof value === 'string' && (allowed as readonly string[]).includes(value);
 }
 
-export function validateExerciseListQuery(query: unknown): string | null {
+export function validateExerciseListQuery(query: unknown): ServerMessage | null {
   if (typeof query !== 'object' || query === null) {
-    return 'Invalid query parameters.';
+    return msg('exercise_query_invalid');
   }
 
   const params = query as Record<string, unknown>;
@@ -27,63 +28,63 @@ export function validateExerciseListQuery(query: unknown): string | null {
   if (params.page !== undefined) {
     const page = Number(params.page);
     if (!Number.isInteger(page) || page < MIN_PAGE) {
-      return `page must be an integer of at least ${MIN_PAGE}.`;
+      return msg('exercise_page_invalid', { min: MIN_PAGE });
     }
   }
 
   if (params.limit !== undefined) {
     const limit = Number(params.limit);
     if (!Number.isInteger(limit) || limit < MIN_LIMIT || limit > MAX_LIMIT) {
-      return `limit must be an integer between ${MIN_LIMIT} and ${MAX_LIMIT}.`;
+      return msg('exercise_limit_invalid', { min: MIN_LIMIT, max: MAX_LIMIT });
     }
   }
 
   if (params.category !== undefined && !isStringInSet(params.category, CATEGORY_IDS)) {
-    return 'category must be one of the supported category values.';
+    return msg('exercise_query_param_invalid', { param: 'category' });
   }
 
   if (params.muscle !== undefined && !isStringInSet(params.muscle, MUSCLE_IDS)) {
-    return 'muscle must be one of the supported muscle values.';
+    return msg('exercise_query_param_invalid', { param: 'muscle' });
   }
 
   if (params.equipment !== undefined && !isStringInSet(params.equipment, EQUIPMENT_IDS)) {
-    return 'equipment must be one of the supported equipment values.';
+    return msg('exercise_query_param_invalid', { param: 'equipment' });
   }
 
   if (params.difficulty !== undefined && !isStringInSet(params.difficulty, DIFFICULTY_IDS)) {
-    return 'difficulty must be one of the supported difficulty values.';
+    return msg('exercise_query_param_invalid', { param: 'difficulty' });
   }
 
   if (params.movementType !== undefined && !isStringInSet(params.movementType, MOVEMENT_TYPE_IDS)) {
-    return 'movementType must be one of the supported movement type values.';
+    return msg('exercise_query_param_invalid', { param: 'movementType' });
   }
 
   if (params.goal !== undefined && !isStringInSet(params.goal, EXERCISE_GOAL_IDS)) {
-    return 'goal must be one of the supported goal values.';
+    return msg('exercise_query_param_invalid', { param: 'goal' });
   }
 
   if (params.mechanic !== undefined && !isStringInSet(params.mechanic, MECHANIC_IDS)) {
-    return 'mechanic must be one of the supported mechanic values.';
+    return msg('exercise_query_param_invalid', { param: 'mechanic' });
   }
 
   if (params.forceType !== undefined && !isStringInSet(params.forceType, FORCE_TYPE_IDS)) {
-    return 'forceType must be one of the supported force type values.';
+    return msg('exercise_query_param_invalid', { param: 'forceType' });
   }
 
   if (params.isUnilateral !== undefined && params.isUnilateral !== 'true' && params.isUnilateral !== 'false') {
-    return "isUnilateral must be 'true' or 'false'.";
+    return msg('exercise_query_param_invalid', { param: 'isUnilateral' });
   }
 
   if (params.search !== undefined && typeof params.search !== 'string') {
-    return 'search must be a string.';
+    return msg('exercise_query_param_invalid', { param: 'search' });
   }
 
   return null;
 }
 
-export function validateSlugParam(slug: unknown): string | null {
+export function validateSlugParam(slug: unknown): ServerMessage | null {
   if (typeof slug !== 'string' || slug.trim().length === 0) {
-    return 'A valid exercise slug is required.';
+    return msg('exercise_slug_invalid');
   }
   return null;
 }

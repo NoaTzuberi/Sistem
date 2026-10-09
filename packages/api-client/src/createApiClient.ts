@@ -10,13 +10,18 @@ export interface ApiClientOptions {
    * or later a Capacitor-safe logout — so the package never touches `window`.
    */
   onUnauthorized: () => void;
+  /**
+   * The language on screen (Phase 15), sent as Accept-Language so the server's messages
+   * come back in it.
+   */
+  getLanguage?: () => string;
 }
 
 // Endpoints where a 401 means "wrong credentials", not "your session expired" —
 // they must never trigger onUnauthorized.
 const PUBLIC_AUTH_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password'];
 
-export function createApiClient({ baseURL, getToken, onUnauthorized }: ApiClientOptions): AxiosInstance {
+export function createApiClient({ baseURL, getToken, onUnauthorized, getLanguage }: ApiClientOptions): AxiosInstance {
   const client = axios.create({
     baseURL,
     headers: {
@@ -28,6 +33,10 @@ export function createApiClient({ baseURL, getToken, onUnauthorized }: ApiClient
     const token = getToken();
     if (token) {
       requestConfig.headers.Authorization = `Bearer ${token}`;
+    }
+    const language = getLanguage?.();
+    if (language) {
+      requestConfig.headers['Accept-Language'] = language;
     }
     return requestConfig;
   });
@@ -49,6 +58,7 @@ export function createApiClient({ baseURL, getToken, onUnauthorized }: ApiClient
   return client;
 }
 
+/** The server's message (already in the language on screen), else `fallback` (e.g. no connection). */
 export function extractErrorMessage(error: unknown, fallback: string): string {
   if (axios.isAxiosError(error) && typeof error.response?.data?.message === 'string') {
     return error.response.data.message;

@@ -1,11 +1,11 @@
 import type { FoodGroup, FoodItem, NutritionIssue } from '@sistem/types';
-import { FOOD_GROUP_LABELS, PORTION_GROUPS, formatKcal } from '@sistem/shared';
+import { formatKcal, PORTION_GROUPS, sharedCopy, useCopy, useLanguage } from '@sistem/shared';
 import { Button } from '../../../../components/common/Button/Button';
 import { Badge } from '../../../../components/common/Badge/Badge';
 import { PortionStepper } from '../PortionStepper/PortionStepper';
 import { FoodPicker } from '../FoodPicker/FoodPicker';
 import { IssueList } from '../IssueList/IssueList';
-import { NUTRITION_COPY } from '../../data/nutritionCopy';
+import { nutritionCopy } from '../../copy';
 import { move, neededGroup, newFoodLine, newOption, newTextLine } from '../../nutritionDraft';
 import type { DraftLine, DraftMeal, DraftOption } from '../../nutritionDraft';
 import './MealEditor.css';
@@ -45,6 +45,8 @@ function LineRow({
   onChange: (line: DraftLine) => void;
   onRemove: () => void;
 }) {
+  const shared = useCopy(sharedCopy);
+  const copy = useCopy(nutritionCopy);
   const counted = line.group !== null && line.group !== 'vegetable';
   return (
     <li className="meal-line">
@@ -53,11 +55,11 @@ function LineRow({
           <span dir="auto">{food?.name ?? '—'}</span>
           {food && (
             <span className="meal-line-portion" dir="auto">
-              {food.portion}
+              <bdi>{food.portion}</bdi>
             </span>
           )}
-          {food && <Badge>{FOOD_GROUP_LABELS[food.group]}</Badge>}
-          {food?.archivedAt && <Badge tone="alert">{NUTRITION_COPY.archived}</Badge>}
+          {food && <Badge>{shared.nutrition.groups[food.group]}</Badge>}
+          {food?.archivedAt && <Badge tone="alert">{copy.archived}</Badge>}
         </span>
       )}
       {line.kind === 'text' && (
@@ -66,13 +68,13 @@ function LineRow({
             className="meal-input"
             dir="auto"
             value={line.text}
-            placeholder={NUTRITION_COPY.lineText}
-            aria-label={NUTRITION_COPY.lineText}
+            placeholder={copy.lineText}
+            aria-label={copy.lineText}
             onChange={(event) => onChange({ ...line, text: event.target.value })}
           />
           <select
             className="meal-select"
-            aria-label={NUTRITION_COPY.lineGroup}
+            aria-label={copy.lineGroup}
             value={line.group ?? ''}
             onChange={(event) => {
               const group = (event.target.value || null) as FoodGroup | null;
@@ -82,23 +84,23 @@ function LineRow({
           >
             {TEXT_GROUPS.map((group) => (
               <option key={group} value={group}>
-                {group ? FOOD_GROUP_LABELS[group] : NUTRITION_COPY.lineGroupNone}
+                {group ? shared.nutrition.groups[group] : copy.lineGroupNone}
               </option>
             ))}
           </select>
         </span>
       )}
-      {line.kind === 'recipe' && <span className="meal-line-food">Recipe</span>}
+      {line.kind === 'recipe' && <span className="meal-line-food">{copy.recipe}</span>}
 
       {(line.kind !== 'text' || counted) && (
         <PortionStepper
-          label={NUTRITION_COPY.portions}
+          label={copy.portions}
           value={line.portions ?? 1}
           min={0.5}
           onChange={(portions) => onChange({ ...line, portions })}
         />
       )}
-      <Button size="sm" onClick={onRemove} aria-label={NUTRITION_COPY.removeLine}>
+      <Button size="sm" onClick={onRemove} aria-label={copy.removeLine}>
         ✕
       </Button>
     </li>
@@ -107,6 +109,9 @@ function LineRow({
 
 /** One meal: name, portions per group (vegetables free), kcal, and the coach's options. */
 export function MealEditor({ meal, index, count, foods, recentFoodIds, foodsById, kcal, issues, onChange, onRemove, onMove }: MealEditorProps) {
+  const language = useLanguage();
+  const shared = useCopy(sharedCopy);
+  const copy = useCopy(nutritionCopy);
   function updateOption(optionIndex: number, option: DraftOption) {
     onChange({ ...meal, options: meal.options.map((current, i) => (i === optionIndex ? option : current)) });
   }
@@ -120,18 +125,18 @@ export function MealEditor({ meal, index, count, foods, recentFoodIds, foodsById
           className="meal-input meal-editor-name"
           dir="auto"
           value={meal.name}
-          aria-label={NUTRITION_COPY.mealName}
+          aria-label={copy.mealName}
           onChange={(event) => onChange({ ...meal, name: event.target.value })}
         />
-        {kcal !== undefined && <span className="meal-editor-kcal">{formatKcal(kcal)}</span>}
+        {kcal !== undefined && <span className="meal-editor-kcal">{formatKcal(kcal, language)}</span>}
         <div className="meal-editor-actions">
-          <Button size="sm" onClick={() => onMove(-1)} disabled={index === 0} aria-label={NUTRITION_COPY.moveUp}>
+          <Button size="sm" onClick={() => onMove(-1)} disabled={index === 0} aria-label={copy.moveUp}>
             ↑
           </Button>
-          <Button size="sm" onClick={() => onMove(1)} disabled={index === count - 1} aria-label={NUTRITION_COPY.moveDown}>
+          <Button size="sm" onClick={() => onMove(1)} disabled={index === count - 1} aria-label={copy.moveDown}>
             ↓
           </Button>
-          <Button size="sm" variant="danger" onClick={onRemove} aria-label={NUTRITION_COPY.removeMeal}>
+          <Button size="sm" variant="danger" onClick={onRemove} aria-label={copy.removeMeal}>
             ✕
           </Button>
         </div>
@@ -141,7 +146,7 @@ export function MealEditor({ meal, index, count, foods, recentFoodIds, foodsById
         {PORTION_GROUPS.map((group) => (
           <PortionStepper
             key={group}
-            label={FOOD_GROUP_LABELS[group]}
+            label={shared.nutrition.groups[group]}
             value={meal.portions[group]}
             onChange={(value) => onChange({ ...meal, portions: { ...meal.portions, [group]: value } })}
           />
@@ -152,7 +157,7 @@ export function MealEditor({ meal, index, count, foods, recentFoodIds, foodsById
             checked={meal.vegetablesFree}
             onChange={(event) => onChange({ ...meal, vegetablesFree: event.target.checked })}
           />{' '}
-          {NUTRITION_COPY.vegetablesFree}
+          {copy.vegetablesFree}
         </label>
       </div>
       <IssueList issues={mealIssues} />
@@ -165,16 +170,16 @@ export function MealEditor({ meal, index, count, foods, recentFoodIds, foodsById
                 className="meal-input"
                 dir="auto"
                 value={option.label}
-                aria-label={NUTRITION_COPY.optionLabel}
+                aria-label={copy.optionLabel}
                 onChange={(event) => updateOption(optionIndex, { ...option, label: event.target.value })}
               />
-              <Button size="sm" onClick={() => onChange({ ...meal, options: move(meal.options, optionIndex, -1) })} disabled={optionIndex === 0} aria-label={NUTRITION_COPY.moveUp}>
+              <Button size="sm" onClick={() => onChange({ ...meal, options: move(meal.options, optionIndex, -1) })} disabled={optionIndex === 0} aria-label={copy.moveUp}>
                 ↑
               </Button>
               <Button
                 size="sm"
                 variant="danger"
-                aria-label={NUTRITION_COPY.removeOption}
+                aria-label={copy.removeOption}
                 onClick={() => onChange({ ...meal, options: meal.options.filter((_, i) => i !== optionIndex) })}
               >
                 ✕
@@ -199,14 +204,14 @@ export function MealEditor({ meal, index, count, foods, recentFoodIds, foodsById
                 onPick={(food) => updateOption(optionIndex, { ...option, lines: [...option.lines, newFoodLine(food.id, food.group)] })}
               />
               <Button size="sm" onClick={() => updateOption(optionIndex, { ...option, lines: [...option.lines, newTextLine()] })}>
-                {NUTRITION_COPY.addText}
+                {copy.addText}
               </Button>
             </div>
             <IssueList issues={issues.filter((issue) => issue.optionIndex === optionIndex)} />
           </section>
         ))}
         <Button size="sm" onClick={() => onChange({ ...meal, options: [...meal.options, newOption(nextOptionLabel(meal.options.length))] })}>
-          {NUTRITION_COPY.addOption}
+          {copy.addOption}
         </Button>
       </div>
     </article>

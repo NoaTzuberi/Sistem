@@ -5,6 +5,11 @@ import { deletePlan, publishPlan, savePlan, unpublishPlan } from '../../../servi
 import { AUTOSAVE_DELAY_MS } from '../data/planDefaults';
 import { assignSavedIds, draftFromPlan, keysOf, toPayload } from '../planDraft';
 import type { PlanDraft } from '../types';
+import { getActiveLanguage } from '@sistem/shared';
+import { planBuilderCopy } from '../copy';
+
+// Read when the text is needed (callbacks run later): the language on screen at that moment.
+const text = () => planBuilderCopy[getActiveLanguage()];
 
 export type SaveStatus = 'saved' | 'unsaved' | 'saving' | 'error';
 
@@ -75,7 +80,7 @@ export function usePlanEditor(traineeId: string, initialPlan: CoachPlan) {
         return true;
       } catch (failure) {
         setFailedJson(sentJson);
-        fail(failure, "Couldn't save the plan.");
+        fail(failure, text().saveError);
         return false;
       } finally {
         inFlight.current = null;
@@ -121,7 +126,7 @@ export function usePlanEditor(traineeId: string, initialPlan: CoachPlan) {
       setError(undefined);
       return true;
     } catch (failure) {
-      fail(failure, "Couldn't publish the plan.");
+      fail(failure, text().publishError);
       return false;
     }
   }, [traineeId, planId, save, applyPlan, fail]);
@@ -132,7 +137,7 @@ export function usePlanEditor(traineeId: string, initialPlan: CoachPlan) {
       setError(undefined);
       return true;
     } catch (failure) {
-      fail(failure, "Couldn't unpublish the plan.");
+      fail(failure, text().unpublishError);
       return false;
     }
   }, [traineeId, planId, applyPlan, fail]);
@@ -146,7 +151,7 @@ export function usePlanEditor(traineeId: string, initialPlan: CoachPlan) {
       return true;
     } catch (failure) {
       autosaveOnLeave.current = plan.status === 'draft';
-      fail(failure, "Couldn't delete the plan.");
+      fail(failure, text().deleteError);
       return false;
     }
   }, [traineeId, planId, plan.status, fail]);

@@ -16,7 +16,7 @@
   padding: 0;
   font-size: var(--text-base);
   background-color: var(--color-bg);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-thin) solid var(--color-border);
   border-radius: var(--radius-none);
   cursor: pointer;
 }
@@ -33,7 +33,7 @@
 
 .portion-stepper-button:disabled {
   cursor: default;
-  opacity: 0.4;
+  opacity: var(--opacity-faint);
 }
 
 .portion-stepper-value {

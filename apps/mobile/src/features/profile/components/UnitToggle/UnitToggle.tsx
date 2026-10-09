@@ -4,12 +4,14 @@ interface UnitToggleProps<T extends string> {
   label: string;
   options: readonly T[];
   value: T;
+  /** What each option shows ('ק״ג' for 'kg'); the option itself by default. */
+  optionLabel?: (option: T) => string;
   disabled?: boolean;
   onChange: (value: T) => void;
 }
 
 /** Two-way unit switch (kg | lb, cm | in). */
-export function UnitToggle<T extends string>({ label, options, value, disabled, onChange }: UnitToggleProps<T>) {
+export function UnitToggle<T extends string>({ label, options, value, optionLabel, disabled, onChange }: UnitToggleProps<T>) {
   return (
     <div className="unit-toggle">
       <span className="unit-toggle-label">{label}</span>
@@ -23,7 +25,7 @@ export function UnitToggle<T extends string>({ label, options, value, disabled, 
             disabled={disabled}
             onClick={() => option !== value && onChange(option)}
           >
-            {option}
+            {optionLabel ? optionLabel(option) : option}
           </button>
         ))}
       </div>

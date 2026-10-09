@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthenticatedRequest } from '../../middleware/auth.middleware';
 import { getUserProfileById, updateUserPreferences, UserNotFoundError } from './users.service';
 import { parsePreferencesPayload } from './users.validation';
+import { sendError } from '../../i18n';
 
 export async function getProfile(req: AuthenticatedRequest, res: Response) {
   try {
@@ -9,7 +10,7 @@ export async function getProfile(req: AuthenticatedRequest, res: Response) {
     res.status(200).json({ user });
   } catch (error) {
     if (error instanceof UserNotFoundError) {
-      res.status(401).json({ message: error.message });
+      sendError(res, 401, error.serverMessage);
       return;
     }
     throw error;
@@ -19,14 +20,14 @@ export async function getProfile(req: AuthenticatedRequest, res: Response) {
 export async function patchPreferences(req: AuthenticatedRequest, res: Response) {
   const parsed = parsePreferencesPayload(req.body);
   if (parsed.error !== undefined) {
-    res.status(400).json({ message: parsed.error });
+    sendError(res, 400, parsed.error);
     return;
   }
   try {
     res.status(200).json({ user: await updateUserPreferences(req.userId!, parsed.value) });
   } catch (error) {
     if (error instanceof UserNotFoundError) {
-      res.status(401).json({ message: error.message });
+      sendError(res, 401, error.serverMessage);
       return;
     }
     throw error;

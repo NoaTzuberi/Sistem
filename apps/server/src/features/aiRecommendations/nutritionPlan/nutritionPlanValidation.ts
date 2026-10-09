@@ -1,4 +1,4 @@
-import type { NutritionConfig, NutritionMeal, NutritionPreferences, PortionCounts, PortionGroup } from '@sistem/types';
+import type { NutritionConfig, NutritionMeal, NutritionPreferences, PortionCounts, PortionGroup, Language } from '@sistem/types';
 import { getNutritionFeatures } from '../../../config/features';
 import { MAX_LINE_PORTIONS, MAX_MEAL_PORTIONS, PORTION_GROUP_IDS } from '../../nutrition/nutrition.constants';
 import { findCoachFoods } from '../../nutrition/foodItem.service';
@@ -6,6 +6,7 @@ import { findFoodConflicts, hasKosherConflict, keepsKosher } from '../../nutriti
 import { findNutritionPublishIssues, isPortionCount } from '../../nutrition/nutrition.validation';
 import type { FoodCandidate } from './nutritionPlanFoods';
 import { MAX_LINES_PER_OPTION, MAX_OPTIONS_PER_MEAL, mealSlotId, optionLabel } from './nutritionPlan.constants';
+import { translate } from '../../../i18n';
 
 // Checks a model reply in code (PRD §5.6, 13c). The daily portions are the calculation's
 // and must come back EXACTLY; every option must add up to its meal; every food must be one
@@ -20,8 +21,10 @@ const TARGET_ISSUE_CODES = new Set(['target_missing', 'floor_unconfirmed']);
 export interface NutritionPlanValidationContext {
   coachId: string;
   candidates: FoodCandidate[];
-  /** Meal names, in slot order (M1 …). */
+  /** Meal names, in slot order (M1 …), in the coach's language. */
   slots: string[];
+  /** The coach's language: option labels are written in it. */
+  language: Language;
   dailyPortions: PortionCounts;
   kcal: number;
   preferences: NutritionPreferences | null;
@@ -157,7 +160,7 @@ export function checkNutritionPlanReply(reply: unknown, context: NutritionPlanVa
         const tags = lines.map((line) => context.candidates.find((candidate) => candidate.food.id === line.foodItemId)?.food.dietTags ?? []);
         if (hasKosherConflict(tags)) issues.push(`${at}: meat or poultry and dairy in the same option — she keeps kosher.`);
       }
-      return { label: optionLabel(optionIndex), why: text(rawOption.why), lines };
+      return { label: optionLabel(optionIndex, context.language), why: text(rawOption.why), lines };
     });
 
     meals.push({
@@ -241,7 +244,8 @@ export async function validateNutritionPlanReply(
     { calorieTarget: { kcal: context.kcal, floorConfirmation: { kcal: context.kcal } }, meals: asPlanMeals(plan) },
     { foods, config: context.config, preferences: context.preferences, features: getNutritionFeatures(), recipeIds: new Set() },
   ).filter((issue) => issue.severity === 'error' && !TARGET_ISSUE_CODES.has(issue.code));
-  if (builderIssues.length > 0) return { value: null, issues: builderIssues.map((issue) => issue.message) };
+  // Sent back to the model: English.
+  if (builderIssues.length > 0) return { value: null, issues: builderIssues.map((issue) => translate('en', issue.message)) };
 
   return checked;
 }

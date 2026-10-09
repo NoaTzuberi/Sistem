@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { DAY_NAMES, formatWeekRange, useLoad } from '@sistem/shared';
+import { dayName, formatWeekRange, useCopy, useLanguage, useLoad } from '@sistem/shared';
 import { AppShell } from '../../../../components/layout/AppShell/AppShell';
 import { Badge } from '../../../../components/common/Badge/Badge';
 import { StateMessage } from '../../../../components/common/StateMessage/StateMessage';
@@ -11,17 +11,20 @@ import { StartConflictModal } from '../../components/StartConflictModal/StartCon
 import { useStartWorkout } from '../../hooks/useStartWorkout';
 import { BackButton } from '../../components/BackButton/BackButton';
 import { PlanExerciseList } from '../../components/PlanExerciseList/PlanExerciseList';
-import { WORKOUTS_COPY, exerciseCountLabel, workoutStatusBadge } from '../../data/workoutCopy';
+import { exerciseCountLabel, workoutStatusBadge } from '../../data/workoutDisplay';
+import { workoutCopy } from '../../copy';
 import './WorkoutDetailPage.css';
 
 // One planned workout (PRD §5.4): exercises, the server's resolved sets and the coach's
 // notes, with Start / Resume for this week's workouts (Phase 8).
 export function WorkoutDetailPage() {
+  const language = useLanguage();
+  const copy = useCopy(workoutCopy);
   const { planId = '', workoutId = '' } = useParams();
   const load = useCallback(() => getPlan(planId), [planId]);
-  const { data: plan, error, isLoading, reload } = useLoad(load, WORKOUTS_COPY.workoutLoadError);
+  const { data: plan, error, isLoading, reload } = useLoad(load, copy.list.workoutLoadError);
   const workout = plan?.workouts.find((item) => item.id === workoutId);
-  const badge = workout && workoutStatusBadge(workout);
+  const badge = workout && workoutStatusBadge(workout, copy);
   const starter = useStartWorkout();
 
   return (
@@ -31,10 +34,10 @@ export function WorkoutDetailPage() {
           <BackButton />
           {plan && workout && badge && (
             <div className="workout-detail-heading">
-              <h1 className="workout-detail-title">{workout.title}</h1>
+              <h1 className="workout-detail-title" dir="auto">{workout.title}</h1>
               <span className="workout-detail-meta">
-                {workout.dayOfWeek !== undefined && `${DAY_NAMES[workout.dayOfWeek]} · `}
-                {formatWeekRange(plan.weekStartDate)} · {exerciseCountLabel(workout.exercises.length)}
+                {workout.dayOfWeek !== undefined && `${dayName(workout.dayOfWeek, language)} · `}
+                {formatWeekRange(plan.weekStartDate, language)} · {exerciseCountLabel(workout.exercises.length, copy, language)}
               </span>
               <Badge variant={badge.variant} className="workout-detail-status">
                 {badge.label}
@@ -43,27 +46,27 @@ export function WorkoutDetailPage() {
           )}
         </header>
 
-        {isLoading && !plan && <StateMessage>{WORKOUTS_COPY.loading}</StateMessage>}
+        {isLoading && !plan && <StateMessage>{copy.list.loading}</StateMessage>}
         {error && !plan && <StateMessage onRetry={reload}>{error}</StateMessage>}
-        {plan && !workout && <StateMessage>{WORKOUTS_COPY.workoutNotFound}</StateMessage>}
+        {plan && !workout && <StateMessage>{copy.list.workoutNotFound}</StateMessage>}
 
         {plan && workout && (
           <>
-            {workout.notes && <p className="workout-detail-notes">{workout.notes}</p>}
+            {workout.notes && <p className="workout-detail-notes" dir="auto">{workout.notes}</p>}
             <PlanExerciseList exercises={workout.exercises} />
             {workout.logId ? (
               <Link className="workout-detail-log-link" to={workoutLogPath(workout.logId)}>
-                {WORKOUTS_COPY.viewLog}
+                {copy.list.viewLog}
               </Link>
             ) : plan.period === 'current' ? (
               <>
                 <Button onClick={() => void starter.start(plan.id, workout.id)} loading={starter.isStarting}>
-                  {workout.inProgress ? WORKOUTS_COPY.resumeWorkout : WORKOUTS_COPY.startWorkout}
+                  {workout.inProgress ? copy.list.resumeWorkout : copy.list.startWorkout}
                 </Button>
                 {starter.error && <p className="workout-detail-error">{starter.error}</p>}
               </>
             ) : (
-              plan.period === 'upcoming' && <p className="workout-detail-hint">{WORKOUTS_COPY.notStartableYet}</p>
+              plan.period === 'upcoming' && <p className="workout-detail-hint">{copy.list.notStartableYet}</p>
             )}
           </>
         )}

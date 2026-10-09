@@ -1,6 +1,6 @@
 import type { CoachTraineeSummary } from '@sistem/types';
 import { Badge } from '../../../../components/common/Badge/Badge';
-import { formatTimeLeft, NEEDS_NEXT_WEEK_LABEL, TRAINEE_STATUS_LABELS, TRAINEE_STATUS_TONES } from '@sistem/shared';
+import { formatTimeLeft, sharedCopy, TRAINEE_STATUS_TONES, useCopy, useLanguage } from '@sistem/shared';
 import './TraineeStatusBadges.css';
 
 interface TraineeStatusBadgesProps {
@@ -8,10 +8,11 @@ interface TraineeStatusBadgesProps {
 }
 
 export function TraineeStatusBadges({ trainee }: TraineeStatusBadgesProps) {
+  const shared = useCopy(sharedCopy);
   return (
     <span className="trainee-status-badges">
-      <Badge tone={TRAINEE_STATUS_TONES[trainee.status]}>{TRAINEE_STATUS_LABELS[trainee.status]}</Badge>
-      {trainee.needsNextWeekPlan && <Badge tone="solid">{NEEDS_NEXT_WEEK_LABEL}</Badge>}
+      <Badge tone={TRAINEE_STATUS_TONES[trainee.status]}>{shared.traineeStatus.labels[trainee.status]}</Badge>
+      {trainee.needsNextWeekPlan && <Badge tone="solid">{shared.traineeStatus.needsNextWeek}</Badge>}
     </span>
   );
 }
@@ -25,7 +26,8 @@ interface PlanWindowProps {
 
 /** Time left on the 48h window for a trainee waiting for her first plan. */
 export function PlanWindow({ planDueAt, nowMs }: PlanWindowProps) {
+  const language = useLanguage();
   if (!planDueAt) return <span className="plan-window-none">—</span>;
-  const { text, isOverdue } = formatTimeLeft(planDueAt, nowMs);
+  const { text, isOverdue } = formatTimeLeft(planDueAt, nowMs, language);
   return <span className={isOverdue ? 'plan-window plan-window-overdue' : 'plan-window'}>{text}</span>;
 }

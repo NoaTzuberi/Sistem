@@ -1,9 +1,9 @@
 import type { WorkoutSession } from '@sistem/types';
-import { describeInterval } from '@sistem/shared';
+import { describeInterval, fill, useCopy, useLanguage } from '@sistem/shared';
 import { Button } from '../../../../components/common/Button/Button';
 import { isIntervalBlock } from '../../data/sessionSets';
 import type { SessionBlock as SessionBlockModel, SetValuesByKey } from '../../data/sessionSets';
-import { INTERVAL_COPY, SESSION_COPY } from '../../data/workoutCopy';
+import { workoutCopy } from '../../copy';
 import { SessionExerciseCard } from '../SessionExerciseCard/SessionExerciseCard';
 import type { SetHandlers } from '../SessionExerciseCard/SessionExerciseCard';
 import './SessionBlock.css';
@@ -37,6 +37,8 @@ export function SessionBlock({
   onStartInterval,
   ...handlers
 }: SessionBlockProps) {
+  const language = useLanguage();
+  const copy = useCopy(workoutCopy);
   const interval = isIntervalBlock(block);
   const sets = block.exercises.flatMap((exercise) => exercise.sets);
   const done = sets.filter((set) => values[set.key]?.completed).length;
@@ -51,9 +53,9 @@ export function SessionBlock({
         </span>
         <span className="session-block-row-name">
           {block.supersetGroup && <span className="session-block-row-group">{block.supersetGroup} · </span>}
-          {names}
+          <bdi>{names}</bdi>
         </span>
-        <span className="session-block-row-count">
+        <span className="session-block-row-count" dir="ltr">
           {done}/{sets.length}
         </span>
       </button>
@@ -64,16 +66,16 @@ export function SessionBlock({
     <section className={block.supersetGroup ? 'session-block session-block-superset' : 'session-block'}>
       {(block.supersetGroup || isCurrent) && (
         <div className="session-block-labels">
-          {block.supersetGroup && <span className="session-block-group">{SESSION_COPY.supersetLabel(block.supersetGroup)}</span>}
-          {isCurrent && <span className="session-block-now">{SESSION_COPY.now}</span>}
+          {block.supersetGroup && <span className="session-block-group">{fill(copy.session.supersetLabel, { group: block.supersetGroup })}</span>}
+          {isCurrent && <span className="session-block-now">{copy.session.now}</span>}
         </div>
       )}
       {interval && !isDone && (
         <div className="session-block-interval">
           {/* One line per circuit: rounds and the first exercise's work / rest. */}
-          <span className="session-block-interval-text">{describeInterval(block.exercises[0].plan)}</span>
+          <span className="session-block-interval-text">{describeInterval(block.exercises[0].plan, language)}</span>
           <Button className="session-block-interval-start" onClick={onStartInterval}>
-            ▶ {INTERVAL_COPY.startInterval}
+            ▶ {copy.interval.startInterval}
           </Button>
         </div>
       )}

@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { CoachTraineeDetail, PlanWeekOptions } from '@sistem/types';
 import { createPlan, listPlanWeeks, listPlans } from '../../../../services/coach/coachService';
-import { useLoad, formatWeekSpan, weekRelationLabel } from '@sistem/shared';
+import { fill, formatWeekSpan, sharedCopy, useCopy, useLanguage, useLoad, weekRelationLabel } from '@sistem/shared';
 import { planPath } from '../../../../app/config/routes';
 import { Badge } from '../../../../components/common/Badge/Badge';
 import { Button } from '../../../../components/common/Button/Button';
@@ -10,8 +10,9 @@ import { WeekPicker } from '../WeekPicker/WeekPicker';
 import type { WeekPickerMode } from '../WeekPicker/WeekPicker';
 import { AiDraftCard } from '../../../aiDraft/components/AiDraftCard/AiDraftCard';
 import { useLatestAiDraft } from '../../../aiDraft/hooks/useLatestAiDraft';
-import { AI_DRAFT_COPY } from '../../../aiDraft/data/aiDraftCopy';
+import { aiDraftCopy } from '../../../aiDraft/copy';
 import './TraineePlans.css';
+import { traineesCopy } from '../../copy';
 
 interface TraineePlansProps {
   trainee: CoachTraineeDetail;
@@ -20,9 +21,13 @@ interface TraineePlansProps {
 }
 
 export function TraineePlans({ trainee, onPlansChanged }: TraineePlansProps) {
+  const language = useLanguage();
+  const shared = useCopy(sharedCopy);
+  const aiText = useCopy(aiDraftCopy);
+  const copy = useCopy(traineesCopy);
   const navigate = useNavigate();
   const load = useCallback(() => listPlans(trainee.id), [trainee.id]);
-  const { data: plans, error, isLoading, reload } = useLoad(load, "Couldn't load the plans.");
+  const { data: plans, error, isLoading, reload } = useLoad(load, copy.plansLoadError);
   const ai = useLatestAiDraft(trainee.id);
   // The week picker: which action opened it, the weeks the server offers (fresh each time),
   // and the AI draft the new plan starts from ("Use in a new plan").
@@ -37,7 +42,7 @@ export function TraineePlans({ trainee, onPlansChanged }: TraineePlansProps) {
     try {
       setPicker({ mode, options: await listPlanWeeks(trainee.id), aiDraftId });
     } catch {
-      setCreateError("Couldn't load the weeks. Please try again.");
+      setCreateError(copy.weeksLoadError);
     } finally {
       setIsOpeningPicker(false);
     }
@@ -52,7 +57,7 @@ export function TraineePlans({ trainee, onPlansChanged }: TraineePlansProps) {
       onPlansChanged();
       navigate(planPath(trainee.id, plan.id), picker.aiDraftId ? { state: { loadAiDraftId: picker.aiDraftId } } : undefined);
     } catch (createFailure) {
-      setCreateError(createFailure instanceof Error ? createFailure.message : "Couldn't create the plan.");
+      setCreateError(createFailure instanceof Error ? createFailure.message : copy.createError);
       reload();
       setIsCreating(false);
       // The weeks may have changed (e.g. a plan made elsewhere): show the fresh state.
@@ -71,10 +76,10 @@ export function TraineePlans({ trainee, onPlansChanged }: TraineePlansProps) {
       {!picker && (
         <div className="plans-create">
           <Button variant="primary" disabled={isOpeningPicker} onClick={() => void openPicker('new')}>
-            New plan
+            {copy.newPlan}
           </Button>
           <Button disabled={isOpeningPicker || !plans || plans.length === 0} onClick={() => void openPicker('duplicate')}>
-            Duplicate last week
+            {copy.duplicateLastWeek}
           </Button>
         </div>
       )}
@@ -95,35 +100,35 @@ export function TraineePlans({ trainee, onPlansChanged }: TraineePlansProps) {
         </p>
       )}
 
-      {isLoading && !plans && <p className="plans-message">Loading…</p>}
+      {isLoading && !plans && <p className="plans-message">{shared.common.loading}</p>}
       {error && (
         <p className="plans-message" role="alert">
-          {error} <Button size="sm" onClick={reload}>Try again</Button>
+          {error} <Button size="sm" onClick={reload}>{shared.common.retry}</Button>
         </p>
       )}
-      {plans && plans.length === 0 && <p className="plans-message">No plans yet.</p>}
+      {plans && plans.length === 0 && <p className="plans-message">{copy.noPlans}</p>}
 
       {plans && plans.length > 0 && (
         <ul className="plans-list">
           {plans.map((plan) => {
             const exerciseCount = plan.workouts.reduce((total, workout) => total + workout.exercises.length, 0);
-            const relation = weekRelationLabel(plan.weekStartDate, trainee.currentWeekStart);
+            const relation = weekRelationLabel(plan.weekStartDate, trainee.currentWeekStart, language);
             return (
               <li key={plan.id} className="plans-item">
                 <div className="plans-item-main">
-                  <span className="plans-item-week">{formatWeekSpan(plan.weekStartDate)}</span>
+                  <span className="plans-item-week">{formatWeekSpan(plan.weekStartDate, language)}</span>
                   <Badge tone={plan.status === 'published' ? 'accent' : 'neutral'}>
-                    {plan.status === 'published' ? 'Published' : 'Draft'}
+                    {shared.coach.planStatus[plan.status]}
                   </Badge>
                   {relation && <Badge>{relation}</Badge>}
-                  {plan.locked && <Badge>Started by trainee</Badge>}
-                  {plan.aiRecommendationId && <Badge>{AI_DRAFT_COPY.fromAiBadge}</Badge>}
+                  {plan.locked && <Badge>{shared.coach.startedByTrainee}</Badge>}
+                  {plan.aiRecommendationId && <Badge>{aiText.training.fromAiBadge}</Badge>}
                 </div>
                 <span className="plans-item-size">
-                  {plan.workouts.length} workouts · {exerciseCount} exercises
+                  {fill(copy.planSize, { workouts: plan.workouts.length, exercises: exerciseCount })}
                 </span>
                 <Link className="plans-item-open" to={planPath(trainee.id, plan.id)}>
-                  Open
+                  {copy.open}
                 </Link>
               </li>
             );

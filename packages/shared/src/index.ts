@@ -14,5 +14,13 @@ export * from './bodyMetricsDisplay';
 export * from './achievementDisplay';
 export * from './nutritionDisplay';
 export * from './textSearch';
+export * from './planIssues';
 export { useLoad } from './hooks/useLoad';
 export { useServerNow } from './hooks/useServerNow';
+// Phase 15 — languages, copy files, Intl, bidi.
+export * from './i18n/copy';
+export * from './i18n/language';
+export * from './i18n/intl';
+export * from './i18n/bidi';
+export { I18nProvider, useI18n, useLanguage, useCopy, useUserLanguage } from './i18n/I18nProvider';
+export { sharedCopy } from './copy';

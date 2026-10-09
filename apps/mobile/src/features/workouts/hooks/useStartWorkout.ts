@@ -1,3 +1,4 @@
+import { useCopy } from '@sistem/shared';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -6,7 +7,7 @@ import { extractErrorMessage } from '@sistem/api-client';
 import { abandonWorkout, startWorkout } from '../../../services/workoutLogs/workoutLogsService';
 import { workoutSessionPath } from '../../../app/config/routes';
 import { clearCachedSession } from '../data/sessionCache';
-import { SESSION_COPY } from '../data/workoutCopy';
+import { workoutCopy } from '../copy';
 
 interface Conflict {
   active: ActiveWorkoutRef;
@@ -26,6 +27,7 @@ function conflictOf(error: unknown): ActiveWorkoutRef | null {
  * discard it first — only one workout can be open at a time.
  */
 export function useStartWorkout() {
+  const copy = useCopy(workoutCopy);
   const navigate = useNavigate();
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,8 +43,8 @@ export function useStartWorkout() {
     } catch (caught) {
       const active = conflictOf(caught);
       if (active) setConflict({ active, planId, workoutId });
-      else if (axios.isAxiosError(caught) && !caught.response) setError(SESSION_COPY.startOffline);
-      else setError(extractErrorMessage(caught, SESSION_COPY.startError));
+      else if (axios.isAxiosError(caught) && !caught.response) setError(copy.session.startOffline);
+      else setError(extractErrorMessage(caught, copy.session.startError));
     } finally {
       setIsStarting(false);
     }
@@ -62,7 +64,7 @@ export function useStartWorkout() {
       // Already finished / discarded elsewhere (409) is fine: start anyway.
       if (!axios.isAxiosError(caught) || caught.response?.status !== 409) {
         setIsStarting(false);
-        setError(extractErrorMessage(caught, SESSION_COPY.discardError));
+        setError(extractErrorMessage(caught, copy.session.discardError));
         return;
       }
     }

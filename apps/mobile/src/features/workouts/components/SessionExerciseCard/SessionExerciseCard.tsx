@@ -1,7 +1,8 @@
 import type { LastPerformance } from '@sistem/types';
-import { describeTargets, humanizeId, humanizeList } from '@sistem/shared';
+import { describeTargets, humanizeId, humanizeList, sharedCopy, useCopy, useLanguage } from '@sistem/shared';
 import type { SessionExercise, SetValues, SetValuesByKey } from '../../data/sessionSets';
-import { SESSION_COPY, lastTimeLabel, setTag } from '../../data/workoutCopy';
+import { lastTimeLabel, setTag } from '../../data/workoutDisplay';
+import { workoutCopy } from '../../copy';
 import { ExerciseMediaSlot } from '../ExerciseMediaSlot/ExerciseMediaSlot';
 import { SessionSetRow } from '../SessionSetRow/SessionSetRow';
 import './SessionExerciseCard.css';
@@ -42,6 +43,9 @@ export function SessionExerciseCard({
   onStartHold,
   onStopHold,
 }: SessionExerciseCardProps) {
+  const language = useLanguage();
+  const shared = useCopy(sharedCopy);
+  const copy = useCopy(workoutCopy);
   const facts = exercise.plan.exercise;
   const factsLine = facts
     ? [humanizeList(facts.primaryMuscles), humanizeList(facts.equipment), humanizeId(facts.difficulty)]
@@ -61,7 +65,7 @@ export function SessionExerciseCard({
       <header className="session-exercise-header">
         <h3 className="session-exercise-name">
           {position && <span className="session-exercise-position">{position}</span>}
-          {facts?.name ?? 'Exercise'}
+          <bdi>{facts?.name ?? shared.log.exercise}</bdi>
         </h3>
         {factsLine && <span className="session-exercise-facts">{factsLine}</span>}
       </header>
@@ -69,24 +73,24 @@ export function SessionExerciseCard({
       <ExerciseMediaSlot exercise={facts} />
 
       {/* The coach's notes are the instructions the trainee sees (PRD §5.2). */}
-      {exercise.plan.notes && <p className="session-exercise-notes">{exercise.plan.notes}</p>}
+      {exercise.plan.notes && <p className="session-exercise-notes" dir="auto">{exercise.plan.notes}</p>}
 
       <div className="session-exercise-targets">
-        {describeTargets(exercise.plan.resolvedSets).map((line) => (
+        {describeTargets(exercise.plan.resolvedSets, language).map((line) => (
           <span key={line}>{line}</span>
         ))}
         {lastPerformance && (
           <span className="session-exercise-last">
-            {SESSION_COPY.lastTime} {lastTimeLabel(lastPerformance)}
+            {copy.session.lastTime} {lastTimeLabel(lastPerformance, language)}
           </span>
         )}
       </div>
 
       <div className="session-exercise-columns" aria-hidden="true">
-        <span>{SESSION_COPY.columnSet}</span>
-        <span>{anyWeight ? SESSION_COPY.columnKg : ''}</span>
-        <span>{allTimed ? SESSION_COPY.columnSec : SESSION_COPY.columnReps}</span>
-        <span>{SESSION_COPY.columnDone}</span>
+        <span>{copy.session.columnSet}</span>
+        <span>{anyWeight ? copy.session.columnKg : ''}</span>
+        <span>{allTimed ? copy.session.columnSec : copy.session.columnReps}</span>
+        <span>{copy.session.columnDone}</span>
       </div>
 
       <div className="session-exercise-sets">
@@ -99,7 +103,7 @@ export function SessionExerciseCard({
               key={set.key}
               set={set}
               values={setValues}
-              tag={setTag(set.type, workingNumber)}
+              tag={setTag(set.type, workingNumber, copy)}
               isCurrent={set.key === currentKey}
               weightStep={exercise.weightStep}
               showWeight={showWeight(set.key, set.target?.targetWeight, set.timed)}

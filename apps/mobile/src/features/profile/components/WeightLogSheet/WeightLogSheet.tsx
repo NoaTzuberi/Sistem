@@ -2,13 +2,13 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import type { BodyMetric, WeightUnit } from '@sistem/types';
 import { extractErrorMessage } from '@sistem/api-client';
-import { formatDateOnly, parseDecimalInput, toDisplayWeight, toKg } from '@sistem/shared';
+import { fill, formatDateOnly, parseDecimalInput, toDisplayWeight, toKg, useCopy, useLanguage } from '@sistem/shared';
 import { Button } from '../../../../components/common/Button/Button';
 import { Input } from '../../../../components/common/Input/Input';
 import { Modal } from '../../../../components/common/Modal/Modal';
 import { saveBodyMetric } from '../../../../services/bodyMetrics/bodyMetricsService';
 import { celebrate } from '../../../achievements/celebration';
-import { BODY_COPY } from '../../../bodyTracking/data/bodyCopy';
+import { bodyCopy } from '../../../bodyTracking/copy';
 import './WeightLogSheet.css';
 
 export interface WeightSheetTarget {
@@ -31,6 +31,8 @@ interface WeightLogSheetProps {
  * per day: logging a day that has one replaces it. Typed in her unit, sent in kg.
  */
 export function WeightLogSheet({ target, today, unit, onClose, onSaved }: WeightLogSheetProps) {
+  const language = useLanguage();
+  const copy = useCopy(bodyCopy);
   const isEdit = target.weight !== undefined;
   const [date, setDate] = useState(target.date);
   const [value, setValue] = useState(isEdit ? String(toDisplayWeight(target.weight!, unit)) : '');
@@ -47,7 +49,7 @@ export function WeightLogSheet({ target, today, unit, onClose, onSaved }: Weight
       celebrate(saved.achievementsUnlocked);
       onClose();
     } catch (caught) {
-      setError(extractErrorMessage(caught, weightKg === null ? BODY_COPY.deleteError : BODY_COPY.saveError));
+      setError(extractErrorMessage(caught, weightKg === null ? copy.deleteError : copy.saveError));
       setIsSaving(false);
     }
   }
@@ -56,22 +58,22 @@ export function WeightLogSheet({ target, today, unit, onClose, onSaved }: Weight
     event.preventDefault();
     const parsed = parseDecimalInput(value);
     if (parsed === null || !date) {
-      setError(BODY_COPY.weightInvalid);
+      setError(copy.weightInvalid);
       return;
     }
     void save(toKg(parsed, unit));
   }
 
   return (
-    <Modal isOpen onClose={onClose} variant="flat" title={isEdit ? BODY_COPY.editWeight : BODY_COPY.logWeight}>
+    <Modal isOpen onClose={onClose} variant="flat" title={isEdit ? copy.editWeight : copy.logWeight}>
       <form className="weight-log-sheet" onSubmit={handleSubmit} noValidate>
         {isEdit ? (
-          <p className="weight-log-sheet-date">{formatDateOnly(date)}</p>
+          <p className="weight-log-sheet-date">{formatDateOnly(date, language)}</p>
         ) : (
-          <Input label={BODY_COPY.date} type="date" max={today} value={date} onChange={(event) => setDate(event.target.value)} />
+          <Input label={copy.date} type="date" max={today} value={date} onChange={(event) => setDate(event.target.value)} />
         )}
         <Input
-          label={BODY_COPY.weightField(unit)}
+          label={fill(copy.weightField, { unit })}
           type="text"
           inputMode="decimal"
           enterKeyHint="done"
@@ -85,22 +87,22 @@ export function WeightLogSheet({ target, today, unit, onClose, onSaved }: Weight
           </p>
         )}
         <Button type="submit" loading={isSaving} disabled={isSaving}>
-          {BODY_COPY.save}
+          {copy.save}
         </Button>
         {isEdit &&
           (confirmDelete ? (
             <div className="weight-log-sheet-confirm">
-              <span>{BODY_COPY.deleteWeightTitle}</span>
+              <span>{copy.deleteWeightTitle}</span>
               <Button type="button" variant="danger" disabled={isSaving} onClick={() => void save(null)}>
-                {BODY_COPY.delete}
+                {copy.delete}
               </Button>
               <Button type="button" variant="ghost" disabled={isSaving} onClick={() => setConfirmDelete(false)}>
-                {BODY_COPY.cancel}
+                {copy.cancel}
               </Button>
             </div>
           ) : (
             <Button type="button" variant="ghost" disabled={isSaving} onClick={() => setConfirmDelete(true)}>
-              {BODY_COPY.delete}
+              {copy.delete}
             </Button>
           ))}
       </form>

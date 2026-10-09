@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { TraineePlan, TraineePlanWorkout } from '@sistem/types';
-import { formatDateTime, formatDuration, formatWeekRange, useLoad } from '@sistem/shared';
+import { formatDateTime, formatDuration, formatWeekRange, useCopy, useLanguage, useLoad } from '@sistem/shared';
 import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
 import { AppShell } from '../../../../components/layout/AppShell/AppShell';
 import { StateMessage } from '../../../../components/common/StateMessage/StateMessage';
@@ -8,7 +8,8 @@ import { listPlans } from '../../../../services/plans/plansService';
 import { listWorkoutLogs } from '../../../../services/workoutLogs/workoutLogsService';
 import { workoutLogPath, workoutPath } from '../../../../app/config/routes';
 import { WorkoutRow } from '../../components/WorkoutRow/WorkoutRow';
-import { WORKOUTS_COPY, doneCountLabel } from '../../data/workoutCopy';
+import { doneCountLabel } from '../../data/workoutDisplay';
+import { workoutCopy } from '../../copy';
 import './WorkoutsPage.css';
 
 async function loadWorkouts() {
@@ -29,7 +30,8 @@ function rowTarget(plan: TraineePlan, workout: TraineePlanWorkout): string | und
 }
 
 function PlanWorkouts({ plan }: { plan: TraineePlan }) {
-  if (plan.workouts.length === 0) return <StateMessage>{WORKOUTS_COPY.noWorkoutsInPlan}</StateMessage>;
+  const copy = useCopy(workoutCopy);
+  if (plan.workouts.length === 0) return <StateMessage>{copy.list.noWorkoutsInPlan}</StateMessage>;
   return (
     <ul className="workouts-rows">
       {plan.workouts.map((workout) => (
@@ -44,35 +46,37 @@ function PlanWorkouts({ plan }: { plan: TraineePlan }) {
 // Trainee Workouts tab (PRD §5.4): this week, next week (when published), past weeks
 // and completed logs.
 export function WorkoutsPage() {
-  const { data, error, isLoading, reload } = useLoad(loadWorkouts, WORKOUTS_COPY.loadError);
+  const language = useLanguage();
+  const copy = useCopy(workoutCopy);
+  const { data, error, isLoading, reload } = useLoad(loadWorkouts, copy.list.loadError);
 
   return (
     <AppShell>
       <div className="workouts-page">
-        <h1 className="workouts-title">{WORKOUTS_COPY.title}</h1>
+        <h1 className="workouts-title">{copy.list.title}</h1>
 
-        {isLoading && !data && <StateMessage>{WORKOUTS_COPY.loading}</StateMessage>}
+        {isLoading && !data && <StateMessage>{copy.list.loading}</StateMessage>}
         {error && <StateMessage onRetry={reload}>{error}</StateMessage>}
 
         {data && (
           <>
             <section className="workouts-section" aria-labelledby="workouts-this-week">
               <h2 className="workouts-section-title" id="workouts-this-week">
-                {WORKOUTS_COPY.thisWeek}
-                {data.current && <span className="workouts-section-range"> · {formatWeekRange(data.current.weekStartDate)}</span>}
+                {copy.list.thisWeek}
+                {data.current && <span className="workouts-section-range"> · {formatWeekRange(data.current.weekStartDate, language)}</span>}
               </h2>
               {data.current ? (
                 <PlanWorkouts plan={data.current} />
               ) : (
-                <StateMessage>{WORKOUTS_COPY.noPlanThisWeek}</StateMessage>
+                <StateMessage>{copy.list.noPlanThisWeek}</StateMessage>
               )}
             </section>
 
             {data.next && (
               <section className="workouts-section" aria-labelledby="workouts-next-week">
                 <h2 className="workouts-section-title" id="workouts-next-week">
-                  {WORKOUTS_COPY.nextWeek}
-                  <span className="workouts-section-range"> · {formatWeekRange(data.next.weekStartDate)}</span>
+                  {copy.list.nextWeek}
+                  <span className="workouts-section-range"> · {formatWeekRange(data.next.weekStartDate, language)}</span>
                 </h2>
                 <PlanWorkouts plan={data.next} />
               </section>
@@ -80,14 +84,14 @@ export function WorkoutsPage() {
 
             <section className="workouts-section" aria-labelledby="workouts-past-weeks">
               <h2 className="workouts-section-title" id="workouts-past-weeks">
-                {WORKOUTS_COPY.pastWeeks}
+                {copy.list.pastWeeks}
               </h2>
-              {data.past.length === 0 && <StateMessage>{WORKOUTS_COPY.noPastWeeks}</StateMessage>}
+              {data.past.length === 0 && <StateMessage>{copy.list.noPastWeeks}</StateMessage>}
               {data.past.map((plan) => (
                 <details key={plan.id} className="workouts-week">
                   <summary className="workouts-week-summary">
-                    <span className="workouts-week-range">{formatWeekRange(plan.weekStartDate)}</span>
-                    <span className="workouts-week-count">{doneCountLabel(plan.workouts)}</span>
+                    <span className="workouts-week-range">{formatWeekRange(plan.weekStartDate, language)}</span>
+                    <span className="workouts-week-count">{doneCountLabel(plan.workouts, copy)}</span>
                     <IconChevronDown className="workouts-week-chevron" size={20} aria-hidden="true" />
                   </summary>
                   <PlanWorkouts plan={plan} />
@@ -97,9 +101,9 @@ export function WorkoutsPage() {
 
             <section className="workouts-section" aria-labelledby="workouts-logs">
               <h2 className="workouts-section-title" id="workouts-logs">
-                {WORKOUTS_COPY.completedLogs}
+                {copy.list.completedLogs}
               </h2>
-              {data.completedLogs.length === 0 && <StateMessage>{WORKOUTS_COPY.noCompletedLogs}</StateMessage>}
+              {data.completedLogs.length === 0 && <StateMessage>{copy.list.noCompletedLogs}</StateMessage>}
               <ul className="workouts-rows">
                 {data.completedLogs.map((log) => (
                   <li key={log.id}>
@@ -107,11 +111,11 @@ export function WorkoutsPage() {
                       <span className="workouts-log-main">
                         <span className="workouts-log-title">{log.workoutTitle}</span>
                         <span className="workouts-log-meta">
-                          {formatDateTime(log.finishedAt ?? log.startedAt)}
-                          {log.stats && ` · ${formatDuration(log.stats.durationSec)}`}
+                          {formatDateTime(log.finishedAt ?? log.startedAt, language)}
+                          {log.stats && ` · ${formatDuration(log.stats.durationSec, language)}`}
                         </span>
                       </span>
-                      <IconChevronRight className="workouts-log-chevron" size={20} aria-hidden="true" />
+                      <IconChevronRight className="flip-rtl workouts-log-chevron" size={20} aria-hidden="true" />
                     </Link>
                   </li>
                 ))}

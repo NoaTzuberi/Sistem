@@ -9,10 +9,11 @@ import {
   getStoredWeightUnit,
   OnboardingUserNotFoundError,
 } from './onboarding.service';
+import { sendError } from '../../i18n';
 
 function handleUserNotFound(error: unknown, res: Response): boolean {
   if (error instanceof OnboardingUserNotFoundError) {
-    res.status(401).json({ message: error.message });
+    sendError(res, 401, error.serverMessage);
     return true;
   }
   return false;
@@ -38,7 +39,7 @@ export async function getWaiting(req: AuthenticatedRequest, res: Response) {
 export async function patchOnboardingStep(req: AuthenticatedRequest, res: Response) {
   const validationError = validateOnboardingStepPayload(req.body, await getStoredWeightUnit(req.userId!));
   if (validationError) {
-    res.status(400).json({ message: validationError });
+    sendError(res, 400, validationError);
     return;
   }
 
@@ -53,7 +54,7 @@ export async function patchOnboardingStep(req: AuthenticatedRequest, res: Respon
 export async function postCompleteOnboarding(req: AuthenticatedRequest, res: Response) {
   const validationError = validateCompleteOnboardingPayload(req.body, await getStoredWeightUnit(req.userId!));
   if (validationError) {
-    res.status(400).json({ message: validationError });
+    sendError(res, 400, validationError);
     return;
   }
 

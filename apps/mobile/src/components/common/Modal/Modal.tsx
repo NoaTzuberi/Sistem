@@ -1,3 +1,4 @@
+import { sharedCopy, useCopy } from '@sistem/shared';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
@@ -13,6 +14,7 @@ interface ModalProps {
 }
 
 export function Modal({ isOpen, onClose, title, className, variant = 'default', children }: ModalProps) {
+  const copy = useCopy(sharedCopy);
   useEffect(() => {
     if (!isOpen) return;
 
@@ -46,7 +48,7 @@ export function Modal({ isOpen, onClose, title, className, variant = 'default', 
         aria-labelledby={title ? 'modal-title' : undefined}
         onClick={(event) => event.stopPropagation()}
       >
-        <button type="button" className="modal-close" onClick={onClose} aria-label="Close">
+        <button type="button" className="modal-close" onClick={onClose} aria-label={copy.common.close}>
           <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
             <path
               d="M5 5L15 15M15 5L5 15"

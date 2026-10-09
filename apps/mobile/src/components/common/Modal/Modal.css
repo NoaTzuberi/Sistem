@@ -17,7 +17,7 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   background-color: var(--color-bg);
-  border-top: 3px solid var(--color-primary);
+  border-top: var(--border-width-thick) solid var(--color-primary);
   border-radius: var(--radius-none);
   padding:
     var(--space-4)
@@ -38,7 +38,7 @@
   }
 }
 
-@media (min-width: 600px) {
+@media (min-width: 600px) { /* = --breakpoint-sm */
   .modal-backdrop {
     align-items: center;
     padding: var(--space-4);
@@ -47,22 +47,22 @@
   .modal-panel {
     max-width: 480px;
     max-height: 85dvh;
-    border: 1px solid var(--color-border);
-    border-top: 3px solid var(--color-primary);
+    border: var(--border-width-thin) solid var(--color-border);
+    border-top: var(--border-width-thick) solid var(--color-primary);
     padding: var(--space-5);
   }
 }
 
 .modal-title {
   margin-bottom: var(--space-3);
-  padding-right: var(--space-6);
+  padding-inline-end: var(--space-6);
 }
 
 .modal-close {
   position: absolute;
   top: var(--space-2);
-  right: calc(var(--space-2) + var(--safe-right));
-  z-index: 1;
+  inset-inline-end: calc(var(--space-2) + var(--safe-inline-end));
+  z-index: var(--z-raised);
   display: flex;
   align-items: center;
   justify-content: center;

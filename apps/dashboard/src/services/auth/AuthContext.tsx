@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { AuthUser, LoginPayload } from '@sistem/types';
+import { useUserLanguage } from '@sistem/shared';
 import { login as loginRequest, fetchCurrentUser } from './authService';
 import { getToken, setToken, clearToken } from './tokenStorage';
 
@@ -9,6 +10,7 @@ interface AuthContextValue {
   isLoading: boolean;
   login: (payload: LoginPayload) => Promise<AuthUser>;
   logout: () => void;
+  updateUser: (patch: Partial<AuthUser>) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -16,6 +18,8 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // Her saved language wins over the device's once she is signed in (Phase 15).
+  useUserLanguage(user?.language);
 
   useEffect(() => {
     async function restoreSession() {
@@ -49,7 +53,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }
 
-  return <AuthContext.Provider value={{ user, isLoading, login, logout }}>{children}</AuthContext.Provider>;
+  function updateUser(patch: Partial<AuthUser>) {
+    setUser((current) => (current ? { ...current, ...patch } : current));
+  }
+
+  return <AuthContext.Provider value={{ user, isLoading, login, logout, updateUser }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthContextValue {

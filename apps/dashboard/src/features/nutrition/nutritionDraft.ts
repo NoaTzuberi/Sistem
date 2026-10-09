@@ -78,18 +78,21 @@ export function newKey(): string {
   return crypto.randomUUID();
 }
 
-// Placeholder meal names for a new plan (PRD §5.6 default list) — she renames them.
-const DEFAULT_MEALS: { name: string; portions: PortionCounts }[] = [
-  { name: 'Breakfast', portions: { protein: 1, carb: 1, fat: 1, snack: 0 } },
-  { name: 'Lunch', portions: { protein: 1, carb: 1, fat: 1, snack: 0 } },
-  { name: 'Snack', portions: { protein: 0, carb: 1, fat: 1, snack: 0 } },
-  { name: 'Dinner', portions: { protein: 1, carb: 1, fat: 1, snack: 0 } },
+// The default meals of a new plan (PRD §5.6). Their placeholder names come from the copy in the coach's
+// language (Phase 15); once saved they are her own text.
+const DEFAULT_MEALS: { key: DefaultMealKey; portions: PortionCounts }[] = [
+  { key: 'breakfast', portions: { protein: 1, carb: 1, fat: 1, snack: 0 } },
+  { key: 'lunch', portions: { protein: 1, carb: 1, fat: 1, snack: 0 } },
+  { key: 'snack', portions: { protein: 0, carb: 1, fat: 1, snack: 0 } },
+  { key: 'dinner', portions: { protein: 1, carb: 1, fat: 1, snack: 0 } },
 ];
 
-export function emptyDraft(goal: NutritionGoal): NutritionDraft {
+type DefaultMealKey = 'breakfast' | 'lunch' | 'snack' | 'dinner';
+
+export function emptyDraft(goal: NutritionGoal, mealNames: Record<DefaultMealKey, string>): NutritionDraft {
   return {
     target: { kcal: undefined, source: null, goal, formulaSex: null, overrides: { ...NO_OVERRIDES }, confirmBelowFloor: false },
-    meals: DEFAULT_MEALS.map((meal) => newMeal(meal.name, meal.portions)),
+    meals: DEFAULT_MEALS.map((meal) => newMeal(mealNames[meal.key], meal.portions)),
     tips: [],
     introMessage: '',
     aiRecommendationId: null,

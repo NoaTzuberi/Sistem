@@ -1,9 +1,10 @@
-import type { UnitPreferences } from '@sistem/types';
+import type { Language, UnitPreferences } from '@sistem/types';
 import type { UserDocument } from './user.model';
 
 // Body values are stored in kg and cm only (PRD §10); a trainee's units decide how the
 // screens show them. The clients convert with @sistem/shared — the server only needs
-// lb → kg for the onboarding weight, which is typed in her chosen unit.
+// lb → kg for the onboarding weight, which is typed in her chosen unit. The language
+// preference lives here too: it is the other display setting of PATCH /users/preferences.
 
 export const KG_PER_LB = 0.45359237;
 
@@ -26,4 +27,12 @@ export function resolveUnits(preferences: UserDocument['preferences']): UnitPref
     weight: preferences?.units?.weight ?? DEFAULT_UNITS.weight,
     length: preferences?.units?.length ?? DEFAULT_UNITS.length,
   };
+}
+
+// UI language (Phase 15): Hebrew unless she chose English in Settings.
+export const LANGUAGE_IDS = ['he', 'en'] as const;
+export const DEFAULT_LANGUAGE: Language = 'he';
+
+export function resolveLanguage(preferences: UserDocument['preferences']): Language {
+  return preferences?.language ?? DEFAULT_LANGUAGE;
 }

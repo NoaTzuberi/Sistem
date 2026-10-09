@@ -1,4 +1,10 @@
+import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
+import type { Language } from '@sistem/types';
+import { sharedCopy, useCopy, useI18n } from '@sistem/shared';
+import { updatePreferences } from '../../../services/auth/authService';
+import { LanguageSwitch } from '../../common/LanguageSwitch/LanguageSwitch';
+import { appCopy } from '../../../copy';
 import { useAuth } from '../../../services/auth/AuthContext';
 import { ROUTES } from '../../../app/config/routes';
 import { Logo } from '../../common/Logo/Logo';
@@ -8,27 +14,50 @@ import './DashboardShell.css';
 
 /** The frame around every signed-in page: top bar + the routed page. */
 export function DashboardShell() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
+  const copy = useCopy(appCopy);
+  const shared = useCopy(sharedCopy);
+  const { setLanguage } = useI18n();
+  const [languageError, setLanguageError] = useState(false);
+
+  // The screen has already switched; saving makes it her language on every device (and for server texts).
+  function saveLanguage(next: Language, previous: Language) {
+    setLanguageError(false);
+    updatePreferences({ language: next })
+      .then((updated) => updateUser({ language: updated.language }))
+      .catch(() => {
+        setLanguage(previous);
+        setLanguageError(true);
+      });
+  }
 
   return (
     <div className="dashboard-shell">
       <header className="shell-bar">
         <div className="shell-brand">
           <Logo variant="mark" />
-          <nav className="shell-nav" aria-label="Main">
+          <nav className="shell-nav" aria-label={copy.nav.main}>
             <NavLink className="shell-link" to={ROUTES.TRAINEES}>
-              Trainees
+              {copy.nav.trainees}
             </NavLink>
             <NavLink className="shell-link" to={ROUTES.NUTRITION}>
-              Nutrition
+              {copy.nav.nutrition}
             </NavLink>
           </nav>
         </div>
         <div className="shell-actions">
+          <LanguageSwitch onChange={(next) => saveLanguage(next, next === 'he' ? 'en' : 'he')} />
+          {languageError && (
+            <span className="shell-error" role="alert">
+              {copy.languageSaveError}
+            </span>
+          )}
           <NotificationBell />
-          <span className="shell-user">{user?.name}</span>
+          <span className="shell-user" dir="auto">
+            {user?.name}
+          </span>
           <Button size="sm" onClick={logout}>
-            Log out
+            {shared.common.logout}
           </Button>
         </div>
       </header>

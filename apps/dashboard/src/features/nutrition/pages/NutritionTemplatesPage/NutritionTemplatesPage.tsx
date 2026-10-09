@@ -1,16 +1,19 @@
-import { describeMealPortions, formatKcal, useLoad } from '@sistem/shared';
+import { describeMealPortions, fill, formatKcal, sharedCopy, useCopy, useLanguage, useLoad } from '@sistem/shared';
 import { deleteNutritionTemplate, listNutritionTemplates } from '../../../../services/coach/coachService';
 import { Button } from '../../../../components/common/Button/Button';
 import { NutritionSubnav } from '../../components/NutritionSubnav/NutritionSubnav';
-import { NUTRITION_COPY } from '../../data/nutritionCopy';
+import { nutritionCopy } from '../../copy';
 import './NutritionTemplatesPage.css';
 
 /** The coach's nutrition templates. Saving and applying happen in a trainee's builder. */
 export function NutritionTemplatesPage() {
-  const { data, error, isLoading, reload } = useLoad(listNutritionTemplates, "Couldn't load the templates.");
+  const language = useLanguage();
+  const shared = useCopy(sharedCopy);
+  const copy = useCopy(nutritionCopy);
+  const { data, error, isLoading, reload } = useLoad(listNutritionTemplates, copy.templatesLoadError);
 
   async function remove(id: string, name: string) {
-    if (!window.confirm(NUTRITION_COPY.deleteTemplateConfirm(name))) return;
+    if (!window.confirm(fill(copy.deleteTemplateConfirm, { name }))) return;
     await deleteNutritionTemplate(id);
     reload();
   }
@@ -18,30 +21,30 @@ export function NutritionTemplatesPage() {
   return (
     <div className="nutrition-templates-page">
       <NutritionSubnav />
-      <h1 className="nutrition-templates-title">{NUTRITION_COPY.templatesTitle}</h1>
-      <p className="nutrition-templates-note">{NUTRITION_COPY.templatesIntro}</p>
+      <h1 className="nutrition-templates-title">{copy.templatesTitle}</h1>
+      <p className="nutrition-templates-note">{copy.templatesIntro}</p>
 
-      {isLoading && !data && <p>Loading…</p>}
+      {isLoading && !data && <p>{shared.common.loading}</p>}
       {error && !data && (
         <p role="alert">
-          {error} <Button size="sm" onClick={reload}>Try again</Button>
+          {error} <Button size="sm" onClick={reload}>{shared.common.retry}</Button>
         </p>
       )}
-      {data?.length === 0 && <p className="nutrition-templates-note">{NUTRITION_COPY.templatesEmpty}</p>}
+      {data?.length === 0 && <p className="nutrition-templates-note">{copy.templatesEmpty}</p>}
 
       <ul className="nutrition-templates-list">
         {data?.map((template) => (
           <li key={template.id} className="nutrition-template">
             <div className="nutrition-template-head">
               <h2 className="nutrition-template-name" dir="auto">
-                {template.name}
+                <bdi>{template.name}</bdi>
               </h2>
               <span className="nutrition-templates-note">
-                {template.targetKcal !== null && `${formatKcal(template.targetKcal)} · `}
-                {NUTRITION_COPY.dayTotal} {formatKcal(template.kcal.day)}
+                {template.targetKcal !== null && `${formatKcal(template.targetKcal, language)} · `}
+                {copy.dayTotal} {formatKcal(template.kcal.day, language)}
               </span>
               <Button size="sm" variant="danger" onClick={() => remove(template.id, template.name)}>
-                {NUTRITION_COPY.deleteTemplate}
+                {copy.deleteTemplate}
               </Button>
             </div>
             {template.description && (
@@ -52,7 +55,7 @@ export function NutritionTemplatesPage() {
             <ul className="nutrition-template-meals">
               {template.meals.map((meal) => (
                 <li key={meal.id}>
-                  <strong dir="auto">{meal.name}</strong> — {describeMealPortions(meal.portions, meal.vegetablesFree)}
+                  <strong dir="auto">{meal.name}</strong> — {describeMealPortions(meal.portions, meal.vegetablesFree, language)}
                 </li>
               ))}
             </ul>

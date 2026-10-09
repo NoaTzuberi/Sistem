@@ -1,7 +1,8 @@
+import { useCopy } from '@sistem/shared';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { IconChevronLeft } from '@tabler/icons-react';
 import { ROUTES } from '../../../../app/config/routes';
-import { WORKOUTS_COPY } from '../../data/workoutCopy';
+import { workoutCopy } from '../../copy';
 import './BackButton.css';
 
 // React Router gives the first entry of a session the key 'default'.
@@ -9,6 +10,7 @@ const FIRST_ENTRY_KEY = 'default';
 
 /** Back to where the trainee came from (Home or Workouts); Workouts when opened directly. */
 export function BackButton() {
+  const copy = useCopy(workoutCopy);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -18,8 +20,8 @@ export function BackButton() {
   }
 
   return (
-    <button className="back-button" type="button" onClick={goBack} aria-label={WORKOUTS_COPY.back}>
-      <IconChevronLeft size={24} aria-hidden="true" />
+    <button className="back-button" type="button" onClick={goBack} aria-label={copy.list.back}>
+      <IconChevronLeft className="flip-rtl" size={24} aria-hidden="true" />
     </button>
   );
 }

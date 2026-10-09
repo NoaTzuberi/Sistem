@@ -46,24 +46,28 @@ import {
   toStoredMeals,
   toStoredTips,
 } from './nutritionMapping';
-import { computeNutritionKcal, findNutritionPublishIssues, hasBlockingIssues, sumDayPortions } from './nutrition.validation';
+import { computeNutritionKcal, findNutritionPublishIssues, hasBlockingIssues, sumDayPortions, type NutritionProblem } from './nutrition.validation';
 import type { NutritionPlanDocument, NutritionPlanVersionDocument, TipFields } from './nutrition.types';
+import { LocalizedError, msg } from '../../i18n';
 
 // The coach's side of nutrition plans (PRD §5.6, dashboard builder). Every function
 // takes the trainee id loadCoachTrainee already checked and the calling coach's id.
 // One current plan per trainee: a working copy (autosaved, coach-only) plus a frozen
 // version per publish — the trainee only ever reads the newest version.
 
-export class NutritionPlanNotFoundError extends Error {}
+export class NutritionPlanNotFoundError extends LocalizedError {}
 
 /** The plan breaks a rule; `issues` say where. */
 export class NutritionPlanValidationError extends Error {
-  constructor(public readonly issues: NutritionIssue[]) {
-    super(issues.find((issue) => issue.severity === 'error')?.message ?? 'The nutrition plan is not valid.');
+  constructor(public readonly issues: NutritionProblem[]) {
+    super(issues.find((issue) => issue.severity === 'error')?.message.code ?? 'nutrition_plan_invalid');
   }
 }
 
-export class NutritionPlanConflictError extends Error {}
+/** The builder's response with its issues still as codes — the controller words them per request. */
+export type CoachNutritionPlanResult = Omit<CoachNutritionPlanResponse, 'issues'> & { issues: NutritionProblem[] };
+
+export class NutritionPlanConflictError extends LocalizedError {}
 
 type LeanPlan = NutritionPlanDocument & { _id: Types.ObjectId };
 type LeanVersion = NutritionPlanVersionDocument & { _id: Types.ObjectId };
@@ -239,7 +243,7 @@ async function findIssues(
   plan: LeanPlan,
   coachId: string,
   context: { foods: Map<string, FoodItem>; config: NutritionConfig; preferences: NutritionPreferences | null },
-): Promise<NutritionIssue[]> {
+): Promise<NutritionProblem[]> {
   const meals = toPublicMeals(plan.meals);
   return findNutritionPublishIssues(
     {
@@ -280,7 +284,7 @@ export async function findRecentFoodIds(coachId: string): Promise<Record<FoodGro
   return recent;
 }
 
-export async function getCoachNutritionPlan(traineeId: string, coachId: string): Promise<CoachNutritionPlanResponse> {
+export async function getCoachNutritionPlan(traineeId: string, coachId: string): Promise<CoachNutritionPlanResult> {
   const [plan, latest, foodList, config, preferences, goal, recentFoodIds] = await Promise.all([
     NutritionPlan.findOne({ traineeId }).lean<LeanPlan>(),
     findLatestVersion(traineeId),
@@ -315,12 +319,12 @@ async function checkFoodLines(coachId: string, meals: SaveNutritionPlanPayload['
     ...new Set(meals.flatMap((meal) => meal.options.flatMap((option) => option.lines.flatMap((line) => (line.foodItemId ? [line.foodItemId] : []))))),
   ];
   const foods = await findCoachFoods(coachId, ids);
-  const issues: NutritionIssue[] = [];
+  const issues: NutritionProblem[] = [];
   meals.forEach((meal, mealIndex) =>
     meal.options.forEach((option, optionIndex) =>
       option.lines.forEach((line, lineIndex) => {
         if (line.kind === 'food' && line.foodItemId && !foods.has(line.foodItemId)) {
-          issues.push({ severity: 'error', code: 'food_missing', message: 'That food item is not in your list.', mealIndex, optionIndex, lineIndex });
+          issues.push({ severity: 'error', code: 'food_missing', message: msg('food_not_in_list'), mealIndex, optionIndex, lineIndex });
         }
       }),
     ),
@@ -338,11 +342,11 @@ export async function saveCoachNutritionPlan(
   traineeId: string,
   coachId: string,
   input: SaveNutritionPlanPayload,
-): Promise<CoachNutritionPlanResponse> {
+): Promise<CoachNutritionPlanResult> {
   const foodGroups = await checkFoodLines(coachId, input.meals);
   if (input.aiRecommendationId && !(await isLinkableRecommendation(traineeId, input.aiRecommendationId, 'nutrition_plan'))) {
     throw new NutritionPlanValidationError([
-      { severity: 'error', code: 'ai_recommendation_missing', message: 'That AI draft is not available for this trainee.' },
+      { severity: 'error', code: 'ai_recommendation_missing', message: msg('ai_recommendation_missing') },
     ]);
   }
   const now = new Date();
@@ -393,9 +397,9 @@ async function defaultGoal(traineeId: string): Promise<NutritionGoal> {
  * ('nutrition_plan.published' → her notification and the tab dot). Refused while a
  * publish rule fails, and when nothing changed since the last version.
  */
-export async function publishCoachNutritionPlan(traineeId: string, coachId: string): Promise<CoachNutritionPlanResponse> {
+export async function publishCoachNutritionPlan(traineeId: string, coachId: string): Promise<CoachNutritionPlanResult> {
   const plan = await NutritionPlan.findOne({ traineeId }).lean<LeanPlan>();
-  if (!plan) throw new NutritionPlanNotFoundError('There is no nutrition plan to publish yet.');
+  if (!plan) throw new NutritionPlanNotFoundError('nutrition_plan_none');
 
   const [config, foods, preferences, latest] = await Promise.all([
     getEffectiveNutritionConfig(coachId),
@@ -406,7 +410,7 @@ export async function publishCoachNutritionPlan(traineeId: string, coachId: stri
   const issues = await findIssues(plan, coachId, { foods, config, preferences });
   if (hasBlockingIssues(issues)) throw new NutritionPlanValidationError(issues);
   if (latest && !toCoachPlan(plan, config, latest).changedSincePublish) {
-    throw new NutritionPlanConflictError('Nothing changed since the last published version.');
+    throw new NutritionPlanConflictError('nutrition_plan_unchanged');
   }
 
   const version = plan.publishedVersion + 1;
@@ -432,7 +436,7 @@ export async function publishCoachNutritionPlan(traineeId: string, coachId: stri
     });
   } catch (error) {
     if ((error as { code?: unknown }).code === 11000) {
-      throw new NutritionPlanConflictError('This plan was just published — reload to see it.');
+      throw new NutritionPlanConflictError('nutrition_plan_just_published');
     }
     throw error;
   }
@@ -476,7 +480,7 @@ export async function listNutritionTemplates(coachId: string): Promise<Nutrition
 
 export async function deleteNutritionTemplate(coachId: string, templateId: string): Promise<void> {
   const result = await Template.deleteOne({ _id: templateId, coachId, type: 'nutrition_plan' });
-  if (result.deletedCount === 0) throw new NutritionPlanNotFoundError('Template not found.');
+  if (result.deletedCount === 0) throw new NutritionPlanNotFoundError('nutrition_template_not_found');
 }
 
 async function foodGroupsFor(coachId: string, meals: Parameters<typeof toPublicMeals>[0]): Promise<Map<string, FoodGroup>> {
@@ -492,7 +496,7 @@ export async function createNutritionTemplateFromPlan(
 ): Promise<NutritionTemplate> {
   const plan = await NutritionPlan.findOne({ traineeId }).lean<LeanPlan>();
   if (!plan || plan.meals.length === 0) {
-    throw new NutritionPlanConflictError('Add at least one meal before saving a template.');
+    throw new NutritionPlanConflictError('nutrition_template_needs_meal');
   }
   const created = await Template.create({
     coachId,
@@ -512,9 +516,9 @@ export async function createNutritionTemplateFromPlan(
  * Starts her working copy from a template: meals and tips are copied (fresh ids). Its
  * target is used only when her plan has none yet — as the coach's override.
  */
-export async function applyNutritionTemplate(traineeId: string, coachId: string, templateId: string): Promise<CoachNutritionPlanResponse> {
+export async function applyNutritionTemplate(traineeId: string, coachId: string, templateId: string): Promise<CoachNutritionPlanResult> {
   const template = await Template.findOne({ _id: templateId, coachId, type: 'nutrition_plan' }).lean<LeanTemplate>();
-  if (!template?.nutrition) throw new NutritionPlanNotFoundError('Template not found.');
+  if (!template?.nutrition) throw new NutritionPlanNotFoundError('nutrition_template_not_found');
 
   const plan = (await NutritionPlan.findOne({ traineeId })) ??
     new NutritionPlan({ traineeId, coachId, calorieTarget: { goal: await defaultGoal(traineeId) } });

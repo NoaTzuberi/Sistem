@@ -22,8 +22,9 @@ import { recordOnboardingWeight } from '../bodyMetrics/bodyMetric.service';
 import { PLAN_WAIT_MS } from './onboarding.constants';
 import { OnboardingResponse } from './onboardingResponse.model';
 import type { OnboardingAnswersFields, OnboardingResponseDocument, WeightGoalFields } from './onboardingResponse.model';
+import { LocalizedError } from '../../i18n';
 
-export class OnboardingUserNotFoundError extends Error {}
+export class OnboardingUserNotFoundError extends LocalizedError {}
 
 type UserDoc = HydratedDocument<UserDocument>;
 
@@ -157,7 +158,7 @@ function toAnswerUpdates(
 async function findTrainee(userId: string): Promise<UserDoc> {
   const user = await User.findById(userId);
   if (!user) {
-    throw new OnboardingUserNotFoundError('User not found.');
+    throw new OnboardingUserNotFoundError('user_not_found');
   }
   return user;
 }

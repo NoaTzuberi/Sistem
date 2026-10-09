@@ -1,71 +1,63 @@
 import type { AllergyId, DietStyleId, DietType, IntoleranceId, ReligiousId } from '@sistem/types';
-import { ALLERGY_LABELS, DIET_STYLE_LABELS, DIET_TYPE_LABELS, INTOLERANCE_LABELS, RELIGIOUS_LABELS } from '@sistem/shared';
+import type { sharedCopy } from '@sistem/shared';
 
-export interface OnboardingOption {
-  id: string;
-  label: string;
+// The questionnaire's options: ids (stored, never change) and emoji. Their labels live in the
+// shared copy (onboardingOptions.*) by id, so the coach's view of her answers reads the same
+// words in the coach's language (Phase 15).
+type OptionLabels = (typeof sharedCopy)['he']['onboardingOptions'];
+
+export interface OnboardingOption<Id extends string = string> {
+  id: Id;
   emoji?: string;
 }
 
-export const GOAL_OPTIONS: OnboardingOption[] = [
-  { id: 'build_muscle', label: 'Build muscle', emoji: '💪' },
-  { id: 'increase_strength', label: 'Increase strength', emoji: '🏋️' },
-  { id: 'lose_weight', label: 'Lose weight', emoji: '⚖️' },
-  { id: 'improve_endurance', label: 'Improve endurance', emoji: '🏃' },
-  { id: 'improve_health', label: 'Improve health', emoji: '❤️' },
-  { id: 'maintain_active_lifestyle', label: 'Maintain an active lifestyle', emoji: '✨' },
-  { id: 'move_better', label: 'Move better', emoji: '🤸' },
+export const GOAL_OPTIONS: OnboardingOption<keyof OptionLabels['goals']>[] = [
+  { id: 'build_muscle', emoji: '💪' },
+  { id: 'increase_strength', emoji: '🏋️' },
+  { id: 'lose_weight', emoji: '⚖️' },
+  { id: 'improve_endurance', emoji: '🏃' },
+  { id: 'improve_health', emoji: '❤️' },
+  { id: 'maintain_active_lifestyle', emoji: '✨' },
+  { id: 'move_better', emoji: '🤸' },
 ];
 
-export const EQUIPMENT_OPTIONS: OnboardingOption[] = [
-  { id: 'full_gym', label: 'Full gym', emoji: '🏋️' },
-  { id: 'home_equipment', label: 'Home equipment', emoji: '🏠' },
-  { id: 'dumbbells', label: 'Dumbbells', emoji: '🏋️' },
-  { id: 'barbell_plates', label: 'Barbell and plates', emoji: '🏋️' },
-  { id: 'resistance_bands', label: 'Resistance bands', emoji: '🧵' },
-  { id: 'bench', label: 'Bench', emoji: '🪑' },
-  { id: 'cardio_machines', label: 'Cardio machines', emoji: '🏃' },
-  { id: 'bodyweight_only', label: 'Bodyweight only', emoji: '🤸' },
-  { id: 'no_equipment', label: 'No equipment', emoji: '🚫' },
+export const EQUIPMENT_OPTIONS: OnboardingOption<keyof OptionLabels['equipment']>[] = [
+  { id: 'full_gym', emoji: '🏋️' },
+  { id: 'home_equipment', emoji: '🏠' },
+  { id: 'dumbbells', emoji: '🏋️' },
+  { id: 'barbell_plates', emoji: '🏋️' },
+  { id: 'resistance_bands', emoji: '🧵' },
+  { id: 'bench', emoji: '🪑' },
+  { id: 'cardio_machines', emoji: '🏃' },
+  { id: 'bodyweight_only', emoji: '🤸' },
+  { id: 'no_equipment', emoji: '🚫' },
 ];
 
-export const MUSCLE_FOCUS_OPTIONS: OnboardingOption[] = [
-  { id: 'chest', label: 'Chest' },
-  { id: 'back', label: 'Back' },
-  { id: 'shoulders', label: 'Shoulders' },
-  { id: 'arms', label: 'Arms' },
-  { id: 'core', label: 'Core' },
-  { id: 'glutes', label: 'Glutes' },
-  { id: 'legs', label: 'Legs' },
-  { id: 'full_body', label: 'Full body' },
+export const MUSCLE_FOCUS_OPTIONS: OnboardingOption<keyof OptionLabels['muscleFocus']>[] = [
+  { id: 'chest' },
+  { id: 'back' },
+  { id: 'shoulders' },
+  { id: 'arms' },
+  { id: 'core' },
+  { id: 'glutes' },
+  { id: 'legs' },
+  { id: 'full_body' },
 ];
 
-export const RECOVERY_FLAG_OPTIONS: OnboardingOption[] = [
-  { id: 'returning_after_break', label: "I'm returning after time away" },
-  { id: 'prefers_low_impact', label: 'I prefer low-impact training' },
-  { id: 'has_injury_or_limitation', label: 'I have an injury or limitation' },
-  { id: 'has_mobility_restrictions', label: 'I have mobility restrictions' },
-  { id: 'nothing_to_add', label: 'Nothing to add' },
+export const RECOVERY_FLAG_OPTIONS: OnboardingOption<keyof OptionLabels['recoveryFlags']>[] = [
+  { id: 'returning_after_break' },
+  { id: 'prefers_low_impact' },
+  { id: 'has_injury_or_limitation' },
+  { id: 'has_mobility_restrictions' },
+  { id: 'nothing_to_add' },
 ];
 
-// "Nutrition & goal" step (Phase 13a, v2 in 13a+). PLACEHOLDER labels (shared with the coach's
-// view in @sistem/shared) until the owner sends the wording. Ids mirror the server's
-// nutrition.constants.ts.
-export const DIET_TYPE_OPTIONS: { id: Exclude<DietType, 'none'>; label: string }[] = (['vegetarian', 'vegan', 'pescatarian'] as const).map(
-  (id) => ({ id, label: DIET_TYPE_LABELS[id] }),
-);
-export const DIET_STYLE_OPTIONS: { id: DietStyleId; label: string }[] = (['keto_low_carb', 'intermittent_fasting', 'other'] as const).map(
-  (id) => ({ id, label: DIET_STYLE_LABELS[id] }),
-);
-export const RELIGIOUS_OPTIONS: { id: ReligiousId; label: string }[] = (['kosher', 'halal'] as const).map((id) => ({
-  id,
-  label: RELIGIOUS_LABELS[id],
-}));
-export const INTOLERANCE_OPTIONS: { id: IntoleranceId; label: string }[] = (
-  ['lactose_free', 'gluten_free', 'celiac', 'low_fodmap', 'other'] as const
-).map((id) => ({ id, label: INTOLERANCE_LABELS[id] }));
-export const ALLERGY_OPTIONS: { id: AllergyId; label: string }[] = (
-  ['dairy', 'eggs', 'peanuts', 'tree_nuts', 'sesame', 'soy', 'gluten', 'fish', 'shellfish', 'other'] as const
-).map((id) => ({ id, label: ALLERGY_LABELS[id] }));
+// "Nutrition & goal" step (Phase 13a, v2 in 13a+). Ids mirror the server's nutrition.constants.ts;
+// the labels are in the shared copy (nutrition.*), the coach reads the same words.
+export const DIET_TYPE_OPTIONS: Exclude<DietType, 'none'>[] = ['vegetarian', 'vegan', 'pescatarian'];
+export const DIET_STYLE_OPTIONS: DietStyleId[] = ['keto_low_carb', 'intermittent_fasting', 'other'];
+export const RELIGIOUS_OPTIONS: ReligiousId[] = ['kosher', 'halal'];
+export const INTOLERANCE_OPTIONS: IntoleranceId[] = ['lactose_free', 'gluten_free', 'celiac', 'low_fodmap', 'other'];
+export const ALLERGY_OPTIONS: AllergyId[] = ['dairy', 'eggs', 'peanuts', 'tree_nuts', 'sesame', 'soy', 'gluten', 'fish', 'shellfish', 'other'];
 /** Preferred meals per day; null = no preference. */
 export const MEALS_PER_DAY_OPTIONS = [2, 3, 4, 5, 6] as const;

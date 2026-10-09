@@ -25,7 +25,7 @@
 /* Sharp ends (butt caps) — the design language has no soft corners. */
 .streak-ring-fill {
   stroke: var(--color-primary);
-  transition: stroke-dashoffset 1s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: stroke-dashoffset var(--transition-progress) var(--ease-emphasized);
 }
 
 .streak-ring-content {

@@ -1,12 +1,10 @@
-import type { CoachTraineeSummary, TraineeStatus } from '@sistem/types';
+import type { CoachTraineeSummary, Language, TraineeStatus } from '@sistem/types';
+import { sharedCopy } from './copy';
 
-// Placeholder labels — the owner decides the final wording.
-export const TRAINEE_STATUS_LABELS: Record<TraineeStatus, string> = {
-  new: 'New',
-  waiting: 'Waiting for plan',
-  active: 'Active',
-  inactive: 'Inactive',
-};
+// Placeholder labels (shared copy) — the owner decides the final wording.
+export function traineeStatusLabel(status: TraineeStatus, language: Language): string {
+  return sharedCopy[language].traineeStatus.labels[status];
+}
 
 /** How loud a status is. Each app's Badge decides what a tone looks like. */
 export type TraineeStatusTone = 'neutral' | 'accent' | 'solid';
@@ -18,17 +16,20 @@ export const TRAINEE_STATUS_TONES: Record<TraineeStatus, TraineeStatusTone> = {
   inactive: 'neutral',
 };
 
-export const NEEDS_NEXT_WEEK_LABEL = "Needs next week's plan";
+export function needsNextWeekLabel(language: Language): string {
+  return sharedCopy[language].traineeStatus.needsNextWeek;
+}
 
 export type TraineeFilter = 'all' | 'needs_next_week' | TraineeStatus;
 
-export const STATUS_FILTERS: { id: Exclude<TraineeFilter, 'needs_next_week'>; label: string }[] = [
-  { id: 'all', label: 'All' },
-  { id: 'new', label: TRAINEE_STATUS_LABELS.new },
-  { id: 'waiting', label: TRAINEE_STATUS_LABELS.waiting },
-  { id: 'active', label: TRAINEE_STATUS_LABELS.active },
-  { id: 'inactive', label: TRAINEE_STATUS_LABELS.inactive },
-];
+const FILTER_STATUSES: TraineeStatus[] = ['new', 'waiting', 'active', 'inactive'];
+
+export function statusFilters(language: Language): { id: Exclude<TraineeFilter, 'needs_next_week'>; label: string }[] {
+  return [
+    { id: 'all', label: sharedCopy[language].traineeStatus.all },
+    ...FILTER_STATUSES.map((id) => ({ id, label: traineeStatusLabel(id, language) })),
+  ];
+}
 
 export function matchesFilter(trainee: CoachTraineeSummary, filter: TraineeFilter): boolean {
   if (filter === 'all') return true;

@@ -10,10 +10,10 @@
   overflow: hidden;
 }
 
-/* Remaining rest, shrinking toward the left edge. */
+/* Remaining rest, shrinking toward the start edge (left in English, right in Hebrew). */
 .rest-bar-progress {
   position: absolute;
-  left: 0;
+  inset-inline-start: 0;
   bottom: 0;
   width: 100%;
   height: 3px;
@@ -38,7 +38,7 @@
   min-width: var(--touch-target-min);
   min-height: var(--touch-target-min);
   padding: 0 var(--space-2);
-  border: 1px solid color-mix(in srgb, var(--color-on-primary) 35%, transparent);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--color-on-primary) 35%, transparent);
   background: transparent;
   color: var(--color-on-primary);
   font-family: var(--font-family-body);

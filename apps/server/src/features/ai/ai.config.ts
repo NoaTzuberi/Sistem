@@ -1,4 +1,5 @@
 import { config } from '../../config/env';
+import { msg, type ServerMessage } from '../../i18n';
 
 // One place for every AI setting. The provider is Google Gemini (free tier, dev only —
 // see PRD §14); switching provider means a new provider file behind ai.client.ts.
@@ -26,10 +27,10 @@ export const AI_CONFIG = {
 } as const;
 
 /** Why the AI can't run on this server, or null when it can. */
-export function aiUnavailableReason(): string | null {
-  if (!config.ai.geminiApiKey) return 'AI drafts are not set up on this server (no GEMINI_API_KEY).';
+export function aiUnavailableReason(): ServerMessage | null {
+  if (!config.ai.geminiApiKey) return msg('ai_not_configured');
   if (config.nodeEnv === 'production' && !config.ai.paidTier) {
-    return 'AI drafts are off in production until a paid AI tier that excludes training on our data is set up.';
+    return msg('ai_off_in_production');
   }
   return null;
 }

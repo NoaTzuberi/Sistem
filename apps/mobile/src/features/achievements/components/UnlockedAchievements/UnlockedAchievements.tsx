@@ -1,9 +1,9 @@
 import type { Achievement } from '@sistem/types';
-import { describeAchievement } from '@sistem/shared';
+import { describeAchievement, useCopy, useLanguage } from '@sistem/shared';
 import { markSeen } from '../../celebration';
 import { usePopReveal } from '../../hooks/usePopReveal';
 import { AchievementBadge } from '../AchievementBadge/AchievementBadge';
-import { ACHIEVEMENT_COPY } from '../../data/achievementCopy';
+import { achievementCopy } from '../../copy';
 import './UnlockedAchievements.css';
 
 interface UnlockedAchievementsProps {
@@ -17,6 +17,8 @@ interface UnlockedAchievementsProps {
  * shows. A Daily Pump upload can add one while the screen is open — only that one pops.
  */
 export function UnlockedAchievements({ achievements }: UnlockedAchievementsProps) {
+  const language = useLanguage();
+  const copy = useCopy(achievementCopy);
   const unseenIds = achievements.filter((achievement) => !achievement.seen).map((achievement) => achievement.id);
   const listRef = usePopReveal<HTMLUListElement>(unseenIds.join(','), () => void markSeen(unseenIds));
 
@@ -24,11 +26,11 @@ export function UnlockedAchievements({ achievements }: UnlockedAchievementsProps
   return (
     <section className="unlocked-achievements" aria-labelledby="unlocked-achievements-title">
       <h2 className="unlocked-achievements-title" id="unlocked-achievements-title">
-        {ACHIEVEMENT_COPY.unlockedThisWorkout}
+        {copy.unlockedThisWorkout}
       </h2>
       <ul className="unlocked-achievements-list" ref={listRef}>
         {achievements.map((achievement) => {
-          const text = describeAchievement(achievement.type);
+          const text = describeAchievement(achievement.type, language);
           return (
             <li key={achievement.id} className="unlocked-achievements-item" data-reveal={achievement.seen ? undefined : ''}>
               <AchievementBadge type={achievement.type} />

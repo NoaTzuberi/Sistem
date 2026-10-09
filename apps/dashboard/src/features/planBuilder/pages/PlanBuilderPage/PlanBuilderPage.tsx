@@ -1,14 +1,17 @@
 import { useCallback } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { getPlan, getTrainee } from '../../../../services/coach/coachService';
-import { useLoad } from '@sistem/shared';
+import { sharedCopy, useCopy, useLoad } from '@sistem/shared';
 import { traineePath } from '../../../../app/config/routes';
 import { Button } from '../../../../components/common/Button/Button';
 import { PlanEditor } from '../../components/PlanEditor/PlanEditor';
 import './PlanBuilderPage.css';
+import { planBuilderCopy } from '../../copy';
 
 /** Loads the plan and its trainee, then hands them to the editor. */
 export function PlanBuilderPage() {
+  const shared = useCopy(sharedCopy);
+  const copy = useCopy(planBuilderCopy);
   const { traineeId = '', planId = '' } = useParams();
   // Set by "Use in a new plan": the new (empty) plan starts from that AI draft.
   const loadAiDraftId = (useLocation().state as { loadAiDraftId?: string } | null)?.loadAiDraftId;
@@ -19,16 +22,16 @@ export function PlanBuilderPage() {
     },
     [traineeId, planId],
   );
-  const { data, error, isLoading, reload } = useLoad(load, "Couldn't load this plan.");
+  const { data, error, isLoading, reload } = useLoad(load, copy.loadError);
 
   if (!data) {
     return (
       <div className="plan-builder-state">
-        <Link to={traineePath(traineeId, 'plans')}>← Back to the trainee</Link>
-        {isLoading && <p>Loading…</p>}
+        <Link to={traineePath(traineeId, 'plans')}>{copy.backToTrainee}</Link>
+        {isLoading && <p>{shared.common.loading}</p>}
         {error && (
           <p role="alert">
-            {error} <Button size="sm" onClick={reload}>Try again</Button>
+            {error} <Button size="sm" onClick={reload}>{shared.common.retry}</Button>
           </p>
         )}
       </div>

@@ -7,13 +7,13 @@
 .photo-compare-poses {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-thin) solid var(--color-border);
 }
 
 .photo-compare-pose {
   min-height: var(--touch-target-min);
   border: 0;
-  border-left: 1px solid var(--color-border);
+  border-inline-start: var(--border-width-thin) solid var(--color-border);
   background: var(--color-bg);
   color: var(--color-text);
   font: inherit;
@@ -23,7 +23,7 @@
 }
 
 .photo-compare-pose:first-child {
-  border-left: 0;
+  border-inline-start: 0;
 }
 
 .photo-compare-pose:active {

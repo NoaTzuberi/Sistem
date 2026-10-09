@@ -14,14 +14,15 @@ import { isAcceptedImage } from '../privatePhotos/privatePhoto.validation';
 import { BodyMetric } from './bodyMetric.model';
 import { BODY_MEASUREMENT_IDS, PROGRESS_PHOTO_POSE_IDS } from './bodyMetric.constants';
 import type { BodyMetricDocument, ProgressPhotoFields } from './bodyMetric.types';
+import { LocalizedError } from '../../i18n';
 
 // Body tracking (PRD §5.5): one BodyMetric per trainee per day holds that day's weight,
 // measurements and progress photos. Values are kg / cm. Every write is scoped to the
 // signed-in trainee; the coach only reads (loadCoachTrainee). A day left with nothing
 // in it is deleted, so lists and charts never show empty days.
 
-export class BodyMetricDateError extends Error {}
-export class InvalidProgressPhotoError extends Error {}
+export class BodyMetricDateError extends LocalizedError {}
+export class InvalidProgressPhotoError extends LocalizedError {}
 
 type LeanBodyMetric = Omit<BodyMetricDocument, 'measurements'> & {
   _id: Types.ObjectId;
@@ -64,7 +65,7 @@ export async function listBodyMetricsForTrainee(traineeId: string): Promise<Body
 async function assertNotInFuture(traineeId: string, date: string, now: Date): Promise<void> {
   const user = await User.findById(traineeId).select('timezone').lean();
   const today = localDateString(now, user?.timezone ?? 'UTC');
-  if (date > today) throw new BodyMetricDateError("A body entry can't be dated in the future.");
+  if (date > today) throw new BodyMetricDateError('body_date_in_future');
 }
 
 function isEmptyDay(metric: LeanBodyMetric): boolean {
@@ -176,7 +177,7 @@ export async function setProgressPhoto(
   now: Date = new Date(),
 ): Promise<PublicBodyMetric | null> {
   await assertNotInFuture(traineeId, date, now);
-  if (!isAcceptedImage(data)) throw new InvalidProgressPhotoError('The photo must be a JPEG, PNG or WebP image.');
+  if (!isAcceptedImage(data)) throw new InvalidProgressPhotoError('photo_invalid_image');
 
   const publicId = await uploadPrivatePhoto(data, `${PROGRESS_PHOTO_FOLDER}/${traineeId}`, `${date}-${pose}`);
   let replaced: ProgressPhotoFields | null;

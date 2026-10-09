@@ -8,15 +8,18 @@ import { Input } from '../../../../components/common/Input/Input';
 import { Button } from '../../../../components/common/Button/Button';
 import { AuthCard } from '../../components/AuthCard/AuthCard';
 import { requestPasswordReset } from '../../../../services/auth/authService';
-import { validateEmail } from '../../validation';
+import { authErrorText, validateEmail, type AuthErrorKey } from '../../validation';
+import { useCopy } from '@sistem/shared';
+import { authCopy } from '../../copy';
 import { ROUTES } from '../../../../app/config/routes';
 import './ForgotPassword.css';
 
 export function ForgotPassword() {
   const location = useLocation();
+  const copy = useCopy(authCopy);
   const prefillEmail = (location.state as { email?: string } | null)?.email ?? '';
   const [email, setEmail] = useState(prefillEmail);
-  const [emailError, setEmailError] = useState<string>();
+  const [emailError, setEmailError] = useState<AuthErrorKey>();
   const [formError, setFormError] = useState<string>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string>();
@@ -34,7 +37,7 @@ export function ForgotPassword() {
       const message = await requestPasswordReset(email);
       setSuccessMessage(message);
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Something went wrong. Please try again.');
+      setFormError((error instanceof Error && error.message) || copy.somethingWrong);
     } finally {
       setIsSubmitting(false);
     }
@@ -44,36 +47,34 @@ export function ForgotPassword() {
     <PageLayout>
       <Section className="auth-page">
         <Container>
-          <AuthCard title="Forgot Password">
+          <AuthCard title={copy.forgotTitle}>
             {successMessage ? (
               <p className="forgot-password-success">{successMessage}</p>
             ) : (
               <form className="auth-form" onSubmit={handleSubmit} noValidate>
-                <p className="text-body forgot-password-copy">
-                  Enter the email on your account and we&apos;ll send you a link to reset your password.
-                </p>
+                <p className="text-body forgot-password-copy">{copy.forgotIntro}</p>
                 <Input
                   type="email"
-                  label="Email"
+                  label={copy.email}
                   inputMode="email"
                   autoCapitalize="none"
                   autoCorrect="off"
                   spellCheck={false}
                   enterKeyHint="send"
-                  placeholder="you@example.com"
+                  placeholder={copy.emailPlaceholder}
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  error={emailError}
+                  error={authErrorText(copy, emailError)}
                   autoComplete="email"
                 />
                 {formError && <p className="auth-form-error">{formError}</p>}
                 <Button type="submit" variant="primary" loading={isSubmitting}>
-                  Send Reset Link
+                  {copy.sendResetLink}
                 </Button>
               </form>
             )}
             <p className="auth-switch">
-              <Link to={ROUTES.LOGIN}>Back to Log In</Link>
+              <Link to={ROUTES.LOGIN}>{copy.backToLogin}</Link>
             </p>
           </AuthCard>
         </Container>

@@ -1,8 +1,9 @@
-import { useLoad } from '@sistem/shared';
+import { useCopy, useLoad } from '@sistem/shared';
 import { getAchievements } from '../../../services/achievements/achievementsService';
-import { ACHIEVEMENT_COPY } from '../data/achievementCopy';
+import { achievementCopy } from '../copy';
 
 /** Her streak, stats and achievements (Home, Profile, the achievements screen). */
 export function useMyAchievements() {
-  return useLoad(getAchievements, ACHIEVEMENT_COPY.loadError);
+  const copy = useCopy(achievementCopy);
+  return useLoad(getAchievements, copy.loadError);
 }

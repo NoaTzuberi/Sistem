@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import type { WorkoutLog } from '@sistem/types';
-import { formatDateTime, useLoad } from '@sistem/shared';
+import { formatDateTime, useCopy, useLanguage, useLoad } from '@sistem/shared';
 import { IconX } from '@tabler/icons-react';
 import { AppShell } from '../../../../components/layout/AppShell/AppShell';
 import { Button } from '../../../../components/common/Button/Button';
@@ -14,7 +14,7 @@ import { PersonalRecordList } from '../../components/PersonalRecordList/Personal
 import { UnlockedAchievements } from '../../../achievements/components/UnlockedAchievements/UnlockedAchievements';
 import { RatingPicker } from '../../components/RatingPicker/RatingPicker';
 import { PumpPhotoField } from '../../components/PumpPhotoField/PumpPhotoField';
-import { SUMMARY_COPY } from '../../data/workoutCopy';
+import { workoutCopy } from '../../copy';
 import './WorkoutSummaryPage.css';
 
 const NOTES_MAX_LENGTH = 1000;
@@ -30,13 +30,15 @@ export interface SummaryLocationState {
  * after Finish and again from the log page — she can change it any time.
  */
 export function WorkoutSummaryPage() {
+  const language = useLanguage();
+  const copy = useCopy(workoutCopy);
   const { logId = '' } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const fromLog = (location.state as SummaryLocationState | null)?.fromLog === true;
 
   const load = useCallback(() => getWorkoutLog(logId), [logId]);
-  const { data, error, reload } = useLoad(load, SUMMARY_COPY.loadError);
+  const { data, error, reload } = useLoad(load, copy.summary.loadError);
   // The photo changes the log right away (upload / remove); rating and notes on Save.
   const [log, setLog] = useState<WorkoutLog | null>(null);
   const [rating, setRating] = useState<number | null>(null);
@@ -74,7 +76,7 @@ export function WorkoutSummaryPage() {
       await updateWorkoutSummary(log.id, { rating, notes: trimmed === '' ? null : trimmed });
       leave();
     } catch {
-      setSaveError(SUMMARY_COPY.saveError);
+      setSaveError(copy.summary.saveError);
       setIsSaving(false);
     }
   }
@@ -85,46 +87,46 @@ export function WorkoutSummaryPage() {
     <AppShell hideTabBar>
       <div className="workout-summary">
         <header className="workout-summary-header">
-          <button type="button" className="workout-summary-close" aria-label={SUMMARY_COPY.close} onClick={leave}>
+          <button type="button" className="workout-summary-close" aria-label={copy.summary.close} onClick={leave}>
             <IconX size={24} aria-hidden="true" />
           </button>
           <div className="workout-summary-heading">
-            <h1 className="workout-summary-title">{SUMMARY_COPY.title}</h1>
+            <h1 className="workout-summary-title">{copy.summary.title}</h1>
             {log && (
               <span className="workout-summary-meta">
-                {log.workoutTitle} · {formatDateTime(log.finishedAt ?? log.startedAt)}
+                {log.workoutTitle} · {formatDateTime(log.finishedAt ?? log.startedAt, language)}
               </span>
             )}
           </div>
         </header>
 
-        {!log && !error && <StateMessage>{SUMMARY_COPY.loading}</StateMessage>}
+        {!log && !error && <StateMessage>{copy.summary.loading}</StateMessage>}
         {!log && error && <StateMessage onRetry={reload}>{error}</StateMessage>}
-        {log && log.status !== 'completed' && <StateMessage>{SUMMARY_COPY.notFinished}</StateMessage>}
+        {log && log.status !== 'completed' && <StateMessage>{copy.summary.notFinished}</StateMessage>}
 
         {log && log.status === 'completed' && (
           <>
             {log.stats && <SummaryStats stats={log.stats} />}
-            <PersonalRecordList log={log} title={SUMMARY_COPY.personalRecords} />
+            <PersonalRecordList log={log} title={copy.summary.personalRecords} />
             <UnlockedAchievements achievements={log.achievements ?? []} />
 
             <section className="workout-summary-section" aria-labelledby="summary-rating">
               <h2 id="summary-rating" className="workout-summary-section-title">
-                {SUMMARY_COPY.ratingQuestion}
+                {copy.summary.ratingQuestion}
               </h2>
-              <RatingPicker value={rating} label={SUMMARY_COPY.ratingQuestion} onChange={setRating} />
+              <RatingPicker value={rating} label={copy.summary.ratingQuestion} onChange={setRating} />
             </section>
 
             <section className="workout-summary-section">
               <label htmlFor="summary-notes" className="workout-summary-section-title">
-                {SUMMARY_COPY.notes}
+                {copy.summary.notes}
               </label>
               <textarea
                 id="summary-notes"
                 className="workout-summary-notes"
                 rows={3}
                 maxLength={NOTES_MAX_LENGTH}
-                placeholder={SUMMARY_COPY.notesPlaceholder}
+                placeholder={copy.summary.notesPlaceholder}
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
               />
@@ -147,7 +149,7 @@ export function WorkoutSummaryPage() {
             )}
             <div className="workout-summary-footer-row">
               <Button className="workout-summary-save" onClick={() => void save()} loading={isSaving}>
-                {SUMMARY_COPY.save}
+                {copy.summary.save}
               </Button>
             </div>
           </footer>,

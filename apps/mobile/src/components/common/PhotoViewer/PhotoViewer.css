@@ -18,7 +18,7 @@
 .photo-viewer-close {
   position: absolute;
   top: calc(var(--space-2) + var(--safe-top));
-  right: calc(var(--space-2) + var(--safe-right));
+  inset-inline-end: calc(var(--space-2) + var(--safe-inline-end));
   display: flex;
   align-items: center;
   justify-content: center;

@@ -1,14 +1,14 @@
 import { useCallback, useState } from 'react';
 import type { CoachPlan, CoachTraineeDetail, PlanIssue } from '@sistem/types';
 import { PlanRequestError } from '@sistem/api-client';
-import { addDaysToDate, formatWeekRange, useLoad } from '@sistem/shared';
+import { addDaysToDate, describeIssue, fill, formatWeekRange, sharedCopy, useCopy, useLanguage, useLoad } from '@sistem/shared';
 import { IconInfoCircle } from '@tabler/icons-react';
 import { createPlan, listPlans, publishPlan } from '../../../../services/coach/coachService';
 import { Button } from '../../../../components/common/Button/Button';
-import { describeIssue } from '../../data/planDisplay';
 import { StateMessage } from '../../../../components/common/StateMessage/StateMessage';
 import { ConfirmSheet } from '../ConfirmSheet/ConfirmSheet';
 import { PlanCard } from '../PlanCard/PlanCard';
+import { coachCopy } from '../../copy';
 import './TraineePlan.css';
 
 interface TraineePlanProps {
@@ -32,19 +32,22 @@ interface ActionFailure {
  * use the dashboard's plan calls; every plan rule stays on the server.
  */
 export function TraineePlan({ trainee, onPlansChanged }: TraineePlanProps) {
+  const copy = useCopy(coachCopy);
+  const shared = useCopy(sharedCopy);
+  const language = useLanguage();
   const load = useCallback(() => listPlans(trainee.id), [trainee.id]);
-  const { data: plans, error, isLoading, reload } = useLoad(load, "Couldn't load the plans.");
+  const { data: plans, error, isLoading, reload } = useLoad(load, copy.plansLoadError);
   const [pending, setPending] = useState<PendingAction>();
   const [isWorking, setIsWorking] = useState(false);
   const [failure, setFailure] = useState<ActionFailure>();
 
-  if (isLoading && !plans) return <StateMessage>Loading…</StateMessage>;
+  if (isLoading && !plans) return <StateMessage>{shared.common.loading}</StateMessage>;
   if (!plans) return <StateMessage onRetry={reload}>{error}</StateMessage>;
 
   // Weeks are Sundays in the trainee's time zone; the server sends the current one.
   const weeks = [
-    { label: 'This week', start: trainee.currentWeekStart },
-    { label: 'Next week', start: addDaysToDate(trainee.currentWeekStart, 7) },
+    { label: shared.weekRelation.this, start: trainee.currentWeekStart },
+    { label: shared.weekRelation.next, start: addDaysToDate(trainee.currentWeekStart, 7) },
   ];
   const planFor = (week: string) => plans.find((plan) => plan.weekStartDate === week);
   // "Duplicate last week" fills the first of the two weeks that has no plan, from
@@ -62,18 +65,18 @@ export function TraineePlan({ trainee, onPlansChanged }: TraineePlanProps) {
     try {
       let planId: string;
       if (pending.kind === 'duplicate') {
-        const copy = await createPlan(trainee.id, { weekStartDate: week, duplicatePrevious: true });
-        planId = copy.id;
+        const duplicate = await createPlan(trainee.id, { weekStartDate: week, duplicatePrevious: true });
+        planId = duplicate.id;
         copyWasSaved = true;
       } else {
         planId = pending.plan.id;
       }
       await publishPlan(trainee.id, planId);
     } catch (actionError) {
-      const message = actionError instanceof Error ? actionError.message : "Couldn't publish the plan. Please try again.";
+      const message = (actionError instanceof Error && actionError.message) || copy.publishError;
       setFailure({
         week,
-        message: copyWasSaved ? `The copy was saved as a draft, but it was not published. ${message}` : message,
+        message: copyWasSaved ? fill(copy.copySavedNotPublished, { message }) : message,
         issues: actionError instanceof PlanRequestError ? actionError.issues : [],
       });
     } finally {
@@ -84,7 +87,7 @@ export function TraineePlan({ trainee, onPlansChanged }: TraineePlanProps) {
     }
   }
 
-  const pendingWeek = pending ? formatWeekRange(pending.kind === 'publish' ? pending.plan.weekStartDate : pending.week) : '';
+  const pendingWeek = pending ? formatWeekRange(pending.kind === 'publish' ? pending.plan.weekStartDate : pending.week, language) : '';
 
   return (
     <div className="trainee-plan">
@@ -95,26 +98,26 @@ export function TraineePlan({ trainee, onPlansChanged }: TraineePlanProps) {
         return (
           <section key={week.start} className="trainee-plan-week">
             <h2 className="trainee-plan-week-title">
-              {week.label} <span className="trainee-plan-week-dates">· {formatWeekRange(week.start)}</span>
+              {week.label} <span className="trainee-plan-week-dates">· {formatWeekRange(week.start, language)}</span>
             </h2>
 
             {plan ? (
               <PlanCard plan={plan}>
                 {plan.status === 'draft' && (
                   <Button className="trainee-plan-action" onClick={() => setPending({ kind: 'publish', plan })}>
-                    Publish plan
+                    {copy.publishPlan}
                   </Button>
                 )}
               </PlanCard>
             ) : (
               <>
-                <p className="trainee-plan-none">No plan for this week yet.</p>
+                <p className="trainee-plan-none">{copy.noPlanThisWeek}</p>
                 {canDuplicate && week.start === duplicateWeek && (
                   <Button
                     className="trainee-plan-action"
                     onClick={() => setPending({ kind: 'duplicate', week: week.start })}
                   >
-                    Duplicate last week and publish
+                    {copy.duplicateLastWeek}
                   </Button>
                 )}
               </>
@@ -126,11 +129,11 @@ export function TraineePlan({ trainee, onPlansChanged }: TraineePlanProps) {
                 {failure.issues.length > 0 && (
                   <ul className="trainee-plan-issues">
                     {failure.issues.map((issue, index) => (
-                      <li key={index}>{describeIssue(issue)}</li>
+                      <li key={index}>{describeIssue(issue, language)}</li>
                     ))}
                   </ul>
                 )}
-                <p className="trainee-plan-failure-message">Fix it on the dashboard, then publish.</p>
+                <p className="trainee-plan-failure-message">{copy.fixOnDashboard}</p>
               </div>
             )}
           </section>
@@ -139,18 +142,18 @@ export function TraineePlan({ trainee, onPlansChanged }: TraineePlanProps) {
 
       <p className="trainee-plan-hint">
         <IconInfoCircle className="trainee-plan-hint-icon" size={20} aria-hidden="true" />
-        Plans are built and edited on the dashboard, on a computer.
+        {copy.plansOnDashboard}
       </p>
 
       <ConfirmSheet
         isOpen={pending !== undefined}
-        title={pending?.kind === 'duplicate' ? 'Duplicate and publish?' : 'Publish this plan?'}
+        title={pending?.kind === 'duplicate' ? copy.confirmDuplicateTitle : copy.confirmPublishTitle}
         message={
           pending?.kind === 'duplicate'
-            ? `${trainee.name}'s most recent plan will be copied to ${pendingWeek} and published. The trainee will be notified.`
-            : `${trainee.name} will see the plan for ${pendingWeek}. The trainee will be notified.`
+            ? fill(copy.confirmDuplicateMessage, { name: trainee.name, week: pendingWeek })
+            : fill(copy.confirmPublishMessage, { name: trainee.name, week: pendingWeek })
         }
-        confirmLabel={pending?.kind === 'duplicate' ? 'Duplicate and publish' : 'Publish'}
+        confirmLabel={pending?.kind === 'duplicate' ? copy.duplicateConfirm : copy.publishConfirm}
         isWorking={isWorking}
         onConfirm={handleConfirm}
         onCancel={() => setPending(undefined)}

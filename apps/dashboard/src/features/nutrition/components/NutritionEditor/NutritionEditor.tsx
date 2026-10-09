@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { AiNutritionRecommendation, CoachNutritionPlanResponse, NutritionTemplate } from '@sistem/types';
-import { formatDateTime } from '@sistem/shared';
+import { fill, formatDateTime, useCopy, useLanguage } from '@sistem/shared';
 import { saveNutritionTemplate } from '../../../../services/coach/coachService';
 import { traineePath } from '../../../../app/config/routes';
 import { Button } from '../../../../components/common/Button/Button';
@@ -12,14 +12,14 @@ import { useLatestAiDraft } from '../../../aiDraft/hooks/useLatestAiDraft';
 import { NutritionAiDraftCard } from '../../../aiDraft/components/NutritionAiDraftCard/NutritionAiDraftCard';
 import { NutritionAiRationale } from '../../../aiDraft/components/NutritionAiRationale/NutritionAiRationale';
 import { draftMealsFromAi } from '../../../aiDraft/aiDraftToNutrition';
-import { NUTRITION_AI_COPY } from '../../../aiDraft/data/aiDraftCopy';
+import { aiDraftCopy } from '../../../aiDraft/copy';
 import { CalculationSummary } from '../CalculationSummary/CalculationSummary';
 import { IntroEditor } from '../IntroEditor/IntroEditor';
 import { MealEditor } from '../MealEditor/MealEditor';
 import { TipsEditor } from '../TipsEditor/TipsEditor';
 import { PreferencesPanel } from '../PreferencesPanel/PreferencesPanel';
 import { IssueList } from '../IssueList/IssueList';
-import { NUTRITION_COPY } from '../../data/nutritionCopy';
+import { nutritionCopy } from '../../copy';
 import { move, newMeal } from '../../nutritionDraft';
 import type { NutritionDraft } from '../../nutritionDraft';
 import './NutritionEditor.css';
@@ -38,6 +38,9 @@ interface NutritionEditorProps {
  * publish issues, which are shown as of the last save.
  */
 export function NutritionEditor({ traineeId, traineeName, initial, templates }: NutritionEditorProps) {
+  const language = useLanguage();
+  const aiDraftText = useCopy(aiDraftCopy);
+  const copy = useCopy(nutritionCopy);
   const editor = useNutritionEditor(traineeId, initial);
   const { response, draft, updateDraft, saveStatus, isDirty } = editor;
   const [templateId, setTemplateId] = useState('');
@@ -69,7 +72,7 @@ export function NutritionEditor({ traineeId, traineeName, initial, templates }: 
     const output = recommendation.output;
     if (!output) return;
     const hasContent = plan !== null || draft.meals.some((meal) => meal.options.length > 0);
-    if (hasContent && !window.confirm(NUTRITION_AI_COPY.replaceConfirm)) return;
+    if (hasContent && !window.confirm(aiDraftText.nutrition.replaceConfirm)) return;
     updateDraft((current) => ({
       ...current,
       meals: draftMealsFromAi(output),
@@ -79,7 +82,7 @@ export function NutritionEditor({ traineeId, traineeName, initial, templates }: 
   }
 
   async function handlePublish() {
-    if (!window.confirm(NUTRITION_COPY.publishConfirm(traineeName))) return;
+    if (!window.confirm(fill(copy.publishConfirm, { name: traineeName }))) return;
     setIsPublishing(true);
     setMessage(undefined);
     await editor.publish();
@@ -88,7 +91,7 @@ export function NutritionEditor({ traineeId, traineeName, initial, templates }: 
 
   async function handleApplyTemplate() {
     if (!templateId) return;
-    if (draft.meals.length > 0 && !window.confirm(NUTRITION_COPY.templateReplaceConfirm)) return;
+    if (draft.meals.length > 0 && !window.confirm(copy.templateReplaceConfirm)) return;
     if (await editor.applyTemplate(templateId)) setTemplateId('');
   }
 
@@ -100,33 +103,33 @@ export function NutritionEditor({ traineeId, traineeName, initial, templates }: 
       if (!(await editor.save())) return;
       const template = await saveNutritionTemplate(traineeId, { name });
       setTemplateName('');
-      setMessage(NUTRITION_COPY.templateSaved(template.name));
+      setMessage(fill(copy.templateSaved, { name: template.name }));
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Couldn't save the template.");
+      setMessage(error instanceof Error ? error.message : copy.templateSaveError);
     }
   }
 
   return (
     <div className="nutrition-editor">
       <Link className="nutrition-back" to={traineePath(traineeId, 'nutrition')}>
-        {NUTRITION_COPY.backToTrainee}
+        {copy.backToTrainee}
       </Link>
 
       <header className="nutrition-header">
         <div className="nutrition-heading">
-          <h1 className="nutrition-title">{NUTRITION_COPY.builderTitle(traineeName)}</h1>
+          <h1 className="nutrition-title">{fill(copy.builderTitle, { name: traineeName })}</h1>
           <span className="nutrition-status">
             {plan && plan.publishedVersion > 0 && plan.publishedAt
-              ? NUTRITION_COPY.statusPublished(plan.publishedVersion, formatDateTime(plan.publishedAt))
-              : NUTRITION_COPY.statusNever}
+              ? fill(copy.statusPublished, { version: plan.publishedVersion, date: formatDateTime(plan.publishedAt, language) })
+              : copy.statusNever}
           </span>
-          {plan && plan.publishedVersion > 0 && plan.changedSincePublish && <Badge tone="accent">{NUTRITION_COPY.statusChanged}</Badge>}
-          {draft.aiRecommendationId && <Badge tone="alert">{NUTRITION_AI_COPY.loadedBadge}</Badge>}
+          {plan && plan.publishedVersion > 0 && plan.changedSincePublish && <Badge tone="accent">{copy.statusChanged}</Badge>}
+          {draft.aiRecommendationId && <Badge tone="alert">{aiDraftText.nutrition.loadedBadge}</Badge>}
         </div>
         <div className="nutrition-actions">
           <SaveIndicator status={saveStatus} />
           <Button variant="primary" onClick={handlePublish} disabled={!canPublish || isPublishing}>
-            {plan && plan.publishedVersion > 0 ? NUTRITION_COPY.publishUpdate : NUTRITION_COPY.publish}
+            {plan && plan.publishedVersion > 0 ? copy.publishUpdate : copy.publish}
           </Button>
         </div>
       </header>
@@ -137,7 +140,7 @@ export function NutritionEditor({ traineeId, traineeName, initial, templates }: 
           <IssueList issues={editor.saveIssues} />
         </div>
       )}
-      {nothingNew && !isDirty && <p className="nutrition-note">{NUTRITION_COPY.nothingToPublish}</p>}
+      {nothingNew && !isDirty && <p className="nutrition-note">{copy.nothingToPublish}</p>}
       {message && (
         <p className="nutrition-note" role="status">
           {message}
@@ -157,25 +160,25 @@ export function NutritionEditor({ traineeId, traineeName, initial, templates }: 
 
           <IntroEditor value={draft.introMessage} onChange={(introMessage) => updateDraft((current) => ({ ...current, introMessage }))} />
 
-          <section className="nutrition-templates" aria-label={NUTRITION_COPY.templateTitle}>
-            <select className="nutrition-select" value={templateId} onChange={(event) => setTemplateId(event.target.value)} aria-label={NUTRITION_COPY.templatePick}>
-              <option value="">{NUTRITION_COPY.templatePick}</option>
+          <section className="nutrition-templates" aria-label={copy.templateTitle}>
+            <select className="nutrition-select" value={templateId} onChange={(event) => setTemplateId(event.target.value)} aria-label={copy.templatePick}>
+              <option value="">{copy.templatePick}</option>
               {templates.map((template) => (
                 <option key={template.id} value={template.id}>
-                  {template.name}
+                  <bdi>{template.name}</bdi>
                 </option>
               ))}
             </select>
             <Button size="sm" onClick={handleApplyTemplate} disabled={!templateId}>
-              {NUTRITION_COPY.templateApply}
+              {copy.templateApply}
             </Button>
           </section>
 
           <section className="nutrition-meals" aria-labelledby="nutrition-meals-title">
             <h2 className="nutrition-panel-title" id="nutrition-meals-title">
-              {NUTRITION_COPY.mealsTitle}
+              {copy.mealsTitle}
             </h2>
-            {draft.meals.length === 0 && <p className="nutrition-note">{NUTRITION_COPY.noMeals}</p>}
+            {draft.meals.length === 0 && <p className="nutrition-note">{copy.noMeals}</p>}
             {draft.meals.map((meal, index) => (
               <MealEditor
                 key={meal.key}
@@ -193,7 +196,7 @@ export function NutritionEditor({ traineeId, traineeName, initial, templates }: 
               />
             ))}
             <Button size="sm" onClick={() => updateDraft((current) => ({ ...current, meals: [...current.meals, newMeal(`Meal ${current.meals.length + 1}`)] }))}>
-              {NUTRITION_COPY.addMeal}
+              {copy.addMeal}
             </Button>
           </section>
 
@@ -209,26 +212,26 @@ export function NutritionEditor({ traineeId, traineeName, initial, templates }: 
 
           <section aria-labelledby="nutrition-issues-title">
             <h2 className="nutrition-panel-title" id="nutrition-issues-title">
-              {NUTRITION_COPY.issuesTitle}
+              {copy.issuesTitle}
             </h2>
             {plan && response.issues.length === 0 ? (
-              <p className="nutrition-note">{NUTRITION_COPY.noIssues}</p>
+              <p className="nutrition-note">{copy.noIssues}</p>
             ) : (
               <IssueList issues={response.issues.filter((issue) => issue.mealIndex === undefined || issue.severity === 'error')} />
             )}
           </section>
 
-          <section className="nutrition-save-template" aria-label={NUTRITION_COPY.saveAsTemplate}>
+          <section className="nutrition-save-template" aria-label={copy.saveAsTemplate}>
             <input
               className="nutrition-input"
               dir="auto"
               value={templateName}
-              placeholder={NUTRITION_COPY.templateName}
-              aria-label={NUTRITION_COPY.templateName}
+              placeholder={copy.templateName}
+              aria-label={copy.templateName}
               onChange={(event) => setTemplateName(event.target.value)}
             />
             <Button size="sm" onClick={handleSaveTemplate} disabled={!templateName.trim() || draft.meals.length === 0}>
-              {NUTRITION_COPY.saveAsTemplate}
+              {copy.saveAsTemplate}
             </Button>
           </section>
         </aside>

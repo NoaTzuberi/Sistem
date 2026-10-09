@@ -130,9 +130,13 @@ describe('AI nutrition draft — what is sent about her', () => {
   });
 
   it('uses her meals-per-day answer for the meal slots, else the builder default of 4', () => {
-    expect(mealSlotNames(null)).toHaveLength(4);
-    expect(mealSlotNames(2)).toEqual(['Breakfast', 'Dinner']);
-    expect(mealSlotNames(6)).toHaveLength(6);
+    expect(mealSlotNames(null, 'en')).toHaveLength(4);
+    expect(mealSlotNames(2, 'en')).toEqual(['Breakfast', 'Dinner']);
+    expect(mealSlotNames(6, 'en')).toHaveLength(6);
+  });
+
+  it("writes the meal slots in the coach's language (Phase 15)", () => {
+    expect(mealSlotNames(2, 'he')).toEqual(['ארוחת בוקר', 'ארוחת ערב']);
   });
 
   it('has a fixed schema without minItems / maxItems (Gemini rejects them)', () => {
@@ -158,6 +162,7 @@ describe('AI nutrition draft — the validator', () => {
       coachId: 'coach',
       candidates,
       slots: ['Breakfast', 'Dinner'],
+      language: 'en',
       dailyPortions: DAY,
       kcal: 720,
       preferences: preferences({ religious: [{ id: 'kosher' }] }),

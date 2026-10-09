@@ -1,5 +1,5 @@
-import { measurementLabel } from '@sistem/shared';
-import { BODY_COPY } from '../../data/bodyCopy';
+import { measurementLabel, useCopy, useLanguage } from '@sistem/shared';
+import { bodyCopy } from '../../copy';
 import './MeasurementPicker.css';
 
 interface MeasurementPickerProps {
@@ -10,8 +10,10 @@ interface MeasurementPickerProps {
 
 /** Which measurement the chart shows — a row of chips that scrolls sideways if needed. */
 export function MeasurementPicker({ ids, value, onChange }: MeasurementPickerProps) {
+  const language = useLanguage();
+  const copy = useCopy(bodyCopy);
   return (
-    <div className="measurement-picker" role="group" aria-label={BODY_COPY.pickMeasurement}>
+    <div className="measurement-picker" role="group" aria-label={copy.pickMeasurement}>
       {ids.map((id) => (
         <button
           key={id}
@@ -20,7 +22,7 @@ export function MeasurementPicker({ ids, value, onChange }: MeasurementPickerPro
           aria-pressed={id === value}
           onClick={() => onChange(id)}
         >
-          {measurementLabel(id)}
+          {measurementLabel(id, language)}
         </button>
       ))}
     </div>

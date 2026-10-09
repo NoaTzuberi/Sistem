@@ -1,3 +1,4 @@
+import { sharedCopy, useCopy } from '@sistem/shared';
 import { Modal } from '../../../../components/common/Modal/Modal';
 import { Button } from '../../../../components/common/Button/Button';
 import './ConfirmSheet.css';
@@ -15,6 +16,7 @@ interface ConfirmSheetProps {
 
 /** "Are you sure?" as a bottom sheet — for actions the trainee sees right away. */
 export function ConfirmSheet({ isOpen, title, message, confirmLabel, isWorking, onConfirm, onCancel }: ConfirmSheetProps) {
+  const shared = useCopy(sharedCopy);
   return (
     <Modal isOpen={isOpen} title={title} onClose={isWorking ? () => undefined : onCancel}>
       <p className="confirm-sheet-message">{message}</p>
@@ -23,7 +25,7 @@ export function ConfirmSheet({ isOpen, title, message, confirmLabel, isWorking, 
           {confirmLabel}
         </Button>
         <Button variant="secondary" disabled={isWorking} onClick={onCancel}>
-          Cancel
+          {shared.common.cancel}
         </Button>
       </div>
     </Modal>

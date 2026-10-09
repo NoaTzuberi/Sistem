@@ -6,19 +6,20 @@ import { isAcceptedImage } from '../privatePhotos/privatePhoto.validation';
 import { WorkoutLog } from './workoutLog.model';
 import { WorkoutLogNotFoundError, getWorkoutLogForTrainee } from './workoutLog.service';
 import type { WorkoutLogDocument } from './workoutLog.types';
+import { LocalizedError } from '../../i18n';
 
 // The workout summary (PRD §5.3): "How was it?" rating, notes and the Daily Pump photo.
 // Only on her own completed workouts; she can change them any time (owner decision).
 
-export class WorkoutLogNotCompletedError extends Error {}
-export class InvalidPhotoError extends Error {}
+export class WorkoutLogNotCompletedError extends LocalizedError {}
+export class InvalidPhotoError extends LocalizedError {}
 
 /** Her own completed log, or the matching error. */
 async function assertCompleted(logId: string, traineeId: string): Promise<void> {
   const log = await WorkoutLog.findOne({ _id: logId, traineeId }).select('status').lean<Pick<WorkoutLogDocument, 'status'>>();
-  if (!log) throw new WorkoutLogNotFoundError('Workout log not found.');
+  if (!log) throw new WorkoutLogNotFoundError('workout_log_not_found');
   if (log.status !== 'completed') {
-    throw new WorkoutLogNotCompletedError('A summary can only be added to a finished workout.');
+    throw new WorkoutLogNotCompletedError('workout_summary_not_finished');
   }
 }
 
@@ -62,7 +63,7 @@ export async function setPumpPhoto(
   now: Date = new Date(),
 ): Promise<PublicWorkoutLog> {
   await assertCompleted(logId, traineeId);
-  if (!isAcceptedImage(data)) throw new InvalidPhotoError('The photo must be a JPEG, PNG or WebP image.');
+  if (!isAcceptedImage(data)) throw new InvalidPhotoError('photo_invalid_image');
 
   const publicId = await uploadPrivatePhoto(data, `${PUMP_PHOTO_FOLDER}/${traineeId}`, logId);
   // Returns the log as it was, so a concurrent upload deletes exactly the photo it replaced.
@@ -73,7 +74,7 @@ export async function setPumpPhoto(
   ).lean<Pick<WorkoutLogDocument, 'pumpPhoto'>>();
   if (!previous) {
     await deleteQuietly(publicId);
-    throw new WorkoutLogNotFoundError('Workout log not found.');
+    throw new WorkoutLogNotFoundError('workout_log_not_found');
   }
   if (previous.pumpPhoto) await deleteQuietly(previous.pumpPhoto.publicId);
   // first_pump_photo: unlocked by this log, so the summary shows it with the photo.
