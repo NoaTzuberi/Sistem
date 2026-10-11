@@ -9,13 +9,17 @@ import ezBar from '../assets/ez-bar.png';
 import step from '../assets/step.png';
 
 export interface WaitingIcon {
+  /** Also the CSS hook: `.waiting-item-<id>` places the item (WaitingPage.css). */
   id: string;
   src: string | null;
+  /** The screen edge the item runs off and flies in from — a device side, the same in Hebrew and English. */
+  side: 'left' | 'right';
 }
 
+// Order = the order they fly in.
 export const WAITING_ICONS: WaitingIcon[] = [
-  { id: 'slot-1', src: ezBar },
-  { id: 'slot-2', src: bench },
-  { id: 'slot-3', src: dumbbell },
-  { id: 'slot-4', src: step },
+  { id: 'dumbbell', src: dumbbell, side: 'left' },
+  { id: 'ez-bar', src: ezBar, side: 'right' },
+  { id: 'step', src: step, side: 'left' },
+  { id: 'bench', src: bench, side: 'right' },
 ];

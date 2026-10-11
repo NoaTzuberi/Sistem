@@ -1,6 +1,13 @@
-/* Exactly one screen, never scrolls: fills the shell (which already handles the
-   safe areas) with the logo on top, the message centered, log out at the bottom. */
+/* Exactly one screen, never scrolls: fills the shell (which already handles the safe areas
+   and paints the plain white background) with the logo mark on top, the title + countdown
+   centered, and the notifications button + log out at the bottom. Pink is only the countdown
+   block and the button. */
 .waiting-page {
+  /* What the footer takes at the bottom: the log out link, plus the button and the gap when
+     the button is shown. The lower items rest above it. */
+  --waiting-cta-height: calc(var(--touch-target-min) + var(--space-2));
+  --waiting-footer-height: var(--touch-target-min);
+
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -11,10 +18,14 @@
   position: relative;
 }
 
-/* Everything readable sits above the icon layer. */
+.waiting-page-with-cta {
+  --waiting-footer-height: calc(var(--waiting-cta-height) + var(--space-2) + var(--touch-target-min));
+}
+
+/* Everything readable sits above the item layer. */
 .waiting-logo,
 .waiting-content,
-.waiting-page .logout-button {
+.waiting-footer {
   position: relative;
   z-index: var(--z-raised);
 }
@@ -33,14 +44,14 @@
   width: 100%;
 }
 
-/* The icons are scattered over the whole screen, behind the text: two in the space
-   above the message, two below it, each with its own size and angle and some of
-   them running off the screen edge. useFloatingIcons drifts them. Sizes also follow
-   the screen height so they stay clear of the countdown on a short phone. */
-.waiting-icons {
+/* The four 3D items: two in the space above the center block, two below it, each running
+   off its own screen edge. They are decoration only — never touchable, and nothing but
+   useWaitingMotion moves them. Sizes also follow the screen height so they stay clear of
+   the center block on a short phone. */
+.waiting-items {
   position: absolute;
   /* Stretched over the shell's padding to the real screen edges, and clipped there:
-     an icon running off an edge (or drifting past it) must never add scrolling. */
+     an item running off an edge (or flying in from it) must never add scrolling. */
   inset-block: calc(-1 * (var(--space-3) + var(--safe-top))) calc(-1 * (var(--space-3) + var(--safe-bottom)));
   /* physical: the safe areas belong to the device's left / right sides. */
   left: calc(-1 * (var(--space-3) + var(--safe-left)));
@@ -52,36 +63,48 @@
   pointer-events: none;
 }
 
-.waiting-icons .icon-slot {
+.waiting-item {
   position: absolute;
+  pointer-events: none;
 }
 
-.waiting-icons .icon-slot:nth-child(1) {
-  inset-block-start: 6%;
-  inset-inline-start: -14%;
-  width: min(64%, 30dvh);
-  rotate: -18deg;
+.waiting-item .icon-slot-image {
+  filter: drop-shadow(var(--shadow-object));
 }
 
-.waiting-icons .icon-slot:nth-child(2) {
-  inset-block-end: 11%;
-  inset-inline-start: -9%;
+/* The design names screen sides (dumbbell + step on the left, EZ bar + bench on the right);
+   the items are pictures, not text, so they keep their side in Hebrew and in English. */
+.waiting-item-dumbbell {
+  inset-block-start: 9%;
+  /* physical: the design's left edge. */
+  left: -13%;
   width: min(46%, 22dvh);
+  rotate: -14deg;
+}
+
+.waiting-item-ez-bar {
+  inset-block-start: 15%;
+  /* physical: the design's right edge. */
+  right: -15%;
+  width: min(50%, 24dvh);
+  rotate: 12deg;
+}
+
+/* The lower two rest above the footer, so they never sit under the button. */
+.waiting-item-step {
+  inset-block-end: calc(var(--space-3) + var(--safe-bottom) + var(--waiting-footer-height) + var(--space-3));
+  /* physical: the design's left edge. */
+  left: -13%;
+  width: min(42%, 19dvh);
   rotate: 6deg;
 }
 
-.waiting-icons .icon-slot:nth-child(3) {
-  inset-block-start: 19%;
-  inset-inline-end: -11%;
-  width: min(44%, 21dvh);
-  rotate: 14deg;
-}
-
-.waiting-icons .icon-slot:nth-child(4) {
-  inset-block-end: 2%;
-  inset-inline-end: -16%;
-  width: min(54%, 25dvh);
-  rotate: -10deg;
+.waiting-item-bench {
+  inset-block-end: calc(var(--space-3) + var(--safe-bottom) + var(--waiting-footer-height) + var(--space-4));
+  /* physical: the design's right edge. */
+  right: -15%;
+  width: min(46%, 20dvh);
+  rotate: -8deg;
 }
 
 .waiting-title {
@@ -94,11 +117,67 @@
 
 .waiting-message {
   margin: 0;
-  max-width: 320px;
-  font-size: var(--text-base);
+  max-width: 280px;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
   line-height: var(--line-height-base);
 }
 
-.waiting-page .logout-button {
+.waiting-message-hidden {
+  visibility: hidden;
+}
+
+/* Each sentence on its own line. */
+.waiting-message-note {
+  display: block;
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.waiting-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
   width: 100%;
+}
+
+.waiting-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  max-width: 360px;
+  height: var(--waiting-cta-height);
+  border: 0;
+  border-radius: var(--radius-round);
+  background: var(--color-primary);
+  box-shadow: var(--shadow-primary);
+  color: var(--color-on-primary);
+  font: inherit;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast) var(--ease-standard),
+    transform var(--transition-fast) var(--ease-standard);
+}
+
+.waiting-cta:active {
+  background: var(--color-primary-deep);
+  transform: scale(0.97);
+}
+
+@media (hover: hover) {
+  .waiting-cta:hover {
+    background: var(--color-primary-deep);
+  }
+}
+
+/* Log out as a small quiet text button (the ghost Button), still a full touch target. */
+.waiting-logout {
+  padding-inline: var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
 }

@@ -1,12 +1,44 @@
+/* The one soft-pink block of the waiting screen. */
 .countdown {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
   padding: var(--space-3) var(--space-4);
-  background-color: var(--color-primary-soft);
+  border-radius: var(--radius-block);
+  background-color: var(--color-primary-tint);
   color: var(--color-primary-deep);
+}
+
+.countdown-part {
+  display: flex;
+  align-items: flex-start;
+}
+
+.countdown-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  /* Two digits wide, so the block keeps its size at every second. */
+  min-width: 2.4ch;
+}
+
+.countdown-digits,
+.countdown-separator {
   font-family: var(--font-family-display);
   font-size: var(--text-3xl);
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-tight);
   /* Fixed-width digits so the timer does not jitter every second. */
   font-variant-numeric: tabular-nums;
-  clip-path: var(--cut-corners-diagonal);
+}
+
+.countdown-separator {
+  padding-inline: var(--space-2);
+}
+
+.countdown-unit-label {
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-tight);
 }
