@@ -51,6 +51,12 @@ Later owner decisions (2026-10-07):
 - **Hebrew is the default language, right-to-left everywhere**; English is an option in Settings. Built in Phase 15, **before any design work**. Coach content is never auto-translated.
 - **`docs/reference/` is gitignored** (the coach's own content). The repo is private now and will become public later — see the PRD §14 backlog item on auditing the git history first.
 
+Later owner decisions (2026-10-11):
+
+- **Coach Community is the long-term direction** (PRD §15, Phase 16 — later, not scheduled): a coach profile and feed,
+  then community branding per coach. Until then every phase follows the PRD §15.3 architecture notes: scope by
+  `coachId`, assume multiple coaches, private media with signed URLs, runtime theming through tokens only.
+
 ---
 
 ## Phase 0 — Audit & project memory (no code changes)
@@ -740,6 +746,53 @@ Implement PRD §8 "AI-assisted plan builder v2": turn the Phase 12 single AI dra
 
 ---
 
+## Phase 16 (later, not scheduled) — Coach Community
+
+Owner vision (2026-10-11): each coach's trainees are her **community**, and the product grows toward a social network
+per coach. **Not scheduled — nothing is built and no order is decided.** Details in PRD §15. Split into 16a (coach
+profile & feed) and 16b (community branding, after 16a). Before either one starts, the PRD §15.4 open questions are
+answered by the owner — never guessed.
+
+Rules for every phase built BEFORE this one (PRD §15.3), so current work does not block it:
+
+- Every trainee-facing entity stays scoped by `coachId` (directly or through `User.coachId`).
+- Assume multiple coaches can exist — never rely on a single global coach in a query, config value or screen.
+- Media uses private storage with signed URLs, like Daily Pump (`features/privatePhotos`).
+- Theming must be possible at runtime through tokens / CSS variables: design values only from `packages/tokens`,
+  never hard-coded in a component, an inline SVG or an image.
+
+### Phase 16a — Coach profile & feed (later, not scheduled)
+
+```
+Implement PRD §15.1 "Coach profile & feed". Propose the schema, the API and the screens first, and ask me the
+PRD §15.4 open questions that touch this step before writing code.
+
+1. Coach profile: profile photo, cover image and bio. The coach edits them; her trainees see them in the mobile app.
+2. Feed: the coach publishes posts — text only, images only, or text + images.
+3. Visibility: all of the coach's trainees (her community), inside the mobile app. A trainee reads only her own
+   coach's profile and posts; every read is checked on the server by coachId.
+4. Media: profile photo, cover and post images go through the private-photo flow (features/privatePhotos:
+   authenticated upload, only the asset id stored, expiring links made per request). No public URLs.
+5. All texts in the copy folders (he + en); the coach's own content is shown as written, never translated.
+6. Tests: a trainee cannot read another coach's profile or posts; a trainee cannot post; image links expire;
+   the three post kinds.
+```
+
+### Phase 16b — Community branding (later, not scheduled — after 16a)
+
+```
+Implement PRD §15.2 "Community branding". Propose the schema, the theme model and how the app applies it first.
+
+1. Each coach defines her community: name, color / theme, vision statement and cover.
+2. The trainee app reflects it: the theme is applied at runtime by overriding the design-token CSS variables
+   (packages/tokens) — no rebuild, no per-coach CSS files. Ask me what stays Sistem's own (logo, cuts, fonts)
+   and whether the color is free or picked from a fixed set of themes.
+3. Any coach color must meet the PRD §12 contrast rules (derive or validate the deep / soft shades).
+4. First step of this phase: audit both apps for hard-coded colors and other values that would not follow a theme.
+```
+
+---
+
 ## Backlog (not scheduled)
 
 - **Training settings screen** — the coach edits her splits, workout types and slots (add / remove / reorder slots, patterns per slot, which splits are offered) in the dashboard. The config, the per-coach overrides (`TrainingSettings`) and the API (`GET /api/coach/training/config`, `PUT /api/coach/training/settings`) exist since Phase 12b; only the screen is missing.
@@ -747,3 +800,4 @@ Implement PRD §8 "AI-assisted plan builder v2": turn the Phase 12 single AI dra
 - **Password reset** — not in the MVP. The ATLAS forgot/reset-password flow (server routes + Resend email + client pages) exists; before enabling it in the app it needs a deep link / universal link or a small web reset page, and a Sistem email sender.
 - **Write original exercise descriptions** — AI draft reviewed and approved by the coach. Until then, the coach's per-exercise notes in the plan builder are the instructions trainees see.
 - **Multiple coaches** — the model supports it (coachId per trainee); UI, assignment and coach sign-up are not planned yet.
+- **Community follow-ups** — everything in PRD §15.4 (open questions) that is left out of Phase 16: trainee reactions / comments / posts, moderation, new-post notifications.

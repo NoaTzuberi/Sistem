@@ -27,6 +27,7 @@ To avoid confusion in code and docs, use these names consistently:
 2. Give the coach one place to see every trainee's data and build personalized weekly plans.
 3. Make training in the app feel rewarding: clear instructions, fast logging, visible progress, achievements.
 4. Lay foundations for AI-assisted plan recommendations and nutrition plans (later phases).
+5. Long term (not scheduled): each coach's trainees become her **community** — a coach profile and feed, then her own community branding (§15).
 
 ## 3. Roles & Access
 
@@ -298,6 +299,7 @@ Store device push tokens per user. Fail gracefully when push permission is denie
 - **ExerciseFamily** (Phase 12b): name, body parts, movement patterns, levels, review reasons; Exercise.familyId / variant / isPrimaryVariant. **TrainingSettings**: a coach's overrides of the split / slot config. Plan.splitId, workout.workoutType, exercise.slotId (coach-only).
 - **AIRecommendation** (Phase 12): traineeId, coachId, type (training_plan; nutrition_plan in 13c), status, trigger, the input sent, the validated output, attempts. Plan.aiRecommendationId and NutritionPlan.aiRecommendationId (13c) link a plan to the draft it was loaded from (coach-only).
 - *(Later, §5.6)* **FoodItem** (coach food list), **NutritionPlan** (calorie target, meals → portions per group, options, tips, versions), nutrition templates; 13b: **Recipe**, **MealLog**, **WaterLog**
+- *(Later, §15 — not scheduled, sketch only)* **CoachProfile** (coachId, photo, cover, bio), **Post** (coachId, text?, images[]), community branding (coachId, name, theme, vision statement, cover). All scoped by coachId; images are private assets with signed links.
 
 ## 11. Technical Notes & Open Decisions
 
@@ -348,6 +350,7 @@ Design system notes:
 | v1.2 | AI plan recommendation for the coach |
 | v1.3 | Nutrition plans |
 | Before design work | Hebrew (default) & RTL, English as an option (Phase 15) |
+| Later — not scheduled | Coach Community (Phase 16, §15): 16a coach profile & feed · 16b community branding per coach |
 
 ## 14. Backlog
 
@@ -376,3 +379,42 @@ Design system notes:
 - **Per-trainee food exceptions** — the coach can allow specific items for a trainee despite a tag rule (e.g. "yogurt OK" for a lactose-intolerant trainee). Allowed items return to her builder list, warnings and the AI food list.
 - **Extra portions** — optional neutral "+ extra portion" marking beyond the plan, shown to the coach as a plain number (ask the coach whether she wants it).
 - **Before making the repo public** — audit the full git history for secrets, coach content, personal data and seed data; rotate any exposed secret; rewrite history if needed. (The repo is private now; `docs/reference/` is gitignored for this reason.)
+
+## 15. Coach Community (later — Phase 16, not scheduled)
+
+> Status: **vision only — later / not scheduled.** Nothing here is built and no phase is approved. It is written down now so that current work does not block it. Scope, screens and wording are decided with the owner before any of it is built.
+
+Every coach has her own **community**: her trainees. Sistem grows from a coaching tool toward a small social network per coach, in two steps.
+
+### 15.1 Coach profile & feed (Phase 16a)
+
+- **Coach profile**: profile photo, cover image and bio.
+- **Feed**: the coach publishes posts. A post is **text only**, **images only**, or **text + images**.
+- **Who sees it**: all of the coach's trainees (her community), inside the mobile app. A trainee sees only her own coach's profile and posts — never another coach's.
+- The coach is the only author in this step. Anything trainees do with a post (reactions, comments, their own posts) is not part of it — see the open questions.
+
+### 15.2 Community branding (Phase 16b — after 16a)
+
+- Each coach defines her own community: **name**, **color / theme**, **vision statement** and **cover**.
+- The trainee app reflects that branding: a trainee sees her coach's community name, colors and cover.
+- From here the product grows toward a social network per coach.
+
+### 15.3 Architecture notes (apply to current work, from now on)
+
+These are rules for every phase built before the Community phase, so nothing has to be reworked later.
+
+1. **Everything a trainee sees stays scoped by `coachId`.** Every trainee-facing entity carries the coach it belongs to, directly or through its trainee (`User.coachId`). Coach routes keep checking `trainee.coachId === coach`. Community entities (profile, posts, branding) belong to one coach and are read only by that coach and her trainees.
+2. **Assume more than one coach can exist.** There is one coach today, but no query, config value or screen may rely on "the coach" being a single global record. (Same rule as the Phase 0 owner decision and the "Multiple coaches" backlog item.)
+3. **Media uses private storage with signed URLs, like Daily Pump.** Profile photo, cover and post images go through the same private-photo flow (authenticated upload, only the asset id stored, an expiring link made per request after the access check). No public image URLs, even though a community is a wider audience than one trainee.
+4. **Theming must be possible at runtime through tokens / CSS variables.** Colors, fonts and other design values come only from the tokens in `packages/tokens` — never hard-coded in a component, an inline SVG or an image. A coach's theme can then be applied by overriding those variables when the app loads. Any coach-chosen color must still meet the contrast rules in §12.
+
+### 15.4 Open questions (decide before building)
+
+- Trainee interaction: reactions, comments, trainee posts — which of them, and in which step?
+- Where the feed lives in the mobile app (a new tab, part of Home, the coach's profile screen) and where the coach writes posts (dashboard, coach mode in the app, or both).
+- Notifications: does a new post send a notification / push to the community?
+- Post rules: how many images per post, editing and deleting, drafts, pinned posts.
+- Branding limits: a free color or a fixed set of themes; what stays Sistem's own (the logo, the sharp-cut language, fonts).
+- Does a trainee see who else is in the community? (Today trainees never see each other.)
+- Moderation, reporting and the legal side of user content (ties to the legal item in §14).
+- When multiple coaches actually arrive: coach sign-up, and how a trainee is matched to a coach (see the "Multiple coaches" backlog item).
