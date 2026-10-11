@@ -31,6 +31,7 @@
   /* Tints mixed from the palette above (no new colors). Success / "done" states
      use Cherry Rose + --color-primary-soft — no green (owner decision). */
   --color-primary-soft: color-mix(in srgb, var(--color-primary) 12%, var(--color-bg));
+  --color-primary-tint: #ffe6f0;  /* Soft pink block on a white screen (the waiting countdown) */
   --color-error-soft: color-mix(in srgb, var(--color-error) 10%, var(--color-bg));
   --color-overlay: color-mix(in srgb, var(--color-text) 55%, transparent); /* behind sheets / modals */
 
@@ -51,6 +52,19 @@
   --track-lane-edge-alpha: 0.5;    /* the innermost and outermost line */
   --track-trail-alpha: 0.7;        /* the head of a runner's trail, fading to 0 */
   --track-glow-alpha: 0.2;         /* the halo around a runner */
+
+  /* The flow lines drawn on Bright Snow (dashboard login, FlowBackground): Neon Pink
+     (--color-primary) at these alphas. */
+  --flow-glow-top-alpha: 0.1;       /* soft radial glow, top-right corner */
+  --flow-glow-bottom-alpha: 0.07;   /* soft radial glow, bottom-left corner */
+  --flow-line-alpha: 0.12;          /* the lines */
+  --flow-line-strong-alpha: 0.26;   /* every 5th line */
+
+  /* Frosted white over the flow lines (the login card, the language toggle), and the light
+     Platinum of the card's fields. */
+  --surface-frosted: color-mix(in srgb, var(--color-on-primary) 82%, transparent);
+  --surface-frosted-light: color-mix(in srgb, var(--color-on-primary) 70%, transparent);
+  --color-surface-soft: color-mix(in srgb, var(--color-surface) 55%, var(--color-bg));
 
   /* Third-party button colors fixed by the provider's guidelines (social sign-in, Phase 5c). */
   --color-apple-button: #000000;
@@ -104,6 +118,7 @@
   --radius-none: 0;
   --radius-round: 999px;
   --radius-glass: 20px;         /* The glass card on the brand gradient (login / sign-up) */
+  --radius-block: 20px;         /* A soft block on a white screen (the waiting countdown) */
   --cut-size: 12px;
   /* One corner cut at the top-end (the card / tile pattern). */
   --cut-corner: polygon(0 0, calc(100% - var(--cut-size)) 0, 100% var(--cut-size), 100% 100%, 0 100%);
@@ -128,6 +143,8 @@
   --shadow-none: none;
   --shadow-glass: 0 24px 60px color-mix(in srgb, var(--color-primary-deep) 22%, transparent); /* glass card */
   --shadow-primary: 0 10px 24px color-mix(in srgb, var(--color-primary) 32%, transparent);     /* pink CTA on glass */
+  /* Neutral shadow under a floating 3D object (waiting screen) — used with filter: drop-shadow(). */
+  --shadow-object: 0 16px 18px color-mix(in srgb, var(--color-text) 18%, transparent);
 
   /* ═══ 7. Motion ═══════════════════════════════════════════════════════════════
      GSAP animations read their own durations in code; CSS transitions use these. */
@@ -138,6 +155,8 @@
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
   --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-slide: 300ms;     /* A selection pill sliding between options (LanguageToggle) */
+  --ease-slide: cubic-bezier(0.2, 0.8, 0.2, 1);
   --loop-slow: 2s;               /* Repeating hints (scroll bounce) */
 
   /* ═══ 8. Opacity ══════════════════════════════════════════════════════════════ */
