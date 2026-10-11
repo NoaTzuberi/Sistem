@@ -14,12 +14,7 @@ import { TraineeAchievements } from '../../components/TraineeAchievements/Traine
 import { TraineeNutritionTab } from '../../../nutrition/components/TraineeNutritionTab/TraineeNutritionTab';
 import './TraineeDetailPage.css';
 import { traineesCopy } from '../../copy';
-
-function tabLabel(tab: TraineeTab, copy: (typeof traineesCopy)['he'], shared: (typeof sharedCopy)['he']): string {
-  if (tab === 'logs') return copy.workoutLogs;
-  if (tab === 'metrics') return shared.coach.tabs.body;
-  return shared.coach.tabs[tab];
-}
+import { traineeTabLabel } from '../../data/traineeTabs';
 
 function isTraineeTab(value: string | null): value is TraineeTab {
   return (TRAINEE_TABS as readonly string[]).includes(value ?? '');
@@ -92,7 +87,7 @@ export function TraineeDetailPage() {
                 aria-controls="trainee-tab-panel"
                 onClick={() => selectTab(id)}
               >
-                {tabLabel(id, copy, shared)}
+                {traineeTabLabel(id, copy, shared)}
               </button>
             ))}
           </div>

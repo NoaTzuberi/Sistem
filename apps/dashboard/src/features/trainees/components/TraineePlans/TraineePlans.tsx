@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import type { CoachTraineeDetail, PlanWeekOptions } from '@sistem/types';
 import { createPlan, listPlanWeeks, listPlans } from '../../../../services/coach/coachService';
 import { fill, formatWeekSpan, sharedCopy, useCopy, useLanguage, useLoad, weekRelationLabel } from '@sistem/shared';
@@ -51,6 +51,17 @@ export function TraineePlans({ trainee, onPlansChanged }: TraineePlansProps) {
       setIsOpeningPicker(false);
     }
   }
+
+  // "New plan" from the top line or the drawer lands here with the week picker already open.
+  const wantsNewPlan = (useLocation().state as { newPlan?: boolean } | null)?.newPlan === true;
+  const openedFromLink = useRef(false);
+  useEffect(() => {
+    if (!wantsNewPlan || openedFromLink.current) return;
+    openedFromLink.current = true;
+    void openPicker('new');
+    // Once, when the page is entered that way — not when openPicker's identity changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wantsNewPlan]);
 
   async function handleCreate(weekStartDate: string) {
     if (!picker) return;
