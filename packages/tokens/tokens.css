@@ -66,6 +66,47 @@
   --surface-frosted-light: color-mix(in srgb, var(--color-on-primary) 70%, transparent);
   --color-surface-soft: color-mix(in srgb, var(--color-surface) 55%, var(--color-bg));
 
+  /* The onboarding deck (design: docs/design/onboarding-deck.html). The screen gradient runs
+     Bright Snow → light pink → pink, with soft Neon Pink glows in the corners; these are its stops. */
+  --color-pink-mist: #fdedf4;
+  --color-pink-light: #fbcfe1;
+  --color-pink-mid: #f9a6c8;
+  --color-pink-bright: #ff5ca2;
+  --color-pink-glow: #ffd6e8;
+  --gradient-onboarding:
+    radial-gradient(70% 40% at 85% 30%, color-mix(in srgb, var(--color-pink-glow) 70%, transparent), transparent 70%),
+    radial-gradient(90% 45% at 10% 105%, color-mix(in srgb, var(--color-primary) 42%, transparent), transparent 62%),
+    radial-gradient(80% 40% at 100% 100%, color-mix(in srgb, var(--color-pink-bright) 45%, transparent), transparent 65%),
+    linear-gradient(
+      to bottom,
+      var(--color-bg) 0%,
+      var(--color-bg) 30%,
+      var(--color-pink-mist) 60%,
+      var(--color-pink-light) 85%,
+      var(--color-pink-mid) 100%
+    );
+  /* The see-through veil over an activity video: light on top (the header stays readable), pink below. */
+  --gradient-video-veil: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--color-bg) 88%, transparent),
+    color-mix(in srgb, var(--color-bg) 45%, transparent) 45%,
+    color-mix(in srgb, var(--color-primary) 30%, transparent)
+  );
+  --text-glow-on-video: 0 1px 12px color-mix(in srgb, var(--color-on-primary) 60%, transparent);
+  /* A reached progress segment. `to left` on purpose: the reference draws it the same way in both directions. */
+  --gradient-progress: linear-gradient(to left, var(--color-pink-bright), var(--color-primary));
+  --color-card: #ffffff;                 /* The question card */
+  --color-ghost: color-mix(in srgb, #f4f2f3 92%, transparent);       /* The deck cards behind it */
+  --color-ghost-light: color-mix(in srgb, #faf9f9 96%, transparent);
+  --color-ghost-border: #e9e6e8;
+  --color-control-border: #cfcfcf;       /* An empty radio / checkbox */
+  --color-placeholder: #c9c9c9;          /* Placeholder in an underline field */
+  --color-wheel-icon: #8a8590;           /* Wheel items away from the center */
+  --color-wheel-label: #9b979e;
+  --color-wheel-line: #d9d4d8;           /* The wheel's arc line */
+  --color-wheel-pill: color-mix(in srgb, var(--color-surface) 85%, transparent);
+  --surface-chip-on-video: color-mix(in srgb, var(--color-on-primary) 85%, transparent);
+
   /* Third-party button colors fixed by the provider's guidelines (social sign-in, Phase 5c). */
   --color-apple-button: #000000;
 
@@ -77,6 +118,9 @@
   --font-body-en: "Satoshi", system-ui, sans-serif;
   --font-heading-he: system-ui, -apple-system, "Segoe UI", "Arial Hebrew", "Noto Sans Hebrew", Arial, sans-serif;
   --font-body-he: system-ui, -apple-system, "Segoe UI", "Arial Hebrew", "Noto Sans Hebrew", Arial, sans-serif;
+
+  /* Small technical labels (the onboarding "Q.01"). System monospace — no font file. */
+  --font-family-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
   /* Hebrew is the default (also before <html lang> is set). */
   --font-family-display: var(--font-heading-he);
@@ -97,6 +141,7 @@
   --font-weight-bold: 700;
 
   --line-height-tight: 1.15;
+  --line-height-snug: 1.35;      /* A question on the onboarding card */
   --line-height-base: 1.5;
 
   --letter-spacing-tight: -0.02em;
@@ -119,6 +164,10 @@
   --radius-round: 999px;
   --radius-glass: 20px;         /* The glass card on the brand gradient (login / sign-up) */
   --radius-block: 20px;         /* A soft block on a white screen (the waiting countdown) */
+  --radius-card: 22px;          /* The onboarding question card and its deck */
+  --radius-button: 14px;        /* The onboarding buttons */
+  --radius-check: 6px;          /* A rounded-square checkbox */
+  --radius-chip: 16px;          /* The centered wheel label */
   --cut-size: 12px;
   /* One corner cut at the top-end (the card / tile pattern). */
   --cut-corner: polygon(0 0, calc(100% - var(--cut-size)) 0, 100% var(--cut-size), 100% 100%, 0 100%);
@@ -146,6 +195,17 @@
   /* Neutral shadow under a floating 3D object (waiting screen) — used with filter: drop-shadow(). */
   --shadow-object: 0 16px 18px color-mix(in srgb, var(--color-text) 18%, transparent);
 
+  /* The onboarding deck: the card's soft pink shadow, the ghost cards, the pink "Next" pill's shadow. */
+  --shadow-card:
+    0 24px 60px color-mix(in srgb, var(--color-primary-deep) 12%, transparent),
+    0 2px 8px color-mix(in srgb, var(--color-text) 4%, transparent);
+  --shadow-ghost: 0 10px 30px color-mix(in srgb, var(--color-text) 5%, transparent);
+  --shadow-button: 0 8px 20px color-mix(in srgb, var(--color-primary) 28%, transparent);
+  --ring-center: 0 0 0 1.5px var(--color-primary);      /* The centered wheel item */
+  --ring-badge: 0 0 0 2px var(--color-card);            /* Around the wheel's check badge */
+  --ring-focus: 0 0 0 3px var(--color-primary);
+  --blur-soft: blur(10px);
+
   /* ═══ 7. Motion ═══════════════════════════════════════════════════════════════
      GSAP animations read their own durations in code; CSS transitions use these. */
   --transition-fast: 150ms;
@@ -157,10 +217,15 @@
   --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
   --transition-slide: 300ms;     /* A selection pill sliding between options (LanguageToggle) */
   --ease-slide: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --transition-fade: 600ms;      /* The onboarding background: gradient ↔ activity video */
+  --ease-pop: cubic-bezier(0.2, 0.8, 0.2, 1.4);  /* A check mark popping in */
+  --transition-press: 140ms;     /* A pill button giving under the finger (onboarding) */
+  --ease-press: cubic-bezier(0.23, 1, 0.32, 1);
   --loop-slow: 2s;               /* Repeating hints (scroll bounce) */
 
   /* ═══ 8. Opacity ══════════════════════════════════════════════════════════════ */
   --opacity-disabled: 0.5;
+  --opacity-disabled-strong: 0.35; /* The onboarding "Next" while a step is not valid */
   --opacity-muted: 0.6;      /* Locked / secondary items */
   --opacity-faint: 0.4;      /* Empty placeholders */
 
