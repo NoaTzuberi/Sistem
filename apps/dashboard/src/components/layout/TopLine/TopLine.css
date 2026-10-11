@@ -1,0 +1,110 @@
+/* position: the notifications panel hangs from this line on narrow screens. */
+.top-line {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 26px;
+}
+
+.top-line-crumb {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.top-line-page {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+.top-line-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 220px;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: var(--radius-round);
+  color: var(--color-text-muted);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+  transition: transform var(--transition-press) var(--ease-press);
+}
+
+.top-line-search-text {
+  flex: 1;
+  text-align: start;
+}
+
+.top-line-key {
+  padding: 2px 6px;
+  border-radius: var(--radius-check);
+  background-color: var(--color-fill-soft);
+  font-family: var(--font-family-mono);
+  font-size: var(--text-2xs);
+  color: var(--color-text-muted);
+  direction: ltr;
+}
+
+.top-line-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: var(--radius-round);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-on-primary);
+  white-space: nowrap;
+  background-color: var(--color-text);
+  transition: transform var(--transition-press) var(--ease-press);
+}
+
+.top-line-search:active,
+.top-line-cta:active {
+  transform: scale(0.97);
+}
+
+.top-line-search:focus-visible,
+.top-line-cta:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (max-width: 860px) { /* = --breakpoint-dash-nav */
+  .top-line {
+    margin-bottom: 20px;
+  }
+
+  .top-line-search {
+    justify-content: center;
+    min-width: 0;
+    width: 44px;
+    padding: 0;
+  }
+
+  .top-line-search-text,
+  .top-line-key,
+  .top-line-cta-text {
+    display: none;
+  }
+
+  .top-line-cta {
+    justify-content: center;
+    width: 44px;
+    padding: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .top-line-search,
+  .top-line-cta {
+    transition: none;
+  }
+}

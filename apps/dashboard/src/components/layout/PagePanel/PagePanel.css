@@ -1,0 +1,14 @@
+.page-panel {
+  padding: var(--space-4);
+  border-radius: var(--radius-panel);
+  background-color: var(--color-bg);
+  box-shadow: var(--shadow-panel);
+  /* These pages were sized for the app's base text, not the dashboard's smaller one. */
+  font-size: var(--text-base);
+}
+
+@media (max-width: 860px) { /* = --breakpoint-dash-nav */
+  .page-panel {
+    padding: var(--space-3);
+  }
+}

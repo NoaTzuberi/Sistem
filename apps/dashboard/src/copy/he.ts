@@ -1,7 +1,35 @@
 // The dashboard's own texts that belong to no feature (top bar, login). Hebrew = primary;
 // DRAFT translations for the owner's review (phase-15 report).
 export const he = {
-  nav: { main: 'ראשי', trainees: 'מתאמנות', nutrition: 'תזונה', exercises: 'תרגילים' },
+  // The sidebar (coach dashboard design). Pages keep their own existing names (trainees, the
+  // exercise library, the nutrition pages); these are the group labels and the new entries.
+  nav: {
+    main: 'ראשי',
+    trainees: 'מתאמנות',
+    nutrition: 'תזונה',
+    training: 'אימונים',
+    overview: 'סקירה',
+    stats: 'סטטיסטיקה',
+    allTrainees: 'כל המתאמנות',
+    waiting: 'מחכות לתוכנית',
+  },
+  shell: {
+    collapse: 'כיווץ התפריט',
+    expand: 'הרחבת התפריט',
+    menu: 'תפריט',
+    search: 'חיפוש',
+    coach: 'מאמנת',
+    // {count} is spoken after the item's name: "מחכות לתוכנית, 2".
+    badge: '{label}, {count}',
+  },
+  // The ⌘K palette. `pickTrainee` and `empty` are PLACEHOLDERS (not in the design's wording list).
+  palette: {
+    placeholder: 'חיפוש מתאמנת, מסך או פעולה',
+    pickTrainee: 'תוכנית חדשה — לאיזו מתאמנת?',
+    empty: 'לא נמצא. נסי שם של מתאמנת או של מסך.',
+    screens: 'מסכים',
+    actions: 'פעולות',
+  },
   email: 'אימייל',
   password: 'סיסמה',
   loggingIn: 'מתחברת…',

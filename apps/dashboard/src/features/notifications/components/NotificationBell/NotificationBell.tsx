@@ -4,6 +4,7 @@ import type { AppNotification } from '@sistem/types';
 import { listNotifications, getUnreadCount, markRead, markAllRead } from '../../../../services/notifications/notificationsService';
 import { traineePath } from '../../../../app/config/routes';
 import { describeCoachNotification, fill, formatDateTime, sharedCopy, useCopy, useLanguage } from '@sistem/shared';
+import { Icon } from '../../../../components/common/Icon/Icon';
 import './NotificationBell.css';
 
 const POLL_MS = 60_000;
@@ -101,10 +102,9 @@ export function NotificationBell() {
         aria-label={unreadCount > 0 ? fill(inbox.bellUnread, { count: unreadCount }) : inbox.notificationsTitle}
         onClick={() => setIsOpen((open) => !open)}
       >
-        <svg className="bell-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 3a6 6 0 0 0-6 6v4l-2 3v1h16v-1l-2-3V9a6 6 0 0 0-6-6Zm-2 16a2 2 0 0 0 4 0Z" />
-        </svg>
-        {unreadCount > 0 && <span className="bell-count">{unreadCount > 99 ? '99+' : unreadCount}</span>}
+        <Icon name="bell" />
+        {/* The count is in the button's name; the dot only says "something new". */}
+        {unreadCount > 0 && <span className="bell-dot" aria-hidden="true" />}
       </button>
 
       {isOpen && (

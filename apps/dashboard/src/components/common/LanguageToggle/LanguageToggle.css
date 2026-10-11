@@ -30,6 +30,22 @@
   translate: 100% 0;
 }
 
+/* Stacked (the dashboard's icon rail): the pill is one option tall and slides down. */
+.language-toggle-vertical {
+  grid-template-columns: 1fr;
+}
+
+.language-toggle-vertical .language-toggle-thumb {
+  inset-block-end: auto;
+  inset-inline: var(--language-toggle-inset);
+  width: auto;
+  height: calc(50% - var(--language-toggle-inset));
+}
+
+.language-toggle-vertical.language-toggle-he .language-toggle-thumb {
+  translate: 0 100%;
+}
+
 .language-toggle-option {
   position: relative;
   z-index: var(--z-raised);

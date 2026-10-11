@@ -1,6 +1,8 @@
 export const ROUTES = {
+  // The Overview (coach dashboard design) — where a signed-in coach lands.
   HOME: '/',
   LOGIN: '/login',
+  STATS: '/stats',
   TRAINEES: '/trainees',
   TRAINEE: '/trainees/:traineeId',
   PLAN: '/trainees/:traineeId/plans/:planId',
@@ -20,6 +22,16 @@ export type TraineeTab = (typeof TRAINEE_TABS)[number];
 export const DEFAULT_TRAINEE_TAB: TraineeTab = 'onboarding';
 /** The trainee page keeps its open tab in the URL, so links can point at one. */
 export const TRAINEE_TAB_PARAM = 'tab';
+
+/** The trainees list keeps its status filter in the URL, so the sidebar can link to "waiting". */
+export const TRAINEE_FILTER_PARAM = 'filter';
+
+export function traineesPath(filter?: string): string {
+  return filter ? `${ROUTES.TRAINEES}?${TRAINEE_FILTER_PARAM}=${filter}` : ROUTES.TRAINEES;
+}
+
+/** Router state for a trainee's Plans tab: open the "new plan" week picker right away. */
+export const NEW_PLAN_STATE = { newPlan: true } as const;
 
 export function traineePath(traineeId: string, tab?: TraineeTab): string {
   const path = `${ROUTES.TRAINEES}/${traineeId}`;

@@ -1,0 +1,41 @@
+.widget-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.widget-card-panel {
+  padding: 20px;
+  border-radius: var(--radius-panel);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+}
+
+.widget-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.widget-card-bare .widget-header {
+  padding: 6px 6px 0;
+}
+
+.widget-heading {
+  min-width: 0;
+}
+
+.widget-title {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-snug);
+}
+
+.widget-subtitle {
+  margin: 3px 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}

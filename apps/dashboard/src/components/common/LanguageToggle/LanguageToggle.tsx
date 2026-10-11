@@ -7,6 +7,8 @@ interface LanguageToggleProps {
   onChange?: (language: Language) => void;
   /** Where it sits is the screen's business (the login pins it to a corner). */
   className?: string;
+  /** vertical = the two options stacked (the dashboard's icon rail is one option wide). */
+  orientation?: 'horizontal' | 'vertical';
 }
 
 // EN first, then עב — the same order in both languages (the group is always left-to-right).
@@ -14,12 +16,12 @@ const OPTIONS: Language[] = ['en', 'he'];
 
 /**
  * The compact language toggle: a glass pill with EN | עב, the active one on a pink pill that
- * slides between them. Same behavior as LanguageSwitch (Phase 15): switches at once, no reload.
+ * slides between them. Switches at once, no reload (Phase 15).
  *
  * Depends only on @sistem/shared + the design tokens, so the mobile app can take this folder
  * as it is (there is no shared UI package yet).
  */
-export function LanguageToggle({ onChange, className }: LanguageToggleProps) {
+export function LanguageToggle({ onChange, className, orientation = 'horizontal' }: LanguageToggleProps) {
   const { language, setLanguage } = useI18n();
   const copy = useCopy(sharedCopy);
 
@@ -31,7 +33,7 @@ export function LanguageToggle({ onChange, className }: LanguageToggleProps) {
 
   return (
     <div
-      className={['language-toggle', `language-toggle-${language}`, className].filter(Boolean).join(' ')}
+      className={['language-toggle', `language-toggle-${language}`, `language-toggle-${orientation}`, className].filter(Boolean).join(' ')}
       role="group"
       aria-label={copy.language}
       dir="ltr"

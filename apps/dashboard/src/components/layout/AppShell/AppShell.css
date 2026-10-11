@@ -1,0 +1,47 @@
+/* The canvas: a soft pink-biased grey with faint pink glows in two corners. */
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  font-size: var(--text-sm);
+  background: var(--gradient-canvas), var(--color-canvas);
+  background-attachment: fixed;
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+  padding: 22px 28px 48px;
+}
+
+.app-page {
+  max-width: 1220px;
+}
+
+/* Behind the off-canvas sidebar (under 860px). */
+.app-shell-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-side-sheet) - 1);
+  background-color: var(--color-scrim);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-drawer-out) ease;
+}
+
+.app-shell-scrim-open {
+  opacity: 1;
+  pointer-events: auto;
+  transition-duration: var(--transition-drawer-in);
+}
+
+@media (max-width: 860px) { /* = --breakpoint-dash-nav */
+  .app-main {
+    padding: 16px 16px 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell-scrim {
+    transition: none;
+  }
+}

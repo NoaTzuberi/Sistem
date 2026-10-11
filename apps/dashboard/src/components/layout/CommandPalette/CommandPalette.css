@@ -1,0 +1,104 @@
+/* No transitions here on purpose: the palette appears and disappears at once. */
+.palette-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-palette);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12vh 16px 16px;
+  background-color: var(--color-scrim);
+}
+
+.palette {
+  width: min(560px, 100%);
+  overflow: hidden;
+  border-radius: var(--radius-dialog);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-float);
+  font-size: var(--text-sm);
+}
+
+.palette-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 58px;
+  padding: 0 18px;
+  color: var(--color-text-muted);
+  border-bottom: var(--border-width-thin) solid var(--color-hairline);
+}
+
+.palette-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: none;
+  /* 16px: no zoom on focus on a phone. */
+  font-size: var(--text-base);
+  color: var(--color-text);
+}
+
+.palette-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.palette-key {
+  padding: 2px 6px;
+  border-radius: var(--radius-check);
+  background-color: var(--color-fill-soft);
+  font-family: var(--font-family-mono);
+  font-size: var(--text-2xs);
+  color: var(--color-text-muted);
+}
+
+.palette-list {
+  max-height: 340px;
+  padding: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.palette-section {
+  margin: 8px 10px 4px;
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+}
+
+.palette-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: var(--radius-row);
+  text-align: start;
+}
+
+.palette-item[aria-selected='true'] {
+  color: var(--color-primary-deep);
+  background-color: var(--color-primary-tint);
+}
+
+.palette-item-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-item-hint {
+  flex: none;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.palette-empty {
+  margin: 0;
+  padding: 40px 18px;
+  text-align: center;
+  color: var(--color-text-muted);
+}
