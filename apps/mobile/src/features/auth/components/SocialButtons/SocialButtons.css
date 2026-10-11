@@ -1,0 +1,49 @@
+.social-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.social-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.social-divider-line {
+  flex: 1;
+  height: var(--border-width-thin);
+  background: var(--glass-divider);
+}
+
+.social-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 52px;
+  border-radius: var(--radius-round);
+  font: inherit;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: opacity var(--transition-fast) var(--ease-standard);
+}
+
+.social-button:active {
+  opacity: var(--opacity-muted);
+}
+
+.social-button-google {
+  border: var(--border-width-thin) solid var(--color-border);
+  background: var(--color-on-primary);
+  color: var(--color-text);
+}
+
+.social-button-apple {
+  border: 0;
+  background: var(--color-apple-button);
+  color: var(--color-on-primary);
+}

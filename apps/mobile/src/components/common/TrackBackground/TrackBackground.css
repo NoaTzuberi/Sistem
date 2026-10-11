@@ -1,0 +1,12 @@
+/* Fixed behind the screen's content, so it stays put while the form scrolls above the keyboard.
+   The gradient here is what shows before the first canvas frame. */
+.track-background {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-base);
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--gradient-brand);
+  pointer-events: none;
+}

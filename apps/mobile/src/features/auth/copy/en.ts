@@ -2,6 +2,8 @@ import type { CopyShape } from '@sistem/shared';
 import type { he } from './he';
 
 export const en: CopyShape<typeof he> = {
+  // PLACEHOLDER English of the approved Hebrew tagline.
+  tagline: 'Your workout. Your pace. Your coach.',
   loginTitle: 'Log In',
   registerTitle: 'Create Account',
   forgotTitle: 'Forgot Password',
@@ -14,10 +16,14 @@ export const en: CopyShape<typeof he> = {
   passwordPlaceholder: 'Enter your password',
   newPasswordPlaceholder: 'At least 8 characters',
   forgotLink: 'Forgot password?',
+  forgotShort: 'Forgot?',
   loginButton: 'Log In',
   registerButton: 'Create Account',
   noAccount: "Don't have an account?",
   registerLink: 'Register',
+  socialDivider: 'or',
+  continueWithGoogle: 'Continue with Google',
+  continueWithApple: 'Continue with Apple',
   haveAccount: 'Already have an account?',
   loginLink: 'Log In',
   forgotIntro: "Enter the email on your account and we'll send you a link to reset your password.",

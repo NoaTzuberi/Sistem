@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { PageLayout } from '../../../../components/layout/PageLayout/PageLayout';
-import { Container } from '../../../../components/layout/Container/Container';
-import { Section } from '../../../../components/layout/Section/Section';
-import { Input } from '../../../../components/common/Input/Input';
-import { Button } from '../../../../components/common/Button/Button';
-import { AuthCard } from '../../components/AuthCard/AuthCard';
+import { IconAt, IconKey } from '@tabler/icons-react';
+import { AuthScreen } from '../../components/AuthScreen/AuthScreen';
+import { AuthField } from '../../components/AuthField/AuthField';
+import { AuthSubmitButton } from '../../components/AuthSubmitButton/AuthSubmitButton';
+import { SocialButtons } from '../../components/SocialButtons/SocialButtons';
 import { useAuth } from '../../../../services/auth/AuthContext';
 import { authErrorText, validateEmail, validateLoginPassword, type AuthErrorKey } from '../../validation';
 import { useCopy } from '@sistem/shared';
@@ -50,49 +49,43 @@ export function Login() {
   }
 
   return (
-    <PageLayout>
-      <Section className="auth-page">
-        <Container>
-          <AuthCard title={copy.loginTitle}>
-            <form className="auth-form" onSubmit={handleSubmit} noValidate>
-              <Input
-                type="email"
-                label={copy.email}
-                inputMode="email"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                enterKeyHint="next"
-                placeholder={copy.emailPlaceholder}
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                error={authErrorText(copy, emailError)}
-                autoComplete="email"
-              />
-              <Input
-                type="password"
-                label={copy.password}
-                placeholder={copy.passwordPlaceholder}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                error={authErrorText(copy, passwordError)}
-                autoComplete="current-password"
-                enterKeyHint="go"
-              />
-              <Link to={ROUTES.FORGOT_PASSWORD} className="auth-link login-forgot-password">
-                {copy.forgotLink}
-              </Link>
-              {formError && <p className="auth-form-error">{formError}</p>}
-              <Button type="submit" variant="primary" loading={isSubmitting}>
-                {copy.loginButton}
-              </Button>
-            </form>
-            <p className="auth-switch">
-              {copy.noAccount} <Link to={ROUTES.REGISTER}>{copy.registerLink}</Link>
-            </p>
-          </AuthCard>
-        </Container>
-      </Section>
-    </PageLayout>
+    <AuthScreen title={copy.loginTitle} switchLabel={copy.registerLink} switchTo={ROUTES.REGISTER}>
+      <form className="auth-glass-form" onSubmit={handleSubmit} noValidate>
+        <AuthField
+          type="email"
+          label={copy.email}
+          icon={<IconAt size={20} />}
+          inputMode="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          enterKeyHint="next"
+          placeholder={copy.email}
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          error={authErrorText(copy, emailError)}
+          autoComplete="email"
+        />
+        <AuthField
+          type="password"
+          label={copy.password}
+          icon={<IconKey size={20} />}
+          placeholder={copy.password}
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          error={authErrorText(copy, passwordError)}
+          autoComplete="current-password"
+          enterKeyHint="go"
+          trailing={
+            <Link to={ROUTES.FORGOT_PASSWORD} className="login-forgot-pill" aria-label={copy.forgotLink}>
+              {copy.forgotShort}
+            </Link>
+          }
+        />
+        {formError && <p className="auth-glass-error">{formError}</p>}
+        <AuthSubmitButton loading={isSubmitting}>{copy.loginButton}</AuthSubmitButton>
+        <SocialButtons />
+      </form>
+    </AuthScreen>
   );
 }

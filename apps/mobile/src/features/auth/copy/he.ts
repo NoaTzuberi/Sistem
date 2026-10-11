@@ -1,5 +1,7 @@
 // Sign up / log in / password reset. DRAFT Hebrew of the English placeholders (phase-15 report).
 export const he = {
+  // From the approved login design (docs/phase-reports/design-login.md).
+  tagline: 'האימון שלך. הקצב שלך. המאמנת שלך.',
   loginTitle: 'התחברות',
   registerTitle: 'יצירת חשבון',
   forgotTitle: 'שכחתי סיסמה',
@@ -12,10 +14,15 @@ export const he = {
   passwordPlaceholder: 'הזיני את הסיסמה שלך',
   newPasswordPlaceholder: 'לפחות 8 תווים',
   forgotLink: 'שכחת סיסמה?',
+  forgotShort: 'שכחתי',
   loginButton: 'התחברות',
   registerButton: 'יצירת חשבון',
   noAccount: 'אין לך חשבון?',
   registerLink: 'הרשמה',
+  // Social sign-in — hidden until Phase 5c (SOCIAL_AUTH_ENABLED). Button wording is a PLACEHOLDER.
+  socialDivider: 'או',
+  continueWithGoogle: 'המשך עם Google',
+  continueWithApple: 'המשך עם Apple',
   haveAccount: 'כבר יש לך חשבון?',
   loginLink: 'התחברות',
   forgotIntro: 'הזיני את האימייל של החשבון ונשלח לך קישור לאיפוס הסיסמה.',

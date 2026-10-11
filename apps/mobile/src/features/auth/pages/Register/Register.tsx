@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { PageLayout } from '../../../../components/layout/PageLayout/PageLayout';
-import { Container } from '../../../../components/layout/Container/Container';
-import { Section } from '../../../../components/layout/Section/Section';
-import { Input } from '../../../../components/common/Input/Input';
-import { Button } from '../../../../components/common/Button/Button';
-import { AuthCard } from '../../components/AuthCard/AuthCard';
+import { useNavigate } from 'react-router-dom';
+import { IconAt, IconKey, IconUser } from '@tabler/icons-react';
+import { AuthScreen } from '../../components/AuthScreen/AuthScreen';
+import { AuthField } from '../../components/AuthField/AuthField';
+import { AuthSubmitButton } from '../../components/AuthSubmitButton/AuthSubmitButton';
+import { SocialButtons } from '../../components/SocialButtons/SocialButtons';
 import { useAuth } from '../../../../services/auth/AuthContext';
 import { authErrorText, validateName, validateEmail, validatePassword, type AuthErrorKey } from '../../validation';
 import { useCopy } from '@sistem/shared';
@@ -52,57 +51,51 @@ export function Register() {
   }
 
   return (
-    <PageLayout>
-      <Section className="auth-page">
-        <Container>
-          <AuthCard title={copy.registerTitle}>
-            <form className="auth-form" onSubmit={handleSubmit} noValidate>
-              <Input
-                type="text"
-                label={copy.name}
-                placeholder={copy.namePlaceholder}
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                error={authErrorText(copy, nameError)}
-                autoComplete="name"
-                autoCapitalize="words"
-                enterKeyHint="next"
-              />
-              <Input
-                type="email"
-                label={copy.email}
-                inputMode="email"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                enterKeyHint="next"
-                placeholder={copy.emailPlaceholder}
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                error={authErrorText(copy, emailError)}
-                autoComplete="email"
-              />
-              <Input
-                type="password"
-                label={copy.password}
-                placeholder={copy.newPasswordPlaceholder}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                error={authErrorText(copy, passwordError)}
-                autoComplete="new-password"
-                enterKeyHint="go"
-              />
-              {formError && <p className="auth-form-error">{formError}</p>}
-              <Button type="submit" variant="primary" loading={isSubmitting}>
-                {copy.registerButton}
-              </Button>
-            </form>
-            <p className="auth-switch">
-              {copy.haveAccount} <Link to={ROUTES.LOGIN}>{copy.loginLink}</Link>
-            </p>
-          </AuthCard>
-        </Container>
-      </Section>
-    </PageLayout>
+    <AuthScreen title={copy.registerTitle} switchLabel={copy.loginLink} switchTo={ROUTES.LOGIN}>
+      <form className="auth-glass-form" onSubmit={handleSubmit} noValidate>
+        <AuthField
+          type="text"
+          label={copy.name}
+          icon={<IconUser size={20} />}
+          placeholder={copy.namePlaceholder}
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          error={authErrorText(copy, nameError)}
+          autoComplete="name"
+          autoCapitalize="words"
+          enterKeyHint="next"
+        />
+        <AuthField
+          type="email"
+          label={copy.email}
+          icon={<IconAt size={20} />}
+          inputMode="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          enterKeyHint="next"
+          placeholder={copy.email}
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          error={authErrorText(copy, emailError)}
+          autoComplete="email"
+        />
+        <AuthField
+          type="password"
+          label={copy.password}
+          icon={<IconKey size={20} />}
+          placeholder={copy.password}
+          helperText={copy.newPasswordPlaceholder}
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          error={authErrorText(copy, passwordError)}
+          autoComplete="new-password"
+          enterKeyHint="go"
+        />
+        {formError && <p className="auth-glass-error">{formError}</p>}
+        <AuthSubmitButton loading={isSubmitting}>{copy.registerButton}</AuthSubmitButton>
+        <SocialButtons />
+      </form>
+    </AuthScreen>
   );
 }

@@ -1,13 +1,22 @@
-/* Fills the shell (which already handles the safe areas): logo on top, the
-   message centered, log out at the bottom. */
+/* Exactly one screen, never scrolls: fills the shell (which already handles the
+   safe areas) with the logo on top, the message centered, log out at the bottom. */
 .waiting-page {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-4);
-  min-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 2 * var(--space-3));
+  height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 2 * var(--space-3));
   color: var(--color-text);
   text-align: center;
+  position: relative;
+}
+
+/* Everything readable sits above the icon layer. */
+.waiting-logo,
+.waiting-content,
+.waiting-page .logout-button {
+  position: relative;
+  z-index: var(--z-raised);
 }
 
 .waiting-logo {
@@ -24,12 +33,55 @@
   width: 100%;
 }
 
+/* The icons are scattered over the whole screen, behind the text: two in the space
+   above the message, two below it, each with its own size and angle and some of
+   them running off the screen edge. useFloatingIcons drifts them. Sizes also follow
+   the screen height so they stay clear of the countdown on a short phone. */
 .waiting-icons {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-3);
-  width: 100%;
-  max-width: 360px;
+  position: absolute;
+  /* Stretched over the shell's padding to the real screen edges, and clipped there:
+     an icon running off an edge (or drifting past it) must never add scrolling. */
+  inset-block: calc(-1 * (var(--space-3) + var(--safe-top))) calc(-1 * (var(--space-3) + var(--safe-bottom)));
+  /* physical: the safe areas belong to the device's left / right sides. */
+  left: calc(-1 * (var(--space-3) + var(--safe-left)));
+  /* physical: see above. */
+  right: calc(-1 * (var(--space-3) + var(--safe-right)));
+  z-index: var(--z-base);
+  overflow: hidden;
+  overflow: clip;
+  pointer-events: none;
+}
+
+.waiting-icons .icon-slot {
+  position: absolute;
+}
+
+.waiting-icons .icon-slot:nth-child(1) {
+  inset-block-start: 6%;
+  inset-inline-start: -14%;
+  width: min(64%, 30dvh);
+  rotate: -18deg;
+}
+
+.waiting-icons .icon-slot:nth-child(2) {
+  inset-block-end: 11%;
+  inset-inline-start: -9%;
+  width: min(46%, 22dvh);
+  rotate: 6deg;
+}
+
+.waiting-icons .icon-slot:nth-child(3) {
+  inset-block-start: 19%;
+  inset-inline-end: -11%;
+  width: min(44%, 21dvh);
+  rotate: 14deg;
+}
+
+.waiting-icons .icon-slot:nth-child(4) {
+  inset-block-end: 2%;
+  inset-inline-end: -16%;
+  width: min(54%, 25dvh);
+  rotate: -10deg;
 }
 
 .waiting-title {

@@ -1,0 +1,38 @@
+.auth-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: var(--auth-control-height);
+  margin-block-start: var(--space-1);
+  border: 0;
+  border-radius: var(--radius-round);
+  background: var(--color-primary);
+  box-shadow: var(--shadow-primary);
+  color: var(--color-on-primary);
+  font: inherit;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  transition: background-color var(--transition-fast) var(--ease-standard);
+}
+
+.auth-submit:active:not(:disabled) {
+  background: var(--color-primary-deep);
+}
+
+@media (hover: hover) {
+  .auth-submit:hover:not(:disabled) {
+    background: var(--color-primary-deep);
+  }
+}
+
+.auth-submit:disabled {
+  cursor: progress;
+}
+
+/* The default spinner is pink on grey — on the pink button it is white. */
+.auth-submit .spinner {
+  border-color: color-mix(in srgb, var(--color-on-primary) 40%, transparent);
+  border-top-color: var(--color-on-primary);
+}

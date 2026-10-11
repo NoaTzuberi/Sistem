@@ -34,6 +34,27 @@
   --color-error-soft: color-mix(in srgb, var(--color-error) 10%, var(--color-bg));
   --color-overlay: color-mix(in srgb, var(--color-text) 55%, transparent); /* behind sheets / modals */
 
+  /* The brand gradient: Neon Pink (top-end corner in the design) → Cherry Rose. The login /
+     sign-up background; TrackBackground paints the same two colors on its canvas. */
+  --gradient-brand: linear-gradient(to bottom left, var(--color-primary), var(--color-primary-deep));
+
+  /* Glass surfaces on the brand gradient (login / sign-up): white at an alpha, no new colors. */
+  --glass-bg: color-mix(in srgb, var(--color-on-primary) 55%, transparent);
+  --glass-bg-strong: color-mix(in srgb, var(--color-on-primary) 78%, transparent); /* fields on the glass card */
+  --glass-border: color-mix(in srgb, var(--color-on-primary) 80%, transparent);
+  --glass-blur: blur(22px) saturate(140%);
+  --glass-divider: color-mix(in srgb, var(--color-text) 15%, transparent);
+  --glass-outline: color-mix(in srgb, var(--color-text) 25%, transparent);     /* outlined pill on glass */
+
+  /* The running track drawn on the gradient (TrackBackground): white (--color-on-primary) at these alphas. */
+  --track-lane-alpha: 0.32;        /* inner lane lines */
+  --track-lane-edge-alpha: 0.5;    /* the innermost and outermost line */
+  --track-trail-alpha: 0.7;        /* the head of a runner's trail, fading to 0 */
+  --track-glow-alpha: 0.2;         /* the halo around a runner */
+
+  /* Third-party button colors fixed by the provider's guidelines (social sign-in, Phase 5c). */
+  --color-apple-button: #000000;
+
   /* ═══ 2. Fonts — one pair per language, chosen automatically by <html lang> ═════
      PLACEHOLDERS: the owner picks the fonts in the design phase (see the phase-15 report for
      suggestions). English keeps the current Latin fonts; Hebrew uses a system stack that has
@@ -82,6 +103,7 @@
      clip-path polygons; their side follows the reading direction (see the RTL block below). */
   --radius-none: 0;
   --radius-round: 999px;
+  --radius-glass: 20px;         /* The glass card on the brand gradient (login / sign-up) */
   --cut-size: 12px;
   /* One corner cut at the top-end (the card / tile pattern). */
   --cut-corner: polygon(0 0, calc(100% - var(--cut-size)) 0, 100% var(--cut-size), 100% 100%, 0 100%);
@@ -104,6 +126,8 @@
   /* ═══ 6. Shadows ══════════════════════════════════════════════════════════════
      The design uses flat surfaces and sharp cuts — no shadows yet. Add them here first. */
   --shadow-none: none;
+  --shadow-glass: 0 24px 60px color-mix(in srgb, var(--color-primary-deep) 22%, transparent); /* glass card */
+  --shadow-primary: 0 10px 24px color-mix(in srgb, var(--color-primary) 32%, transparent);     /* pink CTA on glass */
 
   /* ═══ 7. Motion ═══════════════════════════════════════════════════════════════
      GSAP animations read their own durations in code; CSS transitions use these. */

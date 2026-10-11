@@ -10,6 +10,7 @@ import { Countdown } from '../../components/Countdown/Countdown';
 import { IconSlot } from '../../components/IconSlot/IconSlot';
 import { waitingCopy } from '../../copy';
 import { WAITING_ICONS } from '../../data/waitingIcons';
+import { useFloatingIcons } from '../../hooks/useFloatingIcons';
 import './WaitingPage.css';
 
 // How often the screen asks the server whether the plan was published. Phase 5 adds
@@ -34,6 +35,7 @@ function remainingMsFrom(clock: ServerClock): number {
 export function WaitingPage() {
   const copy = useCopy(waitingCopy);
   const { updateUser } = useAuth();
+  const iconsRef = useFloatingIcons<HTMLDivElement>();
   const [clock, setClock] = useState<ServerClock | null>(null);
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
 
@@ -95,15 +97,15 @@ export function WaitingPage() {
   return (
     <AppShell hideTabBar>
       <div className="waiting-page">
+        <div className="waiting-icons" ref={iconsRef}>
+          {WAITING_ICONS.map((icon, index) => (
+            <IconSlot key={icon.id} icon={icon} position={index + 1} />
+          ))}
+        </div>
+
         <Logo variant="mark" className="waiting-logo" />
 
         <div className="waiting-content">
-          <div className="waiting-icons">
-            {WAITING_ICONS.map((icon, index) => (
-              <IconSlot key={icon.id} icon={icon} position={index + 1} />
-            ))}
-          </div>
-
           <h1 className="waiting-title">{copy.title}</h1>
 
           {remainingMs === null && <Spinner size="lg" />}
