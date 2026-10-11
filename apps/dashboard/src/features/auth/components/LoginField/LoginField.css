@@ -1,0 +1,57 @@
+.login-field {
+  --login-chip-size: 36px;
+
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--login-control-height);
+  padding-inline: var(--space-2);
+  border-radius: var(--radius-round);
+  background: var(--color-surface-soft);
+  transition: box-shadow var(--transition-fast) var(--ease-standard);
+}
+
+.login-field:focus-within {
+  box-shadow: 0 0 0 var(--border-width-medium) var(--color-primary);
+}
+
+.login-field-icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--login-chip-size);
+  height: var(--login-chip-size);
+  border-radius: var(--radius-round);
+  background: var(--color-on-primary);
+  color: var(--color-text);
+}
+
+.login-field-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--text-base);
+}
+
+.login-field-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* The pill shows the focus (box-shadow above). */
+.login-field-input:focus,
+.login-field-input:focus-visible {
+  outline: none;
+}
+
+/* Browser autofill paints its own square background over the pill. It can't be turned off, only
+   delayed — so the pill keeps its shape and the text keeps its color. */
+.login-field-input:-webkit-autofill,
+.login-field-input:autofill {
+  -webkit-text-fill-color: var(--color-text);
+  transition: background-color 100000s;
+}

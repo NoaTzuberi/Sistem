@@ -2,18 +2,27 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../../services/auth/AuthContext';
+import { TRAINEE_APP_URL } from '../../../../app/config/env';
 import { ROUTES } from '../../../../app/config/routes';
+import { FlowBackground } from '../../../../components/common/FlowBackground/FlowBackground';
 import { Logo } from '../../../../components/common/Logo/Logo';
-import { LanguageSwitch } from '../../../../components/common/LanguageSwitch/LanguageSwitch';
+import { LanguageToggle } from '../../../../components/common/LanguageToggle/LanguageToggle';
 import { useCopy } from '@sistem/shared';
 import { appCopy } from '../../../../copy';
+import { LoginField } from '../../components/LoginField/LoginField';
+import { ArrowIcon, LockIcon, MailIcon } from '../../components/LoginIcons/LoginIcons';
+import { FORGOT_PASSWORD_ENABLED, REMEMBER_ME_ENABLED } from '../../data/authConfig';
+import { useLoginEntrance } from '../../hooks/useLoginEntrance';
 import './Login.css';
 
-// Placeholder copy and layout — the owner designs the real dashboard login.
+const FEATURES = ['trainees', 'plans', 'nutrition'] as const;
+
+/** The coach's login: the brand block next to the login card, over the flow lines. */
 export function Login() {
   const { user, login, logout } = useAuth();
   const navigate = useNavigate();
   const copy = useCopy(appCopy);
+  const { brandRef, cardRef, intro } = useLoginEntrance<HTMLElement, HTMLDivElement>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string>();
@@ -46,49 +55,114 @@ export function Login() {
 
   return (
     <main className="login-page">
-      <form className="login-form" onSubmit={handleSubmit} noValidate>
-        <Logo size="lg" className="login-logo" />
-        <h1 className="login-title">{copy.loginTitle}</h1>
+      <FlowBackground intro={intro} />
 
-        <label className="login-field">
-          <span className="login-label">{copy.email}</span>
-          <input
-            className="login-input"
-            type="email"
-            dir="ltr"
-            autoComplete="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
-        </label>
+      {/* Before login the device remembers the choice; after login her saved language wins (Phase 15). */}
+      <LanguageToggle className="login-language" />
 
-        <label className="login-field">
-          <span className="login-label">{copy.password}</span>
-          <input
-            className="login-input"
-            type="password"
-            dir="ltr"
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
-        </label>
+      <div className="login-layout">
+        <section className="login-brand" ref={brandRef}>
+          {/* The original logo, untouched: its white part needs the pink tile behind it. */}
+          <div className="login-logo-tile">
+            <Logo variant="onBrand" size="lg" />
+          </div>
 
-        {error && (
-          <p className="login-error" role="alert">
-            {error}
-          </p>
-        )}
+          <span className="login-badge">
+            <span className="login-badge-dot" aria-hidden="true" />
+            {copy.login.badge}
+          </span>
 
-        <button className="login-submit" type="submit" disabled={isSubmitting}>
-          {isSubmitting ? copy.loggingIn : copy.logIn}
-        </button>
+          <h1 className="login-headline">
+            {copy.login.headlineBefore}
+            {/* The brand word stays English in every language; <bdi> keeps it in order inside Hebrew. i18n-ignore */}
+            <bdi lang="en">
+              {/* i18n-ignore: brand word */}
+              <span className="login-headline-accent">Sis</span>
+              {/* i18n-ignore: brand word */}
+              terhood
+            </bdi>
+            {copy.login.headlineAfter}
+          </h1>
 
-        {/* Before login the device remembers the choice; after login her saved language wins (Phase 15). */}
-        <LanguageSwitch />
-      </form>
+          <p className="login-sub">{copy.login.sub}</p>
+
+          <ul className="login-features">
+            {FEATURES.map((feature) => (
+              <li className="login-feature" key={feature}>
+                <span className="login-feature-title">{copy.login.features[feature].title}</span>
+                <span className="login-feature-caption">{copy.login.features[feature].caption}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <div className="login-card-column" ref={cardRef}>
+          <form className="login-card" onSubmit={handleSubmit} noValidate>
+            <div className="login-card-heading">
+              <h2 className="login-card-title">{copy.login.title}</h2>
+              <p className="login-card-subtitle">{copy.login.subtitle}</p>
+            </div>
+
+            <LoginField
+              label={copy.email}
+              icon={<MailIcon />}
+              type="email"
+              dir="ltr"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+            />
+
+            <LoginField
+              label={copy.password}
+              icon={<LockIcon />}
+              type="password"
+              dir="ltr"
+              autoComplete="current-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+              trailing={
+                FORGOT_PASSWORD_ENABLED && (
+                  // TODO: becomes a link to the forgot-password screen when the dashboard has one.
+                  <button type="button" className="login-forgot">
+                    {copy.login.forgot}
+                  </button>
+                )
+              }
+            />
+
+            {REMEMBER_ME_ENABLED && (
+              // TODO: not wired — the auth has no remember-me yet (data/authConfig.ts).
+              <label className="login-remember">
+                <input type="checkbox" className="login-remember-box" />
+                <span>{copy.login.rememberMe}</span>
+              </label>
+            )}
+
+            {error && (
+              <p className="login-error" role="alert">
+                {error}
+              </p>
+            )}
+
+            <button className="login-submit" type="submit" disabled={isSubmitting}>
+              <span>{isSubmitting ? copy.loggingIn : copy.login.submit}</span>
+              {!isSubmitting && <ArrowIcon />}
+            </button>
+
+            {TRAINEE_APP_URL && (
+              <p className="login-trainee">
+                {copy.login.traineePrompt}{' '}
+                <a className="login-trainee-link" href={TRAINEE_APP_URL}>
+                  {copy.login.traineeLink}
+                </a>
+              </p>
+            )}
+          </form>
+        </div>
+      </div>
     </main>
   );
 }
