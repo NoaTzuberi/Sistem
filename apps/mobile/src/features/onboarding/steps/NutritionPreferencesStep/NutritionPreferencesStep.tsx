@@ -87,10 +87,7 @@ export function NutritionPreferencesStep({ formState, updateFormState }: Nutriti
   const dietTypeLabel = preferences.dietType !== 'none' ? labels.dietTypes[preferences.dietType] : undefined;
 
   return (
-    <div className="onboarding-step nutrition-preferences-step">
-      <h1>{copy.nutrition.title}</h1>
-      <p className="text-body">{copy.nutrition.intro}</p>
-
+    <div className="nutrition-preferences-step">
       {showGoal && (
         <AccordionSection title={copy.nutrition.goalTitle} summary={goalSummary} isOpen={open.has('goal')} onToggle={() => toggle('goal')}>
           {currentWeight !== null && (
@@ -253,7 +250,7 @@ export function NutritionPreferencesStep({ formState, updateFormState }: Nutriti
         />
       </AccordionSection>
 
-      <p className="text-caption nutrition-preferences-note">{copy.nutrition.privacyNote}</p>
+      <p className="text-caption">{copy.nutrition.privacyNote}</p>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { sharedCopy, useCopy } from '@sistem/shared';
 import { onboardingCopy } from '../../copy';
 import { Autocomplete } from '../../../../components/common/Autocomplete/Autocomplete';
-import { SelectableChip } from '../../components/SelectableChip/SelectableChip';
+import { OptionList } from '../../components/OptionList/OptionList';
 import { MUSCLE_FOCUS_OPTIONS } from '../../data/options';
 import { EXERCISE_BANK } from '../../data/exerciseBank';
 import type { OnboardingFormState } from '../../types';
@@ -33,10 +33,7 @@ export function ExercisePreferencesStep({
   }
 
   return (
-    <div className="onboarding-step exercise-preferences-step">
-      <h1>{copy.title}</h1>
-      <p className="text-body">{copy.hint}</p>
-
+    <>
       <Autocomplete
         label={copy.enjoyLabel}
         placeholder={copy.enjoyPlaceholder}
@@ -69,17 +66,15 @@ export function ExercisePreferencesStep({
 
       <div className="exercise-preferences-muscles">
         <span className="text-label">{copy.muscleLabel}</span>
-        <div className="exercise-preferences-muscles-grid">
-          {MUSCLE_FOCUS_OPTIONS.map((muscle) => (
-            <SelectableChip
-              key={muscle.id}
-              label={labels[muscle.id]}
-              selected={exercisePreferences.muscleFocus.includes(muscle.id)}
-              onClick={() => toggleMuscle(muscle.id)}
-            />
-          ))}
-        </div>
+        <OptionList
+          label={copy.muscleLabel}
+          kind="multi"
+          columns={2}
+          options={MUSCLE_FOCUS_OPTIONS.map((muscle) => ({ id: muscle.id, label: labels[muscle.id] }))}
+          selected={exercisePreferences.muscleFocus}
+          onToggle={toggleMuscle}
+        />
       </div>
-    </div>
+    </>
   );
 }

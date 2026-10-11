@@ -18,9 +18,7 @@ export function BasicProfileStep({ formState, updateFormState }: BasicProfileSte
   const shared = useCopy(sharedCopy);
   const genderOptions = GENDER_IDS.map((value) => ({ value, label: shared.onboardingOptions.gender[value] }));
   return (
-    <div className="onboarding-step basic-profile-step">
-      <h1>{copy.title}</h1>
-
+    <>
       <div className="basic-profile-fields">
         <Input
           label={copy.name}
@@ -88,6 +86,6 @@ export function BasicProfileStep({ formState, updateFormState }: BasicProfileSte
           />
         </div>
       </div>
-    </div>
+    </>
   );
 }

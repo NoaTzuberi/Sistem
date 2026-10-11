@@ -4,12 +4,21 @@
   gap: var(--space-2);
 }
 
-.frequency-options {
+/* A row of round number pills, one per day count. */
+.frequency-days {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
+  justify-content: space-between;
+  gap: 6px;
 }
 
-.frequency-note {
-  text-align: center;
+.frequency-days .selectable-chip {
+  flex: 1;
+  min-width: 0;
+  padding-inline: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.frequency-flexible {
+  align-self: flex-start;
 }

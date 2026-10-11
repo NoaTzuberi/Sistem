@@ -1,11 +1,112 @@
-.activities-category {
+/* The wheel screen: header · wheel · footer fill exactly one screen (no page scroll). */
+.activities-step {
   display: flex;
+  flex: 1;
   flex-direction: column;
-  gap: var(--space-2);
+  width: 100%;
+  max-width: 480px;
+  min-height: 0;
+  margin-inline: auto;
 }
 
-.activities-grid {
+.activities-step-header {
+  padding-inline: var(--space-4);
+}
+
+.activities-step-header .onboarding-progress {
+  justify-content: flex-start;
+}
+
+.activities-step-header .step-heading .step-heading-title {
+  font-size: var(--text-2xl);
+}
+
+.activities-step-header .step-heading-hint {
+  margin-block-start: var(--space-2);
+}
+
+/* The centered activity's category from the activity list. */
+.activities-step-category {
+  margin-block-start: var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-deep);
+}
+
+.activities-step-footer {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
+  flex-direction: column;
+  padding-inline: var(--space-4);
+}
+
+.activities-step-footer .deck-actions {
+  margin-block-start: var(--space-3);
+}
+
+/* One line that scrolls sideways: a trainee may mark many activities. */
+.activities-step-picked {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  margin-block-end: 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.activities-step-picked::-webkit-scrollbar {
+  display: none;
+}
+
+.activities-step-chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  height: 28px;
+  padding-inline: 12px;
+  border: var(--border-width-thin) solid var(--color-border);
+  border-radius: var(--radius-round);
+  background-color: var(--surface-chip-on-video);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+.activities-step-empty {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.activities-step-toggle {
+  width: 100%;
+}
+
+.activities-step-error {
+  margin-block-end: var(--space-2);
+  color: var(--color-error);
+  font-size: var(--text-sm);
+}
+
+/* Over an activity video the header keeps a soft light glow behind its text. */
+.activities-step-header .step-heading-number,
+.activities-step-header .step-heading-title,
+.activities-step-header .step-heading-hint,
+.activities-step-category {
+  text-shadow: var(--text-glow-on-video);
+}
+
+.activities-step-empty {
+  text-shadow: var(--text-glow-on-video);
+}
+
+/* The muted lines turn to ink over a video, so they stay readable on a dark clip. */
+.onboarding-screen-video .activities-step .step-heading-number,
+.onboarding-screen-video .activities-step .step-heading-hint,
+.onboarding-screen-video .activities-step-empty {
+  color: var(--color-text);
+}
+
+/* The footer sits on the pink end of the gradient (or on a video): Back in ink, not muted. */
+.activities-step-footer .deck-button-quiet {
+  color: var(--color-text);
 }

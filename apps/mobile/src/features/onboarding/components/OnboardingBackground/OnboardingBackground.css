@@ -1,0 +1,71 @@
+/* Fills the screen behind the onboarding step: clips → gradient → veil. */
+.onboarding-background {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-base);
+  isolation: isolate;
+  overflow: hidden;
+  pointer-events: none;
+  background-color: var(--color-bg);
+}
+
+.onboarding-background-clip,
+.onboarding-background-gradient,
+.onboarding-background-veil {
+  position: absolute;
+  inset: 0;
+  transition: opacity var(--transition-fade) ease;
+}
+
+/* A neighbour's clip waits here, loaded and unseen. */
+.onboarding-background-clip {
+  opacity: 0;
+}
+
+.onboarding-background-video .onboarding-background-clip-active {
+  opacity: 1;
+}
+
+/* Poster and video are stacked; the video fades in over the poster once it plays. */
+.onboarding-background-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.onboarding-background-video-layer {
+  opacity: 0;
+  transition: opacity var(--transition-base) var(--ease-out);
+}
+
+.onboarding-background-video-playing {
+  opacity: 1;
+}
+
+.onboarding-background-gradient {
+  background: var(--gradient-onboarding);
+}
+
+.onboarding-background-veil {
+  opacity: 0;
+  background: var(--gradient-video-veil);
+}
+
+.onboarding-background-video .onboarding-background-gradient {
+  opacity: 0;
+}
+
+.onboarding-background-video .onboarding-background-veil {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-background-clip,
+  .onboarding-background-gradient,
+  .onboarding-background-veil,
+  .onboarding-background-video-layer {
+    transition: none;
+  }
+}

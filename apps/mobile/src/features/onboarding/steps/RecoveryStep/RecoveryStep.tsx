@@ -1,10 +1,9 @@
 import { sharedCopy, useCopy } from '@sistem/shared';
 import { onboardingCopy } from '../../copy';
-import { SelectableChip } from '../../components/SelectableChip/SelectableChip';
+import { OptionList } from '../../components/OptionList/OptionList';
 import { Input } from '../../../../components/common/Input/Input';
 import { RECOVERY_FLAG_OPTIONS } from '../../data/options';
 import type { OnboardingFormState } from '../../types';
-import './RecoveryStep.css';
 
 interface RecoveryStepProps {
   formState: OnboardingFormState;
@@ -29,20 +28,14 @@ export function RecoveryStep({ formState, updateFormState }: RecoveryStepProps) 
   const showNotes = recovery.flags.includes('has_injury_or_limitation');
 
   return (
-    <div className="onboarding-step recovery-step">
-      <h1>{copy.title}</h1>
-      <p className="text-body">{copy.hint}</p>
-
-      <div className="recovery-flags">
-        {RECOVERY_FLAG_OPTIONS.map((flag) => (
-          <SelectableChip
-            key={flag.id}
-            label={labels[flag.id]}
-            selected={recovery.flags.includes(flag.id)}
-            onClick={() => toggleFlag(flag.id)}
-          />
-        ))}
-      </div>
+    <>
+      <OptionList
+        label={copy.title}
+        kind="multi"
+        options={RECOVERY_FLAG_OPTIONS.map((flag) => ({ id: flag.id, label: labels[flag.id] }))}
+        selected={recovery.flags}
+        onToggle={toggleFlag}
+      />
 
       {showNotes && (
         <Input
@@ -54,7 +47,7 @@ export function RecoveryStep({ formState, updateFormState }: RecoveryStepProps) 
         />
       )}
 
-      <p className="text-caption recovery-note">{copy.note}</p>
-    </div>
+      <p className="text-caption">{copy.note}</p>
+    </>
   );
 }

@@ -81,6 +81,11 @@ export const en: CopyShape<typeof he> = {
   },
   activities: {
     title: 'What activities are part of your life?',
+    // The wheel picker (design update): PLACEHOLDER English for the owner's Hebrew.
+    wheelHint: 'Scroll, and tap an activity to mark it',
+    mark: 'Mark {activity}',
+    unmark: 'Remove {activity}',
+    noneMarked: 'No activity marked yet',
   },
   exercisePreferences: {
     title: 'What would you like Sistem to prioritize?',

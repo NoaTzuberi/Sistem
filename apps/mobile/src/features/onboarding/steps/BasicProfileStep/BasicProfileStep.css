@@ -1,7 +1,35 @@
 .basic-profile-fields {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+}
+
+/* Underline rows: the label on the starting side, the value on the ending side. */
+.basic-profile-fields .input-group,
+.basic-profile-fields .select-group {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+  border-block-end: var(--border-width-thin) solid var(--color-border);
+}
+
+.basic-profile-fields .input-group:focus-within,
+.basic-profile-fields .select-group:focus-within {
+  border-block-end-color: var(--color-primary);
+}
+
+.basic-profile-fields .input-label,
+.basic-profile-fields .select-label {
+  flex: none;
+  max-width: 50%;
+}
+
+.basic-profile-fields .input-field,
+.basic-profile-fields .select-field {
+  flex: 1;
+  min-width: 0;
+  border-block-end: 0;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
 }
 
 .basic-profile-units {

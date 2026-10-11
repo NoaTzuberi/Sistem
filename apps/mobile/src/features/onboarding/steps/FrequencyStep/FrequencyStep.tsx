@@ -1,6 +1,7 @@
 import { sharedCopy, useCopy } from '@sistem/shared';
 import type { TrainingExperience } from '@sistem/types';
 import { onboardingCopy } from '../../copy';
+import { OptionList } from '../../components/OptionList/OptionList';
 import { SelectableChip } from '../../components/SelectableChip/SelectableChip';
 import type { OnboardingFormState } from '../../types';
 import './FrequencyStep.css';
@@ -40,12 +41,10 @@ export function FrequencyStep({ formState, updateFormState }: FrequencyStepProps
   }
 
   return (
-    <div className="onboarding-step frequency-step">
-      <h1>{copy.title}</h1>
-
+    <>
       <div className="frequency-field">
         <span className="text-label">{copy.minDays}</span>
-        <div className="frequency-options">
+        <div className="frequency-days">
           {DAY_OPTIONS.map((day) => (
             <SelectableChip
               key={day}
@@ -59,7 +58,7 @@ export function FrequencyStep({ formState, updateFormState }: FrequencyStepProps
 
       <div className="frequency-field">
         <span className="text-label">{copy.maxDays}</span>
-        <div className="frequency-options">
+        <div className="frequency-days">
           {DAY_OPTIONS.map((day) => (
             <SelectableChip
               key={day}
@@ -72,6 +71,7 @@ export function FrequencyStep({ formState, updateFormState }: FrequencyStepProps
       </div>
 
       <SelectableChip
+        className="frequency-flexible"
         label={copy.flexible}
         selected={trainingFrequency.flexibleSchedule}
         onClick={() =>
@@ -86,19 +86,16 @@ export function FrequencyStep({ formState, updateFormState }: FrequencyStepProps
 
       <div className="frequency-field">
         <span className="text-label">{copy.experienceLabel}</span>
-        <div className="frequency-options">
-          {EXPERIENCE_OPTIONS.map((option) => (
-            <SelectableChip
-              key={option}
-              label={experienceLabels[option]}
-              selected={formState.trainingExperience === option}
-              onClick={() => updateFormState({ trainingExperience: formState.trainingExperience === option ? null : option })}
-            />
-          ))}
-        </div>
+        <OptionList
+          label={copy.experienceLabel}
+          kind="single"
+          options={EXPERIENCE_OPTIONS.map((option) => ({ id: option, label: experienceLabels[option] }))}
+          selected={formState.trainingExperience ? [formState.trainingExperience] : []}
+          onToggle={(option) => updateFormState({ trainingExperience: formState.trainingExperience === option ? null : option })}
+        />
       </div>
 
-      <p className="text-caption frequency-note">{copy.note}</p>
-    </div>
+      <p className="text-caption">{copy.note}</p>
+    </>
   );
 }

@@ -1,0 +1,118 @@
+.deck-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 50px;
+  border: 0;
+  border-radius: var(--radius-button);
+  background: none;
+  font-family: var(--font-family-body);
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition:
+    opacity var(--transition-fast) var(--ease-standard),
+    transform var(--transition-fast) var(--ease-standard),
+    background-color var(--transition-fast) var(--ease-standard),
+    border-color var(--transition-fast) var(--ease-standard),
+    color var(--transition-fast) var(--ease-standard);
+}
+
+.deck-button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.deck-button:disabled {
+  cursor: default;
+}
+
+.deck-button:focus-visible {
+  outline: var(--border-width-thick) solid var(--color-primary);
+  outline-offset: var(--space-1);
+}
+
+.deck-button-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The Neon Pink pill with a soft pink shadow. Only its press moves. */
+.deck-button-primary {
+  min-width: 116px;
+  padding-inline: 26px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  box-shadow: var(--shadow-button);
+  transition: transform var(--transition-press) var(--ease-press);
+}
+
+.deck-button-primary:focus-visible,
+.deck-button-toggle:focus-visible {
+  outline-color: var(--color-primary-deep);
+}
+
+.deck-button-primary:disabled {
+  opacity: var(--opacity-disabled-strong);
+  box-shadow: none;
+}
+
+/* While saving it keeps its full color: only the label gives way to the spinner. */
+.deck-button-primary[aria-busy='true'] {
+  opacity: 1;
+  box-shadow: var(--shadow-button);
+}
+
+/* The shared spinner is pink: on the pink pill it turns white. */
+.deck-button-primary .spinner {
+  border-color: color-mix(in srgb, var(--color-on-primary) 40%, transparent);
+  border-top-color: var(--color-on-primary);
+}
+
+.deck-button-quiet {
+  padding: var(--space-2) var(--space-1);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-regular);
+}
+
+.deck-button-quiet:active:not(:disabled) {
+  color: var(--color-text);
+}
+
+.deck-button-quiet:disabled {
+  opacity: var(--opacity-disabled);
+}
+
+/* A soft-pink pill; once the centered activity is marked it turns quiet (white, muted text). */
+.deck-button-toggle {
+  padding-inline: var(--space-3);
+  border-radius: var(--radius-round);
+  background-color: var(--color-primary-tint);
+  color: var(--color-primary-deep);
+  font-size: var(--text-sm);
+  transition:
+    transform var(--transition-press) var(--ease-press),
+    background-color var(--transition-fast) ease;
+}
+
+.deck-button-toggle.deck-button-pressed {
+  background-color: var(--surface-chip-on-video);
+  color: var(--color-text-muted);
+}
+
+@media (hover: hover) {
+  .deck-button-quiet:hover:not(:disabled) {
+    color: var(--color-text);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deck-button {
+    transition: none;
+  }
+}

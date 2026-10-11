@@ -7,25 +7,26 @@ interface OnboardingProgressProps {
   totalSteps: number;
 }
 
+/** One segment per real step; the ones reached so far are filled. */
 export function OnboardingProgress({ currentStep, totalSteps }: OnboardingProgressProps) {
   const copy = useCopy(onboardingCopy);
   return (
-    <div className="onboarding-progress">
-      <div className="onboarding-progress-track">
-        {Array.from({ length: totalSteps }, (_, index) => (
-          <span
-            key={index}
-            className={
-              index < currentStep
-                ? 'onboarding-progress-dot onboarding-progress-dot-filled'
-                : 'onboarding-progress-dot'
-            }
-          />
-        ))}
-      </div>
-      <span className="onboarding-progress-label text-caption">
-        {fill(copy.flow.step, { current: currentStep, total: totalSteps })}
-      </span>
+    <div
+      className="onboarding-progress"
+      role="img"
+      aria-label={fill(copy.flow.step, { current: currentStep, total: totalSteps })}
+      data-deck-rise
+    >
+      {Array.from({ length: totalSteps }, (_, index) => (
+        <span
+          key={index}
+          className={
+            index < currentStep
+              ? 'onboarding-progress-segment onboarding-progress-segment-reached'
+              : 'onboarding-progress-segment'
+          }
+        />
+      ))}
     </div>
   );
 }

@@ -1,0 +1,27 @@
+.card-deck {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  margin: auto;
+}
+
+/* Sized from the deck, so they follow the card. The tilt is the same in both reading directions. */
+.card-deck-ghost {
+  position: absolute;
+  inset: 14px 2px;
+  border: var(--border-width-thin) solid var(--color-ghost-border);
+  border-radius: var(--radius-card);
+  background-color: var(--color-ghost);
+  box-shadow: var(--shadow-ghost);
+  -webkit-backdrop-filter: var(--blur-soft);
+  backdrop-filter: var(--blur-soft);
+}
+
+.card-deck-ghost-back {
+  transform: rotate(-6deg);
+}
+
+.card-deck-ghost-front {
+  transform: rotate(4deg);
+  background-color: var(--color-ghost-light);
+}

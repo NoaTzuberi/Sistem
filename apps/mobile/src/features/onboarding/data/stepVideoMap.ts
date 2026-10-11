@@ -8,7 +8,7 @@ export type { OnboardingStepId };
  * Maps an onboarding step to its background clip + poster.
  * The available footage (see activityVideoMap.ts) is activity-specific,
  * with nothing generic enough for these wizard steps, so every entry is
- * left unset and StepVideoBackground falls back to a neutral placeholder.
+ * left unset and OnboardingBackground shows its gradient.
  * To connect a real video later, add `welcome: { video, poster }` etc. —
  * no changes to the onboarding UI are needed.
  */

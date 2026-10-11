@@ -22,8 +22,7 @@ export function ReviewStep({ formState }: ReviewStepProps) {
   ];
 
   return (
-    <div className="onboarding-step review-step">
-      <h1>{copy.review.title}</h1>
+    <>
       <p className="text-body">{copy.review.body}</p>
 
       <section className="review-step-section" aria-label={copy.nutrition.reviewTitle}>
@@ -37,6 +36,6 @@ export function ReviewStep({ formState }: ReviewStepProps) {
           ))}
         </dl>
       </section>
-    </div>
+    </>
   );
 }

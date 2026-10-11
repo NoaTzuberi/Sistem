@@ -1,0 +1,181 @@
+/* The wheel fills the space between the step's header and footer; its items fade out toward
+   the top and bottom edges. Dragging belongs to the wheel (touch-action: none). */
+.activity-wheel {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, var(--color-text) 18%, var(--color-text) 82%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, var(--color-text) 18%, var(--color-text) 82%, transparent);
+}
+
+.activity-wheel:active {
+  cursor: grabbing;
+}
+
+/* The focus state is drawn on the handle (an outline would follow the whole masked area). */
+.activity-wheel:focus-visible {
+  outline: none;
+}
+
+.activity-wheel:focus-visible .activity-wheel-knob {
+  box-shadow: var(--ring-focus);
+}
+
+.activity-wheel-arc {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.activity-wheel-arc path {
+  fill: none;
+  stroke: var(--color-wheel-line);
+  stroke-width: 1.5;
+}
+
+/* The dark handle that marks the center row. */
+.activity-wheel-knob {
+  position: absolute;
+  top: 50%;
+  width: 36px;
+  height: 14px;
+  margin-block-start: -7px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-text);
+  pointer-events: none;
+}
+
+/* An item is placed every frame by useWheelPicker (transform + opacity), measured from the
+   wheel's side edge; until then it is hidden. The icon is always nearest the arc. */
+.activity-wheel-item {
+  position: absolute;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.activity-wheel-left .activity-wheel-knob {
+  /* physical: the wheel sits on the left in Hebrew; the mirror below is the English one. */
+  left: 30px;
+}
+
+.activity-wheel-left .activity-wheel-item {
+  /* physical: measured from the wheel's own (left) edge by the wheel math. */
+  left: 0;
+  direction: ltr;
+  transform-origin: 0 50%;
+}
+
+.activity-wheel-right .activity-wheel-knob {
+  /* physical: the English mirror of the wheel. */
+  right: 30px;
+}
+
+.activity-wheel-right .activity-wheel-item {
+  /* physical: measured from the wheel's own (right) edge by the wheel math. */
+  right: 0;
+  direction: rtl;
+  transform-origin: 100% 50%;
+}
+
+.activity-wheel-icon {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 66px;
+  height: 46px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-wheel-pill);
+  color: var(--color-wheel-icon);
+  -webkit-backdrop-filter: var(--blur-soft);
+  backdrop-filter: var(--blur-soft);
+  transition:
+    background-color var(--transition-base),
+    box-shadow var(--transition-base);
+}
+
+.activity-wheel-emoji {
+  font-size: var(--text-xl);
+  line-height: 1;
+}
+
+/* The label reads in its own direction, whatever side the wheel is on. */
+.activity-wheel-label {
+  padding: 6px 14px;
+  border: var(--border-width-thin) solid transparent;
+  border-radius: var(--radius-chip);
+  color: var(--color-wheel-label);
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  unicode-bidi: plaintext;
+  transition:
+    color var(--transition-base),
+    background-color var(--transition-base),
+    border-color var(--transition-base);
+}
+
+.activity-wheel-item-center .activity-wheel-icon {
+  background-color: var(--color-primary-tint);
+  box-shadow: var(--ring-center);
+}
+
+.activity-wheel-item-center .activity-wheel-label {
+  border-color: var(--color-border);
+  background-color: var(--color-card);
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* The small pink check on a marked activity. */
+.activity-wheel-badge {
+  position: absolute;
+  inset-block-start: -4px;
+  inset-inline-end: -4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  box-shadow: var(--ring-badge);
+  animation: activity-wheel-badge-pop var(--transition-slow) var(--ease-pop);
+}
+
+@keyframes activity-wheel-badge-pop {
+  from {
+    transform: scale(0.4);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .activity-wheel-icon,
+  .activity-wheel-label {
+    transition: none;
+  }
+
+  .activity-wheel-badge {
+    animation: none;
+  }
+}
+
+/* Over an activity video (the real clips are dark) every label sits on a frosted pill. */
+.onboarding-screen-video .activity-wheel-item:not(.activity-wheel-item-center) .activity-wheel-label {
+  background-color: var(--surface-chip-on-video);
+  color: var(--color-text);
+}

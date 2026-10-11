@@ -1,10 +1,14 @@
-import { useEffect, useState } from 'react';
-import type { ReactNode } from 'react';
+import { useEffect, useId, useState } from 'react';
+import type { ReactNode, Ref } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Button } from '../../../../components/common/Button/Button';
+import { Logo } from '../../../../components/common/Logo/Logo';
 import { Spinner } from '../../../../components/common/Spinner/Spinner';
-import { OnboardingProgress } from '../../components/OnboardingProgress/OnboardingProgress';
-import { StepVideoBackground } from '../../components/StepVideoBackground/StepVideoBackground';
+import { CardDeck } from '../../components/CardDeck/CardDeck';
+import { DeckActions } from '../../components/DeckActions/DeckActions';
+import { DeckButton } from '../../components/DeckButton/DeckButton';
+import { OnboardingBackground } from '../../components/OnboardingBackground/OnboardingBackground';
+import { QuestionCard } from '../../components/QuestionCard/QuestionCard';
+import { StepHeading } from '../../components/StepHeading/StepHeading';
 import { WelcomeStep } from '../../steps/WelcomeStep/WelcomeStep';
 import { BasicProfileStep } from '../../steps/BasicProfileStep/BasicProfileStep';
 import { GoalsStep } from '../../steps/GoalsStep/GoalsStep';
@@ -34,7 +38,9 @@ import { landingPath } from '../../../../app/router/landingPath';
 import { STEP_VIDEO_MAP } from '../../data/stepVideoMap';
 import type { OnboardingStepId } from '../../data/stepVideoMap';
 import { ACTIVITY_VIDEO_MAP } from '../../data/activityVideoMap';
-import { usePageEnter } from '../../../../hooks/usePageEnter';
+import { ACTIVITIES } from '../../data/activities';
+import { useDeckTransition } from '../../hooks/useDeckTransition';
+import { useDebouncedValue } from '../../../../hooks/useDebouncedValue';
 import { useKeyboardInset } from '../../../../hooks/useKeyboardInset';
 import './OnboardingPage.css';
 
@@ -42,6 +48,8 @@ const STEP_COUNT = 10;
 const EXERCISE_PREFERENCES_STEP_INDEX = 5;
 const ACTIVITIES_STEP_INDEX = 4;
 const NUTRITION_STEP_INDEX = 8;
+// The wheel passes many activities on a swipe: a clip is fetched only for one it rests on.
+const ACTIVITY_VIDEO_SETTLE_MS = 180;
 
 // Each step is its own browser-history entry, so the system back gesture / Android
 // back button goes to the previous step instead of leaving onboarding.
@@ -108,28 +116,72 @@ function clampToFirstInvalidStep(requestedIndex: number, state: OnboardingFormSt
   return requestedIndex;
 }
 
+type OnboardingCopy = (typeof onboardingCopy)['he'];
+
+/** Each step's question and its small helper lines — all from the existing copy. */
+function stepHeadingText(stepId: OnboardingStepId, copy: OnboardingCopy): { title: string; hints: string[] } {
+  switch (stepId) {
+    case 'welcome':
+      return { title: copy.welcome.title, hints: [] };
+    case 'basic_profile':
+      return { title: copy.basicProfile.title, hints: [] };
+    case 'goals':
+      return { title: copy.goals.title, hints: [copy.chooseAll] };
+    case 'frequency':
+      return { title: copy.frequency.title, hints: [] };
+    case 'activities':
+      return { title: copy.activities.title, hints: [copy.chooseAll, copy.activities.wheelHint] };
+    case 'exercise_preferences':
+      return { title: copy.exercisePreferences.title, hints: [copy.exercisePreferences.hint] };
+    case 'recovery':
+      return { title: copy.recovery.title, hints: [copy.recovery.hint] };
+    case 'equipment':
+      return { title: copy.equipment.title, hints: [copy.chooseAll] };
+    case 'nutrition_preferences':
+      return { title: copy.nutrition.title, hints: [copy.nutrition.intro] };
+    case 'review':
+      return { title: copy.review.title, hints: [] };
+  }
+}
+
+/** The clips to get ready around the centered activity: its two neighbours on the wheel. */
+function neighbourMedia(activityId: string): OnboardingMedia[] {
+  const index = ACTIVITIES.findIndex((activity) => activity.id === activityId);
+  if (index === -1) return [];
+  return [ACTIVITIES[index - 1], ACTIVITIES[index + 1]]
+    .map((activity) => (activity ? ACTIVITY_VIDEO_MAP[activity.id] : undefined))
+    .filter((media): media is OnboardingMedia => media !== undefined);
+}
+
 interface OnboardingScreenProps {
-  media: OnboardingMedia | undefined;
-  header?: ReactNode;
-  footer: ReactNode;
+  media?: OnboardingMedia;
+  preload?: OnboardingMedia[];
+  /** The activities wheel fills exactly one screen; card steps scroll with the page. */
+  isWheel?: boolean;
+  /** True while a step is leaving: nothing on it can be tapped. */
+  isMoving?: boolean;
+  stageRef?: Ref<HTMLElement>;
   children: ReactNode;
 }
 
-// Full-screen phone layout: progress on top, the step scrolls in the middle, and the
-// actions stay in a sticky bottom bar above the keyboard.
-function OnboardingScreen({ media, header, footer, children }: OnboardingScreenProps) {
-  const screenRef = usePageEnter<HTMLDivElement>();
+// Full-screen phone layout: the pink gradient (or an activity video) behind, the logo mark on
+// top, and the step — a card on its deck, or the wheel — on the stage.
+function OnboardingScreen({ media, preload, isWheel = false, isMoving = false, stageRef, children }: OnboardingScreenProps) {
   useKeyboardInset();
 
   return (
     <div
-      ref={screenRef}
-      className={'onboarding-screen' + (media ? ' onboarding-screen-has-video' : '')}
+      className={
+        'onboarding-screen' + (isWheel ? ' onboarding-screen-wheel' : '') + (media ? ' onboarding-screen-video' : '')
+      }
     >
-      <StepVideoBackground media={media} />
-      {header && <header className="onboarding-header">{header}</header>}
-      <main className="onboarding-body">{children}</main>
-      <footer className="onboarding-footer">{footer}</footer>
+      <OnboardingBackground media={media} preload={preload} />
+      <div className="onboarding-mark">
+        <Logo variant="mark" />
+      </div>
+      <main ref={stageRef} className="onboarding-stage" inert={isMoving}>
+        {children}
+      </main>
     </div>
   );
 }
@@ -186,11 +238,18 @@ export function OnboardingPage() {
   }));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>();
-  const [previewActivityId, setPreviewActivityId] = useState<string | null>(null);
+  // The activity at the center of the wheel; its video follows once the wheel rests on it.
+  const [centerActivityId, setCenterActivityId] = useState<string | null>(null);
+  const settledActivityId = useDebouncedValue(centerActivityId, ACTIVITY_VIDEO_SETTLE_MS);
+  const titleId = useId();
   // Both modes start from the answers saved on the server.
   const [isLoadingAnswers, setIsLoadingAnswers] = useState(true);
   const [answersLoadError, setAnswersLoadError] = useState<string>();
   const [loadAttempt, setLoadAttempt] = useState(0);
+  // The load ends by writing the step to resume at into the history entry; that lands a moment
+  // after the answers. Until it has, the first step would show and be tossed away at once.
+  const isPlacingStep = !isEditMode && !answersLoadError && historyState?.onboardingStep === undefined;
+  const isStepReady = !isLoadingAnswers && !isPlacingStep;
 
   const stepIndex = editStepId
     ? STEP_IDS.indexOf(editStepId)
@@ -233,10 +292,14 @@ export function OnboardingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editStepId, loadAttempt]);
 
+  // The step on screen follows `stepIndex` once the old one has left (useDeckTransition);
+  // everything drawn below reads `shownIndex`.
+  const { stageRef, shownIndex, isMoving } = useDeckTransition<HTMLElement>(stepIndex, isStepReady);
+
   // A new step starts at the top of the screen.
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [stepIndex]);
+  }, [shownIndex]);
 
   // Invalid/unknown :step (or 'welcome'/'review', which aren't data steps) —
   // bounce back to Profile rather than rendering a broken edit screen.
@@ -247,11 +310,12 @@ export function OnboardingPage() {
   }, [isEditMode, isValidEditStep, navigate]);
 
   const currentStepId = STEP_IDS[stepIndex];
-  const activityMedia =
-    stepIndex === ACTIVITIES_STEP_INDEX && previewActivityId
-      ? ACTIVITY_VIDEO_MAP[previewActivityId]
-      : undefined;
-  const media = activityMedia ?? STEP_VIDEO_MAP[currentStepId];
+  const shownStepId = STEP_IDS[shownIndex];
+  const isWheelStep = shownIndex === ACTIVITIES_STEP_INDEX;
+  // Leaving the step hides the video at once; "other" has no clip, so it fades back to the gradient.
+  const activityId = isWheelStep ? settledActivityId : null;
+  const media = (activityId ? ACTIVITY_VIDEO_MAP[activityId] : undefined) ?? STEP_VIDEO_MAP[shownStepId];
+  const preload = activityId ? neighbourMedia(activityId) : [];
 
   function updateFormState(patch: Partial<OnboardingFormState>) {
     setFormState((prev) => ({ ...prev, ...patch }));
@@ -337,34 +401,12 @@ export function OnboardingPage() {
     }
   }
 
-  const steps = [
-    <WelcomeStep key="welcome" />,
-    <BasicProfileStep key="basic" formState={formState} updateFormState={updateFormState} />,
-    <GoalsStep key="goals" formState={formState} updateFormState={updateFormState} />,
-    <FrequencyStep key="frequency" formState={formState} updateFormState={updateFormState} />,
-    <ActivitiesStep
-      key="activities"
-      formState={formState}
-      updateFormState={updateFormState}
-      onPreviewActivity={setPreviewActivityId}
-    />,
-    <ExercisePreferencesStep
-      key="exercise-preferences"
-      formState={formState}
-      updateFormState={updateFormState}
-    />,
-    <RecoveryStep key="recovery" formState={formState} updateFormState={updateFormState} />,
-    <EquipmentStep key="equipment" formState={formState} updateFormState={updateFormState} />,
-    <NutritionPreferencesStep key="nutrition-preferences" formState={formState} updateFormState={updateFormState} />,
-    <ReviewStep key="review" formState={formState} />,
-  ];
-
   if (isEditMode && !isValidEditStep) {
     // Redirecting via the effect above — render nothing in the meantime.
     return null;
   }
 
-  if (isLoadingAnswers) {
+  if (!isStepReady) {
     return (
       <div className="onboarding-loading">
         <Spinner size="lg" />
@@ -372,97 +414,120 @@ export function OnboardingPage() {
     );
   }
 
-  if (isEditMode) {
-    return (
-      <OnboardingScreen
-        media={media}
-        footer={
-          <>
-            <Button variant="secondary" onClick={handleCancelEdit} disabled={isSubmitting}>
-              {copy.flow.cancel}
-            </Button>
-            <Button
-              variant="primary"
-              className="onboarding-footer-primary"
-              onClick={handleSaveEdit}
-              loading={isSubmitting}
-              disabled={Boolean(answersLoadError) || !isStepValid(stepIndex, formState)}
-            >
-              {copy.flow.saveChanges}
-            </Button>
-          </>
-        }
-      >
-        {answersLoadError ? <p className="onboarding-error">{answersLoadError}</p> : steps[stepIndex]}
+  const isFirstStep = shownIndex === 0;
+  const isLastStep = shownIndex === STEP_COUNT - 1;
+  const showSkip = shownIndex === EXERCISE_PREFERENCES_STEP_INDEX;
+  const continueLabel = isFirstStep ? copy.flow.start : isLastStep ? copy.flow.createProfile : copy.flow.continue;
 
-        {submitError && <p className="onboarding-error">{submitError}</p>}
-      </OnboardingScreen>
-    );
-  }
+  const actions = isEditMode ? (
+    <DeckActions
+      start={
+        <DeckButton variant="quiet" onClick={handleCancelEdit} disabled={isSubmitting}>
+          {copy.flow.cancel}
+        </DeckButton>
+      }
+    >
+      <DeckButton
+        onClick={handleSaveEdit}
+        loading={isSubmitting}
+        disabled={Boolean(answersLoadError) || !isStepValid(shownIndex, formState)}
+      >
+        {copy.flow.saveChanges}
+      </DeckButton>
+    </DeckActions>
+  ) : (
+    <DeckActions
+      start={
+        !isFirstStep && (
+          <DeckButton variant="quiet" onClick={handleBack} disabled={isSubmitting}>
+            {copy.flow.back}
+          </DeckButton>
+        )
+      }
+    >
+      {showSkip && (
+        <DeckButton variant="quiet" onClick={handleSkip} disabled={isSubmitting}>
+          {copy.flow.skipForNow}
+        </DeckButton>
+      )}
+      {shownIndex === NUTRITION_STEP_INDEX && (
+        <DeckButton variant="quiet" onClick={handleSkipNutrition} disabled={isSubmitting}>
+          {copy.nutrition.skip}
+        </DeckButton>
+      )}
+      <DeckButton onClick={handleContinue} loading={isSubmitting} disabled={!isStepValid(shownIndex, formState)}>
+        {continueLabel}
+      </DeckButton>
+    </DeckActions>
+  );
 
   if (answersLoadError) {
     return (
-      <OnboardingScreen
-        media={undefined}
-        footer={
-          <Button
-            variant="primary"
-            className="onboarding-footer-primary"
-            onClick={() => setLoadAttempt((attempt) => attempt + 1)}
-          >
-            {copy.flow.tryAgain}
-          </Button>
-        }
-      >
-        <p className="onboarding-error">{answersLoadError}</p>
+      <OnboardingScreen>
+        <CardDeck>
+          <QuestionCard
+            error={answersLoadError}
+            actions={
+              isEditMode ? (
+                actions
+              ) : (
+                <DeckActions>
+                  <DeckButton onClick={() => setLoadAttempt((attempt) => attempt + 1)}>{copy.flow.tryAgain}</DeckButton>
+                </DeckActions>
+              )
+            }
+          />
+        </CardDeck>
       </OnboardingScreen>
     );
   }
 
-  const isFirstStep = stepIndex === 0;
-  const isLastStep = stepIndex === STEP_COUNT - 1;
-  const showSkip = stepIndex === EXERCISE_PREFERENCES_STEP_INDEX;
-  const continueLabel = isFirstStep ? copy.flow.start : isLastStep ? copy.flow.createProfile : copy.flow.continue;
+  const headingText = stepHeadingText(shownStepId, copy);
+  const heading = (
+    <StepHeading
+      // One step edited on its own (from Profile) has no place in the flow.
+      progress={isEditMode ? undefined : { current: shownIndex + 1, total: STEP_COUNT }}
+      title={headingText.title}
+      titleId={titleId}
+      hints={headingText.hints}
+    />
+  );
+
+  if (isWheelStep) {
+    return (
+      <OnboardingScreen media={media} preload={preload} isWheel isMoving={isMoving} stageRef={stageRef}>
+        <ActivitiesStep
+          formState={formState}
+          updateFormState={updateFormState}
+          onPreviewActivity={setCenterActivityId}
+          heading={heading}
+          titleId={titleId}
+          error={submitError}
+          actions={actions}
+        />
+      </OnboardingScreen>
+    );
+  }
+
+  const cardSteps: Partial<Record<OnboardingStepId, ReactNode>> = {
+    welcome: <WelcomeStep />,
+    basic_profile: <BasicProfileStep formState={formState} updateFormState={updateFormState} />,
+    goals: <GoalsStep formState={formState} updateFormState={updateFormState} />,
+    frequency: <FrequencyStep formState={formState} updateFormState={updateFormState} />,
+    exercise_preferences: <ExercisePreferencesStep formState={formState} updateFormState={updateFormState} />,
+    recovery: <RecoveryStep formState={formState} updateFormState={updateFormState} />,
+    equipment: <EquipmentStep formState={formState} updateFormState={updateFormState} />,
+    nutrition_preferences: <NutritionPreferencesStep formState={formState} updateFormState={updateFormState} />,
+    review: <ReviewStep formState={formState} />,
+  };
 
   return (
-    <OnboardingScreen
-      media={media}
-      header={<OnboardingProgress currentStep={stepIndex + 1} totalSteps={STEP_COUNT} />}
-      footer={
-        <>
-          {!isFirstStep && (
-            <Button variant="secondary" onClick={handleBack} disabled={isSubmitting}>
-              {copy.flow.back}
-            </Button>
-          )}
-          {showSkip && (
-            <Button variant="ghost" onClick={handleSkip} disabled={isSubmitting}>
-              {copy.flow.skipForNow}
-            </Button>
-          )}
-          {stepIndex === NUTRITION_STEP_INDEX && (
-            <Button variant="ghost" onClick={handleSkipNutrition} disabled={isSubmitting}>
-              {copy.nutrition.skip}
-            </Button>
-          )}
-          <Button
-            variant="primary"
-            className="onboarding-footer-primary"
-            onClick={handleContinue}
-            loading={isSubmitting}
-            disabled={!isStepValid(stepIndex, formState)}
-          >
-            {continueLabel}
-          </Button>
-        </>
-      }
-    >
-      {/* Keyed by step so each step gets the light enter transition. */}
-      <div key={stepIndex} className="onboarding-step-enter">
-        {steps[stepIndex]}
-      </div>
-
-      {submitError && <p className="onboarding-error">{submitError}</p>}
+    <OnboardingScreen media={media} isMoving={isMoving} stageRef={stageRef}>
+      <CardDeck>
+        <QuestionCard heading={heading} error={submitError} actions={actions}>
+          {cardSteps[shownStepId]}
+        </QuestionCard>
+      </CardDeck>
     </OnboardingScreen>
   );
 }

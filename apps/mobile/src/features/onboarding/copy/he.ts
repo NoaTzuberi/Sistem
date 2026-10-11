@@ -82,6 +82,11 @@ export const he = {
   },
   activities: {
     title: 'אילו פעילויות הן חלק מהחיים שלך?',
+    // The wheel picker (design update): the owner's wording from the design brief.
+    wheelHint: 'גללי, ולחצי על פעילות כדי לסמן אותה',
+    mark: 'סמני {activity}',
+    unmark: 'הסירי {activity}',
+    noneMarked: 'עוד לא סימנת פעילות',
   },
   exercisePreferences: {
     title: 'במה תרצי ש־Sistem תתמקד?',
