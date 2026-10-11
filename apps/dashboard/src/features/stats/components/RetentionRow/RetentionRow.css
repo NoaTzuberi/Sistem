@@ -1,0 +1,64 @@
+.retention-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: auto 0 0;
+}
+
+.retention-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 16px;
+  border-radius: var(--radius-block);
+  background-color: var(--color-fill-soft);
+}
+
+.retention-rating {
+  background-color: var(--color-primary-tint);
+}
+
+/* The number reads first; in the markup the term comes before it. */
+.retention-value {
+  order: -1;
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: var(--font-weight-light);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.retention-of {
+  font-size: var(--text-base);
+  letter-spacing: 0;
+  color: var(--color-text-muted);
+}
+
+.retention-label {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.retention-track {
+  display: block;
+  height: 6px;
+  margin-top: 4px;
+  overflow: hidden;
+  border-radius: var(--radius-round);
+  background-color: var(--color-tick-rest);
+}
+
+.retention-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-round);
+  background-color: var(--color-primary);
+}
+
+@media (max-width: 560px) {
+  .retention-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}

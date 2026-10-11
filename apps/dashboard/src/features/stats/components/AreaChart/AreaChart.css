@@ -1,0 +1,38 @@
+/* One series = one hue: Neon Pink. */
+.area-line {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.area-fill-top {
+  stop-color: var(--color-primary);
+  stop-opacity: 0.22;
+}
+
+.area-fill-bottom {
+  stop-color: var(--color-primary);
+  stop-opacity: 0;
+}
+
+/* The newest value. */
+.area-end {
+  fill: var(--color-primary);
+  stroke: var(--color-card);
+  stroke-width: 2;
+}
+
+.area-crosshair {
+  stroke: var(--color-text);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  opacity: 0.35;
+}
+
+.area-dot {
+  fill: var(--color-card);
+  stroke: var(--color-primary);
+  stroke-width: 2;
+}
