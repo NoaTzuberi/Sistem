@@ -6,6 +6,7 @@ import { AuthScreen } from '../../components/AuthScreen/AuthScreen';
 import { AuthField } from '../../components/AuthField/AuthField';
 import { AuthSubmitButton } from '../../components/AuthSubmitButton/AuthSubmitButton';
 import { SocialButtons } from '../../components/SocialButtons/SocialButtons';
+import { CoachDashboardLink } from '../../components/CoachDashboardLink/CoachDashboardLink';
 import { useAuth } from '../../../../services/auth/AuthContext';
 import { authErrorText, validateEmail, validateLoginPassword, type AuthErrorKey } from '../../validation';
 import { useCopy } from '@sistem/shared';
@@ -49,7 +50,7 @@ export function Login() {
   }
 
   return (
-    <AuthScreen title={copy.loginTitle} switchLabel={copy.registerLink} switchTo={ROUTES.REGISTER}>
+    <AuthScreen title={copy.loginTitle} switchLabel={copy.registerLink} switchTo={ROUTES.REGISTER} footer={<CoachDashboardLink />}>
       <form className="auth-glass-form" onSubmit={handleSubmit} noValidate>
         <AuthField
           type="email"

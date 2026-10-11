@@ -3,6 +3,7 @@ import { useCopy, useI18n } from '@sistem/shared';
 import { PlaceholderPage } from '../../../../components/layout/PlaceholderPage/PlaceholderPage';
 import { LogoutButton } from '../../../../components/common/LogoutButton/LogoutButton';
 import { LanguageSwitch } from '../../../../components/common/LanguageSwitch/LanguageSwitch';
+import { DashboardLinkRow } from '../../components/DashboardLinkRow/DashboardLinkRow';
 import { useAuth } from '../../../../services/auth/AuthContext';
 import { updatePreferences } from '../../../../services/users/usersService';
 import { appCopy } from '../../../../copy';
@@ -22,6 +23,7 @@ export function CoachProfilePage() {
 
   return (
     <PlaceholderPage title={copy.tabs.profile}>
+      <DashboardLinkRow />
       <LanguageSwitch onChange={(next) => saveLanguage(next, next === 'he' ? 'en' : 'he')} />
       <LogoutButton />
     </PlaceholderPage>

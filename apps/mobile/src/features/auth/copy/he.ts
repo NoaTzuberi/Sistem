@@ -23,6 +23,8 @@ export const he = {
   socialDivider: 'או',
   continueWithGoogle: 'המשך עם Google',
   continueWithApple: 'המשך עם Apple',
+  // Owner's wording (docs/phase-reports/design-coach-link.md). Opens the coach's web dashboard.
+  coachDashboardLink: 'מאמנת? לכניסה לדשבורד',
   haveAccount: 'כבר יש לך חשבון?',
   loginLink: 'התחברות',
   forgotIntro: 'הזיני את האימייל של החשבון ונשלח לך קישור לאיפוס הסיסמה.',

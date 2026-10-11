@@ -17,4 +17,6 @@ export const en: CopyShape<typeof he> = {
   duplicateConfirm: 'Duplicate and publish',
   publishConfirm: 'Publish',
   nutritionLoadError: "Couldn't load the nutrition plan.",
+  // PLACEHOLDER English of the owner's Hebrew line.
+  openFullDashboard: 'Open the full dashboard',
 };

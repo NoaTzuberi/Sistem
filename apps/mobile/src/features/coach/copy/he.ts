@@ -16,4 +16,6 @@ export const he = {
   duplicateConfirm: 'שכפול ופרסום',
   publishConfirm: 'פרסום',
   nutritionLoadError: 'לא הצלחנו לטעון את תוכנית התזונה.',
+  // Owner's wording (docs/phase-reports/design-coach-link.md).
+  openFullDashboard: 'פתחי את הדשבורד המלא',
 } as const;

@@ -24,6 +24,8 @@ export const en: CopyShape<typeof he> = {
   socialDivider: 'or',
   continueWithGoogle: 'Continue with Google',
   continueWithApple: 'Continue with Apple',
+  // PLACEHOLDER English of the owner's Hebrew line.
+  coachDashboardLink: 'Coach? Go to the dashboard',
   haveAccount: 'Already have an account?',
   loginLink: 'Log In',
   forgotIntro: "Enter the email on your account and we'll send you a link to reset your password.",
