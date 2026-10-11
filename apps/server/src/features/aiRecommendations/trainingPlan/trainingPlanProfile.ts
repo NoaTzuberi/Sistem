@@ -48,6 +48,7 @@ export function buildTraineeProfile(answers: OnboardingAnswersFields, now: Date)
     muscleFocus: answers.exercisePreferences?.muscleFocus ?? [],
     equipment: answers.equipment ?? [],
     recoveryFlags: (answers.recovery?.flags ?? []).filter((flag) => flag !== 'nothing_to_add'),
+    ...(answers.trainingExperience ? { experience: answers.trainingExperience } : {}),
     notes: {
       favoriteExercises: scrubFreeText(answers.exercisePreferences?.favoriteExerciseNotes),
       exercisesToImprove: scrubFreeText(answers.exercisePreferences?.improvementExerciseNotes),
@@ -65,6 +66,7 @@ export function buildKnowledgeQuery(profile: AiTraineeProfile): string {
   const parts = [
     profile.goals.length > 0 ? `Goals: ${words(profile.goals)}.` : '',
     profile.trainingDays ? `Training ${profile.trainingDays.min}-${profile.trainingDays.max} days a week.` : '',
+    profile.experience ? `Experience: ${words([profile.experience])}.` : '',
     profile.muscleFocus.length > 0 ? `Muscle focus: ${words(profile.muscleFocus)}.` : '',
     profile.recoveryFlags.length > 0 ? `Recovery: ${words(profile.recoveryFlags)}.` : '',
     profile.preferredActivities.length > 0 ? `Enjoys: ${words(profile.preferredActivities)}.` : '',

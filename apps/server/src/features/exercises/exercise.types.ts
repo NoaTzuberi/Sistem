@@ -1,4 +1,5 @@
 import type { Types } from 'mongoose';
+import type { VariantId } from '../exerciseFamilies/exerciseFamily.constants';
 import type {
   Category,
   Muscle,
@@ -10,6 +11,7 @@ import type {
   Mechanic,
   ForceType,
   ExerciseGoal,
+  TagSource,
 } from './exercise.constants';
 
 export interface ExerciseInstructions {
@@ -81,6 +83,10 @@ export interface ExerciseDocument {
   mechanic?: Mechanic;
   forceType?: ForceType;
   isUnilateral?: boolean;
+  familyId?: Types.ObjectId;
+  variant?: VariantId;
+  isPrimaryVariant?: boolean;
+  familySource?: TagSource;
 
   createdAt: Date;
   updatedAt: Date;

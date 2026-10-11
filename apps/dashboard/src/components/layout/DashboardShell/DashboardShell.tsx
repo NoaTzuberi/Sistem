@@ -43,6 +43,9 @@ export function DashboardShell() {
             <NavLink className="shell-link" to={ROUTES.NUTRITION}>
               {copy.nav.nutrition}
             </NavLink>
+            <NavLink className="shell-link" to={ROUTES.EXERCISES}>
+              {copy.nav.exercises}
+            </NavLink>
           </nav>
         </div>
         <div className="shell-actions">

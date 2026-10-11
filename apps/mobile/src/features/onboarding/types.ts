@@ -1,4 +1,4 @@
-import type { AllergyId, DietStyleId, DietType, IntoleranceId, ReligiousId } from '@sistem/types';
+import type { AllergyId, DietStyleId, DietType, IntoleranceId, ReligiousId, TrainingExperience } from '@sistem/types';
 
 export interface OnboardingFormState {
   name: string;
@@ -16,6 +16,8 @@ export interface OnboardingFormState {
     maxDays: number;
     flexibleSchedule: boolean;
   };
+  /** Phase 12b (frequency step, optional): null = not answered. */
+  trainingExperience: TrainingExperience | null;
   preferredActivities: string[];
   exercisePreferences: {
     favoriteExerciseNotes: string;
@@ -70,6 +72,7 @@ export const INITIAL_ONBOARDING_STATE: OnboardingFormState = {
     maxDays: 3,
     flexibleSchedule: false,
   },
+  trainingExperience: null,
   preferredActivities: [],
   exercisePreferences: {
     favoriteExerciseNotes: '',

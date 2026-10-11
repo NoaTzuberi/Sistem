@@ -76,6 +76,8 @@ export const en: CopyShape<typeof he> = {
     maxDays: 'Maximum days per week',
     flexible: 'My schedule changes week to week',
     note: 'Sistem can adapt recommendations when your available time changes.',
+    // Phase 12b (PLACEHOLDER wording): optional.
+    experienceLabel: 'How long have you been training regularly? (optional)',
   },
   activities: {
     title: 'What activities are part of your life?',

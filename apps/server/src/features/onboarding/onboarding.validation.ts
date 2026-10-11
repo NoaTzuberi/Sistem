@@ -7,6 +7,7 @@ import {
   MUSCLE_FOCUS_IDS,
   RECOVERY_FLAG_IDS,
   GENDER_IDS,
+  TRAINING_EXPERIENCE_IDS,
 } from '../users/users.constants';
 import {
   ALLERGY_IDS,
@@ -152,6 +153,11 @@ const FIELD_VALIDATORS: Record<OnboardingField, FieldValidator> = {
     }
     if (typeof value.flexibleSchedule !== 'boolean') return msg('onboarding_flexible_invalid');
     return null;
+  },
+
+  trainingExperience(value) {
+    if (value === null) return null;
+    return (TRAINING_EXPERIENCE_IDS as readonly string[]).includes(value as string) ? null : msg('onboarding_experience_invalid');
   },
 
   preferredActivities(value) {

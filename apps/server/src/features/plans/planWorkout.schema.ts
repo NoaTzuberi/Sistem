@@ -39,6 +39,9 @@ const planExerciseSchema = new Schema<PlanExerciseFields>({
   // Interval mode (HIIT / Tabata): durationSec = work, restSec = rest, sets = rounds.
   // Only for timed sets; a superset is interval as a whole or not at all (publish rule).
   interval: { type: Boolean },
+  // Phase 12b (coach-only): the slot of the workout's type it fills — the picker and the AI know
+  // what it is for. Checked against the coach's training config on save.
+  slotId: { type: String, trim: true },
 });
 
 planExerciseSchema.pre('validate', function derivePlanExerciseSets() {
@@ -59,5 +62,6 @@ export const planWorkoutSchema = new Schema<PlanWorkoutFields>({
   dayOfWeek: { type: Number, min: MIN_DAY_OF_WEEK, max: MAX_DAY_OF_WEEK },
   order: { type: Number, required: true, min: 0 },
   notes: { type: String, trim: true },
+  workoutType: { type: String, trim: true },
   exercises: { type: [planExerciseSchema], default: [] },
 });

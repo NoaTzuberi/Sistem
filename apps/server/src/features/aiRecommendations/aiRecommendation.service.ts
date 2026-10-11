@@ -8,8 +8,9 @@ import { aiClient } from '../ai/ai.client';
 import { AI_CONFIG } from '../ai/ai.config';
 import { AiProviderError } from '../ai/ai.types';
 import type { AiMessage } from '../ai/ai.types';
+import { findForeignTextIssues } from './aiOutputText';
 import { RECOMMENDATION_ERROR } from './aiRecommendation.constants';
-import type { RecommendationKind } from './aiRecommendation.kind';
+import type { RecommendationKind, RecommendationRequest } from './aiRecommendation.kind';
 import { AiRecommendation } from './aiRecommendation.model';
 import type { AiRecommendationDocument, RecommendationAttempt } from './aiRecommendation.types';
 import { nutritionPlanKind } from './nutritionPlan/nutritionPlan.kind';
@@ -41,6 +42,7 @@ export interface StartRecommendationInput {
   coachId: string;
   type: AiRecommendationType;
   trigger: AiRecommendationTrigger;
+  request?: RecommendationRequest | null;
 }
 
 export interface StartedRecommendation {
@@ -115,7 +117,10 @@ export async function runRecommendation(id: string): Promise<void> {
 
   try {
     const kind = KINDS[claimed.type];
-    const prepared = await kind.prepare({ traineeId: String(claimed.traineeId), coachId: String(claimed.coachId) }, new Date());
+    const prepared = await kind.prepare(
+      { traineeId: String(claimed.traineeId), coachId: String(claimed.coachId), request: claimed.request ?? null },
+      new Date(),
+    );
     await AiRecommendation.updateOne(
       { _id: id },
       { $set: { input: prepared.input, promptVersion: prepared.ok ? prepared.promptVersion : null } },
@@ -173,8 +178,9 @@ export async function runRecommendation(id: string): Promise<void> {
           issues = ['The reply was not valid JSON.'];
         } else {
           const result = await kind.validate(parsed, prepared.context);
-          issues = result.issues;
-          output = result.value;
+          // Every kind: text in another writing system is a problem like any other rule.
+          issues = [...result.issues, ...findForeignTextIssues(parsed)];
+          output = issues.length === 0 ? result.value : null;
         }
       }
 

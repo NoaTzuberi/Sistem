@@ -1,7 +1,7 @@
 // The dashboard's own texts that belong to no feature (top bar, login). Hebrew = primary;
 // DRAFT translations for the owner's review (phase-15 report).
 export const he = {
-  nav: { main: 'ראשי', trainees: 'מתאמנות', nutrition: 'תזונה' },
+  nav: { main: 'ראשי', trainees: 'מתאמנות', nutrition: 'תזונה', exercises: 'תרגילים' },
   loginTitle: 'דשבורד מאמנת',
   email: 'אימייל',
   password: 'סיסמה',

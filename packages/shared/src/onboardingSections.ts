@@ -52,6 +52,11 @@ export function buildOnboardingSections(onboarding: MyOnboarding, language: Lang
       rows: [
         { label: labels.daysPerWeek, value: frequency ? isolateLtr(`${frequency.minDays}–${frequency.maxDays}`) : '—' },
         { label: labels.flexibleSchedule, value: frequency ? (frequency.flexibleSchedule ? copy.common.yes : copy.common.no) : '—' },
+        // Phase 12b (optional): '—' when she didn't answer or finished before it existed.
+        {
+          label: labels.trainingExperience,
+          value: answers?.trainingExperience ? options.trainingExperience[answers.trainingExperience] : '—',
+        },
       ],
     },
     {

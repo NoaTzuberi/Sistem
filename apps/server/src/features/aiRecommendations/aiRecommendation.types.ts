@@ -24,6 +24,8 @@ export interface AiRecommendationDocument {
   type: AiRecommendationType;
   status: AiRecommendationStatus;
   trigger: AiRecommendationTrigger;
+  /** Phase 12b: what the coach asked for (a split for the training plan). */
+  request?: { splitId?: string } | null;
   /** True while pending / running: a unique index allows one active run per trainee and type. */
   active: boolean;
   promptVersion: string | null;

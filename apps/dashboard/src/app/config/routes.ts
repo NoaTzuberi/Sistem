@@ -11,6 +11,8 @@ export const ROUTES = {
   NUTRITION_TEMPLATES: '/nutrition/templates',
   NUTRITION_SETTINGS: '/nutrition/settings',
   TRAINEE_NUTRITION: '/trainees/:traineeId/nutrition',
+  // Phase 12b: the exercise library by family — review patterns, families, primaries.
+  EXERCISES: '/exercises',
 } as const;
 
 export const TRAINEE_TABS = ['onboarding', 'plans', 'nutrition', 'logs', 'metrics', 'achievements'] as const;

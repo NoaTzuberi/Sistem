@@ -11,6 +11,8 @@
     "start": "node dist/server.js",
     "test": "vitest run",
     "import:exercises": "tsx src/features/exercises/scripts/importExercises.ts",
+    "clean:exercise-names": "tsx src/features/exercises/scripts/cleanExerciseNames.ts",
+    "group:exercises": "tsx src/features/exerciseFamilies/scripts/groupExercises.ts",
     "seed:knowledge": "tsx src/features/knowledge/scripts/seedKnowledge.ts",
     "promote:coach": "tsx src/features/users/scripts/promoteCoach.ts",
     "seed:dev": "tsx src/features/users/scripts/seedDev.ts",

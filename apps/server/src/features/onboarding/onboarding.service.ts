@@ -42,6 +42,7 @@ function toPublicAnswers(answers: OnboardingAnswersFields): OnboardingAnswers {
     recovery: answers.recovery,
     ...(answers.nutritionPreferences ? { nutritionPreferences: toPublicNutritionPreferences(answers.nutritionPreferences) } : {}),
     ...(answers.weightGoal ? { weightGoal: toPublicWeightGoal(answers.weightGoal) } : {}),
+    ...(answers.trainingExperience ? { trainingExperience: answers.trainingExperience } : {}),
   };
 }
 
@@ -152,6 +153,7 @@ function toAnswerUpdates(
       updates.weightGoal = { targetWeightKg, timeframe, setAt: unchanged ? previousGoal.setAt : now };
     }
   }
+  if (payload.trainingExperience !== undefined) updates.trainingExperience = payload.trainingExperience ?? undefined;
   return updates;
 }
 

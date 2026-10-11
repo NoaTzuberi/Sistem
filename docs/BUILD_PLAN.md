@@ -222,6 +222,30 @@ Read PRD §9 and §11 (App packaging).
    - All platforms: Sistem's own push notifications are suppressed during an active session and delivered after it ends (the notification is still stored at once; only the push waits).
 ```
 
+### Phase 5c — Social sign-in: Google + Apple (later, after Phase 5b)
+
+Needs Phase 5b (Capacitor), an Apple Developer account, a Google Cloud OAuth client (iOS, Android, web) and a
+published privacy policy URL for Google's OAuth consent screen (the legal item in PRD §14) — not available yet.
+
+Design note (applies NOW, before this phase): the login and sign-up screens are designed with "Continue with
+Google" and "Continue with Apple" buttons, shown disabled or hidden by a feature flag until this phase.
+
+```
+Read PRD §3 (Social sign-in) and §11 (App packaging).
+
+1. Trainees can sign up / log in with Google or Apple in addition to email + password. Both ship together: the App Store requires Sign in with Apple whenever Google sign-in is offered.
+2. Mobile app: native flows via Capacitor (the Google Sign-In and Sign in with Apple native sheets). Ask before adding the plugins (new dependencies).
+3. Coach dashboard: web OAuth only if the owner wants it (ask first); Google only is fine on the web.
+4. Server: verify the provider's ID token, then find or create the user and issue the same JWT session as email login (the server still computes appState).
+   - Data model: the password becomes optional; add User.authProviders [{ provider: 'google' | 'apple', providerUserId, email, linkedAt }].
+   - Link to an existing account ONLY when the provider's email is verified and matches; otherwise create a new account.
+   - Apple "Hide my email" relay addresses are stored as given.
+5. Prefill the name from the provider when available; onboarding continues as usual (onboarding is protected — nothing else in it changes).
+6. Coaches are never created through social sign-in (same rule as email sign-up): a new account is always a trainee.
+7. Turn on the "Continue with Google" / "Continue with Apple" buttons (remove the disabled state / flag). Button wording is a placeholder in Hebrew and English (Phase 15 copy rules); follow each provider's button guidelines.
+8. Document the env vars in .env.example and the platform setup steps in docs/SETUP.md.
+```
+
 ---
 
 ## Phase 6 — Coach admin
@@ -664,6 +688,18 @@ the trainee without the coach publishing; every AI output is validated against t
 Gemini free tier, dev data only, until the PRD §14 "paid AI tier" item is done. Propose the config shape, the slot
 taxonomy and the exercise tagging before writing routes.
 
+Owner answers (2026-10-09, before coding) — details in PRD §8 "Decisions — Phase 12b":
+- Two library steps came FIRST: 0a clean exercise names (the dataset's "30 …" / "30 Day …" prefix with its body-part
+  word, a stray trailing dash; ids / slugs unchanged) and 0b group equipment variants into exercise families (by
+  normalized name + movement pattern, one primary per family + variant, copies kept for old references).
+- ABC = A chest + back / B legs / C shoulders + arms as the default, marked "coach to confirm"; a "Lower – glute focus"
+  workout type; a note for the coach in docs/reference/abc-split-question.md.
+- Split defaults + TrainingSettings overrides + API now; the settings SCREEN later (backlog). The exercise review screen
+  (patterns + families) now.
+- The experience question: yes, optional, on the frequency step.
+- One AI call for analysis + split options + the plan of option 1; a plan for another split on demand.
+- A manual path too: "+ Add workout" with a workout type (or Free); changing a workout's type re-matches its exercises.
+
 ```
 Implement PRD §8 "AI-assisted plan builder v2": turn the Phase 12 single AI draft into a guided, coach-controlled flow.
 
@@ -705,6 +741,8 @@ Implement PRD §8 "AI-assisted plan builder v2": turn the Phase 12 single AI dra
 ---
 
 ## Backlog (not scheduled)
+
+- **Training settings screen** — the coach edits her splits, workout types and slots (add / remove / reorder slots, patterns per slot, which splits are offered) in the dashboard. The config, the per-coach overrides (`TrainingSettings`) and the API (`GET /api/coach/training/config`, `PUT /api/coach/training/settings`) exist since Phase 12b; only the screen is missing.
 
 - **Password reset** — not in the MVP. The ATLAS forgot/reset-password flow (server routes + Resend email + client pages) exists; before enabling it in the app it needs a deep link / universal link or a small web reset page, and a Sistem email sender.
 - **Write original exercise descriptions** — AI draft reviewed and approved by the coach. Until then, the coach's per-exercise notes in the plan builder are the instructions trainees see.

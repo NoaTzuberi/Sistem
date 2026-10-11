@@ -1,134 +1,136 @@
-import type { AiTraineeProfile, ExerciseFacts } from '@sistem/types';
-import { EQUIPMENT_IDS } from '../../exercises/exercise.constants';
-import type { Equipment, Muscle, MovementType } from '../../exercises/exercise.constants';
-import { listCoachLibraryFacts } from '../../exercises/exercise.service';
+import type { AiTraineeProfile, PatternId, VariantId } from '@sistem/types';
+import type { Difficulty, Equipment } from '../../exercises/exercise.constants';
+import { Exercise } from '../../exercises/exercise.model';
+import { ExerciseFamily } from '../../exerciseFamilies/exerciseFamily.model';
+import { plainNameRank } from '../../exerciseFamilies/exerciseFamilyGrouping';
 import { Plan } from '../../plans/plan.model';
+import { equipmentForAnswers, exerciseAllowed, levelsForExperience, type TraineeExerciseAccess } from '../../trainingSplits/traineeExerciseAccess';
 import {
-  ALWAYS_AVAILABLE_EQUIPMENT,
-  CANDIDATE_DIFFICULTIES,
-  CANDIDATES_PER_FOCUS_MUSCLE,
-  CANDIDATES_PER_MUSCLE,
-  CARDIO_CANDIDATES,
-  CARDIO_TRIGGERS,
-  EXCLUDED_MUSCLES,
+  CANDIDATES_PER_FOCUS_PATTERN,
+  CANDIDATES_PER_PATTERN,
+  LOW_IMPACT_EXCLUDED_PATTERNS,
   MAX_CANDIDATES,
-  MINOR_MUSCLES,
-  MOBILITY_CANDIDATES,
-  MOBILITY_TRIGGERS,
-  MUSCLE_FOCUS_TO_MUSCLES,
-  ONBOARDING_EQUIPMENT_TO_LIBRARY,
+  MINOR_PATTERNS,
+  MUSCLE_FOCUS_TO_PATTERNS,
 } from './trainingPlan.constants';
 
-// The grounding: the model may only pick from these library exercises (by alias), chosen
-// in code from her equipment, goals and focus. Nothing outside the list can come back.
+// The grounding (Phase 12b): the model picks exercise FAMILIES by alias (F001…) and one of the
+// variants listed for each — only variants she has the equipment and level for, and only
+// families whose movement pattern fits a slot of the splits on offer. Chosen in code.
 
-export interface Candidate {
-  /** 'E001' … — what the model sees and answers with. */
-  alias: string;
-  facts: ExerciseFacts;
+export interface CandidateVariant {
+  variant: VariantId;
+  /** The variant's primary exercise: what goes into the plan. */
+  exerciseId: string;
+  name: string;
+  difficulty: string;
+  equipment: string[];
 }
+
+export interface FamilyCandidate {
+  /** 'F001' … — what the model sees and answers with. */
+  alias: string;
+  familyId: string;
+  name: string;
+  patterns: PatternId[];
+  muscles: string[];
+  movementType: string;
+  variants: CandidateVariant[];
+}
+
+/** A family before selection (no alias yet). */
+export type FamilyPoolEntry = Omit<FamilyCandidate, 'alias'>;
 
 export function aliasFor(index: number): string {
-  return `E${String(index + 1).padStart(3, '0')}`;
+  return `F${String(index + 1).padStart(3, '0')}`;
 }
 
-export function allowedEquipment(profile: AiTraineeProfile): Set<Equipment> {
-  const allowed = new Set<Equipment>(ALWAYS_AVAILABLE_EQUIPMENT);
-  for (const answer of profile.equipment) {
-    const mapped = ONBOARDING_EQUIPMENT_TO_LIBRARY[answer];
-    if (mapped === 'all') return new Set(EQUIPMENT_IDS);
-    mapped?.forEach((equipment) => allowed.add(equipment));
-  }
-  return allowed;
+export function allowedEquipment(profile: Pick<AiTraineeProfile, 'equipment'>): Set<Equipment> {
+  return equipmentForAnswers(profile.equipment);
 }
 
-export function candidateMovementTypes(profile: AiTraineeProfile): MovementType[] {
-  const signals = new Set([...profile.goals, ...profile.recoveryFlags]);
-  const types: MovementType[] = ['strength'];
-  if (MOBILITY_TRIGGERS.some((id) => signals.has(id))) types.push('mobility');
-  if (CARDIO_TRIGGERS.some((id) => signals.has(id))) types.push('cardio');
-  return types;
+export function accessForProfile(profile: Pick<AiTraineeProfile, 'equipment' | 'experience'>): TraineeExerciseAccess {
+  return { equipment: allowedEquipment(profile), levels: levelsForExperience(profile.experience) };
+}
+
+/** Patterns that get the larger share: the ones that train her focus muscles. */
+export function focusPatterns(profile: Pick<AiTraineeProfile, 'muscleFocus'>): Set<PatternId> {
+  return new Set(profile.muscleFocus.flatMap((id) => MUSCLE_FOCUS_TO_PATTERNS[id] ?? []));
 }
 
 /**
- * Plain names first: the imported list has many branded or odd variants ("FYR2 Banded
- * Squat…", "Power snatch-"). Lower is better.
+ * Pure: per needed pattern (in the slots' order) the best families not taken yet — the coach's
+ * own picks first, then plain names. One family may fit several slots; it is listed once.
  */
-function nameRank(name: string): number {
-  let rank = name.length;
-  if (/^[A-Z0-9]{2,}\s/.test(name)) rank += 40; // a brand / program prefix
-  if (/[-–]\s*$/.test(name) || /\s[-–]\s/.test(name)) rank += 15;
-  if (/\(|\)|\//.test(name)) rank += 10;
-  return rank;
-}
-
-/** Coach's own picks first, then plain names; within that, one equipment type after another. */
-function orderGroup(exercises: ExerciseFacts[], coachUsed: Set<string>): ExerciseFacts[] {
-  const sorted = [...exercises].sort(
-    (a, b) =>
-      Number(coachUsed.has(b.id)) - Number(coachUsed.has(a.id)) ||
-      nameRank(a.name) - nameRank(b.name) ||
-      a.name.localeCompare(b.name),
+export function selectFamilyCandidates(
+  pool: FamilyPoolEntry[],
+  neededPatterns: PatternId[],
+  profile: Pick<AiTraineeProfile, 'muscleFocus' | 'recoveryFlags'>,
+  coachUsedFamilies: Set<string>,
+): FamilyCandidate[] {
+  const focus = focusPatterns(profile);
+  const lowImpact = profile.recoveryFlags.includes('prefers_low_impact');
+  const usable = pool.filter(
+    (family) => family.variants.length > 0 && !(lowImpact && family.patterns.some((p) => LOW_IMPACT_EXCLUDED_PATTERNS.includes(p))),
   );
-  const used = sorted.filter((exercise) => coachUsed.has(exercise.id));
-  const rest = sorted.filter((exercise) => !coachUsed.has(exercise.id));
+  const rank = (a: FamilyPoolEntry, b: FamilyPoolEntry) =>
+    Number(coachUsedFamilies.has(b.familyId)) - Number(coachUsedFamilies.has(a.familyId)) ||
+    b.variants.length - a.variants.length ||
+    plainNameRank(a.name) - plainNameRank(b.name) ||
+    a.name.localeCompare(b.name);
 
-  // Round robin by equipment, so a full-gym trainee doesn't get ten bodyweight variants.
-  const byEquipment = new Map<string, ExerciseFacts[]>();
-  for (const exercise of rest) {
-    const key = exercise.equipment[0] ?? 'none';
-    byEquipment.set(key, [...(byEquipment.get(key) ?? []), exercise]);
-  }
-  const queues = [...byEquipment.values()];
-  const interleaved: ExerciseFacts[] = [];
-  for (let round = 0; interleaved.length < rest.length; round += 1) {
-    for (const queue of queues) if (queue[round]) interleaved.push(queue[round]);
-  }
-  return [...used, ...interleaved];
-}
-
-/** Pure: picks and orders the candidates from the (already level / type filtered) library. */
-export function selectCandidates(library: ExerciseFacts[], profile: AiTraineeProfile, coachUsed: Set<string>): Candidate[] {
-  const equipment = allowedEquipment(profile);
-  const usable = library.filter((exercise) => exercise.equipment.every((item) => equipment.has(item as Equipment)));
-
-  const focus = new Set<string>(profile.muscleFocus.flatMap((id) => MUSCLE_FOCUS_TO_MUSCLES[id] ?? []));
-  const strengthByMuscle = new Map<string, ExerciseFacts[]>();
-  const mobility: ExerciseFacts[] = [];
-  const cardio: ExerciseFacts[] = [];
-
-  for (const exercise of usable) {
-    if (exercise.movementType === 'mobility') mobility.push(exercise);
-    else if (exercise.movementType === 'cardio') cardio.push(exercise);
-    else {
-      const muscle = exercise.primaryMuscles[0];
-      if (!muscle || EXCLUDED_MUSCLES.includes(muscle as Muscle)) continue;
-      strengthByMuscle.set(muscle, [...(strengthByMuscle.get(muscle) ?? []), exercise]);
+  const picked = new Map<string, FamilyPoolEntry>();
+  for (const pattern of neededPatterns) {
+    const share = focus.has(pattern) ? CANDIDATES_PER_FOCUS_PATTERN : MINOR_PATTERNS.includes(pattern) ? Math.ceil(CANDIDATES_PER_PATTERN / 2) : CANDIDATES_PER_PATTERN;
+    const already = [...picked.values()].filter((family) => family.patterns.includes(pattern)).length;
+    const fresh = usable.filter((family) => family.patterns.includes(pattern) && !picked.has(family.familyId)).sort(rank);
+    for (const family of fresh.slice(0, Math.max(0, share - already))) {
+      if (picked.size >= MAX_CANDIDATES) break;
+      picked.set(family.familyId, family);
     }
   }
-
-  const picked: ExerciseFacts[] = [];
-  for (const muscle of [...strengthByMuscle.keys()].sort()) {
-    const share = focus.has(muscle) ? CANDIDATES_PER_FOCUS_MUSCLE : CANDIDATES_PER_MUSCLE;
-    const limit = MINOR_MUSCLES.includes(muscle as Muscle) ? Math.ceil(share / 2) : share;
-    picked.push(...orderGroup(strengthByMuscle.get(muscle)!, coachUsed).slice(0, limit));
-  }
-  picked.push(...orderGroup(mobility, coachUsed).slice(0, MOBILITY_CANDIDATES));
-  picked.push(...orderGroup(cardio, coachUsed).slice(0, CARDIO_CANDIDATES));
-
-  return picked.slice(0, MAX_CANDIDATES).map((facts, index) => ({ alias: aliasFor(index), facts }));
+  return [...picked.values()].map((family, index) => ({ ...family, alias: aliasFor(index) }));
 }
 
-/** Every exercise this coach has put in any plan — her taste, offered first. */
-async function coachUsedExerciseIds(coachId: string): Promise<Set<string>> {
-  const ids = await Plan.distinct('workouts.exercises.exerciseId', { coachId });
-  return new Set(ids.map(String));
-}
-
-export async function loadCandidates(profile: AiTraineeProfile, coachId: string): Promise<Candidate[]> {
-  const [library, coachUsed] = await Promise.all([
-    listCoachLibraryFacts({ difficulties: CANDIDATE_DIFFICULTIES, movementTypes: candidateMovementTypes(profile) }),
-    coachUsedExerciseIds(coachId),
+/** Every family with its primaries she can do (her equipment and levels). */
+export async function loadFamilyPool(access: TraineeExerciseAccess): Promise<FamilyPoolEntry[]> {
+  const [families, primaries] = await Promise.all([
+    // Unchecked combos (unclear patterns) are never offered — the coach reviews them first.
+    ExerciseFamily.find({ 'patterns.0': { $exists: true }, $nor: [{ reviewReasons: 'unclear_pattern', reviewedAt: null }] })
+      .select('name patterns muscles movementType')
+      .lean(),
+    Exercise.find({ isActive: true, reviewStatus: { $ne: 'rejected' }, isPrimaryVariant: true })
+      .select('name equipment difficulty familyId variant')
+      .lean(),
   ]);
-  return selectCandidates(library, profile, coachUsed);
+  const variantsByFamily = new Map<string, CandidateVariant[]>();
+  for (const exercise of primaries) {
+    if (!exercise.familyId || !exerciseAllowed({ equipment: exercise.equipment, difficulty: exercise.difficulty }, access)) continue;
+    const id = String(exercise.familyId);
+    variantsByFamily.set(id, [
+      ...(variantsByFamily.get(id) ?? []),
+      {
+        variant: exercise.variant ?? 'other',
+        exerciseId: String(exercise._id),
+        name: exercise.name,
+        difficulty: exercise.difficulty as Difficulty,
+        equipment: exercise.equipment,
+      },
+    ]);
+  }
+  return families.map((family) => ({
+    familyId: String(family._id),
+    name: family.name,
+    patterns: family.patterns as PatternId[],
+    muscles: family.muscles,
+    movementType: family.movementType,
+    variants: variantsByFamily.get(String(family._id)) ?? [],
+  }));
+}
+
+/** Families of every exercise this coach has put in any plan — her taste, offered first. */
+export async function coachUsedFamilyIds(coachId: string): Promise<Set<string>> {
+  const exerciseIds = await Plan.distinct('workouts.exercises.exerciseId', { coachId });
+  const familyIds = await Exercise.distinct('familyId', { _id: { $in: exerciseIds } });
+  return new Set(familyIds.filter(Boolean).map(String));
 }

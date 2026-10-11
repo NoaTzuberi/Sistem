@@ -10,6 +10,7 @@ import { NutritionBuilderPage } from '../../features/nutrition/pages/NutritionBu
 import { FoodListPage } from '../../features/nutrition/pages/FoodListPage/FoodListPage';
 import { NutritionTemplatesPage } from '../../features/nutrition/pages/NutritionTemplatesPage/NutritionTemplatesPage';
 import { NutritionSettingsPage } from '../../features/nutrition/pages/NutritionSettingsPage/NutritionSettingsPage';
+import { ExerciseLibraryPage } from '../../features/exerciseLibrary/pages/ExerciseLibraryPage/ExerciseLibraryPage';
 
 export function AppRouter() {
   return (
@@ -26,6 +27,7 @@ export function AppRouter() {
           <Route path={ROUTES.NUTRITION_FOODS} element={<FoodListPage />} />
           <Route path={ROUTES.NUTRITION_TEMPLATES} element={<NutritionTemplatesPage />} />
           <Route path={ROUTES.NUTRITION_SETTINGS} element={<NutritionSettingsPage />} />
+          <Route path={ROUTES.EXERCISES} element={<ExerciseLibraryPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to={ROUTES.TRAINEES} replace />} />

@@ -77,6 +77,8 @@ export const he = {
     maxDays: 'מקסימום ימים בשבוע',
     flexible: 'הלו״ז שלי משתנה משבוע לשבוע',
     note: 'Sistem יכולה להתאים את ההמלצות כשהזמן הפנוי שלך משתנה.',
+    // Phase 12b (PLACEHOLDER wording): optional.
+    experienceLabel: 'כמה זמן את מתאמנת באופן קבוע? (לא חובה)',
   },
   activities: {
     title: 'אילו פעילויות הן חלק מהחיים שלך?',

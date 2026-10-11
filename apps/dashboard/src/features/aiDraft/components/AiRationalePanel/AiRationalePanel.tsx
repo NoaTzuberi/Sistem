@@ -1,6 +1,19 @@
 import { useCallback } from 'react';
 import type { AiTraineeProfile, AiTrainingRecommendation, Language } from '@sistem/types';
-import { dayName, fill, humanizeId, isolateLtr, labelList, sharedCopy, useCopy, useLanguage, useLoad } from '@sistem/shared';
+import {
+  dayName,
+  describeSplit,
+  fill,
+  humanizeId,
+  isolateLtr,
+  labelList,
+  sharedCopy,
+  slotLabel,
+  useCopy,
+  useLanguage,
+  useLoad,
+  workoutTypeLabel,
+} from '@sistem/shared';
 import { getAiRecommendation } from '../../../../services/coach/coachService';
 import { Badge } from '../../../../components/common/Badge/Badge';
 import { aiDraftCopy } from '../../copy';
@@ -28,6 +41,7 @@ function profileRows(profile: AiTraineeProfile, copy: AiDraftText, language: Lan
     { label: labels.equipment, value: labelList(profile.equipment, options.equipment, language) },
     { label: labels.activities, value: labelList(profile.preferredActivities, options.activities, language) },
     { label: labels.recoveryFlags, value: labelList(profile.recoveryFlags, options.recoveryFlags, language) },
+    { label: labels.experience, value: profile.experience ? options.trainingExperience[profile.experience] : '—' },
     { label: labels.favoriteExercises, value: profile.notes.favoriteExercises ?? '—' },
     { label: labels.wantsToImprove, value: profile.notes.exercisesToImprove ?? '—' },
     { label: labels.recoveryNotes, value: profile.notes.recovery ?? '—' },
@@ -68,9 +82,22 @@ export function AiRationalePanel({ traineeId, recommendationId, recommendation }
           </p>
 
           <h3 className="ai-rationale-heading">{copy.training.split}</h3>
-          <p className="ai-rationale-text" dir="auto">
-            {output.split}
-          </p>
+          {/* Phase 12b drafts: the split option the workouts follow; Phase 12: the split in words. */}
+          {output.splitOptions?.[0] ? (
+            <p className="ai-rationale-text">
+              {describeSplit(output.splitOptions[0].splitId, output.splitOptions[0].daysPerWeek, language)} —{' '}
+              <span dir="auto">{output.splitOptions[0].why}</span>
+            </p>
+          ) : (
+            <p className="ai-rationale-text" dir="auto">
+              {output.split}
+            </p>
+          )}
+          {output.experienceRead && (
+            <p className="ai-rationale-text" dir="auto">
+              {output.experienceRead}
+            </p>
+          )}
 
           {output.considerations.length > 0 && (
             <>
@@ -89,7 +116,8 @@ export function AiRationalePanel({ traineeId, recommendationId, recommendation }
           {output.workouts.map((workout, index) => (
             <div key={`${workout.title}-${index}`} className="ai-rationale-workout">
               <p className="ai-rationale-workout-title">
-                {workout.title}
+                <bdi>{workout.title}</bdi>
+                {workout.workoutType ? ` · ${workoutTypeLabel(workout.workoutType, language)}` : ''}
                 {workout.dayOfWeek !== undefined ? ` · ${dayName(workout.dayOfWeek, language)}` : ''}
               </p>
               <p className="ai-rationale-muted" dir="auto">
@@ -98,6 +126,7 @@ export function AiRationalePanel({ traineeId, recommendationId, recommendation }
               <ul className="ai-rationale-list">
                 {workout.exercises.map((exercise, exerciseIndex) => (
                   <li key={`${exercise.exerciseId}-${exerciseIndex}`}>
+                    {exercise.slotId && <span className="ai-rationale-muted">{slotLabel({ id: exercise.slotId }, language)}: </span>}
                     <span className="ai-rationale-exercise" dir="auto">{exercise.exercise?.name ?? copy.training.missingExercise}</span>
                     {' — '}
                     <span dir="auto">{exercise.why}</span>

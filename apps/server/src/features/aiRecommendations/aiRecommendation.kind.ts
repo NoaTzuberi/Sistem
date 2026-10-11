@@ -8,6 +8,12 @@ import type { ServerMessage } from '../../i18n';
 export interface RecommendationTarget {
   traineeId: string;
   coachId: string;
+  /** What the coach asked for (Phase 12b: a split to build the training plan for). */
+  request?: RecommendationRequest | null;
+}
+
+export interface RecommendationRequest {
+  splitId?: string;
 }
 
 export type PreparedRecommendation<Context> =

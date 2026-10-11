@@ -1,4 +1,5 @@
-import { useCopy } from '@sistem/shared';
+import { sharedCopy, useCopy } from '@sistem/shared';
+import type { TrainingExperience } from '@sistem/types';
 import { onboardingCopy } from '../../copy';
 import { SelectableChip } from '../../components/SelectableChip/SelectableChip';
 import type { OnboardingFormState } from '../../types';
@@ -10,10 +11,13 @@ interface FrequencyStepProps {
 }
 
 const DAY_OPTIONS = [1, 2, 3, 4, 5, 6, 7];
+/** Phase 12b: optional, one choice (tap again to clear). Ids mirror TRAINING_EXPERIENCE_IDS on the server. */
+const EXPERIENCE_OPTIONS: TrainingExperience[] = ['new', 'some', 'experienced'];
 
 export function FrequencyStep({ formState, updateFormState }: FrequencyStepProps) {
   const { trainingFrequency } = formState;
   const copy = useCopy(onboardingCopy).frequency;
+  const experienceLabels = useCopy(sharedCopy).onboardingOptions.trainingExperience;
 
   function setMinDays(day: number) {
     updateFormState({
@@ -79,6 +83,20 @@ export function FrequencyStep({ formState, updateFormState }: FrequencyStepProps
           })
         }
       />
+
+      <div className="frequency-field">
+        <span className="text-label">{copy.experienceLabel}</span>
+        <div className="frequency-options">
+          {EXPERIENCE_OPTIONS.map((option) => (
+            <SelectableChip
+              key={option}
+              label={experienceLabels[option]}
+              selected={formState.trainingExperience === option}
+              onClick={() => updateFormState({ trainingExperience: formState.trainingExperience === option ? null : option })}
+            />
+          ))}
+        </div>
+      </div>
 
       <p className="text-caption frequency-note">{copy.note}</p>
     </div>

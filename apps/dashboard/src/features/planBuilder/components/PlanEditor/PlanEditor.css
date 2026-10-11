@@ -135,3 +135,25 @@
     max-height: none;
   }
 }
+
+/* Phase 12b: the new workout's type next to "+ Add workout". */
+.plan-add-workout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.plan-add-select {
+  min-height: var(--space-5);
+  padding: 0 var(--space-2);
+  font-size: var(--text-sm);
+  background-color: var(--color-bg);
+  border: var(--border-width-thin) solid var(--color-border);
+  border-radius: var(--radius-none);
+}
+
+.plan-add-select:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: 0;
+}

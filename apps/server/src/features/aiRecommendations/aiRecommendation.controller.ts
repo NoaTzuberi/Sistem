@@ -9,6 +9,7 @@ import {
   startRecommendation,
 } from './aiRecommendation.service';
 import { parseRecommendationType, validateRecommendationIdParam } from './aiRecommendation.validation';
+import { findSplit, getEffectiveTrainingConfig } from '../trainingSplits/trainingSplit.service';
 import { requestLanguage, sendError, translate } from '../../i18n';
 
 // Coach-only (mounted on /api/coach behind requireRole('coach') + loadCoachTrainee).
@@ -56,7 +57,23 @@ export async function createTraineeRecommendation(req: AuthenticatedRequest, res
     return;
   }
 
-  const started = await startRecommendation({ traineeId: req.traineeId!, coachId: req.userId!, type, trigger: 'coach' });
+  // Phase 12b: "Generate a plan for this split" — only a split of her coach's config.
+  const splitId = req.body?.splitId;
+  if (splitId !== undefined) {
+    const known = type === 'training_plan' && typeof splitId === 'string' && findSplit(await getEffectiveTrainingConfig(req.userId!), splitId);
+    if (!known) {
+      sendError(res, 400, 'ai_split_unknown');
+      return;
+    }
+  }
+
+  const started = await startRecommendation({
+    traineeId: req.traineeId!,
+    coachId: req.userId!,
+    type,
+    trigger: 'coach',
+    request: splitId ? { splitId } : null,
+  });
   const recommendation = await presentRecommendation(started.recommendation, requestLanguage(req));
   if (!started.created) {
     sendError(res, 409, 'ai_already_running', { recommendation });

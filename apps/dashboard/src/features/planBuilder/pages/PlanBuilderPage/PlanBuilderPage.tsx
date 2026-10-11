@@ -7,14 +7,17 @@ import { Button } from '../../../../components/common/Button/Button';
 import { PlanEditor } from '../../components/PlanEditor/PlanEditor';
 import './PlanBuilderPage.css';
 import { planBuilderCopy } from '../../copy';
+import type { SplitOnlyRequest } from '../../types';
 
 /** Loads the plan and its trainee, then hands them to the editor. */
 export function PlanBuilderPage() {
   const shared = useCopy(sharedCopy);
   const copy = useCopy(planBuilderCopy);
   const { traineeId = '', planId = '' } = useParams();
-  // Set by "Use in a new plan": the new (empty) plan starts from that AI draft.
-  const loadAiDraftId = (useLocation().state as { loadAiDraftId?: string } | null)?.loadAiDraftId;
+  // Set by the Plans tab: the new (empty) plan starts from that AI draft, or from a split only (Phase 12b).
+  const routeState = useLocation().state as { loadAiDraftId?: string; splitOnly?: SplitOnlyRequest } | null;
+  const loadAiDraftId = routeState?.loadAiDraftId;
+  const splitOnly = routeState?.splitOnly;
   const load = useCallback(
     async () => {
       const [plan, { trainee }] = await Promise.all([getPlan(traineeId, planId), getTrainee(traineeId)]);
@@ -47,6 +50,7 @@ export function PlanBuilderPage() {
       currentWeekStart={data.trainee.currentWeekStart}
       initialPlan={data.plan}
       loadAiDraftId={loadAiDraftId}
+      splitOnly={splitOnly}
     />
   );
 }

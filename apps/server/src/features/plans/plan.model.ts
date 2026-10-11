@@ -25,6 +25,8 @@ const planSchema = new Schema<PlanDocument>(
     // The AI recommendation the coach loaded into this plan (Phase 12) — coach-only, so the
     // builder can show its rationale. Never copied by "duplicate last week".
     aiRecommendationId: { type: Schema.Types.ObjectId, ref: 'AiRecommendation', default: undefined },
+    // Phase 12b (coach-only): the split the plan follows.
+    splitId: { type: String, trim: true, default: undefined },
   },
   { timestamps: true },
 );

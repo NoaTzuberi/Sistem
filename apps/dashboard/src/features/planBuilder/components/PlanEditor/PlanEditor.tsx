@@ -3,20 +3,31 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import type { AiTrainingRecommendation, CoachPlan, ExerciseFacts } from '@sistem/types';
+import type { AiPlanExercise, AiTrainingRecommendation, CoachPlan, ExerciseFacts } from '@sistem/types';
 import { traineePath } from '../../../../app/config/routes';
 import { Badge } from '../../../../components/common/Badge/Badge';
 import { Button } from '../../../../components/common/Button/Button';
-import { fill, formatWeekSpanWithDays, sharedCopy, useCopy, useLanguage, weekRelationLabel } from '@sistem/shared';
+import {
+  fill,
+  findWorkoutType,
+  formatWeekSpanWithDays,
+  sharedCopy,
+  useCopy,
+  useLanguage,
+  weekRelationLabel,
+  workoutTypeLabel,
+} from '@sistem/shared';
 import { usePlanEditor } from '../../hooks/usePlanEditor';
 import { useSortSensors } from '../../hooks/useSortSensors';
-import { duplicateWorkout, moveItem, newExercise, newWorkout } from '../../planDraft';
+import { addExerciseToWorkout, duplicateWorkout, moveItem, newWorkout } from '../../planDraft';
 import type { DraftWorkout } from '../../types';
 import { ExerciseLibrary } from '../ExerciseLibrary/ExerciseLibrary';
 import { SaveIndicator } from '../SaveIndicator/SaveIndicator';
 import { WorkoutCard } from '../WorkoutCard/WorkoutCard';
 import { useLatestAiDraft } from '../../../aiDraft/hooks/useLatestAiDraft';
-import { draftWorkoutsFromAi } from '../../../aiDraft/aiDraftToPlan';
+import { draftWorkoutsFromAi, draftWorkoutsFromSplit } from '../../../aiDraft/aiDraftToPlan';
+import { useTrainingConfig } from '../../../trainingConfig/useTrainingConfig';
+import type { SplitOnlyRequest } from '../../types';
 import { AiRationalePanel } from '../../../aiDraft/components/AiRationalePanel/AiRationalePanel';
 import { aiDraftCopy } from '../../../aiDraft/copy';
 import './PlanEditor.css';
@@ -28,11 +39,13 @@ interface PlanEditorProps {
   /** The trainee's current week, from the server — labels this plan 'This week' / 'Next week'. */
   currentWeekStart: string;
   initialPlan: CoachPlan;
-  /** Fill this (empty, draft) plan from that AI draft once it is loaded ("Use in a new plan"). */
+  /** Fill this (empty, draft) plan from that AI draft once it is loaded ("Use full AI plan"). */
   loadAiDraftId?: string;
+  /** Phase 12b "Use split only": empty typed workouts of that split, the AI's picks as slot suggestions. */
+  splitOnly?: SplitOnlyRequest;
 }
 
-export function PlanEditor({ traineeId, traineeName, currentWeekStart, initialPlan, loadAiDraftId }: PlanEditorProps) {
+export function PlanEditor({ traineeId, traineeName, currentWeekStart, initialPlan, loadAiDraftId, splitOnly }: PlanEditorProps) {
   const language = useLanguage();
   const shared = useCopy(sharedCopy);
   const aiText = useCopy(aiDraftCopy);
@@ -47,6 +60,8 @@ export function PlanEditor({ traineeId, traineeName, currentWeekStart, initialPl
   );
   const [selectedKey, setSelectedKey] = useState<string | undefined>(draft.workouts[0]?.key);
   const [isBusy, setIsBusy] = useState(false);
+  const config = useTrainingConfig();
+  const [newWorkoutType, setNewWorkoutType] = useState('');
 
   const isPublished = plan.status === 'published';
   const { workouts } = draft;
@@ -63,8 +78,20 @@ export function PlanEditor({ traineeId, traineeName, currentWeekStart, initialPl
     if (!recommendation.output) return;
     const aiWorkouts = draftWorkoutsFromAi(recommendation.output);
     // The editor's draft is replaced; autosave stores it through the normal plan rules.
-    updateDraft((current) => ({ ...current, aiRecommendationId: recommendation.id, workouts: aiWorkouts }));
+    updateDraft((current) => ({
+      ...current,
+      aiRecommendationId: recommendation.id,
+      splitId: recommendation.output?.splitId ?? current.splitId,
+      workouts: aiWorkouts,
+    }));
     setSelectedKey(aiWorkouts[0]?.key);
+  }
+
+  // The AI's picks for a workout of the linked draft (same position and workout type): offered in its empty slots.
+  function suggestionsFor(index: number): AiPlanExercise[] | undefined {
+    const output = ai.latest?.id === draft.aiRecommendationId ? ai.latest?.output : undefined;
+    const aiWorkout = output?.splitId ? output.workouts[index] : undefined;
+    return aiWorkout && aiWorkout.workoutType === workouts[index]?.workoutType ? aiWorkout.exercises : undefined;
   }
 
   function handleLoadAiDraft() {
@@ -73,19 +100,36 @@ export function PlanEditor({ traineeId, traineeName, currentWeekStart, initialPl
     loadAiDraft(ai.ready);
   }
 
-  // "Use in a new plan": once, into the empty draft; the router state is cleared so a
-  // reload never loads it again.
+  // "Use full AI plan" / "Use split only": once, into the empty draft; the router state is
+  // cleared so a reload never loads it again.
   const autoLoaded = useRef(false);
   useEffect(() => {
-    if (autoLoaded.current || !loadAiDraftId || ai.ready?.id !== loadAiDraftId) return;
-    autoLoaded.current = true;
-    if (!isPublished && workouts.length === 0) loadAiDraft(ai.ready);
+    if (autoLoaded.current) return;
+    if (loadAiDraftId && ai.ready?.id === loadAiDraftId) {
+      autoLoaded.current = true;
+      if (!isPublished && workouts.length === 0) loadAiDraft(ai.ready);
+    } else if (splitOnly && config && (!splitOnly.recommendationId || !ai.isLoading)) {
+      autoLoaded.current = true;
+      if (!isPublished && workouts.length === 0) {
+        const linked = splitOnly.recommendationId && ai.latest?.id === splitOnly.recommendationId ? ai.latest.output : null;
+        const splitWorkouts = draftWorkoutsFromSplit(config, splitOnly.splitId, splitOnly.daysPerWeek, language, linked);
+        updateDraft((current) => ({
+          ...current,
+          splitId: splitOnly.splitId,
+          aiRecommendationId: splitOnly.recommendationId ?? current.aiRecommendationId,
+          workouts: splitWorkouts,
+        }));
+        setSelectedKey(splitWorkouts[0]?.key);
+      }
+    } else return;
     navigate(location.pathname, { replace: true, state: null });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs when the draft arrives
-  }, [loadAiDraftId, ai.ready]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs when the draft / config arrives
+  }, [loadAiDraftId, splitOnly, ai.ready, ai.isLoading, config]);
 
   function handleAddWorkout() {
-    const workout = newWorkout(workouts.length + 1);
+    const type = findWorkoutType(config, newWorkoutType || undefined);
+    const title = type ? workoutTypeLabel(type, language) : fill(copy.workoutPlaceholder, { n: workouts.length + 1 });
+    const workout = newWorkout(title, type?.id);
     setWorkouts((current) => [...current, workout]);
     setSelectedKey(workout.key);
   }
@@ -96,11 +140,13 @@ export function PlanEditor({ traineeId, traineeName, currentWeekStart, initialPl
     setSelectedKey(copy.key);
   }
 
+  // From the side library: into the first slot that fits it (typed workout), else "Other".
   function handleAddExercise(facts: ExerciseFacts) {
     if (!selected) return;
-    const exercise = newExercise(facts);
     setWorkouts((current) =>
-      current.map((workout) => (workout.key === selected.key ? { ...workout, exercises: [...workout.exercises, exercise] } : workout)),
+      current.map((workout) =>
+        workout.key === selected.key ? addExerciseToWorkout(workout, facts, findWorkoutType(config, workout.workoutType)) : workout,
+      ),
     );
   }
 
@@ -241,7 +287,10 @@ export function PlanEditor({ traineeId, traineeName, currentWeekStart, initialPl
                 {workouts.map((workout, index) => (
                   <WorkoutCard
                     key={workout.key}
+                    traineeId={traineeId}
                     workout={workout}
+                    config={config}
+                    suggestions={suggestionsFor(index)}
                     index={index}
                     count={workouts.length}
                     isSelected={workout.key === selected?.key}
@@ -257,10 +306,23 @@ export function PlanEditor({ traineeId, traineeName, currentWeekStart, initialPl
             </SortableContext>
           </DndContext>
 
-          <Button onClick={handleAddWorkout}>{copy.addWorkout}</Button>
+          <div className="plan-add-workout">
+            <label className="plan-add-type">
+              <span className="visually-hidden">{copy.newWorkoutType}</span>
+              <select className="plan-add-select" value={newWorkoutType} onChange={(event) => setNewWorkoutType(event.target.value)}>
+                <option value="">{workoutTypeLabel(undefined, language)}</option>
+                {config?.workoutTypes.map((type) => (
+                  <option key={type.id} value={type.id}>
+                    {workoutTypeLabel(type, language)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Button onClick={handleAddWorkout}>{copy.addWorkout}</Button>
+          </div>
         </div>
 
-        <ExerciseLibrary targetTitle={selected?.title} onAdd={handleAddExercise} />
+        <ExerciseLibrary traineeId={traineeId} targetTitle={selected?.title} onAdd={handleAddExercise} />
       </div>
     </div>
   );

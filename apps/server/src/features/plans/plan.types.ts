@@ -24,6 +24,8 @@ export interface PlanExerciseFields {
   setTargets?: PlanSetTargetFields[];
   /** Run hands-free as work / rest intervals (timed sets only). */
   interval?: boolean;
+  /** Phase 12b, coach-only: the slot of its workout's type. */
+  slotId?: string;
 }
 
 export interface PlanWorkoutFields {
@@ -31,6 +33,8 @@ export interface PlanWorkoutFields {
   dayOfWeek?: number;
   order: number;
   notes?: string;
+  /** Phase 12b, coach-only: the workout type (slot template); missing = free workout. */
+  workoutType?: string;
   exercises: (PlanExerciseFields & { _id: Types.ObjectId })[];
 }
 
@@ -44,6 +48,8 @@ export interface PlanDocument {
   notes?: string;
   workouts: (PlanWorkoutFields & { _id: Types.ObjectId })[];
   aiRecommendationId?: Types.ObjectId | null;
+  /** Phase 12b, coach-only. */
+  splitId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

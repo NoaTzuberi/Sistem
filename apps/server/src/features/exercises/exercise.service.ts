@@ -1,3 +1,5 @@
+import type { VariantId } from '../exerciseFamilies/exerciseFamily.constants';
+import { ExerciseFamily } from '../exerciseFamilies/exerciseFamily.model';
 import type { ExerciseFacts, ExerciseSearchResult } from '@sistem/types';
 import { Exercise } from './exercise.model';
 import { scoreExercise } from './exerciseSearch';
@@ -240,7 +242,7 @@ export async function listRagEligibleExercises() {
 // Coach library (plan builder, Phase 6)
 // ---------------------------------------------------------------------------
 
-const FACT_FIELDS = 'name aliases primaryMuscles equipment difficulty movementType';
+const FACT_FIELDS = 'name aliases primaryMuscles equipment difficulty movementType familyId variant';
 
 interface ExerciseFactsLeanDoc {
   _id: unknown;
@@ -250,6 +252,8 @@ interface ExerciseFactsLeanDoc {
   equipment: Equipment[];
   difficulty: Difficulty;
   movementType: MovementType;
+  familyId?: unknown;
+  variant?: VariantId;
 }
 
 // Facts only: the imported dataset's text is not cleared for use, so the coach
@@ -262,6 +266,8 @@ function toExerciseFacts(doc: ExerciseFactsLeanDoc): ExerciseFacts {
     equipment: doc.equipment,
     difficulty: doc.difficulty,
     movementType: doc.movementType,
+    ...(doc.familyId ? { familyId: String(doc.familyId) } : {}),
+    ...(doc.variant ? { variant: doc.variant } : {}),
   };
 }
 
@@ -314,7 +320,17 @@ export async function listCoachExercises(params: ListCoachExercisesParams): Prom
 export async function getExerciseFactsByIds(ids: string[]): Promise<Map<string, ExerciseFacts>> {
   if (ids.length === 0) return new Map();
   const docs = await Exercise.find({ _id: { $in: ids } }).select(FACT_FIELDS).lean<ExerciseFactsLeanDoc[]>();
-  return new Map(docs.map((doc) => [String(doc._id), toExerciseFacts(doc)]));
+  // Phase 12b: the family's movement patterns, so the builder can place exercises in slots.
+  const familyIds = [...new Set(docs.flatMap((doc) => (doc.familyId ? [String(doc.familyId)] : [])))];
+  const families = familyIds.length > 0 ? await ExerciseFamily.find({ _id: { $in: familyIds } }).select('patterns').lean() : [];
+  const patterns = new Map(families.map((family) => [String(family._id), family.patterns]));
+  return new Map(
+    docs.map((doc) => {
+      const facts = toExerciseFacts(doc);
+      const familyPatterns = doc.familyId ? patterns.get(String(doc.familyId)) : undefined;
+      return [String(doc._id), familyPatterns ? { ...facts, patterns: familyPatterns } : facts];
+    }),
+  );
 }
 
 /** The ids (out of `ids`) the coach may add to a plan. */

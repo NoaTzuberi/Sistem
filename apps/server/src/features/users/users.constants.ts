@@ -79,6 +79,9 @@ export const RECOVERY_FLAG_IDS = [
   'nothing_to_add',
 ] as const;
 
+/** Phase 12b onboarding (optional): new < 6 months · some 6 months–2 years · experienced 2+ years. */
+export const TRAINING_EXPERIENCE_IDS = ['new', 'some', 'experienced'] as const;
+
 export const GENDER_IDS = ['male', 'female', 'other'] as const;
 
 // Coach accounts are never created by public sign-up (PRD §3) — only promoted/seeded.

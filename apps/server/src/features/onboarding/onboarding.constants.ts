@@ -29,6 +29,7 @@ export const ONBOARDING_FIELDS = [
   'recovery',
   'nutritionPreferences',
   'weightGoal',
+  'trainingExperience',
 ] as const;
 export type OnboardingField = (typeof ONBOARDING_FIELDS)[number];
 
@@ -37,7 +38,8 @@ export const ONBOARDING_STEP_FIELDS: Record<OnboardingStepId, readonly Onboardin
   welcome: [],
   basic_profile: ['name', 'birthDate', 'height', 'weight', 'gender', 'units'],
   goals: ['goals'],
-  frequency: ['trainingFrequency'],
+  // Phase 12b: the optional experience question sits on the frequency screen (owner, 2026-10-09).
+  frequency: ['trainingFrequency', 'trainingExperience'],
   activities: ['preferredActivities'],
   exercise_preferences: ['exercisePreferences'],
   recovery: ['recovery'],

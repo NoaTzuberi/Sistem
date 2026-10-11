@@ -8,11 +8,15 @@ import { Badge } from '../../../../components/common/Badge/Badge';
 import { Button } from '../../../../components/common/Button/Button';
 import { WeekPicker } from '../WeekPicker/WeekPicker';
 import type { WeekPickerMode } from '../WeekPicker/WeekPicker';
-import { AiDraftCard } from '../../../aiDraft/components/AiDraftCard/AiDraftCard';
+import { TrainingSummaryCard } from '../../../aiDraft/components/TrainingSummaryCard/TrainingSummaryCard';
+import type { SplitOnlyRequest } from '../../../planBuilder/types';
 import { useLatestAiDraft } from '../../../aiDraft/hooks/useLatestAiDraft';
 import { aiDraftCopy } from '../../../aiDraft/copy';
 import './TraineePlans.css';
 import { traineesCopy } from '../../copy';
+
+/** What a new plan starts from (router state for the plan builder). */
+type PlanStart = { loadAiDraftId: string } | { splitOnly: SplitOnlyRequest };
 
 interface TraineePlansProps {
   trainee: CoachTraineeDetail;
@@ -30,17 +34,17 @@ export function TraineePlans({ trainee, onPlansChanged }: TraineePlansProps) {
   const { data: plans, error, isLoading, reload } = useLoad(load, copy.plansLoadError);
   const ai = useLatestAiDraft(trainee.id);
   // The week picker: which action opened it, the weeks the server offers (fresh each time),
-  // and the AI draft the new plan starts from ("Use in a new plan").
-  const [picker, setPicker] = useState<{ mode: WeekPickerMode; options: PlanWeekOptions; aiDraftId?: string } | null>(null);
+  // and what the new plan starts from: the whole AI draft, or only its split (Phase 12b).
+  const [picker, setPicker] = useState<{ mode: WeekPickerMode; options: PlanWeekOptions; start?: PlanStart } | null>(null);
   const [isOpeningPicker, setIsOpeningPicker] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState<string>();
 
-  async function openPicker(mode: WeekPickerMode, aiDraftId?: string) {
+  async function openPicker(mode: WeekPickerMode, start?: PlanStart) {
     setIsOpeningPicker(true);
     setCreateError(undefined);
     try {
-      setPicker({ mode, options: await listPlanWeeks(trainee.id), aiDraftId });
+      setPicker({ mode, options: await listPlanWeeks(trainee.id), start });
     } catch {
       setCreateError(copy.weeksLoadError);
     } finally {
@@ -55,22 +59,25 @@ export function TraineePlans({ trainee, onPlansChanged }: TraineePlansProps) {
     try {
       const plan = await createPlan(trainee.id, { weekStartDate, duplicatePrevious: picker.mode === 'duplicate' });
       onPlansChanged();
-      navigate(planPath(trainee.id, plan.id), picker.aiDraftId ? { state: { loadAiDraftId: picker.aiDraftId } } : undefined);
+      navigate(planPath(trainee.id, plan.id), picker.start ? { state: picker.start } : undefined);
     } catch (createFailure) {
       setCreateError(createFailure instanceof Error ? createFailure.message : copy.createError);
       reload();
       setIsCreating(false);
       // The weeks may have changed (e.g. a plan made elsewhere): show the fresh state.
-      void openPicker(picker.mode, picker.aiDraftId);
+      void openPicker(picker.mode, picker.start);
     }
   }
 
   return (
     <div className="trainee-plans">
-      <AiDraftCard
+      <TrainingSummaryCard
         ai={ai}
         disabled={isOpeningPicker || picker !== null}
-        onUseInNewPlan={() => ai.ready && void openPicker('new', ai.ready.id)}
+        onUseFullPlan={() => ai.ready && void openPicker('new', { loadAiDraftId: ai.ready.id })}
+        onUseSplitOnly={({ splitId, daysPerWeek }) =>
+          void openPicker('new', { splitOnly: { splitId, daysPerWeek, recommendationId: ai.ready?.id } })
+        }
       />
 
       {!picker && (

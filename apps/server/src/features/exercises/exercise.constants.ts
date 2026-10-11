@@ -64,6 +64,45 @@ export const FORCE_TYPE_IDS = ['push', 'pull', 'static', 'dynamic'] as const;
 export type ForceType = (typeof FORCE_TYPE_IDS)[number];
 
 /**
+ * Movement patterns (Phase 12b): what a workout slot asks for. Derived in code from the
+ * factual fields (name, body part, type — exercisePatterns.ts), stored on the exercise
+ * family, editable by the coach. The labels live in @sistem/shared copy (trainingPatterns).
+ */
+export const PATTERN_IDS = [
+  'squat',
+  'lunge',
+  'hinge',
+  'glute_bridge',
+  'glute_isolation',
+  'hip_abduction',
+  'hip_adduction',
+  'knee_flexion',
+  'knee_extension',
+  'calf_raise',
+  'horizontal_push',
+  'chest_fly',
+  'vertical_push',
+  'shoulder_raise',
+  'rear_delt',
+  'horizontal_pull',
+  'vertical_pull',
+  'shrug',
+  'elbow_flexion',
+  'elbow_extension',
+  'forearm',
+  'core',
+  'carry',
+  'power',
+  'conditioning',
+  'mobility',
+] as const;
+export type PatternId = (typeof PATTERN_IDS)[number];
+
+/** Who set an exercise family's patterns / membership: re-running the tagger never overwrites 'coach'. */
+export const TAG_SOURCE_IDS = ['auto', 'coach'] as const;
+export type TagSource = (typeof TAG_SOURCE_IDS)[number];
+
+/**
  * Training-adaptation tags an exercise targets (distinct from onboarding's
  * GOAL_IDS, which are user-level life goals like "lose_weight" — these are
  * physiological targets like "hypertrophy". Bridging the two vocabularies is

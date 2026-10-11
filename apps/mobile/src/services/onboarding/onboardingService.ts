@@ -18,7 +18,7 @@ const STEP_FIELDS: Record<OnboardingStepId, (keyof OnboardingAnswersPayload)[]> 
   welcome: [],
   basic_profile: ['name', 'birthDate', 'height', 'weight', 'gender', 'units'],
   goals: ['goals'],
-  frequency: ['trainingFrequency'],
+  frequency: ['trainingFrequency', 'trainingExperience'],
   activities: ['preferredActivities'],
   exercise_preferences: ['exercisePreferences'],
   recovery: ['recovery'],
@@ -37,6 +37,7 @@ function toAnswersPayload(formState: OnboardingFormState): OnboardingAnswersPayl
     units: formState.units,
     goals: formState.goals,
     trainingFrequency: formState.trainingFrequency,
+    trainingExperience: formState.trainingExperience,
     preferredActivities: formState.preferredActivities,
     exercisePreferences: {
       favoriteExerciseNotes: formState.exercisePreferences.favoriteExerciseNotes.trim() || undefined,

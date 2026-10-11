@@ -152,6 +152,7 @@ function mapOnboardingToFormState(onboarding: MyOnboarding, fallbackName: string
     },
     goals: p?.goals ?? [],
     trainingFrequency: p?.trainingFrequency ?? INITIAL_ONBOARDING_STATE.trainingFrequency,
+    trainingExperience: p?.trainingExperience ?? null,
     preferredActivities: p?.preferredActivities ?? [],
     exercisePreferences: {
       favoriteExerciseNotes: p?.exercisePreferences?.favoriteExerciseNotes ?? '',

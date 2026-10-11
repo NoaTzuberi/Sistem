@@ -33,6 +33,8 @@ export interface DraftExercise extends DraftTargets {
   setTargets: DraftSetTarget[] | null;
   /** Interval mode (HIIT / Tabata) — timed sets only; a superset is all interval or none. */
   interval: boolean;
+  /** Phase 12b: the slot of the workout's type it fills; undefined = "Other". */
+  slotId?: string;
 }
 
 export interface DraftWorkout {
@@ -41,6 +43,8 @@ export interface DraftWorkout {
   title: string;
   dayOfWeek?: number;
   notes: string;
+  /** Phase 12b: the workout type (slot template); undefined = free workout. */
+  workoutType?: string;
   exercises: DraftExercise[];
 }
 
@@ -49,6 +53,16 @@ export interface PlanDraft {
   workouts: DraftWorkout[];
   /** The AI recommendation the workouts were loaded from (its rationale shows beside the plan). */
   aiRecommendationId?: string;
+  /** Phase 12b: the split the plan follows. */
+  splitId?: string;
+}
+
+/** "Use split only" (Phase 12b, router state from the Plans tab): build the plan's workouts from this split. */
+export interface SplitOnlyRequest {
+  splitId: string;
+  daysPerWeek: number;
+  /** The AI draft it came from: linked for the rationale, its picks offered as slot suggestions. */
+  recommendationId?: string;
 }
 
 /** The keys of a draft in payload order — to match a save response back to it. */

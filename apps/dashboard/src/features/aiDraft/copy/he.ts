@@ -4,6 +4,24 @@ import { plural } from '@sistem/shared';
 // text. The model's own texts arrive in the coach's language (Phase 15). DRAFT Hebrew (phase-15 report).
 export const he = {
   training: {
+    // Phase 12b — Training summary (split options, the coach's paths)
+    summaryTitle: 'סיכום אימונים',
+    experience: 'ניסיון',
+    splitOptions: 'אפשרויות חלוקה',
+    recommended: 'מומלץ',
+    drafted: 'יש תוכנית',
+    requested: 'הבחירה שלך',
+    pros: 'יתרונות',
+    cons: 'חסרונות',
+    useFullPlan: 'שימוש בתוכנית ה-AI המלאה',
+    useSplitOnly: 'שימוש בחלוקה בלבד',
+    generateForSplit: 'יצירת תוכנית לחלוקה הזו',
+    regenerateFor: 'יצירה מחדש עבור',
+    aiChooses: 'ה-AI בוחר',
+    outsideDays: 'מחוץ לימים שלה',
+    legacyNote: 'טיוטה מלפני אפשרויות החלוקה: תוכנית אחת, בלי אפשרויות.',
+    forSplit: 'חלוקה: {split}',
+    slotFocus: '{type} · {focus}',
     title: 'טיוטת AI',
     none: 'עדיין אין טיוטת AI למתאמנת הזו.',
     generate: 'יצירת טיוטת AI',
@@ -74,6 +92,7 @@ export const he = {
     favoriteExercises: 'תרגילים אהובים',
     wantsToImprove: 'רוצה להשתפר ב־',
     recoveryNotes: 'הערות התאוששות',
+    experience: 'ניסיון באימונים',
     targetWeight: 'משקל יעד',
     targetWeightValue: '{weight} ק״ג',
     inWeeks: ' תוך {weeks} שבועות',

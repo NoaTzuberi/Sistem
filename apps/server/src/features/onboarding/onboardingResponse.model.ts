@@ -1,5 +1,6 @@
 import { Schema, Types, model } from 'mongoose';
-import type { NutritionPreferences, OnboardingStepId, WeightGoalTimeframe } from '@sistem/types';
+import type { NutritionPreferences, OnboardingStepId, TrainingExperience, WeightGoalTimeframe } from '@sistem/types';
+import { TRAINING_EXPERIENCE_IDS } from '../users/users.constants';
 import { ONBOARDING_STEP_IDS } from './onboarding.constants';
 import {
   ALLERGY_IDS,
@@ -44,6 +45,8 @@ export interface OnboardingAnswersFields {
   nutritionPreferences?: NutritionPreferences;
   /** Phase 13a+ ("My goal"). */
   weightGoal?: WeightGoalFields;
+  /** Phase 12b (optional, on the frequency step). */
+  trainingExperience?: TrainingExperience;
 }
 
 export interface WeightGoalFields {
@@ -136,6 +139,7 @@ const answersSchema = new Schema<OnboardingAnswersFields>(
     recovery: { type: recoverySchema },
     nutritionPreferences: { type: nutritionPreferencesSchema },
     weightGoal: { type: weightGoalSchema },
+    trainingExperience: { type: String, enum: TRAINING_EXPERIENCE_IDS },
   },
   { _id: false },
 );

@@ -17,8 +17,12 @@ import type {
   CreateNutritionTemplatePayload,
   CreatePlanPayload,
   DeleteFoodItemResult,
+  ExerciseFamilyDetail,
+  ExerciseFamilySearchParams,
+  ExerciseFamilySearchResult,
   ExerciseSearchParams,
   ExerciseSearchResult,
+  FamilyHistory,
   FoodItem,
   FoodItemPayload,
   FormulaSex,
@@ -31,6 +35,9 @@ import type {
   PlanWeekOptions,
   SaveNutritionPlanPayload,
   SavePlanPayload,
+  TrainingConfig,
+  TrainingSettingsPayload,
+  UpdateExerciseFamilyPayload,
   WorkoutLog,
 } from '@sistem/types';
 import { extractErrorMessage } from './createApiClient';
@@ -112,6 +119,58 @@ export function createCoachApi(client: AxiosInstance) {
 
   async function searchExercises(params: ExerciseSearchParams = {}): Promise<ExerciseSearchResult> {
     const { data } = await client.get<ExerciseSearchResult>('/coach/exercises', { params });
+    return data;
+  }
+
+  // --- Training config and exercise families (Phase 12b) ---------------------------
+
+  async function getTrainingConfig(): Promise<{ config: TrainingConfig; defaults: TrainingConfig }> {
+    const { data } = await client.get<{ config: TrainingConfig; defaults: TrainingConfig }>('/coach/training/config');
+    return data;
+  }
+
+  async function saveTrainingSettings(payload: TrainingSettingsPayload): Promise<{ config: TrainingConfig; defaults: TrainingConfig }> {
+    const { data } = await client.put<{ config: TrainingConfig; defaults: TrainingConfig }>('/coach/training/settings', payload);
+    return data;
+  }
+
+  /** One row per family (primaries only): the slot picker and the library review screen. */
+  async function searchExerciseFamilies(params: ExerciseFamilySearchParams = {}): Promise<ExerciseFamilySearchResult> {
+    const { data } = await client.get<ExerciseFamilySearchResult>('/coach/exercise-families', { params });
+    return data;
+  }
+
+  /** With a trainee: each variant says whether her equipment and level allow it. */
+  async function getExerciseFamily(familyId: string, traineeId?: string): Promise<ExerciseFamilyDetail> {
+    const { data } = await client.get<ExerciseFamilyDetail>(`/coach/exercise-families/${familyId}`, { params: traineeId ? { traineeId } : {} });
+    return data;
+  }
+
+  async function updateExerciseFamily(familyId: string, payload: UpdateExerciseFamilyPayload): Promise<ExerciseFamilyDetail> {
+    const { data } = await client.patch<ExerciseFamilyDetail>(`/coach/exercise-families/${familyId}`, payload);
+    return data;
+  }
+
+  async function setExerciseFamilyPrimary(familyId: string, exerciseId: string): Promise<ExerciseFamilyDetail> {
+    const { data } = await client.put<ExerciseFamilyDetail>(`/coach/exercise-families/${familyId}/primary`, { exerciseId });
+    return data;
+  }
+
+  /** Moves every exercise of `sourceFamilyId` into `familyId`. */
+  async function mergeExerciseFamily(familyId: string, sourceFamilyId: string): Promise<ExerciseFamilyDetail> {
+    const { data } = await client.post<ExerciseFamilyDetail>(`/coach/exercise-families/${familyId}/merge`, { familyId: sourceFamilyId });
+    return data;
+  }
+
+  /** The chosen exercises become a new family; answers with the new family. */
+  async function splitExerciseFamily(familyId: string, exerciseIds: string[]): Promise<ExerciseFamilyDetail> {
+    const { data } = await client.post<ExerciseFamilyDetail>(`/coach/exercise-families/${familyId}/split`, { exerciseIds });
+    return data;
+  }
+
+  /** Her history per variant of a family (PRs and "last time" stay per variant). */
+  async function getFamilyHistory(traineeId: string, familyId: string): Promise<FamilyHistory> {
+    const { data } = await client.get<FamilyHistory>(`/coach/trainees/${traineeId}/exercise-history`, { params: { familyId } });
     return data;
   }
 
@@ -197,9 +256,10 @@ export function createCoachApi(client: AxiosInstance) {
   async function generateAiRecommendation<T extends AiRecommendationType = 'training_plan'>(
     traineeId: string,
     type: T = 'training_plan' as T,
+    options: { splitId?: string } = {},
   ): Promise<AiRecommendationOf<T>> {
     try {
-      const { data } = await client.post<{ recommendation: AiRecommendationOf<T> }>(aiPath(traineeId), { type });
+      const { data } = await client.post<{ recommendation: AiRecommendationOf<T> }>(aiPath(traineeId), { type, ...options });
       return data.recommendation;
     } catch (error) {
       // Already running: that one is the answer.
@@ -312,6 +372,15 @@ export function createCoachApi(client: AxiosInstance) {
     listTraineeBodyMetrics,
     getTraineeAchievements,
     searchExercises,
+    getTrainingConfig,
+    saveTrainingSettings,
+    searchExerciseFamilies,
+    getExerciseFamily,
+    updateExerciseFamily,
+    setExerciseFamilyPrimary,
+    mergeExerciseFamily,
+    splitExerciseFamily,
+    getFamilyHistory,
     listPlans,
     listPlanWeeks,
     getPlan,

@@ -25,11 +25,12 @@ export function useLatestAiDraft<T extends AiRecommendationType = 'training_plan
     return () => window.clearInterval(timer);
   }, [running, reload]);
 
-  const generate = useCallback(async () => {
+  /** `splitId` (training plan, Phase 12b): build the plan for that split. */
+  const generate = useCallback(async (options: { splitId?: string } = {}) => {
     setIsStarting(true);
     setStartError(undefined);
     try {
-      await generateAiRecommendation(traineeId, type);
+      await generateAiRecommendation(traineeId, type, options);
       reload();
     } catch (failure) {
       setStartError(failure instanceof Error ? failure.message : aiDraftCopy[getActiveLanguage()].training.loadError);

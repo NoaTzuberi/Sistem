@@ -121,7 +121,12 @@ export interface OnboardingAnswers {
   nutritionPreferences?: NutritionPreferences;
   /** Phase 13a+ ("My goal"). Missing = not answered / not asked. */
   weightGoal?: WeightGoal;
+  /** Phase 12b (frequency step, optional). Missing = not answered. */
+  trainingExperience?: TrainingExperience;
 }
+
+/** How long she has trained consistently: new < 6 months · some 6 months–2 years · experienced 2+ years. */
+export type TrainingExperience = 'new' | 'some' | 'experienced';
 
 export type DietType = 'none' | 'vegetarian' | 'vegan' | 'pescatarian';
 /** Combinable with the diet type. */
@@ -188,6 +193,8 @@ export interface OnboardingAnswersPayload {
   nutritionPreferences?: NutritionPreferences;
   /** Target weight in her weight unit (stored in kg); null clears the goal. */
   weightGoal?: { targetWeight: number; timeframe: WeightGoalTimeframe | null } | null;
+  /** null clears the answer. */
+  trainingExperience?: TrainingExperience | null;
 }
 
 export interface SaveOnboardingStepPayload {
@@ -259,6 +266,10 @@ export interface ExerciseFacts {
   equipment: string[];
   difficulty: string;
   movementType: string;
+  /** Phase 12b: its equipment-variant family, which variant it is, and the family's movement patterns. */
+  familyId?: string;
+  variant?: VariantId;
+  patterns?: PatternId[];
 }
 
 export interface PlanExercise {
@@ -281,6 +292,8 @@ export interface PlanExercise {
    * rest, one set = one round. A superset is interval as a whole (a circuit) or not at all.
    */
   interval?: boolean;
+  /** Phase 12b, coach-only: the workout-type slot it fills (trainee APIs leave it out). */
+  slotId?: string;
   resolvedSets: ResolvedPlanSet[];
 }
 
@@ -291,6 +304,8 @@ export interface PlanWorkout {
   dayOfWeek?: number;
   order: number;
   notes?: string;
+  /** Phase 12b, coach-only: its workout type (slot template); missing = free workout. */
+  workoutType?: string;
   exercises: PlanExercise[];
 }
 
@@ -379,6 +394,8 @@ export interface CoachPlan extends Plan {
   locked: boolean;
   /** The AI recommendation this plan was loaded from (coach-only; Phase 12). */
   aiRecommendationId?: string;
+  /** Phase 12b: the split the plan follows (coach-only). */
+  splitId?: string;
 }
 
 export interface PlanExerciseInput {
@@ -397,6 +414,8 @@ export interface PlanExerciseInput {
   setTargets?: PlanSetTarget[];
   /** Timed sets only; a superset must be all interval or none to publish. */
   interval?: boolean;
+  /** A slot of the workout's type (Phase 12b). */
+  slotId?: string;
 }
 
 export interface PlanWorkoutInput {
@@ -405,6 +424,8 @@ export interface PlanWorkoutInput {
   title: string;
   dayOfWeek?: number;
   notes?: string;
+  /** A workout type of the coach's training config (Phase 12b); omitted = free workout. */
+  workoutType?: string;
   exercises: PlanExerciseInput[];
 }
 
@@ -414,6 +435,8 @@ export interface SavePlanPayload {
   workouts: PlanWorkoutInput[];
   /** Links the plan to the AI recommendation it was loaded from; null clears; omitted keeps. */
   aiRecommendationId?: string | null;
+  /** A split of the coach's training config; null clears; omitted keeps (Phase 12b). */
+  splitId?: string | null;
 }
 
 /** Body of POST …/plans. */
@@ -890,6 +913,8 @@ export interface AiTraineeProfile {
   muscleFocus: string[];
   equipment: string[];
   recoveryFlags: string[];
+  /** Phase 12b; missing = she didn't answer. */
+  experience?: TrainingExperience;
   notes: { favoriteExercises?: string; exercisesToImprove?: string; recovery?: string };
 }
 
@@ -906,6 +931,10 @@ export interface AiPlanExercise {
   supersetGroup?: string;
   /** For the coach only: why this exercise. */
   why: string;
+  /** Phase 12b drafts: the slot it fills, its family and the variant chosen for her equipment. */
+  slotId?: string;
+  familyId?: string;
+  variant?: VariantId;
 }
 
 export interface AiPlanWorkout {
@@ -914,15 +943,33 @@ export interface AiPlanWorkout {
   dayOfWeek?: number;
   /** For the coach only. */
   focus: string;
+  /** Phase 12b drafts: the workout type of the split's day. */
+  workoutType?: string;
   exercises: AiPlanExercise[];
+}
+
+/** One split the AI considers for her (Phase 12b), best first. */
+export interface AiSplitOption {
+  splitId: string;
+  daysPerWeek: number;
+  why: string;
+  pros: string[];
+  cons: string[];
 }
 
 /** The training plan draft, with its rationale for the coach. */
 export interface AiTrainingPlanDraft {
   summary: string;
-  split: string;
+  /** Phase 12 drafts: the split in words. Phase 12b drafts use splitId / splitOptions. */
+  split?: string;
   considerations: string[];
   workouts: AiPlanWorkout[];
+  /** Phase 12b: the split the workouts follow (= splitOptions[0]). */
+  splitId?: string;
+  /** Phase 12b: 1–3 split options, best first; missing on Phase 12 drafts. */
+  splitOptions?: AiSplitOption[];
+  /** Phase 12b: how the AI reads her experience (for the coach). */
+  experienceRead?: string;
 }
 
 export interface AiRecommendationInputSummary {
@@ -933,6 +980,8 @@ export interface AiRecommendationInputSummary {
   guidanceNote?: string;
   candidateCount: number;
   promptVersion: string;
+  /** Phase 12b: the split the coach asked for (regenerate for a split). */
+  requestedSplitId?: string;
 }
 
 interface AiRecommendationBase {
@@ -1074,6 +1123,187 @@ export interface AiRecommendationLatest<R extends AiRecommendation = AiRecommend
 /** Body of POST …/ai-recommendations */
 export interface CreateAiRecommendationPayload {
   type: AiRecommendationType;
+  /** training_plan only (Phase 12b): build the plan for this split. */
+  splitId?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Training splits, workout-type slots and exercise families (Phase 12b, PRD §8 v2).
+// Defaults in code (apps/server trainingSplits), per-coach overrides in TrainingSettings.
+// Labels of ids live in @sistem/shared copy (trainingCopy).
+// ---------------------------------------------------------------------------
+
+export type PatternId =
+  | 'squat'
+  | 'lunge'
+  | 'hinge'
+  | 'glute_bridge'
+  | 'glute_isolation'
+  | 'hip_abduction'
+  | 'hip_adduction'
+  | 'knee_flexion'
+  | 'knee_extension'
+  | 'calf_raise'
+  | 'horizontal_push'
+  | 'chest_fly'
+  | 'vertical_push'
+  | 'shoulder_raise'
+  | 'rear_delt'
+  | 'horizontal_pull'
+  | 'vertical_pull'
+  | 'shrug'
+  | 'elbow_flexion'
+  | 'elbow_extension'
+  | 'forearm'
+  | 'core'
+  | 'carry'
+  | 'power'
+  | 'conditioning'
+  | 'mobility';
+
+export type VariantId =
+  | 'barbell'
+  | 'dumbbell'
+  | 'kettlebell'
+  | 'smith_machine'
+  | 'cable'
+  | 'band'
+  | 'machine'
+  | 'ez_bar'
+  | 'trap_bar'
+  | 'plate'
+  | 'medicine_ball'
+  | 'exercise_ball'
+  | 'bodyweight'
+  | 'other';
+
+export interface TrainingSlot {
+  id: string;
+  /** An exercise family fits the slot when it has one of these patterns. */
+  patterns: PatternId[];
+  required: boolean;
+  maxExercises: number;
+  /** The coach's own label (a slot she added); default slots are labelled by id in the copy. */
+  label?: string;
+}
+
+export interface WorkoutTypeConfig {
+  id: string;
+  slots: TrainingSlot[];
+  /** The coach's own label; default types are labelled by id in the copy. */
+  label?: string;
+  /** A default the coach still has to confirm (e.g. what "ABC" means to her). */
+  coachToConfirm?: boolean;
+}
+
+export interface SplitConfig {
+  id: string;
+  /** Days per week this split fits → the workout type of each day, in order. */
+  days: Record<string, string[]>;
+  enabled: boolean;
+  coachToConfirm?: boolean;
+}
+
+/** GET /api/coach/training/config — the effective config (defaults + her overrides). */
+export interface TrainingConfig {
+  workoutTypes: WorkoutTypeConfig[];
+  splits: SplitConfig[];
+}
+
+/** PUT /api/coach/training/settings — her overrides (the settings screen comes later). */
+export interface TrainingSettingsPayload {
+  workoutTypes?: Record<string, { slots: TrainingSlot[] }>;
+  splits?: Record<string, { enabled?: boolean; days?: Record<string, string[]> }>;
+}
+
+export type FamilyReviewReason = 'unclear_pattern' | 'pattern_differs' | 'ambiguous_name' | 'many_copies';
+
+export interface ExerciseVariantSummary {
+  exerciseId: string;
+  variant: VariantId;
+  name: string;
+  equipment: string[];
+  difficulty: string;
+  isPrimary: boolean;
+  /** With a trainee: her equipment and level allow it. */
+  allowed?: boolean;
+}
+
+/** One row of the family picker / library: the primaries of a family. */
+export interface ExerciseFamilySummary {
+  id: string;
+  name: string;
+  muscles: string[];
+  movementType: string;
+  patterns: PatternId[];
+  levels: { min: string; max: string };
+  /** Primaries only, one per variant. */
+  variants: ExerciseVariantSummary[];
+  /** Copies of a variant from other source programs (kept for old plans and logs). */
+  copyCount: number;
+  reviewReasons: FamilyReviewReason[];
+  reviewedAt: string | null;
+  source: 'auto' | 'coach';
+  patternSource: 'auto' | 'coach';
+}
+
+/** GET …/exercise-families/:id — also the copies. */
+export interface ExerciseFamilyDetail extends ExerciseFamilySummary {
+  members: ExerciseVariantSummary[];
+}
+
+export interface ExerciseFamilySearchParams {
+  search?: string;
+  /** Slot filter: both or neither. */
+  workoutType?: string;
+  slotId?: string;
+  /** Comma-separated PatternIds (narrows within the slot, or alone). */
+  patterns?: string;
+  /** Her equipment and level filter the variants (and families without an allowed variant). */
+  traineeId?: string;
+  /** With traineeId: false = also families she has no equipment for (variants marked). */
+  equipmentOnly?: boolean;
+  /** Comma-separated difficulties. */
+  levels?: string;
+  /** Library review screen. */
+  review?: 'needed' | 'unclear' | 'reviewed';
+  page?: number;
+  limit?: number;
+}
+
+export interface ExerciseFamilySearchResult {
+  items: ExerciseFamilySummary[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  /** Families the coach used most recently (≤ 8), for the "Recently used" row — matching the filter. */
+  recent: ExerciseFamilySummary[];
+}
+
+/** PATCH …/exercise-families/:id */
+export interface UpdateExerciseFamilyPayload {
+  name?: string;
+  patterns?: PatternId[];
+  /** true marks it reviewed; false puts it back on the review list. */
+  reviewed?: boolean;
+}
+
+/** One variant's history for a trainee (the builder's exercise card). PRs and "last time" stay per variant. */
+export interface VariantHistory {
+  exerciseId: string;
+  variant: VariantId;
+  name: string;
+  /** Her last completed performance (the session's "Last time"); null = never done. */
+  last: LastPerformance | null;
+  /** Her newest personal record on it: value = kg (weight), reps (at `weight`) or seconds (duration). */
+  best: { type: PersonalRecordType; value: number; weight?: number; date: string } | null;
+}
+
+/** GET /api/coach/trainees/:id/exercise-history?familyId= */
+export interface FamilyHistory {
+  familyId: string;
+  variants: VariantHistory[];
 }
 
 // ---------------------------------------------------------------------------

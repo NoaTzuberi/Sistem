@@ -86,7 +86,9 @@ dev server, and `npm run build` still uses `VITE_API_URL` from `apps/mobile/.env
 ### Optional data
 
 ```bash
-npm run import:exercises          # exercise library from the Kaggle CSV (facts only)
+npm run import:exercises          # exercise library from the Kaggle CSV (facts only); also tags + groups it
+npm run clean:exercise-names      # drops the dataset's "30 …" name prefix (safe to re-run; ids / slugs unchanged)
+npm run group:exercises           # movement patterns + equipment-variant families (safe to re-run; coach edits kept)
 npm run seed:knowledge            # knowledge base embeddings (needs VOYAGE_API_KEY)
 npm run seed:dev                  # DEV ONLY: 1 coach + 2 onboarded trainees (one with a plan)
 npm run promote:coach -- <email>  # DEV ONLY: make an existing user a coach

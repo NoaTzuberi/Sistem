@@ -1,0 +1,597 @@
+SISTEM — PHASE 12b REPORT: AI-ASSISTED PLAN BUILDER v2
+Date: 2026-10-10 (work done 2026-10-09 / 10)
+Scope: docs/BUILD_PLAN.md "Phase 12b" (PRD §8 "AI-assisted plan builder v2") with the owner's answers of 2026-10-09,
+including the two exercise-library steps that came first (0a clean names, 0b equipment-variant families). No other phase
+was started.
+
+================================================================================
+1. SUMMARY
+================================================================================
+- Step 0a: exercise names are cleaned — the dataset's "30 …" / "30 Day …" prefix (with its body-part word) and a stray
+  trailing dash are gone from the name shown. 198 of 2,893 names; ids, slugs and the original title are untouched.
+- Step 0b: the same movement with different equipment is now ONE exercise family with variants. 2,893 exercises →
+  2,181 families (192 with 2+ variants). One primary exercise per family + variant (2,481); the 412 other copies keep
+  their ids for old plans / logs / PRs and are offered nowhere except "Show all" search and the family card.
+- Every family is tagged with movement patterns (26) from the exercise name first, then body part and type. 141
+  exercises (132 families) are unclear; the coach's review list has 197 families.
+- The AI draft became a guided flow: one call returns a "Training summary" (who she is, experience, points to check),
+  1–3 split options with pros / cons from the split config, and the full plan for option 1 — every exercise in a slot,
+  as a family + a variant she has the equipment for. All of it is checked in code and retried with its problems.
+- The coach chooses the path in the dashboard: use the full AI plan · use the split only (typed workouts, empty slots,
+  the AI's picks offered per slot) · regenerate (AI chooses, or for any split). A manual path does the same without AI:
+  "+ Add workout" with a workout type, a slot-filtered picker, and a variant switch in the exercise card.
+- New: an Exercises screen in the dashboard (review list, patterns, primary, merge / split families) and one optional
+  onboarding question (training experience) on the frequency step.
+
+================================================================================
+2. FINAL NUMBERS (dev database, after the last run)
+================================================================================
+  Exercises                              2,893
+  Names cleaned (0a)                       198   (176 "30 …" prefixes + 22 trailing dashes; 6 real-number names kept)
+  Families                               2,181
+  Families with 2+ variants                192
+  Primaries (one per family + variant)   2,481
+  Copies (kept, not offered)               412
+  Exercises with unclear patterns          141   (132 families)
+  Coach review list                        197 families:
+     unclear pattern 139 · same name, other pattern 34 · name match unclear 19 · >4 copies of one variant 16
+     (a family can have more than one reason)
+
+Families per pattern, beginner / intermediate (what the slots can draw from, before her equipment):
+  core 468 · power 209 · conditioning 195 · mobility 177 · horizontal push 172 · vertical push 117 · squat 117 ·
+  biceps 114 · lunge 100 · triceps 99 · horizontal pull 97 · hinge 90 · vertical pull 67 · shoulder raise 61 ·
+  rear delts 40 · chest fly 38 · calf raise 21 · glute isolation 21 · forearms 16 · hip abduction 15 ·
+  glute bridge 14 · hamstring curl 14 · carry 11 · hip adduction 10 · shrug 10 · leg extension 8
+Tightening (asked before building on the tags): horizontal push ~425 → 235 exercises, power ~325 → 250 exercises
+(what is left in power really is Olympic lifts, jumps and throws — the dataset has many).
+
+Files for the coach / owner (apps/server/data/processed/, gitignored):
+  exercise-name-cleanup-preview.json   every before → after of step 0a
+  exercise-review-<timestamp>.json     the review list with each family's members (rewritten on every run)
+
+================================================================================
+3. DECISIONS AND HOW THEY WERE BUILT
+================================================================================
+Owner answers (2026-10-09) are written into PRD §8 "Decisions — Phase 12b" and BUILD_PLAN "Phase 12b".
+
+0a — names (exercises/exerciseName.ts, `npm run clean:exercise-names`)
+- One pure function, used by the importer, the migration and the tests. The name is rebuilt from
+  source.originalTitle, so running it again changes nothing. The slug stays derived from the original title.
+- Only the number 30 is treated as the program prefix ("180 Jump", "3/4 sit-up", "90/90 …", "6 Way …" stay).
+  This was tightened after the first run: the first version would have stripped any leading number from a NEW name;
+  the 198 renames are identical before and after the fix.
+
+0b — families (features/exerciseFamilies, `npm run group:exercises`; also runs after import:exercises)
+- Key = movement words (source prefixes like HM / FYR2 / Holman / King Maker, equipment words, "weighted",
+  plural / hyphen spellings removed) + movement patterns + library type. The body part is NOT in the key (owner
+  decision): "Barbell Deadlift" filed under hamstrings, lower back and middle back is one family, and the family
+  keeps all those body parts.
+- Kept apart and put on the review list: the same name with different patterns (34), and names without a pattern
+  that appear under several body parts (19) — there the name alone is not trusted.
+- Variant = the equipment word in the name when there is one (Smith machine is filed as "machine" or "barbell" in
+  the dataset), else the library equipment.
+- Primary per family + variant: the coach's chosen primary → an exercise she already used in a plan → the plainest
+  name. The family name drops the equipment word only when the family really has several variants ("Romanian
+  Deadlift"), otherwise the full name stays ("Kettlebell Swing").
+- Coach edits are never overwritten by a re-run: exercises she moved (merge / split), family names and patterns she
+  changed, primaries she chose. Covered by a test.
+
+Movement patterns (exercises/exercisePatterns.ts)
+- Name rules first (the dataset's body part is often wrong: "Leg Extension" under hamstrings, deadlifts under middle
+  back), then generic words guarded by the body part ("press" on chest / shoulders), then a body-part fallback
+  (biceps, calves, abs …). No pattern, or a combo of 3+ patterns = unclear → review list.
+- An unreviewed unclear family is never offered in a slot or to the AI (found in the browser check: a combo like
+  "180 Jump to Renegade Side Raise" was showing in the horizontal-pull slot).
+
+Split config (features/trainingSplits/trainingSplit.config.ts + TrainingSettings per coach)
+  Splits:        full body 1–4 days · upper / lower 2, 4 · upper / lower / full body 3 · upper / lower + glute focus
+                 3, 4 · push / pull / legs 3, 6 · PPL + upper / lower 5 · ABC 3, 6 · ABC + glute focus 3, 6
+                 (7 days is planned as 6).
+  Workout types: full body · upper · lower · lower – glute focus · push · pull · legs · ABC A / B / C.
+  ABC = A chest + back, B legs, C shoulders + arms — marked `coachToConfirm` in the config; the note for the coach is
+  docs/reference/abc-split-question.md (Hebrew + English; local, gitignored like the rest of docs/reference).
+  Overrides are stored and merged (GET /api/coach/training/config, PUT /api/coach/training/settings); the settings
+  SCREEN is in the backlog (PRD §14, BUILD_PLAN backlog).
+
+AI (prompt version training-plan-v3)
+- One call: summary, experienceRead, considerations, splitOptions (as many as fit her days, max 3), and the workouts
+  of option 1. Split / workout type / slot ids come from the coach's config; families are aliases F001…F200; the
+  variant must be one listed for that family (only variants her equipment and level allow are listed).
+- Checked in code, problems sent back (max 3 attempts): split ids, day counts, option count, no duplicate option,
+  1–3 pros and cons, option 1 = the coach's split when she asked for one, the day pattern, slot belongs to the
+  workout type, the family's patterns fit the slot, the variant, required slots filled, max per slot — plus every
+  Phase 12 rule (the dashboard's own save + publish rules, one day per workout, no exercise twice, still in the
+  library). "5–5" reps are stored as a fixed 5.
+- Regenerate for a split: POST …/ai-recommendations { type, splitId }. A split outside her days uses its nearest
+  day count.
+- "Prefers low impact" removes power (plyometric / Olympic) families in code.
+- Experience: `new` / `some` / no answer → beginner + intermediate; `experienced` → + advanced (the library has only
+  13 advanced exercises, so the answer matters mostly for the split and volume).
+
+What changed in the Phase 12 flow and data
+- New optional fields only: Plan.splitId, workout.workoutType, exercise.slotId (coach-only — added in the coach's
+  plan view, never in the trainee's), Exercise.familyId / variant / isPrimaryVariant / familySource,
+  AiRecommendation.request, answers.trainingExperience. New collections: ExerciseFamily, TrainingSettings.
+- Existing plans have no types / slots and look and behave as before. "Duplicate last week" copies types and slots.
+- Existing AI drafts (v1 / v2) still open: the card shows them as one plan with "Use in a new plan", no options.
+- The side exercise library in the builder now lists families (search, pattern, level) instead of 2,893 rows.
+- Removed: the AiDraftCard component (replaced by TrainingSummaryCard); the per-muscle candidate selection.
+
+Things I decided inside your answers (say if you want any changed)
+- A slot holds at most 2 exercises by default (config).
+- In a typed workout the exercises stay grouped by slot; dragging reorders inside a slot.
+- A pick from the picker adds the first variant she can do and opens the variant chips in the row — one click to
+  swap. Swapping keeps sets, reps, rest, notes and the slot.
+- "Use split only" links the plan to the AI draft, so the rationale shows and the AI's picks appear as suggestions
+  in the empty slots (only when the plan is for the split the AI planned).
+- The picker's typo search is the shared one (one typo per word, like the food picker).
+- Family edits are global (the library is shared) — fine with one coach; with several coaches they need to become
+  per-coach.
+
+AI output text check (added 2026-10-11, owner's request before committing)
+- aiRecommendations/aiOutputText.ts `findForeignTextIssues`: walks every text in the parsed reply; allowed = Hebrew
+  and Latin letters plus Unicode's script-neutral characters (digits, punctuation, symbols, spaces, emoji and their
+  joiners / accents). Letters or digits of any other script (Thai, Cyrillic, Arabic, Chinese …) are a problem.
+- It runs in the generic runner (aiRecommendation.service.ts), next to each kind's own validation, so training,
+  nutrition and any later kind get it. Its sentences join the kind's issues, go back to the model and count toward
+  the same 3 attempts; each names the field ("splitOptions[0].why"), the characters and the text. At most 5 are
+  listed per attempt. No prompt change (the prompt version stays training-plan-v3).
+
+================================================================================
+4. FILES CHANGED
+================================================================================
+Added — server
+  apps/server/src/features/exercises/exerciseName.ts, exercisePatterns.ts, scripts/cleanExerciseNames.ts
+  apps/server/src/features/exerciseFamilies/
+    exerciseFamily.constants.ts / .model.ts / .service.ts / .controller.ts / .validation.ts
+    exerciseFamilyGrouping.ts, exerciseFamilyGrouping.service.ts, scripts/groupExercises.ts
+    __tests__/exerciseTagging.test.ts, __tests__/exerciseFamilies.api.test.ts
+  apps/server/src/features/trainingSplits/
+    trainingSplit.config.ts / .service.ts / .validation.ts / .controller.ts
+    trainingSettings.model.ts, traineeExerciseAccess.ts
+  apps/server/src/features/aiRecommendations/trainingPlan/trainingPlanSplits.ts
+Modified — server
+  apps/server/package.json                                scripts clean:exercise-names, group:exercises
+  features/exercises: exercise.constants.ts (PATTERN_IDS), exercise.model.ts, exercise.types.ts,
+    exercise.service.ts (facts carry family / variant / patterns), scripts/importExercises.ts, normalizeExercises.ts
+  features/plans: plan.model.ts, plan.types.ts, planWorkout.schema.ts, plan.validation.ts, planBuilder.service.ts
+  features/aiRecommendations: aiRecommendation.controller.ts / .kind.ts / .model.ts / .service.ts / .types.ts,
+    trainingPlan/trainingPlan.constants.ts, .kind.ts, trainingPlanCandidates.ts, trainingPlanProfile.ts,
+    trainingPlanPrompt.ts, trainingPlanValidation.ts, __tests__/aiRecommendations.test.ts, trainingPlanInput.test.ts,
+    nutritionRecommendations.test.ts (text check); added aiOutputText.ts + __tests__/aiOutputText.test.ts
+  features/onboarding: onboarding.constants.ts / .service.ts / .validation.ts, onboardingResponse.model.ts
+  features/users/users.constants.ts, features/coach/coach.routes.ts, i18n/locales/he.ts + en.ts
+
+Added / modified — packages
+  packages/types/src/index.ts          families, training config, split options, slots, experience
+  packages/api-client/src/coachApi.ts  training config, exercise families, family history, generate with splitId
+  packages/shared/src/trainingDisplay.ts, trainingSlots.ts (new), index.ts, onboardingSections.ts, copy/he.ts + en.ts
+
+Added — dashboard
+  features/aiDraft/components/TrainingSummaryCard/ (.tsx + .css)
+  features/planBuilder/components/SlotPicker/, VariantPanel/ (.tsx + .css), data/familyFacts.ts
+  features/trainingConfig/useTrainingConfig.ts
+  features/exerciseLibrary/ (copy, pages/ExerciseLibraryPage, components/FamilyDetail)
+Modified — dashboard
+  app/config/routes.ts, app/router/AppRouter.tsx, components/layout/DashboardShell, copy/he.ts + en.ts,
+  services/coach/coachService.ts
+  features/aiDraft: aiDraftToPlan.ts, AiRationalePanel.tsx, copy, hooks/useLatestAiDraft.ts
+  features/planBuilder: PlanEditor (.tsx + .css), WorkoutCard (.tsx + .css), ExerciseRow.tsx,
+    ExerciseLibrary (.tsx + .css), PlanBuilderPage.tsx, planDraft.ts, types.ts, data/exerciseFilters.ts, copy
+  features/trainees/components/TraineePlans/TraineePlans.tsx
+Deleted — dashboard
+  features/aiDraft/components/AiDraftCard/ (.tsx + .css)
+
+Modified — mobile (onboarding is protected: one optional question added, nothing else touched)
+  features/onboarding: steps/FrequencyStep/FrequencyStep.tsx, types.ts, pages/OnboardingPage/OnboardingPage.tsx,
+    copy/he.ts + en.ts; services/onboarding/onboardingService.ts
+
+Docs
+  README.md, docs/PRD.md, docs/BUILD_PLAN.md, docs/phase-reports/phase-12b-ai-plan-builder-v2.txt
+  docs/reference/abc-split-question.md (local, gitignored) · CLAUDE.md (gitignored — not in any commit)
+
+================================================================================
+5. DEPENDENCIES
+================================================================================
+Added: none. Removed: none. No new env variables.
+
+================================================================================
+6. HOW TO TEST
+================================================================================
+Commands (repo root):
+  npm test        -> 40 files, 582 server tests pass (3 new test files this phase) + the copy parity test (20).
+                     The model is always faked.
+    New / changed tests:
+    - exerciseTagging.test.ts: name cleaning (prefix, kept numbers, dash), tagging rules (name over body part,
+      tight horizontal push / power, fallbacks, unclear), family key, variant labels, grouping across body parts,
+      primaries, review reasons.
+    - exerciseFamilies.api.test.ts: families with one primary per variant; the slot filter (pattern, her equipment,
+      her level, "equipment only" off, experienced → advanced, a lower slot never offers the bench press); plain
+      names first; coach-only + her own trainees; rename / patterns / primary / merge / split survive a re-run of the
+      grouping; the review list and an unchecked combo staying out of a slot until reviewed; history per variant;
+      the training config + overrides + validation; plan workout types / slots saved, refused when unknown, hidden
+      from the trainee; the experience answer (save, invalid, clear).
+    - trainingPlanInput.test.ts: family candidates (per pattern, focus share, coach's picks first, no variant → not
+      offered, low impact → no power), the split menu (fits, cap at 6, requested split, none fits), the prompt and
+      schema.
+    - aiOutputText.test.ts + one test each in aiRecommendations.test.ts / nutritionRecommendations.test.ts: Hebrew,
+      English, digits, punctuation and emoji pass; Thai / Cyrillic / Chinese letters and other scripts' digits are
+      reported with their place in the reply; a reply with "קลาสית" is sent back and the retry is accepted.
+    - aiRecommendations.test.ts: v3 draft from onboarding; split options, slots and variants checked; a plan for the
+      split the coach asks for (and an unknown split refused); the three paths' data (types / slots saved on the
+      plan, coach-only); everything from Phase 12 still holds (retry, provider error, coach-only, nothing reaches
+      the trainee before publish).
+  npm run lint    -> 0 errors; the 2 older AuthContext warnings; the i18n audit passes (no hard-coded text, no
+                     physical CSS).
+  npm run build   -> passes. Dashboard 569 kB (176 kB gzip), mobile 659 kB (205 kB gzip) — both were already over
+                     Vite's 500 kB warning.
+  npm run dev:all -> works on the real ports (5002 / 5173 / 5174): /api/health 200, both apps 200, "MongoDB
+                     connected", a slot query answered. I stopped it afterwards (my own process).
+
+Library scripts (already applied to the dev database; both safe to re-run):
+  npm run clean:exercise-names   -> "2893 exercises checked, 0 renamed." on a second run
+  npm run group:exercises        -> prints the counts of section 2 and writes the review list
+
+One real split recommendation (dev database, seed trainee "Dev Trainee One", through the real API as
+coach@sistem.dev, 2026-10-09):
+  - Ready in about 3 minutes, 2 attempts, 161 candidate families, prompt training-plan-v3.
+  - Attempt 1 (gemini-3.8-flash, 44 s) listed the same split twice → "Split option 3: "upper_lower_glute" is already
+    option 1." was sent back. Attempt 2 was valid; it was served by the fallback gemini-3.5-flash-lite (137 s) because
+    the main model answered "high demand".
+  - Her profile: build muscle + strength, 3–4 days, full gym, focus glutes + legs, likes hip thrusts.
+  - Options: 1) Upper / Lower + glute focus · 4 days (recommended, plan drafted)  2) Upper / Lower · 4 days
+    3) Full body · 3 days — each with why, pros and cons, in Hebrew (the coach's language).
+  - Plan for option 1: Upper A (bench press, bent-over row, lat pull-down, dumbbell shoulder press, lateral raise,
+    triceps extension) · Lower (back squat, Romanian deadlift, hip thrust, leg curl, reverse lunge, crunch) ·
+    Upper B · Lower – glute focus (hip thrust 4 × 8–10, stiff-legged deadlift, Bulgarian split squat, abductor,
+    donkey kick, seated leg curl). Every exercise in a slot, with a variant; no weights, no notes.
+  - The draft stays in the dev database (the newest for that trainee).
+
+Browser check (dashboard, desktop width, coach@sistem.dev), Hebrew and English:
+  - Trainee → Plans: Training summary (summary, experience, points to check, 3 options with badges, the actions).
+    Selecting option 3 switches the buttons to "Use split only" + "Generate plan for this split".
+  - "Use split only" → week picker → the builder opened with 4 typed workouts, slots (required marked, 0 / 2), the
+    AI's pick offered in every empty slot; the plan autosaved.
+  - "Use" on a suggestion added Bench press with the AI's targets (4 × 5–6, rest 150).
+  - Slot picker (horizontal pull): "Her equipment only", level, search with a typo ("seatd row" → Seated Row),
+    "Recently used", keyboard ↓ + Enter added "Cable seated row" into the slot with its variant chips open;
+    clicking "Machine" swapped it to "Machine seated row".
+  - English: the same screen left-to-right, all new labels translated.
+  - Exercises screen: the review list (To review / Pattern unclear / Reviewed / All), a family's detail (name,
+    patterns chips, members, main / copy).
+  - Found and fixed there: the slot count read "2 / 0" in Hebrew (now isolated: "0 / 2"); unchecked combos showed in
+    slots (now excluded); number-led names sorted first (plain names first now); "… Raise" on shoulders and "Side
+    Bridge" were mis-tagged.
+  - The test plan (Nov 22–28) was deleted through the API; the coach's language was put back to Hebrew.
+
+Manual (npm run dev:all, dashboard http://localhost:5174, coach@sistem.dev / sistem-dev-1234):
+  1. Trainees → Dev Trainee One → Plans: the Training summary. Try the three paths.
+  2. In a plan: "+ Add workout" with a type → the slot template; "+ Add" on a slot → the picker; change a workout's
+     type (exercises move to matching slots, the rest to "Other").
+  3. On an exercise row: "<variant> · Variant & history" → swap the equipment; her history per variant shows once
+     she has logs.
+  4. Exercises (top bar): review a family, change patterns, make another exercise the main one, merge, split.
+  5. Mobile onboarding → frequency step: the optional experience question; the coach sees it in the trainee's
+     onboarding answers.
+
+================================================================================
+7. KNOWN ISSUES / TODOs
+================================================================================
+- Not checked in the browser: "Use full AI plan" end to end in this phase's UI (the same loader as Phase 12, and
+  covered by tests), "Generate plan for this split" / Regenerate (each costs a free-tier call — one real run was
+  made), merge / split / "Make main" in the Exercises screen (covered by the API test; clicking them changes the
+  shared library), the mobile experience question on a phone (it compiles and the save is tested).
+- The computer restarted during the final checks. Files and the dev database were intact; tests, lint, build and
+  dev:all were run again afterwards.
+- The AI's Hebrew had one glitch in the real run: a word with Thai letters inside ("קลาสית" for "קלאסית") in one
+  option's text. FIXED (2026-10-11, after the first version of this report): every AI reply — training and
+  nutrition — is now checked for characters outside Hebrew, Latin, digits, punctuation and emoji; a hit is sent
+  back to the model and retried like any other validation problem (see 3, "AI output text check"). Ordinary
+  spelling mistakes inside Hebrew are still not checked. The check was not run against the real model again (it
+  would cost a free-tier call); the draft already stored in the dev database still has the word.
+- The free tier is slow and often overloaded (3 minutes, fallback model). The v3 call is larger than Phase 12's:
+  about 7–11k input tokens and 4k output per attempt.
+- REQUIRED BEFORE LAUNCH (unchanged, PRD §14): a paid AI tier and the legal items. Until then dev / seed data only.
+- 197 families wait for the coach's review; until she checks them, the 132 unclear ones are simply not offered in
+  slots (they are still reachable under "Show all").
+- Thin patterns: leg extension 8, shrug 10, hip adduction 10, carry 11 families. Enough for a slot, little choice.
+- ABC is a guess until the coach answers docs/reference/abc-split-question.md.
+- No settings screen for splits / slots yet (backlog); the API is ready.
+- Family edits are global, not per coach (one coach today).
+- Exercise names and body parts stay English (dataset facts — as decided in Phase 15). Pattern, variant, slot,
+  workout-type and split labels are translated.
+- All new wording is PLACEHOLDER and the Hebrew is a DRAFT (appendix below).
+- Bundles: both apps over Vite's 500 kB warning (backlog "split the bundle").
+- The 2 oxlint warnings (AuthContext) are older than this phase.
+
+================================================================================
+8. SUGGESTED COMMITS (ready to paste — in order)
+================================================================================
+Note: commit 2 changes the API contract (packages/types, packages/api-client, packages/shared), so the dashboard and
+the mobile app build again only after commits 3 and 4, as in earlier phases.
+
+# 1) exercise library: clean names, movement patterns, equipment-variant families
+git add -A -- \
+  apps/server/package.json \
+  package.json \
+  README.md \
+  apps/server/src/features/exercises \
+  apps/server/src/features/exerciseFamilies
+git commit -m "feat: exercise library — clean dataset name prefixes, movement patterns from the factual fields, equipment-variant families with one primary per variant and a coach review list"
+
+# 2) server + contract: split config, slot-filtered family picker, plan slots, AI split recommendation, experience answer
+git add -A -- \
+  apps/server/src/features/trainingSplits \
+  apps/server/src/features/aiRecommendations \
+  apps/server/src/features/plans \
+  apps/server/src/features/onboarding \
+  apps/server/src/features/users/users.constants.ts \
+  apps/server/src/features/coach/coach.routes.ts \
+  apps/server/src/i18n \
+  packages/types \
+  packages/api-client \
+  packages/shared
+git commit -m "feat: phase 12b server — split and slot config with coach overrides, exercise-family API (slot / equipment / level filter, merge, split, primary, history per variant), workout types and slots on plans, AI split options with a slot-based plan (training-plan-v3), optional training-experience answer"
+
+# 3) dashboard: training summary, slot-based builder, slot picker, variants, exercise review screen
+git add -A -- \
+  apps/dashboard
+git commit -m "feat: phase 12b dashboard — training summary with split options and the three coach paths, workout types with exercise slots, slot-filtered family picker, variant switch with history, exercise library review screen"
+
+# 4) mobile: the optional experience question on the frequency step
+git add -A -- \
+  apps/mobile
+git commit -m "feat: optional training-experience question on the onboarding frequency step"
+
+# 5) docs
+git add -A -- \
+  docs/PRD.md \
+  docs/BUILD_PLAN.md \
+  docs/phase-reports/phase-12b-ai-plan-builder-v2.txt
+git commit -m "docs: phase 12b report; PRD decisions for exercise families, splits and the guided AI flow; backlog: training settings screen"
+
+================================================================================
+9. APPENDIX — NEW HEBREW COPY (DRAFT, for the owner's review)
+================================================================================
+The lines added to the Hebrew copy files in this phase, as they are in the code (key: 'text'). The English of each
+key is in the en.ts next to it. Everything here is placeholder wording.
+
+--- packages/shared/src/copy/he.ts
+    trainingExperience: 'ניסיון באימונים',
+    trainingExperience: {
+      new: 'פחות מחצי שנה',
+      some: 'חצי שנה עד שנתיים',
+      experienced: 'יותר משנתיים',
+    },
+  training: {
+    patterns: {
+      squat: 'סקוואט / לחיצת רגליים',
+      lunge: 'לאנג׳ / רגל אחת',
+      hinge: 'ציר ירך (הינג׳)',
+      glute_bridge: 'היפ ת׳ראסט / גשר ישבן',
+      glute_isolation: 'בידוד ישבן',
+      hip_abduction: 'הרחקת ירך',
+      hip_adduction: 'קירוב ירך',
+      knee_flexion: 'כפיפת ברך',
+      knee_extension: 'פשיטת ברך',
+      calf_raise: 'הרמות עקב',
+      horizontal_push: 'דחיקה אופקית',
+      chest_fly: 'פרפר חזה',
+      vertical_push: 'דחיקה אנכית',
+      shoulder_raise: 'הרמות כתפיים',
+      rear_delt: 'כתף אחורית',
+      horizontal_pull: 'משיכה אופקית',
+      vertical_pull: 'משיכה אנכית',
+      shrug: 'כיווץ כתפיים',
+      elbow_flexion: 'יד קדמית',
+      elbow_extension: 'יד אחורית',
+      forearm: 'אמות',
+      core: 'ליבה',
+      carry: 'נשיאה',
+      power: 'כוח מתפרץ / פליאומטרי',
+      conditioning: 'כושר אירובי',
+      mobility: 'מוביליטי',
+    },
+    workoutTypes: {
+      full_body: 'פול באדי',
+      upper: 'פלג גוף עליון',
+      lower: 'פלג גוף תחתון',
+      lower_glute: 'פלג גוף תחתון – דגש ישבן',
+      push: 'דחיקה',
+      pull: 'משיכה',
+      legs: 'רגליים',
+      abc_a: 'ABC – A (חזה + גב)',
+      abc_b: 'ABC – B (רגליים)',
+      abc_c: 'ABC – C (כתפיים + ידיים)',
+    },
+    slots: {
+      legs_knee: 'רגליים – ברך',
+      legs_hip: 'רגליים – ירך',
+      chest: 'חזה',
+      back: 'גב',
+      shoulders: 'כתפיים',
+      core: 'ליבה',
+      finisher: 'סיום',
+      horizontal_push: 'דחיקה אופקית',
+      horizontal_pull: 'משיכה אופקית',
+      vertical_push: 'דחיקה אנכית',
+      vertical_pull: 'משיכה אנכית',
+      shoulder_isolation: 'בידוד כתפיים',
+      biceps: 'יד קדמית',
+      triceps: 'יד אחורית',
+      squat: 'סקוואט / לחיצת רגליים',
+      hinge: 'ציר ירך',
+      single_leg: 'רגל אחת',
+      glutes: 'ישבן',
+      hamstrings: 'המסטרינג',
+      calves: 'שוקיים',
+      glute_bridge: 'היפ ת׳ראסט / גשר ישבן',
+      glute_isolation: 'בידוד ישבן',
+      hip_abduction: 'הרחקת ירך',
+      chest_press: 'לחיצת חזה',
+      shoulder_press: 'לחיצת כתפיים',
+      chest_fly: 'פרפר חזה',
+      side_delts: 'כתף אמצעית',
+      rear_delts: 'כתף אחורית',
+      traps: 'טרפזים',
+      quads: 'ארבע ראשי',
+    },
+    splits: {
+      full_body: 'פול באדי',
+      upper_lower: 'עליון / תחתון',
+      upper_lower_full: 'עליון / תחתון / פול באדי',
+      upper_lower_glute: 'עליון / תחתון + דגש ישבן',
+      ppl: 'דחיקה / משיכה / רגליים',
+      ppl_upper_lower: 'דחיקה / משיכה / רגליים + עליון / תחתון',
+      abc: 'ABC',
+      abc_glute: 'ABC + דגש ישבן',
+    },
+    variants: {
+      barbell: 'מוט',
+      dumbbell: 'משקולות יד',
+      kettlebell: 'קטלבל',
+      smith_machine: 'מכונת סמית׳',
+      cable: 'כבלים',
+      band: 'גומייה',
+      machine: 'מכונה',
+      ez_bar: 'מוט EZ',
+      trap_bar: 'מוט טראפ',
+      plate: 'פלטה',
+      medicine_ball: 'כדור כוח',
+      exercise_ball: 'כדור פיזיו',
+      bodyweight: 'משקל גוף',
+      other: 'אחר',
+    },
+    reviewReasons: {
+      unclear_pattern: 'דפוס תנועה לא ברור',
+      pattern_differs: 'אותו שם, דפוס אחר',
+      ambiguous_name: 'התאמת שם לא ברורה',
+      many_copies: 'עותקים רבים של אותה גרסה',
+    },
+    levels: { beginner: 'מתחילים', intermediate: 'ביניים', advanced: 'מתקדמים' },
+    free: 'חופשי (ללא משבצות)',
+    coachToConfirm: 'לאישור המאמנת',
+    daysPerWeek: plural({ one: 'יום אחד בשבוע', two: 'יומיים בשבוע', other: '{count} ימים בשבוע' }),
+  },
+--- apps/dashboard/src/copy/he.ts
+  nav: { main: 'ראשי', trainees: 'מתאמנות', nutrition: 'תזונה', exercises: 'תרגילים' },
+--- apps/dashboard/src/features/aiDraft/copy/he.ts
+    summaryTitle: 'סיכום אימונים',
+    experience: 'ניסיון',
+    splitOptions: 'אפשרויות חלוקה',
+    recommended: 'מומלץ',
+    drafted: 'יש תוכנית',
+    requested: 'הבחירה שלך',
+    pros: 'יתרונות',
+    cons: 'חסרונות',
+    useFullPlan: 'שימוש בתוכנית ה-AI המלאה',
+    useSplitOnly: 'שימוש בחלוקה בלבד',
+    generateForSplit: 'יצירת תוכנית לחלוקה הזו',
+    regenerateFor: 'יצירה מחדש עבור',
+    aiChooses: 'ה-AI בוחר',
+    outsideDays: 'מחוץ לימים שלה',
+    legacyNote: 'טיוטה מלפני אפשרויות החלוקה: תוכנית אחת, בלי אפשרויות.',
+    forSplit: 'חלוקה: {split}',
+    slotFocus: '{type} · {focus}',
+    experience: 'ניסיון באימונים',
+--- apps/dashboard/src/features/planBuilder/copy/he.ts
+import { plural } from '@sistem/shared';
+  workoutPlaceholder: 'אימון {n}',
+  workoutType: 'סוג אימון',
+  newWorkoutType: 'סוג האימון החדש',
+  changeTypeConfirm: 'לשנות את סוג האימון? תרגילים שמתאימים למשבצות החדשות יעברו אליהן; השאר יעברו ל"אחר".',
+  slotRequired: 'חובה',
+  slotCount: '{count} / {max}',
+  addToSlot: '+ הוספה',
+  addToSlotNamed: 'הוספת תרגיל: {slot}',
+  otherSlot: 'אחר',
+  aiSuggestion: 'הצעת AI',
+  useSuggestion: 'שימוש',
+  variant: 'גרסה',
+  variantAndHistory: 'גרסה והיסטוריה',
+  hideVariants: 'הסתרת גרסאות',
+  variantNotForHer: 'לא בציוד / ברמה שלה',
+  otherVersions: 'גרסאות נוספות (אותו ציוד)',
+  history: 'ההיסטוריה שלה',
+  historyNone: 'היא עוד לא ביצעה את התרגיל הזה.',
+  historyLast: 'אחרון: {value} · {date}',
+  historyBest: 'שיא: {value}',
+  historyThisVariant: 'הגרסה הזו',
+  variantsLoadError: 'לא ניתן לטעון את הגרסאות.',
+  pickerTitle: 'בחירת תרגיל: {slot}',
+  pickerAllTitle: 'כל התרגילים',
+  pickerEquipmentOnly: 'רק הציוד שלה',
+  levelAny: 'כל הרמות',
+  pickerRecent: 'בשימוש לאחרונה',
+  pickerEmpty: 'אין תרגיל שמתאים לסינון הזה.',
+  pickerShowAll: 'הצגת כל התרגילים',
+  pickerBackToSlot: 'חזרה לתרגילי המשבצת',
+  pickerHint: '↑ ↓ ו-Enter להוספה · Esc לסגירה',
+  pickerClose: 'סגירה',
+  pickerResults: 'תרגילים',
+  pickerLoadError: 'לא ניתן לטעון את התרגילים.',
+  notForHer: 'לא מתאים לציוד שלה',
+  pattern: 'דפוס תנועה',
+  patternAny: 'כל דפוסי התנועה',
+  emptyRequired: plural({ one: 'משבצת חובה אחת ריקה', two: 'שתי משבצות חובה ריקות', other: '{count} משבצות חובה ריקות' }),
+  variantsCount: plural({ one: 'גרסה אחת', two: 'שתי גרסאות', other: '{count} גרסאות' }),
+--- apps/mobile/src/features/onboarding/copy/he.ts
+    experienceLabel: 'כמה זמן את מתאמנת באופן קבוע? (לא חובה)',
+--- apps/server/src/i18n/locales/he.ts
+  onboarding_experience_invalid: 'ניסיון האימונים חייב להיות אחת מהאפשרויות.',
+  training_settings_invalid: 'הגדרות אימון לא תקינות: {detail}',
+  plan_workout_type_unknown: 'סוג אימון לא מוכר.',
+  plan_slot_unknown: 'המשבצת הזו אינה חלק מסוג האימון.',
+  plan_slot_needs_type: 'משבצת תרגיל צריכה סוג אימון באימון שלה.',
+  plan_split_unknown: 'חלוקה לא מוכרת.',
+  family_invalid_id: 'מזהה משפחת תרגילים לא תקין.',
+  family_not_found: 'משפחת התרגילים לא נמצאה.',
+  family_name_invalid: 'שם המשפחה חייב להיות באורך 1–80 תווים.',
+  family_patterns_invalid: 'דפוסי התנועה חייבים להיות מהרשימה.',
+  family_update_empty: 'יש לשלוח שם, דפוסי תנועה או סימון "נבדק".',
+  family_exercise_not_member: 'התרגיל הזה אינו במשפחה הזו.',
+  family_merge_same: 'יש לבחור משפחה אחרת למיזוג.',
+  family_split_invalid: 'יש לבחור חלק מהתרגילים במשפחה, לא את כולם.',
+  family_query_invalid: 'סינון משפחות תרגילים לא תקין.',
+  family_slot_unknown: 'סוג אימון או משבצת לא מוכרים.',
+  ai_split_unknown: 'חלוקה לא מוכרת.',
+  ai_split_none_fits: 'אף חלוקה בהגדרות האימון שלך לא מתאימה ל-{min}–{max} ימי האימון שלה.',
+--- apps/dashboard/src/features/exerciseLibrary/copy/he.ts (new file)
+export const he = {
+  title: 'ספריית תרגילים',
+  intro: 'משפחה מאגדת את אותה תנועה עם ציוד שונה. בבונה התוכניות ול-AI מוצע רק התרגיל הראשי של כל גרסה.',
+  filters: { needed: 'לבדיקה', unclear: 'דפוס לא ברור', reviewed: 'נבדקו', all: 'הכול' },
+  filterLabel: 'סינון',
+  search: 'חיפוש תרגילים',
+  patternAny: 'כל דפוסי התנועה',
+  pattern: 'דפוס תנועה',
+  families: plural({ one: 'משפחה אחת', two: 'שתי משפחות', other: '{count} משפחות' }),
+  copies: plural({ one: 'עותק אחד', two: 'שני עותקים', other: '{count} עותקים' }),
+  empty: 'אין כאן משפחות תרגילים.',
+  loadError: 'לא ניתן לטעון את ספריית התרגילים.',
+  loadMore: 'עוד ({shown} מתוך {total})',
+  select: 'יש לבחור משפחה כדי לראות את התרגילים שלה.',
+  name: 'שם',
+  saveName: 'שמירת השם',
+  patterns: 'דפוסי תנועה',
+  patternsHint: 'המשבצות שמשפחה יכולה למלא נקבעות לפי דפוסי התנועה שלה.',
+  savePatterns: 'שמירת דפוסי התנועה',
+  muscles: 'אזורי גוף',
+  reasons: 'למה היא ברשימת הבדיקה',
+  editedByYou: 'נערך על ידך — הרצה חוזרת של הקיבוץ לא משנה את זה.',
+  members: 'התרגילים במשפחה',
+  primary: 'ראשי',
+  makePrimary: 'קביעה כראשי',
+  copyTag: 'עותק',
+  level: 'רמה',
+  splitOff: 'העברת המסומנים למשפחה חדשה',
+  splitConfirm: 'להעביר {count} תרגילים למשפחה חדשה?',
+  selectMember: 'סימון {name}',
+  merge: 'מיזוג משפחה אחרת לתוך זו',
+  mergeSearch: 'חיפוש משפחה למיזוג',
+  mergeButton: 'מיזוג לתוך המשפחה הזו',
+  mergeConfirm: '"{name}" והתרגילים שלה יעברו לתוך "{target}". להמשיך?',
+  markReviewed: 'סימון כנבדק',
+  unreview: 'החזרה לרשימת הבדיקה',
+  reviewedOn: 'נבדק ב-{date}',
+  actionError: 'לא ניתן לשמור את השינוי.',

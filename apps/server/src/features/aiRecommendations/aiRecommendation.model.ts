@@ -32,6 +32,8 @@ const aiRecommendationSchema = new Schema<AiRecommendationDocument>(
     type: { type: String, enum: AI_RECOMMENDATION_TYPE_IDS, required: true },
     status: { type: String, enum: AI_RECOMMENDATION_STATUS_IDS, required: true, default: 'pending' },
     trigger: { type: String, enum: AI_RECOMMENDATION_TRIGGER_IDS, required: true },
+    // Phase 12b: what the coach asked for (e.g. { splitId }); null for onboarding runs.
+    request: { type: Schema.Types.Mixed, default: null },
     active: { type: Boolean, required: true, default: true },
     promptVersion: { type: String, default: null },
     input: { type: Schema.Types.Mixed, default: null },

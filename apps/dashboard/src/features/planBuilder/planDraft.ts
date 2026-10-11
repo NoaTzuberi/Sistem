@@ -1,6 +1,6 @@
-import { fill } from '@sistem/shared';
+import { fill, rematchSlots } from '@sistem/shared';
 import type { planBuilderCopy } from './copy';
-import type { CoachPlan, ExerciseFacts, PlanExerciseInput, SavePlanPayload, SetType } from '@sistem/types';
+import type { CoachPlan, ExerciseFacts, PlanExerciseInput, SavePlanPayload, SetType, WorkoutTypeConfig } from '@sistem/types';
 import type { DraftExercise, DraftKeys, DraftSetTarget, DraftTargets, DraftWorkout, PlanDraft } from './types';
 import { DEFAULT_REPS, DEFAULT_SETS } from './data/planDefaults';
 
@@ -15,12 +15,14 @@ export function draftFromPlan(plan: CoachPlan): PlanDraft {
   return {
     notes: plan.notes ?? '',
     aiRecommendationId: plan.aiRecommendationId,
+    splitId: plan.splitId,
     workouts: plan.workouts.map((workout) => ({
       key: newKey(),
       id: workout.id,
       title: workout.title,
       dayOfWeek: workout.dayOfWeek,
       notes: workout.notes ?? '',
+      workoutType: workout.workoutType,
       exercises: workout.exercises.map((exercise) => ({
         key: newKey(),
         id: exercise.id,
@@ -37,6 +39,7 @@ export function draftFromPlan(plan: CoachPlan): PlanDraft {
         supersetGroup: exercise.supersetGroup ?? '',
         setTargets: exercise.setTargets?.map((target) => ({ key: newKey(), ...target })) ?? null,
         interval: exercise.interval ?? false,
+        slotId: exercise.slotId,
       })),
     })),
   };
@@ -49,6 +52,7 @@ function exerciseToInput(exercise: DraftExercise): PlanExerciseInput {
     notes: exercise.notes.trim() || undefined,
     supersetGroup: exercise.supersetGroup || undefined,
     interval: exercise.interval || undefined,
+    slotId: exercise.slotId,
   };
 
   if (exercise.setTargets) {
@@ -81,11 +85,13 @@ export function toPayload(draft: PlanDraft): SavePlanPayload {
   return {
     notes: draft.notes.trim() || undefined,
     aiRecommendationId: draft.aiRecommendationId ?? null,
+    splitId: draft.splitId ?? null,
     workouts: draft.workouts.map((workout) => ({
       id: workout.id,
       title: workout.title,
       dayOfWeek: workout.dayOfWeek,
       notes: workout.notes.trim() || undefined,
+      workoutType: workout.workoutType,
       exercises: workout.exercises.map(exerciseToInput),
     })),
   };
@@ -122,13 +128,14 @@ export function assignSavedIds(draft: PlanDraft, sentKeys: DraftKeys, saved: Coa
   };
 }
 
-export function newWorkout(position: number): DraftWorkout {
-  // A placeholder title she is expected to rename (a workout cannot be saved without one).
-  return { key: newKey(), title: `Workout ${position}`, notes: '', exercises: [] };
+/** `title`: the type's label (or a placeholder she is expected to rename — a workout needs a title). */
+export function newWorkout(title: string, workoutType?: string): DraftWorkout {
+  return { key: newKey(), title, notes: '', workoutType, exercises: [] };
 }
 
-export function newExercise(facts: ExerciseFacts): DraftExercise {
+export function newExercise(facts: ExerciseFacts, slotId?: string): DraftExercise {
   return {
+    slotId,
     key: newKey(),
     exerciseId: facts.id,
     facts,
@@ -212,6 +219,39 @@ export function setIntervalFlag(exercises: DraftExercise[], key: string, interva
   return exercises.map((exercise) =>
     exercise.key === key || (group !== '' && exercise.supersetGroup === group) ? { ...exercise, interval } : exercise,
   );
+}
+
+/**
+ * Phase 12b: a typed workout lists its exercises by slot (the type's order), "Other" last —
+ * a stable sort, so the order inside a slot stays hers.
+ */
+export function orderBySlots(exercises: DraftExercise[], type: WorkoutTypeConfig | undefined): DraftExercise[] {
+  if (!type) return exercises;
+  const rank = (exercise: DraftExercise) => {
+    const index = type.slots.findIndex((slot) => slot.id === exercise.slotId);
+    return index === -1 ? type.slots.length : index;
+  };
+  return exercises.map((exercise, index) => ({ exercise, index })).sort((a, b) => rank(a.exercise) - rank(b.exercise) || a.index - b.index).map(({ exercise }) => exercise);
+}
+
+/** Changes a workout's type: exercises keep / find a slot that fits them (rematchSlots), the rest go to "Other". */
+export function changeWorkoutType(workout: DraftWorkout, type: WorkoutTypeConfig | undefined): DraftWorkout {
+  const slots = rematchSlots(
+    workout.exercises.map((exercise) => ({ slotId: exercise.slotId, patterns: exercise.facts?.patterns })),
+    type,
+  );
+  const exercises = workout.exercises.map((exercise, index) => ({ ...exercise, slotId: slots[index] }));
+  return { ...workout, workoutType: type?.id, exercises: orderBySlots(exercises, type) };
+}
+
+/** Adds an exercise to a workout: into `slotId`, else the first slot that fits it with room, else "Other". */
+export function addExerciseToWorkout(workout: DraftWorkout, facts: ExerciseFacts, type: WorkoutTypeConfig | undefined, slotId?: string): DraftWorkout {
+  let slot = slotId;
+  if (!slot && type) {
+    const all = [...workout.exercises.map((exercise) => ({ slotId: exercise.slotId, patterns: exercise.facts?.patterns })), { patterns: facts.patterns }];
+    slot = rematchSlots(all, type)[all.length - 1];
+  }
+  return { ...workout, exercises: orderBySlots([...workout.exercises, newExercise(facts, slot)], type) };
 }
 
 export function moveItem<T>(items: T[], from: number, to: number): T[] {

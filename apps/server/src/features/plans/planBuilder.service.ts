@@ -9,7 +9,8 @@ import { Plan } from './plan.model';
 import { PlanNotFoundError, attachExerciseFacts, toPublicPlan } from './plan.service';
 import type { LeanPlan } from './plan.service';
 import { currentWeekStart } from './planWeek';
-import { findPublishIssues } from './plan.validation';
+import { checkTrainingIds, findPublishIssues } from './plan.validation';
+import { getEffectiveTrainingConfig } from '../trainingSplits/trainingSplit.service';
 import type { CreatePlanInput, PlanProblem, SavePlanInput } from './plan.validation';
 import { LocalizedError, msg } from '../../i18n';
 
@@ -42,11 +43,26 @@ async function toCoachPlans(plans: LeanPlan[]): Promise<CoachPlan[]> {
   const locked = new Set(startedPlanIds.map(String));
 
   return publicPlans.map((plan, index) => {
-    const aiRecommendationId = plans[index].aiRecommendationId;
+    const { aiRecommendationId, splitId, workouts } = plans[index];
+    // Phase 12b slot data is coach-only, so it is added here and not in toPublicPlan.
+    const stored = new Map(workouts.map((workout) => [String(workout._id), workout]));
     return {
       ...plan,
+      workouts: plan.workouts.map((workout) => {
+        const source = stored.get(workout.id);
+        const slots = new Map(source?.exercises.map((exercise) => [String(exercise._id), exercise.slotId]) ?? []);
+        return {
+          ...workout,
+          ...(source?.workoutType ? { workoutType: source.workoutType } : {}),
+          exercises: workout.exercises.map((exercise) => {
+            const slotId = slots.get(exercise.id);
+            return slotId ? { ...exercise, slotId } : exercise;
+          }),
+        };
+      }),
       locked: locked.has(plan.id),
       ...(aiRecommendationId ? { aiRecommendationId: String(aiRecommendationId) } : {}),
+      ...(splitId ? { splitId } : {}),
     };
   });
 }
@@ -91,6 +107,7 @@ export async function createCoachPlan(traineeId: string, coachId: string, input:
   }
 
   let notes: string | undefined;
+  let splitId: string | undefined;
   let workouts: unknown[] = [];
   if (input.duplicatePrevious) {
     const previous = await Plan.findOne({ traineeId, weekStartDate: { $lt: input.weekStartDate } })
@@ -100,6 +117,8 @@ export async function createCoachPlan(traineeId: string, coachId: string, input:
       throw new PlanConflictError('plan_nothing_to_duplicate');
     }
     notes = previous.notes;
+    // Workout types and slots are copied with the workouts (coach structure); the AI link is not.
+    splitId = previous.splitId ?? undefined;
     workouts = previous.workouts.map(({ _id: _workoutId, exercises, ...workout }) => ({
       ...workout,
       exercises: exercises.map(({ _id: _exerciseId, ...exercise }) => exercise),
@@ -107,7 +126,7 @@ export async function createCoachPlan(traineeId: string, coachId: string, input:
   }
 
   try {
-    const created = new Plan({ traineeId, coachId, weekStartDate: input.weekStartDate, notes });
+    const created = new Plan({ traineeId, coachId, weekStartDate: input.weekStartDate, notes, splitId });
     created.set('workouts', workouts);
     await created.save();
     return getCoachPlan(traineeId, String(created._id));
@@ -155,6 +174,7 @@ export async function saveCoachPlan(traineeId: string, planId: string, input: Sa
   if (input.aiRecommendationId && !(await isLinkableRecommendation(traineeId, input.aiRecommendationId))) {
     issues.push(msg('plan_ai_recommendation_missing'));
   }
+  issues.push(...checkTrainingIds(input, await getEffectiveTrainingConfig(String(plan.coachId))));
   if (issues.length > 0) {
     throw new PlanValidationError(issues);
   }
@@ -184,6 +204,7 @@ export async function saveCoachPlan(traineeId: string, planId: string, input: Sa
   );
   plan.set('notes', input.notes);
   if (input.aiRecommendationId !== undefined) plan.set('aiRecommendationId', input.aiRecommendationId ?? undefined);
+  if (input.splitId !== undefined) plan.set('splitId', input.splitId ?? undefined);
   // She sees a published plan, so its change lights the Workouts tab dot.
   if (plan.status === 'published' && plan.isModified('workouts notes')) plan.set('liveUpdatedAt', new Date());
   await plan.save();

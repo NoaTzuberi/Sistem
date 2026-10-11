@@ -4,6 +4,7 @@ import { parse } from 'csv-parse/sync';
 import { connectDatabase } from '../../../config/database';
 import { Exercise } from '../exercise.model';
 import { normalizeRows } from './normalizeExercises';
+import { regroupLibrary } from '../../exerciseFamilies/exerciseFamilyGrouping.service';
 import type { RawExerciseRow, NormalizedExercise, RowIssue } from '../exercise.types';
 import mongoose from 'mongoose';
 
@@ -207,6 +208,8 @@ async function main() {
   try {
     const report = await runImport();
     console.log(JSON.stringify(report, null, 2));
+    // Phase 12b: new / renamed exercises get their patterns and family right away.
+    console.log(JSON.stringify(await regroupLibrary(), null, 2));
   } finally {
     await mongoose.disconnect();
   }

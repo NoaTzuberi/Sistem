@@ -3,6 +3,24 @@ import type { he } from './he';
 
 export const en: CopyShape<typeof he> = {
   training: {
+    // Phase 12b — Training summary (split options, the coach's paths)
+    summaryTitle: 'Training summary',
+    experience: 'Experience',
+    splitOptions: 'Split options',
+    recommended: 'Recommended',
+    drafted: 'plan drafted',
+    requested: 'your choice',
+    pros: 'Pros',
+    cons: 'Cons',
+    useFullPlan: 'Use full AI plan',
+    useSplitOnly: 'Use split only',
+    generateForSplit: 'Generate plan for this split',
+    regenerateFor: 'Regenerate for',
+    aiChooses: 'the AI chooses',
+    outsideDays: 'outside her days',
+    legacyNote: 'Drafted before split options existed: one plan, no options.',
+    forSplit: 'Split: {split}',
+    slotFocus: '{type} · {focus}',
     title: 'AI draft',
     none: 'No AI draft for this trainee yet.',
     generate: 'Generate AI draft',
@@ -73,6 +91,7 @@ export const en: CopyShape<typeof he> = {
     favoriteExercises: 'Favorite exercises',
     wantsToImprove: 'Wants to improve',
     recoveryNotes: 'Recovery notes',
+    experience: 'Training experience',
     targetWeight: 'Target weight',
     targetWeightValue: '{weight} kg',
     inWeeks: ' in {weeks} weeks',

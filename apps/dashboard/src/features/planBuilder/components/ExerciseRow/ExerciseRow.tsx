@@ -1,18 +1,24 @@
+import { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from '../../../../components/common/Button/Button';
 import { NumberField } from '../../../../components/common/NumberField/NumberField';
-import { fill, humanizeId, useCopy } from '@sistem/shared';
+import { fill, humanizeId, useCopy, useLanguage, variantLabel } from '@sistem/shared';
+import type { ExerciseFacts } from '@sistem/types';
 import { SUPERSET_LABELS } from '../../data/planDefaults';
 import { isTimedExercise, toPerSetTargets, toSimpleTargets } from '../../planDraft';
 import type { DraftExercise } from '../../types';
 import { DragHandle } from '../DragHandle/DragHandle';
 import { SetTargetsTable } from '../SetTargetsTable/SetTargetsTable';
+import { VariantPanel } from '../VariantPanel/VariantPanel';
 import './ExerciseRow.css';
 import { planBuilderCopy } from '../../copy';
 
 interface ExerciseRowProps {
+  traineeId: string;
   exercise: DraftExercise;
+  /** Just added from the picker: the variants open, so she can pick the equipment in one click. */
+  openVariants?: boolean;
   index: number;
   count: number;
   /** The exercise above / below shares this one's superset label (drawn as one group). */
@@ -30,7 +36,9 @@ interface ExerciseRowProps {
 }
 
 export function ExerciseRow({
+  traineeId,
   exercise,
+  openVariants = false,
   index,
   count,
   joinsPrevious,
@@ -43,6 +51,8 @@ export function ExerciseRow({
   onRemove,
 }: ExerciseRowProps) {
   const copy = useCopy(planBuilderCopy);
+  const language = useLanguage();
+  const [showVariants, setShowVariants] = useState(openVariants);
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
     id: exercise.key,
   });
@@ -51,6 +61,11 @@ export function ExerciseRow({
     ? [...exercise.facts.primaryMuscles, ...exercise.facts.equipment, exercise.facts.difficulty].map(humanizeId).join(' · ')
     : '';
   const isPerSet = exercise.setTargets !== null;
+
+  // Another variant of the same family: the targets, notes and slot stay; the server sees a new exercise id.
+  function handleSwap(facts: ExerciseFacts) {
+    onChange({ ...exercise, exerciseId: facts.id, facts });
+  }
 
   function handleBackToSimple() {
     if (window.confirm(copy.backToSimpleConfirm)) {
@@ -86,10 +101,19 @@ export function ExerciseRow({
           </span>
           {facts && <span className="exercise-facts">{facts}</span>}
         </div>
+        {exercise.facts?.familyId && (
+          <Button size="sm" aria-expanded={showVariants} onClick={() => setShowVariants((open) => !open)}>
+            {showVariants ? copy.hideVariants : `${variantLabel(exercise.facts.variant, language)} · ${copy.variantAndHistory}`}
+          </Button>
+        )}
         <Button size="sm" variant="danger" aria-label={fill(copy.removeNamed, { name: name })} onClick={onRemove}>
           {copy.remove}
         </Button>
       </div>
+
+      {showVariants && exercise.facts?.familyId && (
+        <VariantPanel traineeId={traineeId} facts={exercise.facts} onSwap={handleSwap} />
+      )}
 
       <div className="exercise-fields">
         {!isPerSet && (

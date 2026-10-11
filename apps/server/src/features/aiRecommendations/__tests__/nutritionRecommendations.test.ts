@@ -259,6 +259,21 @@ describe('AI nutrition recommendations', () => {
     expect(retry[2].text).toContain('Daily protein portions add up to');
   });
 
+  it('sends text with letters of another writing system back to the model, like any other problem', async () => {
+    await createAnswers();
+    generate.mockImplementationOnce(async (request) => {
+      const body = validReply(request);
+      body.meals[0].options[0].why = 'ארוחה קลาสית'; // Thai letters inside a Hebrew word
+      return reply(body);
+    });
+    const doc = await runDraft();
+    expect(doc?.status).toBe('ready');
+    expect(doc?.attempts).toHaveLength(2);
+    expect(doc?.attempts[0].issues).toHaveLength(1);
+    expect(doc?.attempts[0].issues[0]).toContain('meals[0].options[0].why');
+    expect(generate.mock.calls[1][0].messages[2].text).toContain('another writing system');
+  });
+
   it('rejects the draft after the last attempt and tells the coach', async () => {
     await createAnswers();
     generate.mockImplementation(async (request) => {

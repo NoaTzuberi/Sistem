@@ -6,6 +6,7 @@ import {
   MUSCLE_TO_CATEGORIES,
 } from '../exercise.constants';
 import type { Category, Muscle, Equipment } from '../exercise.constants';
+import { cleanExerciseName } from '../exerciseName';
 import type { RawExerciseRow, NormalizedExercise, RowIssue, NormalizeResult } from '../exercise.types';
 
 const KAGGLE_DATASET_ID = 'niharika41298/gym-exercise-data';
@@ -119,7 +120,8 @@ export function normalizeRow(
 
   const record: NormalizedExercise = {
     slug,
-    name: title,
+    // Display name without the source program prefix; the slug stays from the title (stable ids).
+    name: cleanExerciseName(title),
     aliases: [],
     category,
     primaryMuscles,

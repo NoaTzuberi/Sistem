@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import type { SetType } from '@sistem/types';
+import type { SetType, TrainingConfig } from '@sistem/types';
 import { msg, type ServerMessage } from '../../i18n';
 import {
   SET_TYPE_IDS,
@@ -13,6 +13,9 @@ import {
 } from './plan.constants';
 import { isSunday } from './planWeek';
 import { validatePlanExerciseTargets } from './planSets';
+
+/** Ids of the coach's training config (workout types, slots, splits — Phase 12b). */
+const TRAINING_ID_PATTERN = /^[a-z0-9_]{1,40}$/;
 
 export function validatePlanIdParam(id: unknown): ServerMessage | null {
   if (typeof id !== 'string' || !mongoose.isValidObjectId(id)) {
@@ -48,6 +51,7 @@ export interface PlanExerciseInputFields {
   supersetGroup?: string;
   setTargets?: SetTargetInput[];
   interval?: boolean;
+  slotId?: string;
 }
 
 export interface PlanWorkoutInputFields {
@@ -55,6 +59,7 @@ export interface PlanWorkoutInputFields {
   title: string;
   dayOfWeek?: number;
   notes?: string;
+  workoutType?: string;
   exercises: PlanExerciseInputFields[];
 }
 
@@ -63,6 +68,8 @@ export interface SavePlanInput {
   workouts: PlanWorkoutInputFields[];
   /** undefined = keep the current link; null = clear it. */
   aiRecommendationId?: string | null;
+  /** undefined = keep; null = clear (Phase 12b). */
+  splitId?: string | null;
 }
 
 /** One problem with the row it belongs to; worded per response (localizeIssues). */
@@ -196,6 +203,13 @@ function parseExercise(raw: unknown, problems: ServerMessage[]): PlanExerciseInp
   if (sets !== undefined && sets > MAX_EXERCISE_SETS) {
     problems.push(msg('plan_too_many_sets', { max: MAX_EXERCISE_SETS }));
   }
+  // Phase 12b: which slot of its workout's type it fills (checked against the config by checkTrainingIds).
+  let slotId: string | undefined;
+  if (!isMissing(raw.slotId) && raw.slotId !== '') {
+    if (typeof raw.slotId === 'string' && TRAINING_ID_PATTERN.test(raw.slotId)) slotId = raw.slotId;
+    else problems.push(msg('plan_slot_unknown'));
+  }
+
   if (problems.length > before) return null;
 
   const exercise = { exerciseId: raw.exerciseId, sets, ...targets, setTargets, interval };
@@ -205,7 +219,7 @@ function parseExercise(raw: unknown, problems: ServerMessage[]): PlanExerciseInp
     return null;
   }
 
-  return { ...exercise, sets, id: optionalId(raw.id), notes, supersetGroup };
+  return { ...exercise, sets, id: optionalId(raw.id), notes, supersetGroup, slotId };
 }
 
 /** Structure and per-exercise rules — what even a draft must satisfy to be saved. */
@@ -226,6 +240,12 @@ export function parseSavePlanPayload(body: unknown): ParseResult<SavePlanInput> 
     if (typeof body.aiRecommendationId === 'string' && mongoose.isValidObjectId(body.aiRecommendationId)) {
       aiRecommendationId = body.aiRecommendationId;
     } else planProblems.push(msg('plan_ai_recommendation_id_invalid'));
+  }
+  let splitId: string | null | undefined;
+  if (body.splitId === null) splitId = null;
+  else if (body.splitId !== undefined) {
+    if (typeof body.splitId === 'string' && TRAINING_ID_PATTERN.test(body.splitId)) splitId = body.splitId;
+    else planProblems.push(msg('plan_split_unknown'));
   }
   issues.push(...planProblems);
 
@@ -252,6 +272,11 @@ export function parseSavePlanPayload(body: unknown): ParseResult<SavePlanInput> 
     }
 
     const workoutNotes = readText(raw, 'notes', msg('plan_field_workout_notes'), problems);
+    let workoutType: string | undefined;
+    if (!isMissing(raw.workoutType) && raw.workoutType !== '') {
+      if (typeof raw.workoutType === 'string' && TRAINING_ID_PATTERN.test(raw.workoutType)) workoutType = raw.workoutType;
+      else problems.push(msg('plan_workout_type_unknown'));
+    }
     if (raw.exercises.length > MAX_WORKOUT_EXERCISES) {
       problems.push(msg('plan_too_many_exercises', { max: MAX_WORKOUT_EXERCISES }));
     }
@@ -265,11 +290,32 @@ export function parseSavePlanPayload(body: unknown): ParseResult<SavePlanInput> 
       issues.push(...exerciseProblems.map((problem) => ({ ...problem, workoutIndex, exerciseIndex })));
     });
 
-    workouts.push({ id: optionalId(raw.id), title, dayOfWeek, notes: workoutNotes, exercises });
+    workouts.push({ id: optionalId(raw.id), title, dayOfWeek, notes: workoutNotes, workoutType, exercises });
   });
 
   if (issues.length > 0) return { value: null, issues };
-  return { value: { notes, workouts, aiRecommendationId }, issues: [] };
+  return { value: { notes, workouts, aiRecommendationId, splitId }, issues: [] };
+}
+
+/**
+ * Phase 12b: the workout types, slots and split exist in the coach's effective training config.
+ * An exercise's slot must belong to its workout's type. Runs on save (also for the AI draft).
+ */
+export function checkTrainingIds(input: SavePlanInput, config: TrainingConfig): PlanProblem[] {
+  const issues: PlanProblem[] = [];
+  if (input.splitId && !config.splits.some((split) => split.id === input.splitId)) issues.push(msg('plan_split_unknown'));
+  input.workouts.forEach((workout, workoutIndex) => {
+    const type = workout.workoutType ? config.workoutTypes.find((candidate) => candidate.id === workout.workoutType) : undefined;
+    if (workout.workoutType && !type) issues.push({ ...msg('plan_workout_type_unknown'), workoutIndex });
+    workout.exercises.forEach((exercise, exerciseIndex) => {
+      if (!exercise.slotId) return;
+      if (!workout.workoutType) issues.push({ ...msg('plan_slot_needs_type'), workoutIndex, exerciseIndex });
+      else if (type && !type.slots.some((slot) => slot.id === exercise.slotId)) {
+        issues.push({ ...msg('plan_slot_unknown'), workoutIndex, exerciseIndex });
+      }
+    });
+  });
+  return issues;
 }
 
 interface PublishableWorkout {

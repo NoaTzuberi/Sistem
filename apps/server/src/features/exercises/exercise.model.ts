@@ -10,7 +10,9 @@ import {
   MECHANIC_IDS,
   FORCE_TYPE_IDS,
   EXERCISE_GOAL_IDS,
+  TAG_SOURCE_IDS,
 } from './exercise.constants';
+import { VARIANT_IDS } from '../exerciseFamilies/exerciseFamily.constants';
 import type {
   ExerciseDocument,
   ExerciseInstructions,
@@ -95,6 +97,14 @@ const exerciseSchema = new Schema<ExerciseDocument>(
     mechanic: { type: String, enum: MECHANIC_IDS, default: undefined },
     forceType: { type: String, enum: FORCE_TYPE_IDS, default: undefined },
     isUnilateral: { type: Boolean, default: undefined },
+
+    // Phase 12b: equipment-variant families (exerciseFamilies feature). Set by the grouping
+    // script; familySource 'coach' = she moved it (merge / split), never moved back.
+    familyId: { type: Schema.Types.ObjectId, ref: 'ExerciseFamily', default: undefined },
+    variant: { type: String, enum: VARIANT_IDS, default: undefined },
+    /** One per family + variant: the one offered in the picker, the slots and to the AI. */
+    isPrimaryVariant: { type: Boolean, default: undefined },
+    familySource: { type: String, enum: TAG_SOURCE_IDS, default: undefined },
   },
   { timestamps: true },
 );
@@ -106,5 +116,6 @@ exerciseSchema.index({ movementType: 1 });
 exerciseSchema.index({ reviewStatus: 1 });
 exerciseSchema.index({ contentTier: 1 });
 exerciseSchema.index({ goals: 1 });
+exerciseSchema.index({ familyId: 1, isPrimaryVariant: 1 });
 
 export const Exercise = model<ExerciseDocument>('Exercise', exerciseSchema);

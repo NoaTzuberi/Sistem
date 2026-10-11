@@ -40,6 +40,16 @@ import {
   postTraineeNutritionTemplate,
 } from '../nutrition/nutrition.controller';
 import { getTraineeMealLogs } from '../mealLogs/mealLog.controller';
+import { getTrainingConfig, putTrainingSettings } from '../trainingSplits/trainingSplit.controller';
+import {
+  getFamilies,
+  getFamily,
+  patchFamily,
+  putFamilyPrimary,
+  postFamilyMerge,
+  postFamilySplit,
+  getTraineeFamilyHistory,
+} from '../exerciseFamilies/exerciseFamily.controller';
 
 // The human Coach (PRD §6) — the ATLAS AI chat that used /api/coach is gone.
 // Every route needs role=coach; every :traineeId route also needs that trainee to
@@ -50,11 +60,22 @@ coachRouter.use(requireAuth, requireRole('coach'));
 
 coachRouter.get('/exercises', getExercises);
 
+// Phase 12b: the training config (splits, workout-type slots) and the library by exercise family.
+coachRouter.get('/training/config', getTrainingConfig);
+coachRouter.put('/training/settings', putTrainingSettings);
+coachRouter.get('/exercise-families', getFamilies);
+coachRouter.get('/exercise-families/:familyId', getFamily);
+coachRouter.patch('/exercise-families/:familyId', patchFamily);
+coachRouter.put('/exercise-families/:familyId/primary', putFamilyPrimary);
+coachRouter.post('/exercise-families/:familyId/merge', postFamilyMerge);
+coachRouter.post('/exercise-families/:familyId/split', postFamilySplit);
+
 coachRouter.get('/trainees', getTrainees);
 coachRouter.get('/trainees/:traineeId', loadCoachTrainee, getTrainee);
 coachRouter.get('/trainees/:traineeId/workout-logs', loadCoachTrainee, getTraineeWorkoutLogs);
 coachRouter.get('/trainees/:traineeId/body-metrics', loadCoachTrainee, getTraineeBodyMetrics);
 coachRouter.get('/trainees/:traineeId/achievements', loadCoachTrainee, getTraineeAchievements);
+coachRouter.get('/trainees/:traineeId/exercise-history', loadCoachTrainee, getTraineeFamilyHistory);
 
 // Plan builder (Phase 6).
 coachRouter.get('/trainees/:traineeId/plans', loadCoachTrainee, getTraineePlans);

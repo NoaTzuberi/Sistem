@@ -1,28 +1,41 @@
-import type { Difficulty, Equipment, Muscle } from '../../exercises/exercise.constants';
+import type { PatternId } from '@sistem/types';
+import type { Equipment } from '../../exercises/exercise.constants';
 
-// Tunables of the AI training-plan draft (Phase 12). The prompt lives in trainingPlanPrompt.ts.
+// Tunables of the AI training-plan draft (Phase 12; exercise families and splits since 12b). The prompt lives in trainingPlanPrompt.ts.
 
 /** Her free-text answers are cut to this many characters before they are sent. */
 export const FREE_TEXT_MAX_LENGTH = 500;
 
-/**
- * Owner decision: onboarding has no experience question yet, so 'advanced' exercises
- * are never offered (PRD §14 backlog: an experience-level question).
- */
-export const CANDIDATE_DIFFICULTIES: Difficulty[] = ['beginner', 'intermediate'];
-
-/** Aliases E001…E200: a fixed list, so the reply schema is the same for every request. */
+/** Aliases F001…F200: a fixed list, so the alias part of the reply schema never changes. */
 export const MAX_CANDIDATES = 200;
-/** Fewer than this after filtering: the model is not called and the coach is told why. */
+/** Fewer families than this after filtering: the model is not called and the coach is told why. */
 export const MIN_CANDIDATES = 20;
 
-/** Strength exercises offered per muscle: more for the muscles she wants to focus on. */
-export const CANDIDATES_PER_MUSCLE = 6;
-export const CANDIDATES_PER_FOCUS_MUSCLE = 12;
-/** Small muscles get half the share (the big lifts already train them). */
-export const MINOR_MUSCLES: Muscle[] = ['abductors', 'adductors', 'forearms', 'traps', 'calves'];
-export const MOBILITY_CANDIDATES = 10;
-export const CARDIO_CANDIDATES = 8;
+/** Families offered per movement pattern a slot asks for: more for her focus muscles. */
+export const CANDIDATES_PER_PATTERN = 6;
+export const CANDIDATES_PER_FOCUS_PATTERN = 10;
+/** Small patterns get half the share. */
+export const MINOR_PATTERNS: PatternId[] = ['calf_raise', 'shrug', 'forearm', 'hip_adduction', 'knee_extension', 'carry'];
+/** "Prefers low impact": no plyometric / Olympic families at all (checked in code, not only asked). */
+export const LOW_IMPACT_EXCLUDED_PATTERNS: PatternId[] = ['power'];
+
+/** Her onboarding muscle focus → the movement patterns that train it. */
+export const MUSCLE_FOCUS_TO_PATTERNS: Record<string, PatternId[]> = {
+  chest: ['horizontal_push', 'chest_fly'],
+  back: ['horizontal_pull', 'vertical_pull', 'rear_delt'],
+  shoulders: ['vertical_push', 'shoulder_raise', 'rear_delt'],
+  arms: ['elbow_flexion', 'elbow_extension'],
+  core: ['core'],
+  glutes: ['glute_bridge', 'glute_isolation', 'hip_abduction', 'hinge'],
+  legs: ['squat', 'lunge', 'hinge', 'knee_flexion', 'knee_extension', 'calf_raise'],
+  full_body: [],
+};
+
+/** Her days when she gave none (Phase 12 planned 3 workouts then). */
+export const DEFAULT_TRAINING_DAYS = { min: 3, max: 3 };
+
+/** How many split options the model returns when several fit (PRD §8 v2: 2–3). */
+export const MAX_SPLIT_OPTIONS = 3;
 
 /** Training-knowledge passages (RAG) given to the model. */
 export const KNOWLEDGE_TOP_K = 6;
@@ -48,21 +61,3 @@ export const ONBOARDING_EQUIPMENT_TO_LIBRARY: Record<string, Equipment[] | 'all'
   no_equipment: [],
 };
 
-/** Her onboarding muscle focus → library muscles that get the larger share. */
-export const MUSCLE_FOCUS_TO_MUSCLES: Record<string, Muscle[]> = {
-  chest: ['chest'],
-  back: ['lats', 'middle_back', 'lower_back', 'traps'],
-  shoulders: ['shoulders'],
-  arms: ['biceps', 'triceps', 'forearms'],
-  core: ['abdominals', 'lower_back'],
-  glutes: ['glutes', 'abductors', 'adductors'],
-  legs: ['quadriceps', 'hamstrings', 'calves', 'glutes'],
-  full_body: [],
-};
-
-/** Muscles never offered on their own. */
-export const EXCLUDED_MUSCLES: Muscle[] = ['neck'];
-
-/** Goals / recovery flags that add mobility or cardio exercises to the candidates. */
-export const MOBILITY_TRIGGERS = ['move_better', 'has_mobility_restrictions', 'prefers_low_impact'];
-export const CARDIO_TRIGGERS = ['improve_endurance', 'lose_weight'];

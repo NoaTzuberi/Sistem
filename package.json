@@ -19,6 +19,8 @@
     "lint": "npm run lint --workspaces --if-present && npm run lint:i18n",
     "test": "npm run test --workspaces --if-present && npm run test:i18n",
     "import:exercises": "npm run import:exercises -w @sistem/server",
+    "clean:exercise-names": "npm run clean:exercise-names -w @sistem/server",
+    "group:exercises": "npm run group:exercises -w @sistem/server",
     "seed:knowledge": "npm run seed:knowledge -w @sistem/server",
     "promote:coach": "npm run promote:coach -w @sistem/server --",
     "seed:dev": "npm run seed:dev -w @sistem/server --",

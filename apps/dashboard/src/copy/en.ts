@@ -2,7 +2,7 @@ import type { CopyShape } from '@sistem/shared';
 import type { he } from './he';
 
 export const en: CopyShape<typeof he> = {
-  nav: { main: 'Main', trainees: 'Trainees', nutrition: 'Nutrition' },
+  nav: { main: 'Main', trainees: 'Trainees', nutrition: 'Nutrition', exercises: 'Exercises' },
   loginTitle: 'Coach dashboard',
   email: 'Email',
   password: 'Password',

@@ -39,6 +39,18 @@ To avoid confusion in code and docs, use these names consistently:
 - Coach accounts are never created via public sign-up. They are seeded or promoted manually.
 - All API routes enforce role-based authorization server-side. A trainee can only ever read/write their own data.
 
+### Social sign-in — Google + Apple (later — Phase 5c, after Phase 5b)
+
+- Trainees can sign up / log in with **Google** or **Apple** in addition to email + password. Apple's App Store rules require Sign in with Apple whenever Google sign-in is offered, so both ship together.
+- **Mobile app**: native flows via Capacitor (the Google Sign-In and Sign in with Apple native sheets). **Coach dashboard**: web OAuth if wanted (Google only is fine on the web).
+- **Server**: verifies the provider's ID token, then finds or creates the user and issues the same JWT session as email login.
+- **Data model**: the password becomes optional; `User.authProviders [{ provider: 'google' | 'apple', providerUserId, email, linkedAt }]`.
+- **Linking**: a provider is linked to an existing account only when the provider's email is verified and matches; otherwise a new account is created. Apple "Hide my email" relay addresses are stored as given.
+- The name is prefilled from the provider when available; onboarding continues as usual.
+- Coaches are never created through social sign-in (same rule as email sign-up).
+- **Requirements**: an Apple Developer account, a Google Cloud OAuth client (iOS, Android, web), and a published privacy policy URL for Google's OAuth consent screen (ties to the legal item in §14).
+- **Design note**: the login and sign-up screens are designed now with "Continue with Google" and "Continue with Apple" buttons, shown disabled or hidden by a feature flag until this phase.
+
 ## 4. Core User Flows
 
 ### 4.1 First launch (Trainee)
@@ -249,6 +261,17 @@ Owner request (2026-10-08), planned for later: turn the Phase 12 single AI draft
 - **Exercise library tagging**: every exercise is mapped to slot categories (muscle group + movement pattern) from its factual fields only; unclear ones are listed for the coach to review.
 - Same rules as Phase 12: nothing AI-generated reaches the trainee without the coach publishing; every AI output is validated against the plan rules; free tier / dev data only until the paid AI tier (§14) is in place. Experience level depends on the §14 onboarding experience-question item.
 
+**Decisions (owner, 2026-10-09 — Phase 12b, built).**
+- **Exercise names cleaned**: the dataset's program prefix is removed from the name shown ("30 Arms Hammer Curl" → "Hammer Curl", "30 Day Back …"), and a stray trailing dash; numbers that belong to the name stay ("3/4 Sit-Up", "90/90 …", "6 Way …"). 198 of 2,893 names; ids and slugs unchanged, the original title is kept.
+- **Exercise families (equipment variants)**: the same movement with different equipment (barbell / dumbbell / kettlebell / Smith machine / cable / band / machine / EZ-bar / trap bar / plate / bodyweight …) is one family. Grouping = normalized name (source prefixes, equipment words and spelling differences removed) + movement pattern + type — not the body part, which is inconsistent in the dataset; a family keeps all its members' body parts. Every exercise stays its own record with its own id (plans, logs, PRs and "last time" stay per variant — 40 kg barbell ≠ 40 kg dumbbells) and gets a family + variant. One **primary** exercise per family + variant (the coach's own picks first, then the plainest name): only primaries are offered in the picker, the slots and to the AI; the other copies stay for old references and under "Show all" / the family's card. 2,893 exercises → 2,181 families (192 with 2+ variants, 2,481 primaries).
+- **Movement patterns** (26: squat, lunge, hinge, glute bridge, glute isolation, hip abduction, hip adduction, hamstring curl, leg extension, calf raise, horizontal / vertical push, chest fly, shoulder raise, rear delts, horizontal / vertical pull, shrug, biceps, triceps, forearms, core, carry, power, conditioning, mobility) are derived in code from the name first, then the body part and the type; stored on the family. No pattern, or a combo of 3+, = unclear.
+- **Coach review list** (dashboard → Exercises, and `apps/server/data/processed/`): unclear patterns, the same name with different patterns, ambiguous name matches, and a variant with more than 4 copies (197 families). The coach renames a family, sets its patterns, chooses the primary, merges and splits families; her edits are never overwritten by re-running the grouping. An unchecked unclear family is never offered in a slot or to the AI.
+- **Splits (config, coach overrides stored; settings screen later)**: full body (1–4 days), upper / lower (2, 4), upper / lower / full body (3), upper / lower + glute focus (3, 4), push / pull / legs (3, 6), push / pull / legs + upper / lower (5), ABC (3, 6), ABC + glute focus (3, 6). 7 days is planned as 6. **ABC = A chest + back, B legs, C shoulders + arms — a default the coach still confirms.** Workout types: full body, upper, lower, lower – glute focus, push, pull, legs, ABC A / B / C, each with required and optional slots (a slot = the patterns that fit it, max 2 exercises by default).
+- **One AI call**: her summary, how the AI reads her experience, points to check, 1–3 split options from the config (as many as fit her days, at most 3; each with why / pros / cons), and the full plan for option 1 — every exercise fills a slot with a family + a variant she has the equipment and level for. Checked in code: split ids and day counts, the option count, the day pattern of option 1, slot membership, pattern fit, the variant, required slots, plus every Phase 12 rule. The coach's paths: use the full plan; use the split only (typed workouts with empty slots, the AI's picks offered per slot); regenerate — also for an option or any split of her config (a split outside her days uses its nearest day count).
+- **Manual path**: "+ Add workout" with a workout type (or Free = no slots); changing a workout's type re-matches its exercises to the new slots, the rest go to "Other". Works with or without an AI draft. Workout types, slots and the split are coach-only — the trainee's app never receives them.
+- **Experience question** (onboarding, frequency step, optional, placeholder copy): less than 6 months / 6 months–2 years / more than 2 years. Used by the AI (split choice, volume) and for levels: only "more than 2 years" adds advanced exercises (the library has just 13) — otherwise beginner + intermediate as before.
+- "Prefers low impact" removes plyometric / Olympic (power) families from the AI's list in code.
+
 ## 9. Notifications
 
 | Event | Recipient | Channel |
@@ -272,6 +295,7 @@ Store device push tokens per user. Fail gracefully when push permission is denie
 - **BodyMetric**: traineeId, date, weight?, measurements{...}?, photos[]
 - **Achievement**: traineeId, type, value, unlockedAt, sourceLogId
 - **Template**: coachId, type (workout/plan), content
+- **ExerciseFamily** (Phase 12b): name, body parts, movement patterns, levels, review reasons; Exercise.familyId / variant / isPrimaryVariant. **TrainingSettings**: a coach's overrides of the split / slot config. Plan.splitId, workout.workoutType, exercise.slotId (coach-only).
 - **AIRecommendation** (Phase 12): traineeId, coachId, type (training_plan; nutrition_plan in 13c), status, trigger, the input sent, the validated output, attempts. Plan.aiRecommendationId and NutritionPlan.aiRecommendationId (13c) link a plan to the draft it was loaded from (coach-only).
 - *(Later, §5.6)* **FoodItem** (coach food list), **NutritionPlan** (calorie target, meals → portions per group, options, tips, versions), nutrition templates; 13b: **Recipe**, **MealLog**, **WaterLog**
 
@@ -347,7 +371,8 @@ Design system notes:
 - **Progress photo slider** — a before/after slider overlay in Compare (Phase 10 compares side by side).
 - **REQUIRED BEFORE LAUNCH — AI provider terms.** Switch AI to a paid tier / provider whose terms exclude training on our data before any real trainee data is sent. The Gemini free tier may use submitted data to improve Google's products; until then, the AI only runs on dev / seed data (the server refuses to run it in production unless `AI_PAID_TIER=true`).
 - **REQUIRED BEFORE LAUNCH — Legal.** Privacy policy, terms of use and an in-app consent screen covering health-related onboarding answers, body and Daily Pump photos, and processing by an AI provider. Review with a lawyer (Israeli Privacy Protection Law, Amendment 13) before launch.
-- **Onboarding experience-level question** — so the AI plan recommendation can use advanced exercises when appropriate (Phase 12 offers beginner and intermediate exercises only). Onboarding is protected: an owner-approved change with placeholder copy, like the Phase 13a nutrition step.
+- **Training settings screen** — the coach edits her splits, workout types and slots in the dashboard (the config, her stored overrides and the API exist since Phase 12b).
+- **Confirm ABC with the coach** — the ABC split is a default (A chest + back, B legs, C shoulders + arms); see `docs/reference/abc-split-question.md`.
 - **Per-trainee food exceptions** — the coach can allow specific items for a trainee despite a tag rule (e.g. "yogurt OK" for a lactose-intolerant trainee). Allowed items return to her builder list, warnings and the AI food list.
 - **Extra portions** — optional neutral "+ extra portion" marking beyond the plan, shown to the coach as a plain number (ask the coach whether she wants it).
 - **Before making the repo public** — audit the full git history for secrets, coach content, personal data and seed data; rotate any exposed secret; rewrite history if needed. (The repo is private now; `docs/reference/` is gitignored for this reason.)
