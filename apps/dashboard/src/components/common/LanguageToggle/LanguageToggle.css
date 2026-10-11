@@ -1,0 +1,74 @@
+/* A glass segmented pill: two equal options, and a pink pill behind the active one. */
+.language-toggle {
+  --language-toggle-inset: var(--space-1);
+
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  padding: var(--language-toggle-inset);
+  border: var(--border-width-thin) solid var(--color-surface);
+  border-radius: var(--radius-round);
+  background: var(--surface-frosted-light);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow-glass);
+}
+
+/* Exactly one option wide; it slides one option over for the second language. The group is
+   always left-to-right, so the slide never flips with the page direction. */
+.language-toggle-thumb {
+  position: absolute;
+  inset-block: var(--language-toggle-inset);
+  inset-inline-start: var(--language-toggle-inset);
+  width: calc(50% - var(--language-toggle-inset));
+  border-radius: var(--radius-round);
+  background: var(--color-primary);
+  transition: translate var(--transition-slide) var(--ease-slide);
+}
+
+.language-toggle-he .language-toggle-thumb {
+  translate: 100% 0;
+}
+
+.language-toggle-option {
+  position: relative;
+  z-index: var(--z-raised);
+  min-width: 44px;
+  min-height: 36px;
+  padding-inline: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-round);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  transition: color var(--transition-slide) var(--ease-slide);
+}
+
+@media (hover: hover) {
+  .language-toggle-option:hover:not(.language-toggle-option-active) {
+    color: var(--color-text);
+  }
+}
+
+.language-toggle-option:active:not(.language-toggle-option-active) {
+  color: var(--color-text);
+}
+
+.language-toggle-option-active {
+  color: var(--color-on-primary);
+}
+
+.language-toggle-option:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary-deep);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .language-toggle-thumb,
+  .language-toggle-option {
+    transition: none;
+  }
+}

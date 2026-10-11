@@ -26,6 +26,8 @@ export const en: CopyShape<typeof he> = {
     listSeparator: ', ',
   },
   languageNames: { he: 'עברית', en: 'English' },
+  // The two-letter labels of the compact toggle (LanguageToggle), the same in both locales.
+  languageShort: { he: 'עב', en: 'EN' },
   language: 'Language',
   units: {
     kg: 'kg',

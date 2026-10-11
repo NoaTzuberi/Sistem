@@ -29,6 +29,8 @@ export const he = {
   },
   // Each language by its own name, in both locales (the Settings picker).
   languageNames: { he: 'עברית', en: 'English' },
+  // The two-letter labels of the compact toggle (LanguageToggle), the same in both locales.
+  languageShort: { he: 'עב', en: 'EN' },
   language: 'שפה',
   units: {
     kg: 'ק״ג',
