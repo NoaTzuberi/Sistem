@@ -107,6 +107,48 @@
   --color-wheel-pill: color-mix(in srgb, var(--color-surface) 85%, transparent);
   --surface-chip-on-video: color-mix(in srgb, var(--color-on-primary) 85%, transparent);
 
+  /* The coach dashboard (design: docs/design/coach-dashboard.html): a soft pink-biased grey canvas
+     with faint pink glows in two corners; white rounded widgets float on it. */
+  --color-canvas: #efedf0;               /* The page ground */
+  --color-fill-soft: #f6f4f6;            /* Fills inside a white widget (fact tiles, tracks, tab rails) */
+  --color-hairline: #ece8eb;             /* Row dividers and chart grid lines */
+  --color-text-faint: #a9a2ac;           /* Group labels, axis text, empty cells */
+  --color-icon-quiet: #8f8892;           /* A sidebar icon that is not the current page */
+  --color-dash-outline: #d8d1d7;         /* The dashed "planned" pill */
+  --color-bar-rest: #ffb3d1;             /* Chart bars that are not the current week */
+  --color-square-missed: #f6c9d9;        /* A missed workout square (trainees table) */
+  --color-lilac: #c9a6ff;
+  --color-lilac-mist: #f4e9ff;
+  --color-peach: #ffb59e;
+  /* Avatar tints: a soft fill + its readable text. The first pair is the brand's own. */
+  --color-avatar-lilac: #eee6ff;
+  --color-avatar-lilac-text: #6a3fb5;
+  --color-avatar-peach: #ffebdf;
+  --color-avatar-peach-text: #a2481c;
+  --color-avatar-sky: #e2f1f6;
+  --color-avatar-sky-text: #1e6a85;
+  --gradient-canvas:
+    radial-gradient(60% 50% at 0% 100%, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent 70%),
+    radial-gradient(40% 35% at 100% 0%, color-mix(in srgb, var(--color-pink-glow) 55%, transparent), transparent 70%);
+  /* The two hero cards: blurred color clouds (the card blurs this layer). */
+  --gradient-hero-pink:
+    radial-gradient(40% 45% at 35% 70%, var(--color-pink-bright) 0%, transparent 70%),
+    radial-gradient(45% 45% at 70% 35%, var(--color-peach) 0%, transparent 70%),
+    radial-gradient(60% 60% at 50% 50%, var(--color-primary-tint) 0%, var(--color-pink-mist) 100%);
+  --gradient-hero-lilac:
+    radial-gradient(40% 45% at 65% 70%, var(--color-lilac) 0%, transparent 70%),
+    radial-gradient(45% 45% at 30% 35%, var(--color-pink-mid) 0%, transparent 70%),
+    radial-gradient(60% 60% at 50% 50%, var(--color-lilac-mist) 0%, var(--color-bg) 100%);
+  --blur-hero: blur(28px);
+  /* White at an alpha, on the canvas or on a hero cloud. */
+  --surface-pill: color-mix(in srgb, var(--color-card) 65%, transparent);        /* chips, segmented rails */
+  --surface-pill-hover: color-mix(in srgb, var(--color-card) 55%, transparent);  /* a sidebar item under the pointer */
+  --surface-glass-row: color-mix(in srgb, var(--color-card) 62%, transparent);   /* rows on a hero card */
+  --surface-glass-chip: color-mix(in srgb, var(--color-card) 90%, transparent);
+  --color-on-hero-muted: color-mix(in srgb, var(--color-text) 70%, transparent); /* captions on a hero card */
+  --color-tick-rest: color-mix(in srgb, var(--color-text) 18%, transparent);     /* hero mini columns */
+  --color-scrim: color-mix(in srgb, var(--color-text) 22%, transparent);         /* behind the drawer / palette */
+
   /* Third-party button colors fixed by the provider's guidelines (social sign-in, Phase 5c). */
   --color-apple-button: #000000;
 
@@ -134,7 +176,13 @@
   --text-xl: 22px;
   --text-2xl: 28px;
   --text-3xl: 34px;
+  /* Dashboard display sizes: thin, large numbers and page titles. */
+  --text-2xs: 11px;
+  --text-4xl: 40px;
+  --text-5xl: 44px;
+  --text-hero: 76px;
 
+  --font-weight-light: 300;      /* The dashboard's large numbers */
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
@@ -145,6 +193,7 @@
   --line-height-base: 1.5;
 
   --letter-spacing-tight: -0.02em;
+  --letter-spacing-display: -0.03em;  /* Large light titles and numbers (dashboard) */
   --letter-spacing-wide: 0.08em;   /* Uppercase labels (Latin only — Hebrew has no case) */
 
   /* ═══ 4. Spacing (8px base scale) ═════════════════════════════════════════════ */
@@ -168,6 +217,16 @@
   --radius-button: 14px;        /* The onboarding buttons */
   --radius-check: 6px;          /* A rounded-square checkbox */
   --radius-chip: 16px;          /* The centered wheel label */
+  /* The coach dashboard is rounded (owner-approved design), unlike the app's sharp cuts. */
+  --radius-panel: 26px;         /* A white widget on the canvas */
+  --radius-drawer: 28px;        /* The floating trainee drawer */
+  --radius-dialog: 24px;        /* The command palette */
+  --radius-tile: 18px;          /* Fact tiles and glass rows inside a widget */
+  --radius-row: 16px;           /* A hover row, a photo */
+  --radius-logo-tile: 12px;     /* The pink tile behind the sidebar logo */
+  --radius-tooltip: 10px;
+  --radius-square: 5px;         /* The week squares in the trainees table */
+  --radius-bar: 4px;            /* Bar tops in a chart */
   --cut-size: 12px;
   /* One corner cut at the top-end (the card / tile pattern). */
   --cut-corner: polygon(0 0, calc(100% - var(--cut-size)) 0, 100% var(--cut-size), 100% 100%, 0 100%);
@@ -201,6 +260,14 @@
     0 2px 8px color-mix(in srgb, var(--color-text) 4%, transparent);
   --shadow-ghost: 0 10px 30px color-mix(in srgb, var(--color-text) 5%, transparent);
   --shadow-button: 0 8px 20px color-mix(in srgb, var(--color-primary) 28%, transparent);
+  /* The coach dashboard: a very soft shadow under every white widget, a deep one under what floats. */
+  --shadow-panel:
+    0 1px 2px color-mix(in srgb, var(--color-text) 4%, transparent),
+    0 12px 32px color-mix(in srgb, var(--color-text) 5%, transparent);
+  --shadow-float: 0 30px 80px color-mix(in srgb, var(--color-text) 20%, transparent);   /* drawer, palette */
+  --shadow-photo: 0 8px 20px color-mix(in srgb, var(--color-text) 12%, transparent);    /* stacked Daily Pump photos */
+  --shadow-side-sheet: 0 0 60px color-mix(in srgb, var(--color-text) 16%, transparent); /* the off-canvas sidebar */
+  --ring-panel: 0 0 0 2px var(--color-card);            /* The notification dot on its round button */
   --ring-center: 0 0 0 1.5px var(--color-primary);      /* The centered wheel item */
   --ring-badge: 0 0 0 2px var(--color-card);            /* Around the wheel's check badge */
   --ring-focus: 0 0 0 3px var(--color-primary);
@@ -221,6 +288,12 @@
   --ease-pop: cubic-bezier(0.2, 0.8, 0.2, 1.4);  /* A check mark popping in */
   --transition-press: 140ms;     /* A pill button giving under the finger (onboarding) */
   --ease-press: cubic-bezier(0.23, 1, 0.32, 1);
+  /* The dashboard drawer: in on the drawer curve, out faster on a plain ease-out. Pressables
+     use --transition-press + --ease-press (the same ease-out curve). */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-drawer-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --transition-drawer-in: 300ms;
+  --transition-drawer-out: 200ms;
   --loop-slow: 2s;               /* Repeating hints (scroll bounce) */
 
   /* ═══ 8. Opacity ══════════════════════════════════════════════════════════════ */
@@ -236,6 +309,9 @@
   --z-overlay: 2;    /* Sticky bars and overlays inside a page */
   --z-top: 3;        /* The topmost element inside a component */
   --z-tab-bar: 100;
+  --z-side-sheet: 200;  /* The dashboard's off-canvas sidebar */
+  --z-drawer: 300;      /* The trainee drawer and its scrim */
+  --z-palette: 400;     /* The command palette */
   --z-modal: 1000;
 
   /* ═══ 10. Breakpoints ═════════════════════════════════════════════════════════
@@ -247,9 +323,15 @@
   --breakpoint-xl: 900px;
   --breakpoint-2xl: 960px;
   --breakpoint-3xl: 1024px;
+  --breakpoint-dash-nav: 860px;    /* Dashboard: the sidebar becomes an off-canvas drawer */
+  --breakpoint-dash-grid: 1180px;  /* Dashboard: the 12-column widget grid folds */
 
   /* ═══ 11. App chrome & touch ══════════════════════════════════════════════════ */
   --touch-target-min: 44px;
+  --sidebar-width: 248px;            /* Dashboard sidebar: open, icon rail, off-canvas */
+  --sidebar-width-rail: 84px;
+  --sidebar-width-sheet: 272px;
+  --drawer-width: 460px;
   --tab-bar-height: 64px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
