@@ -12,6 +12,8 @@ import type {
   CoachMealLogWeek,
   CoachNutritionPlanResponse,
   CoachPlan,
+  CoachStats,
+  CoachStatsRange,
   CoachTraineeList,
   CoachTraineeResponse,
   CreateNutritionTemplatePayload,
@@ -92,6 +94,12 @@ export function createCoachApi(client: AxiosInstance) {
 
   async function listTrainees(): Promise<CoachTraineeList> {
     const { data } = await client.get<CoachTraineeList>('/coach/trainees');
+    return data;
+  }
+
+  /** Read-only numbers over her own trainees: the Statistics page and the Overview widgets. */
+  async function getCoachStats(range?: CoachStatsRange): Promise<CoachStats> {
+    const { data } = await client.get<CoachStats>('/coach/stats', { params: range ? { range } : undefined });
     return data;
   }
 
@@ -367,6 +375,7 @@ export function createCoachApi(client: AxiosInstance) {
 
   return {
     listTrainees,
+    getCoachStats,
     getTrainee,
     listTraineeWorkoutLogs,
     listTraineeBodyMetrics,

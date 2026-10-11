@@ -836,6 +836,119 @@ export interface CoachTraineeResponse {
   serverTime: string;
 }
 
+// --- Coach statistics & overview (GET /coach/stats) — read-only aggregates over the coach's own
+// trainees. Every status below is decided on the server; the dashboard only displays it. ---
+
+/** How many months back the range-dependent numbers look. */
+export type CoachStatsRange = 3 | 6 | 12;
+
+/** One day of a trainee's last 7 days: done = a workout finished that day · planned = a dated
+ * workout still open today · missed = a dated workout whose day passed without being done. */
+export type CoachBoardCell = 'done' | 'planned' | 'missed';
+
+export interface CoachWeekPlan {
+  id: string;
+  weekStartDate: string;
+  /** Coach-only split id (Phase 12b), when the plan follows one. */
+  splitId: string | null;
+  /** In the plan's own order. */
+  workouts: { id: string; status: WorkoutStatus }[];
+  planned: number;
+  completed: number;
+  /** Days until the plan's week ends in her zone (0 = it ends today). */
+  daysLeft: number;
+}
+
+/** One trainee's week, for the trainees table, the week board and the drawer. */
+export interface CoachTraineeWeek {
+  traineeId: string;
+  /** Onboarding goal ids (she may choose several). */
+  goals: string[];
+  /** Training days per week from onboarding. */
+  daysPerWeek: { min: number; max: number } | null;
+  /** This week's published plan (her zone), or null. */
+  currentPlan: CoachWeekPlan | null;
+  /** Next week's plan of any status, or null — "time to build next week". */
+  nextWeekPlan: { id: string; status: PlanStatus } | null;
+  /** Her last 7 days, oldest first; the last one is today in her zone. */
+  days: { date: string; cell: CoachBoardCell | null }[];
+}
+
+export interface CoachStatsMonth {
+  /** 'YYYY-MM' in the coach's zone. */
+  month: string;
+  /** Trainees with a published plan around the month's last day (the current month: today's status). */
+  active: number;
+}
+
+export interface CoachStatsWeek {
+  /** The Sunday of the week. */
+  weekStartDate: string;
+  planned: number;
+  completed: number;
+}
+
+export interface CoachStatsRetention {
+  months: 1 | 3 | 6;
+  /** Trainees who finished onboarding at least this long ago. */
+  eligible: number;
+  /** Of them, the ones with a published plan for a week that far in or later. */
+  retained: number;
+}
+
+export interface CoachPumpPhoto {
+  traineeId: string;
+  traineeName: string;
+  logId: string;
+  workoutTitle: string;
+  /** A short-lived signed link, like every private photo. */
+  photo: PrivatePhoto;
+}
+
+export interface CoachStats {
+  range: CoachStatsRange;
+  serverTime: string;
+  /** Today and the current week's Sunday in the coach's zone. */
+  today: string;
+  weekStartDate: string;
+  summary: {
+    activeTrainees: number;
+    /** Compared with the end of last month. */
+    activeTraineesChange: number;
+    newTraineesThisMonth: number;
+    /** Compared with last month's sign-ups. */
+    newTraineesChange: number;
+    /** Workouts of the range's ENDED weeks (published plans): done / planned. */
+    completedWorkouts: number;
+    plannedWorkouts: number;
+    /** Average hours from finishing onboarding to her first published plan (onboarded in the range). */
+    hoursToFirstPlan: number | null;
+    firstPlanCount: number;
+    /** Average 1–5 rating of the workouts finished in the range. */
+    averageRating: number | null;
+    ratingCount: number;
+  };
+  /** This week's published plans across all trainees. */
+  thisWeek: { planned: number; completed: number };
+  /** One point per month of the range, oldest first; the last one is this month. */
+  activeByMonth: CoachStatsMonth[];
+  /** The last 8 weeks, oldest first; the last one is this week. */
+  weeklyWorkouts: CoachStatsWeek[];
+  /** Goals of the active trainees, most common first. */
+  goals: { goalId: string; count: number }[];
+  retention: CoachStatsRetention[];
+  trainees: CoachTraineeWeek[];
+  pump: {
+    /** Daily Pump photos uploaded since the start of yesterday (coach's zone). */
+    newCount: number;
+    total: number;
+    /** The newest few. Empty when photo storage is not configured. */
+    photos: CoachPumpPhoto[];
+  };
+  /** Finished workouts of the last 7 days that set personal records (the activity feed's PR tag). */
+  recentPrs: { logId: string; prCount: number }[];
+}
+
 // ---------------------------------------------------------------------------
 // Notifications (PRD §9). In-app since Phase 5a; push is added on top in Phase 5b.
 // No wording is stored: screens build the text and the tap target from type + data.

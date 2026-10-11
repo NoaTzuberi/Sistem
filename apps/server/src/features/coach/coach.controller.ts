@@ -2,6 +2,8 @@ import { Response } from 'express';
 import type { PlanIssuesBody } from '@sistem/types';
 import { AuthenticatedRequest } from '../../middleware/auth.middleware';
 import { listCoachTrainees, getCoachTraineeDetail } from './coach.service';
+import { getCoachStats } from './coachStats.service';
+import { parseStatsRange } from './coachStats';
 import { PlanNotFoundError } from '../plans/plan.service';
 import {
   listCoachPlans,
@@ -29,6 +31,11 @@ export async function getTrainees(req: AuthenticatedRequest, res: Response) {
   const now = new Date();
   const trainees = await listCoachTrainees(req.userId!, now);
   res.status(200).json({ items: trainees, serverTime: now.toISOString() });
+}
+
+/** Read-only numbers for the dashboard's Statistics and Overview pages — her own trainees only. */
+export async function getStats(req: AuthenticatedRequest, res: Response) {
+  res.status(200).json(await getCoachStats(req.userId!, parseStatsRange(req.query.range)));
 }
 
 /** The plan builder's library: every imported exercise that was not rejected, facts only. */

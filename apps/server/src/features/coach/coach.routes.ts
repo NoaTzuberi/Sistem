@@ -3,6 +3,7 @@ import { requireAuth, requireRole } from '../../middleware/auth.middleware';
 import { loadCoachTrainee } from '../../middleware/coachTrainee.middleware';
 import {
   getTrainees,
+  getStats,
   getExercises,
   getTrainee,
   getTraineePlans,
@@ -69,6 +70,9 @@ coachRouter.patch('/exercise-families/:familyId', patchFamily);
 coachRouter.put('/exercise-families/:familyId/primary', putFamilyPrimary);
 coachRouter.post('/exercise-families/:familyId/merge', postFamilyMerge);
 coachRouter.post('/exercise-families/:familyId/split', postFamilySplit);
+
+// Read-only aggregates over her own trainees (the dashboard's Statistics and Overview pages).
+coachRouter.get('/stats', getStats);
 
 coachRouter.get('/trainees', getTrainees);
 coachRouter.get('/trainees/:traineeId', loadCoachTrainee, getTrainee);
