@@ -1,0 +1,78 @@
+.greeting {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 26px;
+}
+
+.greeting-text {
+  min-width: 0;
+}
+
+.greeting-title {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--text-5xl);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.05;
+  letter-spacing: var(--letter-spacing-display);
+  text-wrap: balance;
+}
+
+.greeting-date {
+  margin: 10px 0 0;
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+}
+
+.greeting-numbers {
+  display: flex;
+  align-items: flex-end;
+  gap: 36px;
+  margin: 0;
+}
+
+.greeting-number dt {
+  margin-bottom: 4px;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.greeting-number dd {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 2px;
+  margin: 0;
+  font-size: var(--text-3xl);
+  font-weight: var(--font-weight-light);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+/* A change is small pink text: Cherry Rose, the palette's readable pink (no green — owner decision). */
+.greeting-change {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0;
+  color: var(--color-primary-deep);
+}
+
+@media (max-width: 1180px) { /* = --breakpoint-dash-grid */
+  .greeting-numbers {
+    gap: 24px;
+  }
+}
+
+@media (max-width: 860px) { /* = --breakpoint-dash-nav */
+  .greeting-title {
+    font-size: var(--text-3xl);
+  }
+
+  .greeting-numbers {
+    justify-content: space-between;
+    width: 100%;
+  }
+}

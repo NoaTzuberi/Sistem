@@ -1,0 +1,70 @@
+.waiting-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.waiting-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px;
+  padding-inline-start: 12px;
+  border-radius: var(--radius-tile);
+  background-color: var(--surface-glass-row);
+  -webkit-backdrop-filter: var(--blur-soft);
+  backdrop-filter: var(--blur-soft);
+  text-align: start;
+  transition: transform var(--transition-press) var(--ease-press);
+}
+
+.waiting-row:active {
+  transform: scale(0.97);
+}
+
+.waiting-row:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.waiting-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: var(--font-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.waiting-left {
+  flex: none;
+  padding: 4px 10px;
+  border-radius: var(--radius-round);
+  background-color: var(--surface-glass-chip);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+/* Under 12 hours left: act now. */
+.waiting-left-urgent {
+  color: var(--color-on-primary);
+  background-color: var(--color-primary);
+}
+
+.waiting-more {
+  margin: 2px 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-on-hero-muted);
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .waiting-row {
+    transition: none;
+  }
+}

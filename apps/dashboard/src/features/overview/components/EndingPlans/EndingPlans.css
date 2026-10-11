@@ -1,0 +1,75 @@
+.ending-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ending-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 18px;
+  border-radius: var(--radius-panel);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+}
+
+.ending-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ending-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: var(--font-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ending-progress,
+.ending-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.ending-share,
+.ending-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.ending-track {
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--radius-round);
+  background-color: var(--color-fill-soft);
+}
+
+.ending-track-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-round);
+  background-color: var(--color-primary);
+}
+
+@media (max-width: 1180px) { /* = --breakpoint-dash-grid */
+  .ending-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) { /* = --breakpoint-dash-nav */
+  .ending-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

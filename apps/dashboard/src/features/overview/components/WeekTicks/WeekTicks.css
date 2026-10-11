@@ -1,0 +1,29 @@
+.week-ticks {
+  margin: 18px 0 0;
+}
+
+/* The columns follow the reading direction, like every time axis on the dashboard. */
+.week-ticks-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  height: 34px;
+}
+
+.week-tick {
+  width: 14px;
+  border-radius: var(--radius-bar) var(--radius-bar) 2px 2px;
+  background-color: var(--color-tick-rest);
+}
+
+.week-tick-current {
+  background-color: var(--color-text);
+}
+
+.week-ticks-caption {
+  margin-top: 6px;
+  font-size: var(--text-2xs);
+  color: var(--color-on-hero-muted);
+  text-align: center;
+}

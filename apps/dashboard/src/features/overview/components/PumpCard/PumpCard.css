@@ -1,0 +1,41 @@
+/* A fanned stack: each photo overlaps the one before it; the first and third lean outwards. */
+.pump-stack {
+  display: flex;
+  align-items: center;
+  margin: 4px 0 14px;
+  padding-inline-start: 22px;
+}
+
+.pump-photo {
+  width: 74px;
+  height: 92px;
+  margin-inline-start: -22px;
+  border: var(--border-width-thick) solid var(--color-card);
+  border-radius: var(--radius-tile);
+  background-color: var(--color-fill-soft);
+  box-shadow: var(--shadow-photo);
+  object-fit: cover;
+}
+
+.pump-photo:nth-child(1) {
+  rotate: -6deg;
+}
+
+.pump-photo:nth-child(3) {
+  rotate: 5deg;
+}
+
+.pump-count {
+  margin: auto 0 0;
+  font-size: var(--text-5xl);
+  font-weight: var(--font-weight-light);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-display);
+}
+
+.pump-caption {
+  margin: 4px 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
