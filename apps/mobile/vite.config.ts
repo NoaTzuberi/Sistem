@@ -6,8 +6,13 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 const phoneHttps = process.env.SISTEM_DEV_HTTPS === '1'
 const apiTarget = process.env.SISTEM_API_PROXY_TARGET ?? 'http://localhost:5002'
 
+// The sub-path the app is served from. Set only by the GitHub Pages workflow
+// (.github/workflows/deploy.yml); everywhere else the app lives at the root.
+const basePath = process.env.SISTEM_BASE_PATH ?? '/'
+
 // https://vite.dev/config/
 export default defineConfig({
+  base: basePath,
   // Self-signed HTTPS so a phone gets a secure context (Screen Wake Lock needs one).
   plugins: [react(), ...(phoneHttps ? [basicSsl()] : [])],
   server: {

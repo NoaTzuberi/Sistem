@@ -2,6 +2,7 @@ import { createApiClient } from '@sistem/api-client';
 import { getActiveLanguage } from '@sistem/shared';
 import { getToken, clearToken } from '../auth/tokenStorage';
 import { ROUTES } from '../../app/config/routes';
+import { USES_HASH_ROUTER } from '../../app/config/env';
 
 export const apiClient = createApiClient({
   baseURL: import.meta.env.VITE_API_URL,
@@ -10,6 +11,14 @@ export const apiClient = createApiClient({
   getLanguage: getActiveLanguage,
   onUnauthorized: () => {
     clearToken();
+    if (USES_HASH_ROUTER) {
+      // The route lives after the "#": changing it alone would not reload the page.
+      if (!window.location.hash.startsWith(`#${ROUTES.LOGIN}`)) {
+        window.location.hash = ROUTES.LOGIN;
+        window.location.reload();
+      }
+      return;
+    }
     if (!window.location.pathname.startsWith(ROUTES.LOGIN)) {
       window.location.href = ROUTES.LOGIN;
     }

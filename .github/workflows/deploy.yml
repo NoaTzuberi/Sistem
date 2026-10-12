@@ -1,0 +1,79 @@
+# Publishes the two front ends to GitHub Pages:
+#   coach dashboard → https://noatzuberi.github.io/sistem/
+#   trainee app     → https://noatzuberi.github.io/sistem/mobile/
+# The server is NOT part of this: Pages only serves static files.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; a newer push waits for the running one to finish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  # Change these two if the repository is renamed (GitHub Pages serves it under /<repo>/).
+  DASHBOARD_BASE: /sistem/
+  MOBILE_BASE: /sistem/mobile/
+  SITE_ORIGIN: https://noatzuberi.github.io
+  # Repository variable (Settings → Secrets and variables → Actions → Variables). Until the
+  # server is deployed it is empty: the fallback is an address that can never exist, so the
+  # pages load and login fails with the usual "could not connect" message.
+  VITE_API_URL: ${{ vars.VITE_API_URL || 'https://api.invalid/api' }}
+  # Pages cannot answer inner addresses: routes live after a "#".
+  VITE_HASH_ROUTER: 'true'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build the coach dashboard
+        run: npm run build -w @sistem/dashboard
+        env:
+          SISTEM_BASE_PATH: ${{ env.DASHBOARD_BASE }}
+          VITE_TRAINEE_APP_URL: ${{ env.SITE_ORIGIN }}${{ env.MOBILE_BASE }}
+
+      - name: Build the trainee app
+        run: npm run build -w @sistem/mobile
+        env:
+          SISTEM_BASE_PATH: ${{ env.MOBILE_BASE }}
+          VITE_COACH_DASHBOARD_URL: ${{ env.SITE_ORIGIN }}${{ env.DASHBOARD_BASE }}
+
+      - name: Put both apps in one site (dashboard at the root, the app in mobile/)
+        run: |
+          mkdir -p site/mobile
+          cp -R apps/dashboard/dist/. site/
+          cp -R apps/mobile/dist/. site/mobile/
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
