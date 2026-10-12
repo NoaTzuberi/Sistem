@@ -1,5 +1,8 @@
 # Sistem
 
+link for the coach dev: https://noatzuberi.github.io/sistem/#/login
+link for the trainer app: https://noatzuberi.github.io/sistem/mobile/#/login
+
 Sistem is a mobile coaching app that connects a personal **Coach** with her **Trainees**.
 A trainee signs up, completes an onboarding questionnaire, receives a weekly training
 plan built by the coach, follows and logs workouts, and tracks progress. The coach
