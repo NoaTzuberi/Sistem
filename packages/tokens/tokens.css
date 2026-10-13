@@ -164,6 +164,29 @@
   --surface-on-workout: color-mix(in srgb, var(--color-card) 80%, transparent);          /* chips on a workout's hero band */
   --surface-on-workout-strong: color-mix(in srgb, var(--color-card) 85%, transparent);   /* the notes field on the band */
   /* The trainee's Plans tab: the pink pill under the pointer, and the quiet "AI draft" pill. */
+  /* Statistics identity colors (dashboard): which NUMBER a tile is — not statuses, no green.
+     Each has the ink shade (its text, line and meter), a lighter cloud and a mist. */
+  --color-stat-pink: #ff006e;
+  --color-stat-pink-cloud: #ffb3d1;
+  --color-stat-pink-mist: #ffe3ee;
+  --color-stat-purple: #7c4dff;
+  --color-stat-purple-cloud: #c9b2ff;
+  --color-stat-purple-mist: #efe7ff;
+  --color-stat-orange: #c75a00;
+  --color-stat-orange-cloud: #ffc48a;
+  --color-stat-orange-mist: #ffebd6;
+  --color-stat-blue: #0070c9;
+  --color-stat-blue-cloud: #9ed3ff;
+  --color-stat-blue-mist: #e1f1ff;
+  --color-chart-line-start: #ff8fc0;   /* The light end of the area chart's line, the top of a resting bar */
+  --color-chart-bar-end: #ffd1e3;      /* The bottom of a resting bar */
+  --color-ring-mid: #d4005c;           /* The middle retention ring, between Neon Pink and Cherry Rose */
+  --color-rating-cloud: #ff4e9a;       /* The rating tile's cloud: pink and peach on a pink mist */
+  --color-rating-cloud-warm: #ffb59e;
+  --color-meter-track: color-mix(in srgb, var(--color-text) 7%, transparent);   /* a meter / ring track on a colored tile */
+  --color-star-rest: color-mix(in srgb, var(--color-primary-deep) 20%, transparent); /* the empty part of a star */
+  --surface-chart-tip: color-mix(in srgb, var(--color-card) 92%, transparent);  /* the glass tooltip on a chart */
+  --surface-delta-pill: color-mix(in srgb, var(--color-card) 80%, transparent); /* the change pill on a statistics tile */
   --color-primary-hover: color-mix(in srgb, var(--color-primary) 91%, var(--color-text));
   --gradient-ai-soft: linear-gradient(120deg, var(--color-primary-tint), var(--color-lilac-mist));
   --gradient-ai-soft-hover: linear-gradient(120deg, color-mix(in srgb, var(--color-primary) 18%, var(--color-card)), color-mix(in srgb, var(--color-lilac) 40%, var(--color-card)));
@@ -171,6 +194,19 @@
     radial-gradient(40% 40% at 60% 40%, color-mix(in srgb, var(--color-primary) 22%, transparent), transparent 70%),
     radial-gradient(35% 35% at 30% 70%, color-mix(in srgb, var(--color-peach) 35%, transparent), transparent 70%);
   --surface-timeline: color-mix(in srgb, var(--color-card) 55%, transparent);   /* the past-weeks timeline */
+  /* Notification types (the bell's panel): icon, unread dot and action take the color; the unread
+     card's glow is the same color at a low alpha. Kinds of news, not statuses — no green.
+     "late" is the only red: a 48h window that has passed. */
+  --color-notice-warn: var(--color-section-exercises);
+  --color-notice-late: #d70015;
+  --color-notice-new: var(--color-workout-2);
+  --color-notice-done: var(--color-primary-deep);
+  --surface-notice-panel: color-mix(in srgb, var(--color-bg) 86%, transparent);       /* the frosted panel */
+  --surface-notice-read: color-mix(in srgb, var(--color-card) 45%, transparent);      /* a read notification */
+  --surface-notice-quiet: color-mix(in srgb, var(--color-text-muted) 12%, transparent); /* segmented track, read icon tile, dismiss */
+  --color-notice-scrim: color-mix(in srgb, var(--color-text) 10%, transparent);
+  --blur-notice-scrim: blur(6px) saturate(120%);
+  --blur-notice-panel: blur(30px) saturate(180%);
   /* Section identity on a trainee's questionnaire: which part of her answers this is (icon chip,
      pills). Not statuses. Training and the orange soft reuse the workout identity values. */
   --color-section-training: var(--color-workout-2);
@@ -225,6 +261,7 @@
   --text-5xl: 44px;
   --text-hero: 76px;
   --text-goal: 54px;              /* "68 → 62": her weight goal on its gradient card */
+  --text-panel-title: 24px;       /* The notifications panel's title */
   --text-profile-name: 36px;      /* A trainee's name on her profile header */
   --text-hero-title: 30px;        /* The selected workout's title on its hero band (plan builder) */
 
@@ -266,6 +303,9 @@
   /* The coach dashboard is rounded (owner-approved design), unlike the app's sharp cuts. */
   --radius-panel: 26px;         /* A white widget on the canvas */
   --radius-drawer: 28px;        /* The floating trainee drawer */
+  --radius-notice-panel: 30px;  /* The notifications panel */
+  --radius-notice-icon: 13px;   /* A notification's icon tile */
+  --radius-segment: 9px;        /* The thumb of an iOS-style segmented control */
   --radius-dialog: 24px;        /* The command palette */
   --radius-tile: 18px;          /* Fact tiles and glass rows inside a widget */
   --radius-row: 16px;           /* A hover row, a photo */
@@ -273,6 +313,7 @@
   --radius-tooltip: 10px;
   --radius-square: 5px;         /* The week squares in the trainees table */
   --radius-bar: 4px;            /* Bar tops in a chart */
+  --radius-chart-tip: 14px;     /* The glass tooltip on a chart */
   --radius-field: 12px;         /* A field of an open exercise row, a menu item */
   --cut-size: 12px;
   /* One corner cut at the top-end (the card / tile pattern). */
@@ -315,11 +356,29 @@
   --shadow-photo: 0 8px 20px color-mix(in srgb, var(--color-text) 12%, transparent);    /* stacked Daily Pump photos */
   --shadow-side-sheet: 0 0 60px color-mix(in srgb, var(--color-text) 16%, transparent); /* the off-canvas sidebar */
   --shadow-avatar: 0 10px 26px color-mix(in srgb, var(--color-primary) 25%, transparent);   /* the profile avatar */
+  --shadow-notice-panel:
+    0 0 0 0.5px color-mix(in srgb, var(--color-text) 8%, transparent),
+    0 30px 80px color-mix(in srgb, var(--color-text) 22%, transparent),
+    0 8px 20px color-mix(in srgb, var(--color-text) 6%, transparent);
+  --shadow-notice-card:
+    0 1px 2px color-mix(in srgb, var(--color-text) 5%, transparent),
+    0 8px 22px color-mix(in srgb, var(--color-text) 6%, transparent);
+  --shadow-notice-icon: 0 2px 8px color-mix(in srgb, var(--color-text) 8%, transparent);
+  --shadow-segment-thumb:
+    0 3px 8px color-mix(in srgb, var(--color-text) 12%, transparent),
+    0 3px 1px color-mix(in srgb, var(--color-text) 4%, transparent);
   --shadow-pill-hover: 0 10px 24px color-mix(in srgb, var(--color-text) 10%, transparent);       /* a toolbar pill under the pointer */
   --shadow-button-hover: 0 12px 26px color-mix(in srgb, var(--color-primary) 32%, transparent);  /* … the pink one */
   --shadow-selected: 0 6px 16px color-mix(in srgb, var(--color-primary) 14%, transparent);       /* a selected week tile */
   --shadow-exercise: 0 1px 2px color-mix(in srgb, var(--color-text) 4%, transparent);          /* an exercise card in its slot */
   --shadow-exercise-hover: 0 6px 18px color-mix(in srgb, var(--color-text) 7%, transparent);  /* … under a fine pointer */
+  --shadow-tile-lift:
+    0 2px 4px color-mix(in srgb, var(--color-text) 4%, transparent),
+    0 20px 44px color-mix(in srgb, var(--color-text) 10%, transparent);                  /* a statistics tile under the pointer */
+  --shadow-cell-lift: 0 10px 26px color-mix(in srgb, var(--color-text) 8%, transparent); /* a retention tile under the pointer */
+  --shadow-chart-tip:
+    0 10px 30px color-mix(in srgb, var(--color-text) 16%, transparent),
+    0 0 0 0.5px color-mix(in srgb, var(--color-text) 6%, transparent);
   --shadow-menu: 0 20px 50px color-mix(in srgb, var(--color-text) 16%, transparent);    /* a small menu under its button */
   --ring-panel: 0 0 0 2px var(--color-card);            /* The notification dot on its round button */
   --ring-center: 0 0 0 1.5px var(--color-primary);      /* The centered wheel item */
@@ -327,6 +386,9 @@
   --ring-badge: 0 0 0 2px var(--color-card);            /* Around the wheel's check badge */
   --ring-focus: 0 0 0 3px var(--color-primary);
   --blur-soft: blur(10px);
+  --blur-chart-tip: blur(16px);
+  --blur-stat-cloud: blur(34px);   /* The colored cloud in a statistics tile's corner */
+  --blur-rating-cloud: blur(24px);
 
   /* ═══ 7. Motion ═══════════════════════════════════════════════════════════════
      GSAP animations read their own durations in code; CSS transitions use these. */
@@ -351,9 +413,26 @@
   --transition-drawer-out: 200ms;
   --transition-toast: 200ms;     /* A toast rising in / fading out */
   --transition-menu: 150ms;      /* A menu growing from its button */
+  --transition-notice-panel: 240ms; /* The notifications panel settling under the bell */
+  --transition-notice: 200ms;       /* Its scrim, a card changing state, a card leaving */
+  --transition-segment: 220ms;      /* The segmented control's thumb sliding */
   --transition-popover: 180ms;   /* The "new plan" popover growing from its corner */
   --transition-hover: 180ms;     /* A pill lifting / changing shade under a fine pointer */
-  --transition-chevron: 200ms;   /* An exercise card's chevron turning as it opens */
+  --transition-chevron: 200ms;
+  /* Statistics page. Hover / thumb motion, then the once-per-session intro. */
+  --transition-range-thumb: 260ms; /* The range control's thumb sliding */
+  --transition-lift: 220ms;        /* A tile rising under a fine pointer */
+  --transition-cloud: 500ms;       /* Its cloud swelling */
+  --transition-chart-tip: 120ms;   /* The tooltip following the pointer */
+  --intro-line: 1100ms;            /* The area chart's line drawing itself */
+  --intro-area: 900ms;             /* … and its fill fading in, after --intro-area-delay */
+  --intro-area-delay: 250ms;
+  --intro-bar: 700ms;              /* A weekly bar growing; one every --intro-bar-step */
+  --intro-bar-step: 45ms;
+  --intro-goal: 800ms;             /* A goal bar growing; one every --intro-goal-step */
+  --intro-goal-step: 60ms;
+  --intro-ring: 1000ms;            /* A retention ring filling */
+  --intro-meter: 900ms;            /* A tile's meter growing */   /* An exercise card's chevron turning as it opens */
   --loop-slow: 2s;               /* Repeating hints (scroll bounce) */
 
   /* ═══ 8. Opacity ══════════════════════════════════════════════════════════════ */
@@ -371,6 +450,7 @@
   --z-tab-bar: 100;
   --z-side-sheet: 200;  /* The dashboard's off-canvas sidebar */
   --z-drawer: 300;      /* The trainee drawer and its scrim */
+  --z-notifications: 350; /* The notifications panel and its scrim (above the drawer, under ⌘K) */
   --z-palette: 400;     /* The command palette */
   --z-toast: 500;       /* A toast, above everything but a modal */
   --z-modal: 1000;
@@ -385,7 +465,9 @@
   --breakpoint-2xl: 960px;
   --breakpoint-3xl: 1024px;
   --breakpoint-dash-nav: 860px;    /* Dashboard: the sidebar becomes an off-canvas drawer */
-  --breakpoint-dash-grid: 1180px;  /* Dashboard: the 12-column widget grid folds */
+  --breakpoint-dash-grid: 1180px;
+  --breakpoint-stats-fold: 1100px; /* Statistics: tiles 2 × 2, cards stack */
+  --breakpoint-stats-phone: 640px; /* Statistics: the retention rings share one row */  /* Dashboard: the 12-column widget grid folds */
   --breakpoint-builder-rows: 720px; /* Plan builder: an exercise's four fields become 2 × 2 */
 
   /* ═══ 11. App chrome & touch ══════════════════════════════════════════════════ */
