@@ -881,6 +881,14 @@ export interface CoachStatsMonth {
   active: number;
 }
 
+/** One of the last six months (the tiles' sparklines) — the same whatever the range. */
+export interface CoachStatsRecentMonth {
+  month: string;
+  /** Like CoachStatsMonth.active. */
+  active: number;
+  /** Sign-ups that month (coach's zone). */
+  newTrainees: number;
+}
 export interface CoachStatsWeek {
   /** The Sunday of the week. */
   weekStartDate: string;
@@ -924,6 +932,8 @@ export interface CoachStats {
     /** Average hours from finishing onboarding to her first published plan (onboarded in the range). */
     hoursToFirstPlan: number | null;
     firstPlanCount: number;
+    /** The same average for the period of the same length just before the range; null when nobody was onboarded then. */
+    hoursToFirstPlanPrevious: number | null;
     /** Average 1–5 rating of the workouts finished in the range. */
     averageRating: number | null;
     ratingCount: number;
@@ -932,6 +942,11 @@ export interface CoachStats {
   thisWeek: { planned: number; completed: number };
   /** One point per month of the range, oldest first; the last one is this month. */
   activeByMonth: CoachStatsMonth[];
+  /** The month ('YYYY-MM', coach's zone) her first trainee signed up; null without trainees.
+   * Earlier months have no data — a chart leaves them empty instead of drawing 0. */
+  firstTraineeMonth: string | null;
+  /** The last six months, oldest first; the last one is this month. */
+  recentMonths: CoachStatsRecentMonth[];
   /** The last 8 weeks, oldest first; the last one is this week. */
   weeklyWorkouts: CoachStatsWeek[];
   /** Goals of the active trainees, most common first. */

@@ -98,6 +98,37 @@ describe('coach stats', () => {
     });
     expect(stats.thisWeek).toEqual({ planned: 0, completed: 0 });
     expect(stats.trainees).toEqual([]);
+    // No trainee yet: every month is "no data" for the chart.
+    expect(stats.firstTraineeMonth).toBeNull();
+  });
+
+  it('the last six months and the first month with a trainee do not follow the range', async () => {
+    // A sign-up four months ago: with a 3-month range it is outside the chart, not outside the sparkline.
+    const earlier = addMonths(TODAY.slice(0, 7), -4);
+    await createTestUser('earlier@example.com', { coachId: coach.user._id, timezone: TIMEZONE, createdAt: new Date(`${earlier}-10T12:00:00Z`) });
+
+    const stats = await getStats(coach.token, '?range=3');
+    expect(stats.firstTraineeMonth).toBe(earlier);
+    expect(stats.recentMonths).toHaveLength(6);
+    expect(stats.recentMonths.at(-1)?.month).toBe(TODAY.slice(0, 7));
+    expect(stats.recentMonths.find((point) => point.month === earlier)?.newTrainees).toBe(1);
+  });
+
+  it('the wait for the first plan is also given for the period before the range', async () => {
+    const before = await createTestUser('before@example.com', {
+      coachId: coach.user._id,
+      timezone: TIMEZONE,
+      onboardingStatus: 'completed',
+      // Finished onboarding 4 months ago: before a 3-month range, inside the 3 months ahead of it.
+      onboardingCompletedAt: new Date(`${addMonthsToDate(TODAY, -4)}T08:00:00Z`),
+    });
+    const plan = await createPlan(before, coach, LAST_WEEK);
+    plan.publishedAt = new Date(new Date(`${addMonthsToDate(TODAY, -4)}T08:00:00Z`).getTime() + 20 * HOUR_MS);
+    await plan.save();
+
+    const stats = await getStats(coach.token, '?range=3');
+    expect(stats.summary.hoursToFirstPlanPrevious).toBe(20);
+    expect((await getStats(coach.token, '?range=12')).summary.hoursToFirstPlanPrevious).toBeNull();
     expect(stats.pump).toEqual({ newCount: 0, total: 0, photos: [] });
   });
 

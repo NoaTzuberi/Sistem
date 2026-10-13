@@ -24,6 +24,7 @@ const WEEKS_SHOWN = 8;
 const BOARD_DAYS = 7;
 const RETENTION_MONTHS = [1, 3, 6] as const;
 const RECENT_PR_DAYS = 7;
+const RECENT_MONTHS = 6;
 const LAST_DAY_OFFSET = 6;
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
@@ -223,27 +224,42 @@ export function buildCoachStats({ trainees, plans, logs, coachTimezone, range, n
       (publishedByTrainee.get(trainee.id) ?? []).some((plan) => plan.weekStartDate === week || plan.weekStartDate === nextWeek),
     ).length;
   };
+  const activeIn = (month: string) => (month === thisMonth ? activeNow : activeAt(lastDayOfMonth(month)));
   const activeByMonth = Array.from({ length: range }, (_, index) => {
     const month = addMonths(thisMonth, index - (range - 1));
-    return { month, active: month === thisMonth ? activeNow : activeAt(lastDayOfMonth(month)) };
+    return { month, active: activeIn(month) };
   });
 
   const lastMonth = addMonths(thisMonth, -1);
   const signUpMonths = trainees.map((trainee) => monthOf(localDateString(trainee.createdAt, coachTimezone)));
+  const firstTraineeMonth = signUpMonths.length > 0 ? signUpMonths.reduce((first, month) => (month < first ? month : first)) : null;
+  const recentMonths = Array.from({ length: RECENT_MONTHS }, (_, index) => {
+    const month = addMonths(thisMonth, index - (RECENT_MONTHS - 1));
+    return { month, active: activeIn(month), newTrainees: signUpMonths.filter((signUp) => signUp === month).length };
+  });
   const newThisMonth = signUpMonths.filter((month) => month === thisMonth).length;
   const newLastMonth = signUpMonths.filter((month) => month === lastMonth).length;
 
   // --- Onboarding → first published plan ---------------------------------------------------
-  const hoursToFirstPlan: number[] = [];
-  for (const trainee of trainees) {
-    const completedAt = trainee.onboardingCompletedAt;
-    if (!completedAt || localDateString(completedAt, coachTimezone) < rangeStart) continue;
-    const publishTimes = (publishedByTrainee.get(trainee.id) ?? []).flatMap((plan) => (plan.publishedAt ? [plan.publishedAt.getTime()] : []));
-    if (publishTimes.length === 0) continue;
-    const waitedMs = Math.min(...publishTimes) - completedAt.getTime();
-    // A plan published before she finished onboarding (seed data, a re-done questionnaire) says nothing about the wait.
-    if (waitedMs >= 0) hoursToFirstPlan.push(waitedMs / HOUR_MS);
-  }
+  /** The waits of the trainees who finished onboarding from `from` up to (not including) `before`. */
+  const waitsForFirstPlan = (from: string, before: string | null): number[] => {
+    const hours: number[] = [];
+    for (const trainee of trainees) {
+      const completedAt = trainee.onboardingCompletedAt;
+      if (!completedAt) continue;
+      const completedOn = localDateString(completedAt, coachTimezone);
+      if (completedOn < from || (before !== null && completedOn >= before)) continue;
+      const publishTimes = (publishedByTrainee.get(trainee.id) ?? []).flatMap((plan) => (plan.publishedAt ? [plan.publishedAt.getTime()] : []));
+      if (publishTimes.length === 0) continue;
+      const waitedMs = Math.min(...publishTimes) - completedAt.getTime();
+      // A plan published before she finished onboarding (seed data, a re-done questionnaire) says nothing about the wait.
+      if (waitedMs >= 0) hours.push(waitedMs / HOUR_MS);
+    }
+    return hours;
+  };
+  const hoursToFirstPlan = waitsForFirstPlan(rangeStart, null);
+  // The period of the same length just before the range — what the tile's change compares with.
+  const hoursToFirstPlanPrevious = waitsForFirstPlan(addMonthsToDate(today, -2 * range), rangeStart);
 
   const ratings = logs.flatMap((log) =>
     log.rating !== undefined && localDateString(log.finishedAt, coachTimezone) >= rangeStart ? [log.rating] : [],
@@ -290,11 +306,14 @@ export function buildCoachStats({ trainees, plans, logs, coachTimezone, range, n
       plannedWorkouts: endedPlans.reduce((sum, plan) => sum + plan.workouts.length, 0),
       hoursToFirstPlan: average(hoursToFirstPlan),
       firstPlanCount: hoursToFirstPlan.length,
+      hoursToFirstPlanPrevious: average(hoursToFirstPlanPrevious),
       averageRating: average(ratings),
       ratingCount: ratings.length,
     },
     thisWeek,
     activeByMonth,
+    firstTraineeMonth,
+    recentMonths,
     weeklyWorkouts,
     goals,
     retention,
