@@ -1,0 +1,55 @@
+# Render Blueprint — the Sistem API (apps/server) as one free Node web service.
+# Checklist: docs/deploy/render.md. Secrets are never written here: every `sync: false`
+# key is typed into Render's dashboard.
+services:
+  - type: web
+    name: sistem-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    # No rootDir: this is an npm workspaces monorepo with ONE lockfile at the repo root, so the
+    # install runs there. Dev dependencies are needed for the TypeScript build (NODE_ENV=production
+    # would skip them); the test database binary is not downloaded.
+    buildCommand: MONGOMS_DISABLE_POSTINSTALL=1 npm ci --include=dev && npm run build -w @sistem/server
+    startCommand: node apps/server/dist/server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      # Public, not a secret: the GitHub Pages origin (scheme + host, no path).
+      - key: CLIENT_ORIGINS
+        value: https://noatzuberi.github.io
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: VOYAGE_API_KEY
+        sync: false
+      # Read only when AI_PAID_TIER is 'true': in production the AI stays off on the free tier (PRD §14).
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: AI_PAID_TIER
+        value: "false"
+      - key: CLIENT_URL
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: DEFAULT_COACH_EMAIL
+        sync: false
+      - key: FEATURE_NUTRITION_RECIPES
+        value: "false"
+      - key: FEATURE_WATER_TRACKING
+        value: "false"
+      # Optional, add in the dashboard only to change the defaults: AI_MODEL, AI_FALLBACK_MODEL.
+      # PORT is set by Render.

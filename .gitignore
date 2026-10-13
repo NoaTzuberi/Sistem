@@ -29,7 +29,6 @@ apps/mobile/src/assets/onBoardingvid/
 docs/reference/
 
 # Local-only files (kept on disk, not in the repo)
-render.yaml
 workdes.txt
 skills-lock.json
 AGENTS.md
