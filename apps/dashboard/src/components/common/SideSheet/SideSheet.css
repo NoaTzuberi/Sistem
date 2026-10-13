@@ -1,0 +1,98 @@
+/* The shell of the trainee drawer (TraineeDrawer.css), for the sheets that are not about a trainee. */
+.sheet-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-drawer);
+  background-color: var(--color-scrim);
+  opacity: 0;
+  transition: opacity var(--transition-drawer-out) ease;
+}
+
+.sheet-scrim-shown {
+  opacity: 1;
+  transition-duration: var(--transition-drawer-in);
+}
+
+/* Floats 12px inside the window, on the far side from the sidebar. Out: fast, plain ease-out. */
+.side-sheet {
+  position: fixed;
+  inset-block: 12px;
+  inset-inline-end: 12px;
+  z-index: var(--z-drawer);
+  display: flex;
+  flex-direction: column;
+  width: min(var(--drawer-width), calc(100% - 24px));
+  overflow: hidden;
+  border-radius: var(--radius-drawer);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-float);
+  font-size: var(--text-sm);
+  transition: transform var(--transition-drawer-out) var(--ease-drawer-out);
+}
+
+/* Parked off the screen edge it hangs on: transforms have no logical form. */
+:root[dir='rtl'] .side-sheet {
+  transform: translateX(calc(-100% - 24px));
+}
+
+:root[dir='ltr'] .side-sheet {
+  transform: translateX(calc(100% + 24px));
+}
+
+/* In: the drawer curve, a little slower. */
+:root .side-sheet.side-sheet-shown {
+  transform: none;
+  transition: transform var(--transition-drawer-in) var(--ease-drawer);
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 22px 0;
+}
+
+.sheet-heading {
+  flex: 1;
+  min-width: 0;
+}
+
+.sheet-title {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.sheet-subtitle {
+  margin: 2px 0 0;
+  overflow: hidden;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sheet-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 22px;
+  overflow-y: auto;
+}
+
+.sheet-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 22px 18px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet-scrim,
+  .side-sheet,
+  :root .side-sheet.side-sheet-shown {
+    transition: none;
+  }
+}

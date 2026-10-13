@@ -4,6 +4,8 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['scripts/i18n-parity.test.ts'],
+    // + the api-client base URL check and the plan builder's state / CSS guards (no client test
+    // setup yet — they run here).
+    include: ['scripts/i18n-parity.test.ts', 'scripts/api-client.test.ts', 'scripts/plan-builder.test.ts'],
   },
 });

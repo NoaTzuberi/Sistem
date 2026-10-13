@@ -1,0 +1,88 @@
+.pill-button {
+  /* Anchors the ::after touch target below — without it that layer covers the whole page. */
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 16px;
+  border-radius: var(--radius-round);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform var(--transition-press) var(--ease-press);
+}
+
+.pill-button-sm {
+  height: 32px;
+  padding: 0 12px;
+  font-size: var(--text-xs);
+}
+
+/* A 32px pill keeps a 44px touch target. */
+
+.pill-button-sm::after {
+  content: '';
+  position: absolute;
+  inset: -6px 0;
+}
+
+.pill-button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.pill-button-soft {
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+}
+
+.pill-button-primary {
+  padding: 0 22px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-on-primary);
+  background-color: var(--color-primary);
+  box-shadow: var(--shadow-button);
+}
+
+.pill-button-primary.pill-button-sm {
+  padding: 0 14px;
+}
+
+.pill-button-fill {
+  background-color: var(--color-fill-soft);
+}
+
+.pill-button-dark {
+  color: var(--color-on-primary);
+  background-color: var(--color-text);
+}
+
+.pill-button-danger {
+  color: var(--color-error);
+  background-color: var(--color-error-soft);
+}
+
+.pill-button:disabled {
+  opacity: var(--opacity-disabled);
+  cursor: default;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pill-button-fill:hover:not(:disabled) {
+    background-color: var(--color-hairline);
+  }
+}
+
+.pill-button:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill-button {
+    transition: none;
+  }
+}
