@@ -1,0 +1,53 @@
+.ring-gauge {
+  display: block;
+  flex: none;
+  width: 68px;
+  height: 68px;
+}
+
+.ring-gauge-track,
+.ring-gauge-fill {
+  fill: none;
+  stroke-width: 6;
+}
+
+.ring-gauge-track {
+  stroke: var(--color-meter-track);
+}
+
+.ring-gauge-fill {
+  stroke: var(--color-primary);
+  stroke-linecap: round;
+}
+
+.ring-gauge[data-tone='mid'] .ring-gauge-fill {
+  stroke: var(--color-ring-mid);
+}
+
+.ring-gauge[data-tone='deep'] .ring-gauge-fill {
+  stroke: var(--color-primary-deep);
+}
+
+/* The entrance, once: from empty to its share. */
+.ring-gauge.is-intro .ring-gauge-fill {
+  animation: ring-gauge-fill var(--intro-ring) var(--ease-press) both;
+}
+
+@keyframes ring-gauge-fill {
+  from {
+    stroke-dashoffset: 100;
+  }
+}
+
+@media (max-width: 640px) { /* = --breakpoint-stats-phone */
+  .ring-gauge {
+    width: 56px;
+    height: 56px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring-gauge.is-intro .ring-gauge-fill {
+    animation: none;
+  }
+}

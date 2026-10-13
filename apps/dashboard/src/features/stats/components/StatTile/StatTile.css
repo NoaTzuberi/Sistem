@@ -1,16 +1,94 @@
+/* --stat-color: the tile's ink (pill, sparkline, meter); --stat-cloud / --stat-mist: its corner cloud. */
 .stat-tile {
+  --stat-color: var(--color-stat-pink);
+  --stat-cloud: var(--color-stat-pink-cloud);
+  --stat-mist: var(--color-stat-pink-mist);
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-width: 0;
   padding: 20px;
+  overflow: hidden;
   border-radius: var(--radius-panel);
   background-color: var(--color-card);
   box-shadow: var(--shadow-panel);
+  transition:
+    transform var(--transition-lift) var(--ease-press),
+    box-shadow var(--transition-lift) ease;
+}
+
+.stat-tile[data-tone='purple'] {
+  --stat-color: var(--color-stat-purple);
+  --stat-cloud: var(--color-stat-purple-cloud);
+  --stat-mist: var(--color-stat-purple-mist);
+}
+
+.stat-tile[data-tone='orange'] {
+  --stat-color: var(--color-stat-orange);
+  --stat-cloud: var(--color-stat-orange-cloud);
+  --stat-mist: var(--color-stat-orange-mist);
+}
+
+.stat-tile[data-tone='blue'] {
+  --stat-color: var(--color-stat-blue);
+  --stat-cloud: var(--color-stat-blue-cloud);
+  --stat-mist: var(--color-stat-blue-mist);
+}
+
+/* The cloud in the top inline-end corner. Never in the pointer's way. */
+.stat-tile::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset-block-start: -90px;
+  inset-inline-end: -70px;
+  width: 220px;
+  height: 220px;
+  border-radius: var(--radius-round);
+  background-image:
+    radial-gradient(circle at 40% 40%, var(--stat-cloud), transparent 65%),
+    radial-gradient(circle at 70% 70%, var(--stat-mist), transparent 70%);
+  filter: var(--blur-stat-cloud);
+  opacity: 0.75;
+  pointer-events: none;
+  transition:
+    transform var(--transition-cloud) var(--ease-press),
+    opacity var(--transition-cloud) var(--ease-press);
+}
+
+.stat-tile-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 22px;
 }
 
 .stat-tile-label {
+  min-width: 0;
   font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.stat-tile-delta {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 3px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--radius-round);
+  background-color: var(--surface-delta-pill);
+  font-size: var(--text-2xs);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--stat-color);
+  white-space: nowrap;
+}
+
+.stat-tile-delta-quiet {
   color: var(--color-text-muted);
 }
 
@@ -38,14 +116,46 @@
   color: var(--color-text-muted);
 }
 
-/* Small pink text is Cherry Rose (readable); no green — owner decision. */
-.stat-tile-change {
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-primary-deep);
+/* Keyboard focus gives the same emphasis as the pointer does. */
+.stat-tile:focus-visible {
+  outline: var(--border-width-medium) solid var(--stat-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.stat-tile:focus-visible::before {
+  transform: scale(1.35);
+  opacity: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .stat-tile:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-tile-lift);
+  }
+
+  .stat-tile:hover::before {
+    transform: scale(1.35);
+    opacity: 1;
+  }
 }
 
 @media (max-width: 560px) {
+  .stat-tile {
+    padding: 16px;
+  }
+
   .stat-tile-value {
     font-size: var(--text-3xl);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stat-tile,
+  .stat-tile::before {
+    transition: none;
+  }
+
+  .stat-tile:hover {
+    transform: none;
   }
 }

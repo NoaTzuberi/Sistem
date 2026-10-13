@@ -1,0 +1,19 @@
+/* Stars always fill from the first one on the left, in both languages (like the digits of the number). */
+.rating-stars {
+  display: flex;
+  gap: 2px;
+  direction: ltr;
+}
+
+.rating-star {
+  width: 16px;
+  height: 16px;
+}
+
+.rating-star-on {
+  stop-color: var(--color-primary-deep);
+}
+
+.rating-star-off {
+  stop-color: var(--color-star-rest);
+}

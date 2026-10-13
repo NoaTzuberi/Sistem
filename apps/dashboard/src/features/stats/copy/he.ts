@@ -5,6 +5,10 @@ export const he = {
   subtitle: 'איך העסק וההתמדה של המתאמנות מתקדמים',
   loadError: 'לא הצלחנו לטעון את הסטטיסטיקה.', // PLACEHOLDER
   rangeLabel: 'טווח זמן',
+  // Instead of a chart that has nothing to draw yet.
+  chartEmpty: 'עוד אין מספיק נתונים לגרף הזה',
+  // In a chart's tooltip, when the value equals the one before it.
+  noChange: 'ללא שינוי',
   ranges: { months3: '3 חודשים', months6: '6 חודשים', months12: 'שנה' },
   tiles: {
     active: 'מתאמנות פעילות',
@@ -16,18 +20,28 @@ export const he = {
     timeToPlan: 'זמן ממוצע עד תוכנית',
     timeToPlanNote: 'מתוך חלון של 48 שעות',
     hours: 'שע׳',
+    // The mark on the time-to-plan meter.
+    windowMark: '48 שעות',
   },
   active: {
     title: 'מתאמנות פעילות',
     subtitle: 'בסוף כל חודש',
     label: 'מתאמנות פעילות לפי חודש',
     unit: 'מתאמנות',
+    // {change} is a signed number ('+12').
+    inRange: '{change} בתקופה',
+    sinceLastMonth: '{change} מהחודש הקודם',
   },
   weekly: {
     title: 'אימונים שבוצעו בשבוע',
     subtitle: '8 השבועות האחרונים',
     label: 'אימונים שבוצעו בשבוע',
     unit: 'אימונים',
+    thisWeek: 'השבוע',
+    average: 'ממוצע {value}',
+    // {number} is the week of the year.
+    week: 'שבוע {number}',
+    sinceLastWeek: '{change} מהשבוע הקודם',
   },
   goals: {
     title: 'מטרות המתאמנות',
@@ -41,6 +55,8 @@ export const he = {
     month3: '3 חודשים',
     month6: '6 חודשים',
     rating: 'דירוג אימון ממוצע',
+    // Nobody has been training that long yet / no workout was rated.
+    noData: 'אין עדיין נתונים',
     // For screen readers and the cell's tooltip. PLACEHOLDER
     count: '{retained} מתוך {eligible}',
   },

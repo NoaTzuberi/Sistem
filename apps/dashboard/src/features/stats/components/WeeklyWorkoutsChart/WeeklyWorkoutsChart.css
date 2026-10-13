@@ -1,0 +1,74 @@
+/* One series = one hue: resting weeks in a light pink gradient, the current week in full Neon Pink. */
+.weekly-bar {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+
+.weekly-bar-shape {
+  transition:
+    opacity var(--transition-hover) ease,
+    fill var(--transition-hover) ease;
+}
+
+.weekly-bar-top {
+  stop-color: var(--color-chart-line-start);
+}
+
+.weekly-bar-bottom {
+  stop-color: var(--color-chart-bar-end);
+}
+
+.weekly-bar-current .weekly-bar-shape {
+  fill: var(--color-primary);
+}
+
+/* A bar is hovered: it turns solid, the others step back. */
+.weekly-chart[data-hovering] .weekly-bar-shape {
+  opacity: 0.4;
+}
+
+.weekly-chart[data-hovering] .weekly-bar.is-hovered .weekly-bar-shape {
+  fill: var(--color-primary);
+  opacity: 1;
+}
+
+.weekly-average {
+  stroke: var(--color-primary-deep);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  opacity: 0.5;
+}
+
+/* A card-colored edge keeps it readable where it crosses a bar. */
+.weekly-average-label {
+  paint-order: stroke;
+  stroke: var(--color-card);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  fill: var(--color-primary-deep);
+  font-family: var(--font-family-body);
+  font-size: var(--text-2xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* The entrance, once: each bar grows from the floor, a beat after the one before it. */
+.weekly-chart.is-intro .weekly-bar {
+  animation: weekly-bar-grow var(--intro-bar) var(--ease-press) both;
+  animation-delay: calc(var(--bar-turn) * var(--intro-bar-step));
+}
+
+@keyframes weekly-bar-grow {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .weekly-chart.is-intro .weekly-bar {
+    animation: none;
+  }
+
+  .weekly-bar-shape {
+    transition: none;
+  }
+}

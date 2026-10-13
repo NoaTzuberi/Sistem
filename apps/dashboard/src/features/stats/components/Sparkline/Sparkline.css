@@ -1,0 +1,37 @@
+/* Drawn in the tile's own color (--stat-color, set by the tile). */
+.sparkline {
+  display: block;
+  height: 34px;
+  margin-top: 4px;
+}
+
+.sparkline-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.sparkline-line {
+  fill: none;
+  stroke: var(--stat-color);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sparkline-fill-top {
+  stop-color: var(--stat-color);
+  stop-opacity: 0.25;
+}
+
+.sparkline-fill-bottom {
+  stop-color: var(--stat-color);
+  stop-opacity: 0;
+}
+
+.sparkline-end {
+  fill: var(--stat-color);
+  stroke: var(--color-card);
+  stroke-width: 2;
+}

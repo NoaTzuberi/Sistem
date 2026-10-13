@@ -63,3 +63,16 @@ export function roundedTopBar(centerX: number, top: number, base: number, width:
   const x1 = centerX + width / 2;
   return `M${x0} ${base} V${top + r} Q${x0} ${top} ${x0 + r} ${top} H${x1 - r} Q${x1} ${top} ${x1} ${top + r} V${base} Z`;
 }
+
+/** A smooth line through the points (oldest first): each step is a cubic that leaves and arrives flat, so it never overshoots a value. */
+export function smoothPath(points: readonly (readonly [number, number])[]): string {
+  if (points.length === 0) return '';
+  let path = `M${points[0][0].toFixed(1)} ${points[0][1].toFixed(1)}`;
+  for (let index = 1; index < points.length; index += 1) {
+    const [fromX, fromY] = points[index - 1];
+    const [toX, toY] = points[index];
+    const middleX = ((fromX + toX) / 2).toFixed(1);
+    path += ` C${middleX} ${fromY.toFixed(1)} ${middleX} ${toY.toFixed(1)} ${toX.toFixed(1)} ${toY.toFixed(1)}`;
+  }
+  return path;
+}

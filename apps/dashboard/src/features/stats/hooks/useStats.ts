@@ -7,7 +7,7 @@ import { getCoachStats } from '../../../services/coach/coachService';
 const FAILED = 'failed';
 
 /** The Statistics numbers for a range. A new range keeps the old numbers on screen until it arrives. */
-export function useCoachStats(range: CoachStatsRange): { stats: CoachStats | undefined; hasError: boolean; isLoading: boolean; reload: () => void } {
+export function useStats(range: CoachStatsRange): { stats: CoachStats | undefined; hasError: boolean; isLoading: boolean; reload: () => void } {
   const load = useCallback(() => getCoachStats(range), [range]);
   const { data, error, isLoading, reload } = useLoad(load, FAILED);
   return { stats: data, hasError: error !== undefined, isLoading, reload };

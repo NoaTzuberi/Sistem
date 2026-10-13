@@ -1,8 +1,0 @@
-/* One series = one hue: the current week in full Neon Pink, the others in its light tint. */
-.weekly-bar {
-  fill: var(--color-bar-rest);
-}
-
-.weekly-bar-current {
-  fill: var(--color-primary);
-}

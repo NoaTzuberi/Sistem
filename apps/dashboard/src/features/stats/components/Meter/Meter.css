@@ -1,0 +1,51 @@
+.stat-meter {
+  position: relative;
+  display: block;
+  height: 8px;
+  margin-top: 10px;
+  border-radius: var(--radius-bar);
+  background-color: var(--color-meter-track);
+}
+
+/* The tile's color at the start, fading to its cloud shade at the tip. */
+.stat-meter-fill {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: var(--meter-share);
+  border-radius: var(--radius-bar);
+  background-image: linear-gradient(to right, var(--stat-color), var(--stat-cloud));
+  transform-origin: 0 50%;
+}
+
+[dir='rtl'] .stat-meter-fill {
+  background-image: linear-gradient(to left, var(--stat-color), var(--stat-cloud));
+  transform-origin: 100% 50%;
+}
+
+.stat-meter-tick {
+  position: absolute;
+  inset-block: -4px;
+  inset-inline-start: var(--meter-tick);
+  width: 2px;
+  margin-inline-start: -1px;
+  border-radius: 1px;
+  background-color: var(--color-text);
+  opacity: 0.25;
+}
+
+.stat-meter.is-intro .stat-meter-fill {
+  animation: stat-meter-grow var(--intro-meter) var(--ease-press) both;
+}
+
+@keyframes stat-meter-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stat-meter.is-intro .stat-meter-fill {
+    animation: none;
+  }
+}

@@ -1,0 +1,128 @@
+.goals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* --goal-color: the row's identity color, by its place in the list (not a status). */
+.goal-row {
+  --goal-color: var(--color-workout-1);
+  display: grid;
+  grid-template-columns: 10px 130px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-chart-tip);
+  font-size: var(--text-sm);
+  transition:
+    background-color var(--transition-fast) ease,
+    opacity var(--transition-fast) ease;
+}
+
+.goal-row[data-tone='1'] {
+  --goal-color: var(--color-workout-2);
+}
+
+.goal-row[data-tone='2'] {
+  --goal-color: var(--color-workout-3);
+}
+
+.goal-row[data-tone='3'] {
+  --goal-color: var(--color-workout-4);
+}
+
+.goal-row-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-round);
+  background-color: var(--goal-color);
+}
+
+.goal-row-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.goal-row-track {
+  height: 12px;
+  overflow: hidden;
+  border-radius: var(--radius-round);
+  background-color: var(--color-fill-soft);
+}
+
+.goal-row-fill {
+  display: block;
+  width: var(--goal-share);
+  height: 100%;
+  border-radius: var(--radius-round);
+  background-color: var(--goal-color);
+  transform-origin: 0 50%;
+}
+
+[dir='rtl'] .goal-row-fill {
+  transform-origin: 100% 50%;
+}
+
+.goal-row-count {
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.goal-row-share {
+  display: block;
+  font-size: var(--text-2xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+}
+
+.goals-list-empty {
+  margin: 0;
+  padding: 24px 0;
+  color: var(--color-text-muted);
+}
+
+/* The pointer is on the list: the row under it stands out, the others step back. */
+@media (hover: hover) and (pointer: fine) {
+  .goals-list:hover .goal-row {
+    opacity: 0.5;
+  }
+
+  .goals-list:hover .goal-row:hover {
+    background-color: var(--color-fill-soft);
+    opacity: 1;
+  }
+}
+
+/* The entrance, once: each bar grows from the start, a beat after the one before it. */
+.goals-list.is-intro .goal-row-fill {
+  animation: goal-row-grow var(--intro-goal) var(--ease-press) both;
+  animation-delay: calc(var(--goal-turn) * var(--intro-goal-step));
+}
+
+@keyframes goal-row-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@media (max-width: 640px) { /* = --breakpoint-stats-phone */
+  .goal-row {
+    grid-template-columns: 10px 88px minmax(0, 1fr) 40px;
+    padding-inline: 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .goals-list.is-intro .goal-row-fill {
+    animation: none;
+  }
+
+  .goal-row {
+    transition: none;
+  }
+}

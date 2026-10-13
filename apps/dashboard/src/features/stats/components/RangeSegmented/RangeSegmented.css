@@ -1,0 +1,78 @@
+.range-segmented {
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: repeat(var(--range-count), minmax(0, 1fr));
+  padding: 4px;
+  border-radius: var(--radius-round);
+  background-color: var(--surface-pill);
+}
+
+/* One column wide; it slides by whole columns (its own width), toward the reading end. */
+.range-segmented-thumb {
+  position: absolute;
+  inset-block: 4px;
+  inset-inline-start: 4px;
+  width: calc((100% - 8px) / var(--range-count));
+  border-radius: var(--radius-round);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+  transform: translateX(calc(var(--range-index) * 100%));
+  transition: transform var(--transition-range-thumb) var(--ease-press);
+}
+
+[dir='rtl'] .range-segmented-thumb {
+  transform: translateX(calc(var(--range-index) * -100%));
+}
+
+.range-segmented-option {
+  position: relative;
+  min-width: 92px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: var(--radius-round);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  transition:
+    transform var(--transition-press) var(--ease-press),
+    color var(--transition-fast) ease;
+}
+
+.range-segmented-option[aria-pressed='true'] {
+  color: var(--color-text);
+}
+
+.range-segmented-option:active {
+  transform: scale(0.97);
+}
+
+.range-segmented-option:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .range-segmented-option:hover {
+    color: var(--color-text);
+  }
+}
+
+@media (max-width: 640px) { /* = --breakpoint-stats-phone */
+  .range-segmented {
+    display: grid;
+    width: 100%;
+  }
+
+  .range-segmented-option {
+    min-width: 0;
+    padding: 0 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .range-segmented-thumb,
+  .range-segmented-option {
+    transition: none;
+  }
+}

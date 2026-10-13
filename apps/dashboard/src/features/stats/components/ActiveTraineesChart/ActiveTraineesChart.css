@@ -1,0 +1,96 @@
+/* One series = one hue: Neon Pink, from its light tint at the oldest month. */
+.active-line {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.active-line-start {
+  stop-color: var(--color-chart-line-start);
+}
+
+.active-line-end {
+  stop-color: var(--color-primary);
+}
+
+.active-fill-top {
+  stop-color: var(--color-primary);
+  stop-opacity: 0.28;
+}
+
+.active-fill-middle {
+  stop-color: var(--color-chart-line-start);
+  stop-opacity: 0.08;
+}
+
+.active-fill-bottom {
+  stop-color: var(--color-chart-line-start);
+  stop-opacity: 0;
+}
+
+/* The newest value, with a soft halo. */
+.active-halo {
+  fill: var(--color-primary);
+  opacity: 0.16;
+}
+
+.active-end {
+  fill: var(--color-primary);
+  stroke: var(--color-card);
+  stroke-width: 2;
+}
+
+.active-lone-value {
+  fill: var(--color-text);
+  font-family: var(--font-family-body);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.active-crosshair {
+  stroke: var(--color-primary);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  opacity: 0.5;
+}
+
+.active-dot {
+  fill: var(--color-card);
+  stroke: var(--color-primary);
+  stroke-width: 2.5;
+}
+
+/* The entrance, once: the line draws itself from the oldest month (its length is 1 — pathLength),
+   then the fill fades in. The class leaves when it is over, so a redraw never replays it. */
+.active-chart.is-intro .active-line {
+  stroke-dasharray: 1;
+  animation: active-line-draw var(--intro-line) var(--ease-press) both;
+}
+
+.active-chart.is-intro .active-area {
+  animation: active-area-fade var(--intro-area) var(--intro-area-delay) ease both;
+}
+
+@keyframes active-line-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+@keyframes active-area-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .active-chart.is-intro .active-line {
+    stroke-dasharray: none;
+    animation: none;
+  }
+
+  .active-chart.is-intro .active-area {
+    animation: none;
+  }
+}

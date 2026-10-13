@@ -1,0 +1,130 @@
+.retention-card {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.2fr);
+  gap: 12px;
+  margin: 0;
+}
+
+.retention-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px;
+  border-radius: var(--radius-block);
+  background-color: var(--color-fill-soft);
+  transition:
+    transform var(--transition-lift) var(--ease-press),
+    background-color var(--transition-lift) ease,
+    box-shadow var(--transition-lift) ease;
+}
+
+.retention-text {
+  min-width: 0;
+}
+
+.retention-value {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: var(--font-weight-light);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.retention-of {
+  font-size: var(--text-sm);
+  letter-spacing: 0;
+  color: var(--color-text-muted);
+}
+
+.retention-label {
+  margin: 4px 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.retention-none {
+  margin: 2px 0 0;
+  font-size: var(--text-2xs);
+  color: var(--color-text-faint);
+}
+
+/* The rating: stars over a pink / peach cloud. */
+.retention-rating {
+  position: relative;
+  isolation: isolate;
+  justify-content: center;
+  gap: 6px;
+  overflow: hidden;
+  background-color: var(--color-stat-pink-mist);
+}
+
+.retention-rating::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -40%;
+  background-image:
+    radial-gradient(45% 50% at 30% 70%, var(--color-rating-cloud), transparent 70%),
+    radial-gradient(45% 45% at 75% 30%, var(--color-rating-cloud-warm), transparent 70%);
+  filter: var(--blur-rating-cloud);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.retention-rating .retention-label,
+.retention-rating .retention-none,
+.retention-rating .retention-of {
+  color: var(--color-on-hero-muted);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .retention-cell:hover {
+    transform: translateY(-2px);
+  }
+
+  .retention-cell:not(.retention-rating):hover {
+    background-color: var(--color-card);
+    box-shadow: var(--shadow-cell-lift);
+  }
+}
+
+@media (max-width: 1100px) { /* = --breakpoint-stats-fold */
+  .retention-card {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* A phone: the three rings share one row, the rating takes the row under them. */
+@media (max-width: 640px) { /* = --breakpoint-stats-phone */
+  .retention-card {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .retention-cell {
+    padding: 12px;
+  }
+
+  .retention-rating {
+    grid-column: 1 / -1;
+  }
+
+  .retention-value {
+    font-size: var(--text-xl);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .retention-cell {
+    transition: none;
+  }
+
+  .retention-cell:hover {
+    transform: none;
+  }
+}

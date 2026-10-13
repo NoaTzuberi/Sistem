@@ -1,0 +1,56 @@
+/* The anchor: a zero-size point moved (transform only) to the hovered mark. */
+.chart-tooltip {
+  position: absolute;
+  z-index: var(--z-raised);
+  top: 0;
+  /* physical: the charts are drawn in the frame's own pixels, whatever the page direction */
+  left: 0;
+  pointer-events: none;
+  transition: transform var(--transition-chart-tip) var(--ease-press);
+}
+
+.chart-tooltip-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: max-content;
+  padding: 8px 12px;
+  border-radius: var(--radius-chart-tip);
+  background-color: var(--surface-chart-tip);
+  -webkit-backdrop-filter: var(--blur-chart-tip);
+  backdrop-filter: var(--blur-chart-tip);
+  box-shadow: var(--shadow-chart-tip);
+  line-height: 1.3;
+  white-space: nowrap;
+  transform: translate(-50%, calc(-100% - 12px));
+  transition: opacity var(--transition-chart-tip) ease;
+
+  @starting-style {
+    opacity: 0;
+  }
+}
+
+.chart-tooltip-title,
+.chart-tooltip-note {
+  font-size: var(--text-2xs);
+  color: var(--color-text-muted);
+}
+
+.chart-tooltip-value {
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.chart-tooltip-change {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-deep);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-tooltip,
+  .chart-tooltip-card {
+    transition: none;
+  }
+}

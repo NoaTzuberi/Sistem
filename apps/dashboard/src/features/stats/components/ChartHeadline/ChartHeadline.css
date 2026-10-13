@@ -1,0 +1,21 @@
+.chart-headline {
+  flex: none;
+  margin: 0;
+  text-align: end;
+}
+
+.chart-headline-value {
+  display: block;
+  font-size: var(--text-2xl);
+  font-weight: var(--font-weight-light);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-display);
+}
+
+/* Small pink text is Cherry Rose (readable); no green — owner decision. */
+.chart-headline-note {
+  font-size: var(--text-2xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-deep);
+}
