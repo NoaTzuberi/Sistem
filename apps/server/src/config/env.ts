@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import { parseClientOrigins } from './clientOrigins';
 
 dotenv.config();
 
@@ -11,7 +12,8 @@ export const config = {
   databaseUrl: process.env.DATABASE_URL || '',
   jwtSecret: process.env.JWT_SECRET || DEFAULT_JWT_SECRET,
   voyageApiKey: process.env.VOYAGE_API_KEY || '',
-  clientOrigin: process.env.CLIENT_ORIGIN || '*',
+  // CORS allow-list (comma-separated in CLIENT_ORIGINS). Never '*'.
+  clientOrigins: parseClientOrigins(process.env.CLIENT_ORIGINS, process.env.NODE_ENV || 'development'),
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
   resendApiKey: process.env.RESEND_API_KEY || '',
   emailFrom: process.env.EMAIL_FROM || 'Sistem <onboarding@resend.dev>',
@@ -32,6 +34,10 @@ export const config = {
     paidTier: process.env.AI_PAID_TIER === 'true',
   },
 };
+
+if (config.nodeEnv === 'production' && config.clientOrigins.length === 0) {
+  console.warn('[cors] CLIENT_ORIGINS is empty: no website can call this API. Set it to the front end origin(s).');
+}
 
 if (config.nodeEnv === 'production' && config.jwtSecret === DEFAULT_JWT_SECRET) {
   throw new Error(

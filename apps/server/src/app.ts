@@ -20,7 +20,8 @@ import { registerAiRecommendationListeners } from './features/aiRecommendations/
 
 const app = express();
 
-app.use(cors({ origin: config.clientOrigin }));
+// Only the listed origins get CORS headers. No `credentials`: auth is a Bearer header, not a cookie.
+app.use(cors({ origin: config.clientOrigins }));
 app.use(express.json());
 
 app.use('/api', healthRouter);
