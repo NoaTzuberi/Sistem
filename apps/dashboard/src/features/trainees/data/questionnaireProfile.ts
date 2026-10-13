@@ -8,8 +8,7 @@ import { traineesCopy } from '../copy';
 export type AnswerValue =
   | { kind: 'text'; text: string }
   /** Several choices: small pills. */
-  | { kind: 'pills'; items: string[] }
-  | { kind: 'weightGoal'; goal: WeightGoalView };
+  | { kind: 'pills'; items: string[] };
 
 export interface AnswerRow {
   id: string;
@@ -19,7 +18,8 @@ export interface AnswerRow {
 }
 
 export interface AnswerSectionView {
-  id: 'goals' | 'training' | 'exercises' | 'personal';
+  /** Also its color identity and icon (AnswerSection). */
+  id: 'nutrition' | 'training' | 'exercises' | 'personal';
   title: string;
   rows: AnswerRow[];
 }
@@ -38,20 +38,31 @@ export interface AttentionItem {
   text: string;
 }
 
+/** Her weight goal, for the big "68 → 62" of the goal card. Always kg. */
 export interface WeightGoalView {
-  /** Where the bar starts: her questionnaire weight (kg); undefined when she gave none. */
-  startKg: number | undefined;
-  /** Her newest weigh-in (kg) when she has one after the questionnaire. */
-  latestKg: number | undefined;
+  /** The faded number: her newest weigh-in, else her questionnaire weight; undefined when she gave none. */
+  currentKg: number | undefined;
+  /** The current number is a weigh-in logged after the questionnaire. */
+  isLatestWeighIn: boolean;
   targetKg: number;
-  /** 0–1: how far she is from the start to the target. */
-  progress: number;
-  /** "−6 kg · 12 weeks · about 0.5 kg a week" — the parts that can be computed. */
-  summary: string;
+  /** "−6 kg · 12 weeks" — the change from her questionnaire weight and the time she gave herself. */
+  changeText: string | undefined;
+  /** "about 0.5 kg a week", when both the change and a timeframe are known. */
+  rateText: string | undefined;
+}
+
+/** The "her goal" card: what she wants, in the order a coach asks. */
+export interface GoalView {
+  goals: string[];
+  weightGoal: WeightGoalView | undefined;
+  /** "Diet: Vegetarian", when she answered the nutrition step. */
+  diet: string | undefined;
 }
 
 export interface QuestionnaireProfile {
   keyNumbers: KeyNumber[];
+  /** null when she gave no goal, no weight goal and no diet: the card is not drawn. */
+  goal: GoalView | null;
   sections: AnswerSectionView[];
   attention: AttentionItem[];
   /** Labels of the rows she left empty. */
@@ -83,26 +94,24 @@ function weightGoalView(goal: WeightGoal, startKg: number | undefined, latestKg:
   const number = (value: number) => String(Math.round(value * 10) / 10);
   const change = startKg !== undefined ? goal.targetWeightKg - startKg : undefined;
   const weeks = goalWeeks(goal);
-  const current = latestKg ?? startKg;
-  const progress = change && current !== undefined && startKg !== undefined ? Math.max(0, Math.min(1, (current - startKg) / change)) : 0;
   const timeframe = !goal.timeframe
     ? undefined
     : goal.timeframe.kind === 'weeks'
       ? formatPlural(language, shared.nutrition.goalWeeks, goal.timeframe.weeks)
       : fill(shared.nutrition.goalByDate, { date: formatDateShort(goal.timeframe.date, language) });
   return {
-    startKg,
-    latestKg: latestKg !== undefined && latestKg !== startKg ? latestKg : undefined,
+    currentKg: latestKg ?? startKg,
+    isLatestWeighIn: latestKg !== undefined && latestKg !== startKg,
     targetKg: goal.targetWeightKg,
-    progress,
-    summary: [
-      // A signed number keeps its sign in front in Hebrew too.
-      change ? `${isolateLtr(`${change > 0 ? '+' : '−'}${number(Math.abs(change))}`)} ${shared.units.kg}` : undefined,
-      timeframe,
-      change && weeks ? fill(copy.goalRate, { amount: isolateLtr(number(Math.abs(change) / weeks)) }) : undefined,
-    ]
-      .filter(Boolean)
-      .join(' · '),
+    changeText:
+      [
+        // A signed number keeps its sign in front in Hebrew too.
+        change ? `${isolateLtr(`${change > 0 ? '+' : '−'}${number(Math.abs(change))}`)} ${shared.units.kg}` : undefined,
+        timeframe,
+      ]
+        .filter(Boolean)
+        .join(' · ') || undefined,
+    rateText: change && weeks ? fill(copy.goalRate, { amount: isolateLtr(number(Math.abs(change) / weeks)) }) : undefined,
   };
 }
 
@@ -116,8 +125,8 @@ function pills(items: string[]): AnswerValue | null {
 }
 
 /**
- * Her answers, arranged for the coach: the key numbers, what to notice before building, and the
- * sections in the order they help — goals & nutrition, training, exercise preferences, personal
+ * Her answers, arranged for the coach: the key numbers, her goal, what to notice before building,
+ * and the sections in the order they help — nutrition, training, exercise preferences, personal
  * details last. `latestWeightKg` = her newest weigh-in, when one is known.
  */
 export function buildQuestionnaireProfile(onboarding: MyOnboarding, language: Language, today: Date, latestWeightKg?: number): QuestionnaireProfile {
@@ -144,22 +153,26 @@ export function buildQuestionnaireProfile(onboarding: MyOnboarding, language: La
   if (answers?.weight !== undefined) keyNumbers.push({ id: 'weight', label: labels.weight, value: String(answers.weight), unit: shared.units.kg });
   if (days) keyNumbers.push({ id: 'days', label: labels.daysPerWeek, value: days });
 
+  const goalLabels = optionLabels(answers?.goals, options.goals);
+  const dietText = dietType && preferences?.dietTypeDetails ? fill(nutrition.itemWithDetails, { label: dietType, details: isolateAuto(preferences.dietTypeDetails) }) : dietType;
+  const goal: GoalView | null =
+    goalLabels.length > 0 || answers?.weightGoal || dietText
+      ? {
+          goals: goalLabels,
+          weightGoal: answers?.weightGoal ? weightGoalView(answers.weightGoal, answers.weight, latestWeightKg, language) : undefined,
+          diet: dietText ? fill(copy.goalDiet, { label: nutrition.preferences.diet, value: dietText }) : undefined,
+        }
+      : null;
+
   const sections: AnswerSectionView[] = [
     {
-      id: 'goals',
-      title: labels.nutritionAndGoal,
+      id: 'nutrition',
+      title: shared.coach.tabs.nutrition,
       rows: [
-        { id: 'goals', label: labels.goals, value: pills(optionLabels(answers?.goals, options.goals)) },
-        {
-          id: 'weightGoal',
-          label: labels.weightGoal,
-          value: answers?.weightGoal ? { kind: 'weightGoal', goal: weightGoalView(answers.weightGoal, answers.weight, latestWeightKg, language) } : null,
-        },
-        {
-          id: 'diet',
-          label: nutrition.preferences.diet,
-          value: text(dietType && preferences?.dietTypeDetails ? fill(nutrition.itemWithDetails, { label: dietType, details: isolateAuto(preferences.dietTypeDetails) }) : dietType),
-        },
+        // Her goals, weight goal and diet are on the goal card; they only get a row here while they are missing.
+        ...(goalLabels.length === 0 ? [{ id: 'goals', label: labels.goals, value: null }] : []),
+        ...(!answers?.weightGoal ? [{ id: 'weightGoal', label: labels.weightGoal, value: null }] : []),
+        ...(!dietText ? [{ id: 'diet', label: nutrition.preferences.diet, value: null }] : []),
         { id: 'dietStyle', label: nutrition.preferences.dietStyle, value: pills(itemLabels(preferences?.dietStyles, nutrition.dietStyles)) },
         { id: 'religious', label: nutrition.preferences.religious, value: pills(itemLabels(preferences?.religious, nutrition.religious)) },
         // She answered the step and chose none: that is an answer ("None"), not an empty field.
@@ -239,6 +252,7 @@ export function buildQuestionnaireProfile(onboarding: MyOnboarding, language: La
 
   return {
     keyNumbers,
+    goal,
     sections,
     attention,
     missing: sections.flatMap((section) => section.rows.filter((row) => row.value === null).map((row) => row.label)),

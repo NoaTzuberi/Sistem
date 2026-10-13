@@ -1,0 +1,105 @@
+.goal-card {
+  position: relative;
+  padding: 20px 22px;
+  /* clip, not hidden: the oversized cloud must not make the card scrollable. */
+  overflow: clip;
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-panel);
+  /* Its own stacking context, so the cloud stays behind the content and inside the card. */
+  isolation: isolate;
+}
+
+/* The pink / peach cloud of the dashboard's hero cards. */
+.goal-card::before {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  z-index: -1;
+  background: var(--gradient-hero-pink);
+  filter: var(--blur-hero);
+}
+
+.goal-card-title {
+  margin: 0 0 14px;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* current → target, along the reading direction. */
+.goal-weights {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 14px;
+}
+
+.goal-weight {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+}
+
+.goal-weight-caption {
+  font-size: var(--text-xs);
+  color: var(--color-on-hero-muted);
+}
+
+.goal-weight-number {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: var(--text-goal);
+  font-weight: var(--font-weight-light);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-display);
+}
+
+/* Where she is now steps back; where she is going leads. */
+.goal-weight-current .goal-weight-number {
+  opacity: var(--opacity-faint);
+}
+
+.goal-weight-unit {
+  font-size: var(--text-base);
+  letter-spacing: 0;
+  color: var(--color-on-hero-muted);
+}
+
+.goal-arrow {
+  padding-bottom: 8px;
+  font-size: var(--text-2xl);
+  line-height: 1;
+  color: var(--color-primary-deep);
+}
+
+.goal-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.goal-weights + .goal-pills {
+  margin-top: 16px;
+}
+
+.goal-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 2px 12px;
+  border-radius: var(--radius-round);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  background-color: var(--surface-on-workout);
+}
+
+@media (max-width: 760px) {
+  .goal-weight-number {
+    font-size: var(--text-5xl);
+  }
+}

@@ -1,14 +1,51 @@
+/*
+ * --section-color / --section-color-soft: the section's identity (its icon chip and its pills).
+ * Which part of her answers this is — never a status. Nutrition keeps the brand pink.
+ */
 .answer-section {
+  --section-color: var(--color-primary-deep);
+  --section-color-soft: var(--color-primary-tint);
+
   padding: 18px 20px 8px;
   border-radius: var(--radius-panel);
   background-color: var(--color-card);
   box-shadow: var(--shadow-panel);
 }
 
+.answer-section-training {
+  --section-color: var(--color-section-training);
+  --section-color-soft: var(--color-section-training-soft);
+}
+
+.answer-section-exercises {
+  --section-color: var(--color-section-exercises);
+  --section-color-soft: var(--color-section-exercises-soft);
+}
+
+.answer-section-personal {
+  --section-color: var(--color-section-personal);
+  --section-color-soft: var(--color-section-personal-soft);
+}
+
 .answer-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0 0 6px;
   font-size: var(--text-base);
   font-weight: var(--font-weight-semibold);
+}
+
+.answer-section-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-tooltip);
+  color: var(--section-color);
+  background-color: var(--section-color-soft);
 }
 
 .answer-list {
@@ -65,7 +102,8 @@
   padding: 2px 12px;
   border-radius: var(--radius-round);
   font-size: var(--text-sm);
-  background-color: var(--color-fill-soft);
+  color: var(--section-color);
+  background-color: var(--section-color-soft);
 }
 
 /* Narrow: the label goes above its answer. */

@@ -5,13 +5,16 @@ interface KeyNumbersProps {
   numbers: KeyNumber[];
 }
 
-/** The numbers a coach reads first — age, height, weight, days a week — big and light. Only the ones she gave. */
+/**
+ * The numbers a coach reads first — age, height, weight, days a week — one colored tile each
+ * (the tile's cloud follows the number's id). Only the ones she gave.
+ */
 export function KeyNumbers({ numbers }: KeyNumbersProps) {
   if (numbers.length === 0) return null;
   return (
     <dl className="key-numbers">
       {numbers.map((entry) => (
-        <div key={entry.id} className="key-number">
+        <div key={entry.id} className={`key-number key-number-${entry.id}`}>
           <dt>{entry.label}</dt>
           <dd>
             {/* Numbers read left to right in Hebrew too ("2–3"). */}

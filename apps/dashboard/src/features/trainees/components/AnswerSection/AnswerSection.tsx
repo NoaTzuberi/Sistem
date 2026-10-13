@@ -1,6 +1,7 @@
 import { sharedCopy, useCopy } from '@sistem/shared';
+import { Icon } from '../../../../components/common/Icon/Icon';
+import type { IconName } from '../../../../components/common/Icon/iconPaths';
 import type { AnswerSectionView, AnswerValue } from '../../data/questionnaireProfile';
-import { WeightGoalBar } from '../WeightGoalBar/WeightGoalBar';
 import './AnswerSection.css';
 
 interface AnswerSectionProps {
@@ -8,6 +9,14 @@ interface AnswerSectionProps {
   /** Also list the rows she left empty. */
   showEmpty: boolean;
 }
+
+/** Each section's icon; its color identity is the `answer-section-<id>` class (AnswerSection.css). */
+const SECTION_ICONS: Record<AnswerSectionView['id'], IconName> = {
+  nutrition: 'foods',
+  training: 'dumbbell',
+  exercises: 'heart',
+  personal: 'person',
+};
 
 function renderValue(value: AnswerValue) {
   if (value.kind === 'pills') {
@@ -21,12 +30,12 @@ function renderValue(value: AnswerValue) {
       </ul>
     );
   }
-  if (value.kind === 'weightGoal') return <WeightGoalBar goal={value.goal} />;
   return <span dir="auto">{value.text}</span>;
 }
 
 /**
- * One questionnaire section as a white card: a plain title and a definition list — the label
+ * One questionnaire section as a white card in its own color identity (icon chip, pills): a
+ * plain title and a definition list — the label
  * in a quiet column, the answer next to it. Rows she left empty are hidden until asked for; a
  * section with nothing to show is not drawn at all.
  */
@@ -36,8 +45,13 @@ export function AnswerSection({ section, showEmpty }: AnswerSectionProps) {
   if (rows.length === 0) return null;
 
   return (
-    <section className="answer-section">
-      <h2 className="answer-section-title">{section.title}</h2>
+    <section className={`answer-section answer-section-${section.id}`}>
+      <h2 className="answer-section-title">
+        <span className="answer-section-icon" aria-hidden="true">
+          <Icon name={SECTION_ICONS[section.id]} size="sm" />
+        </span>
+        {section.title}
+      </h2>
       <dl className="answer-list">
         {rows.map((row) => (
           <div key={row.id} className="answer-row">

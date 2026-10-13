@@ -5,6 +5,7 @@ import { buildQuestionnaireProfile } from '../../data/questionnaireProfile';
 import { useLatestWeight } from '../../hooks/useLatestWeight';
 import { AnswerSection } from '../AnswerSection/AnswerSection';
 import { AttentionCard } from '../AttentionCard/AttentionCard';
+import { GoalCard } from '../GoalCard/GoalCard';
 import { KeyNumbers } from '../KeyNumbers/KeyNumbers';
 import { MissingFieldsCard } from '../MissingFieldsCard/MissingFieldsCard';
 import './OnboardingAnswers.css';
@@ -15,7 +16,7 @@ interface OnboardingAnswersProps {
 }
 
 /**
- * Her questionnaire as a profile sheet: the key numbers, the sections in the order that helps a
+ * Her questionnaire as a profile sheet: the key numbers, her goal, the sections in the order that helps a
  * coach, and beside them what to notice before building and what she left empty. The mapping of
  * answers to places is in data/questionnaireProfile.ts.
  */
@@ -37,6 +38,7 @@ export function OnboardingAnswers({ traineeId, onboarding }: OnboardingAnswersPr
     <div className="onboarding-sheet">
       <div className="onboarding-main">
         <KeyNumbers numbers={profile.keyNumbers} />
+        {profile.goal && <GoalCard goal={profile.goal} />}
         {profile.sections.map((section) => (
           <AnswerSection key={section.id} section={section} showEmpty={showEmpty} />
         ))}
