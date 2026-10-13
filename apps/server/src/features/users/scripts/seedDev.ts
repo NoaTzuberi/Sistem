@@ -8,6 +8,10 @@
  *   npm run seed:dev                   (local database)
  *   npm run seed:dev -- --allow-remote (non-local dev database)
  *
+ * SEED_PASSWORD=<your own> gives the NEW accounts that password instead of the built-in dev one,
+ * which is public (it is in this file). Always set it for a database a public server uses
+ * (docs/deploy/render.md); it is never printed.
+ *
  * Also seeds the coach's food list when its data file (apps/server/data/nutrition/food-lists.json,
  * made from the coach's md lists in docs/reference/, gitignored) exists — see seed:nutrition.
  *
@@ -34,7 +38,10 @@ import { assertDevDatabase } from './devDatabaseGuard';
 import { existsSync } from 'node:fs';
 import { NUTRITION_SEED_FILES, applyNutritionSeed, readNutritionSeedFile } from '../../nutrition/nutritionSeed';
 
-const SEED_PASSWORD = 'sistem-dev-1234';
+const DEV_SEED_PASSWORD = 'sistem-dev-1234';
+const MIN_OWN_PASSWORD_LENGTH = 12;
+const OWN_SEED_PASSWORD = process.env.SEED_PASSWORD ?? '';
+const SEED_PASSWORD = OWN_SEED_PASSWORD || DEV_SEED_PASSWORD;
 const SALT_ROUNDS = 12;
 
 const COACH = { name: 'Dev Coach', email: 'coach@sistem.dev' };
@@ -188,6 +195,10 @@ async function seedBodyMetrics(traineeId: Types.ObjectId, timezone: string) {
 async function main() {
   const allowRemote = process.argv.slice(2).includes('--allow-remote');
   assertDevDatabase(allowRemote);
+  if (OWN_SEED_PASSWORD && OWN_SEED_PASSWORD.length < MIN_OWN_PASSWORD_LENGTH) {
+    console.error(`SEED_PASSWORD must be at least ${MIN_OWN_PASSWORD_LENGTH} characters.`);
+    process.exit(1);
+  }
 
   await connectDatabase();
   try {
@@ -232,7 +243,11 @@ async function main() {
       console.log(`Note: ${COACH.email} is not the default coach for new sign-ups (see DEFAULT_COACH_EMAIL).`);
     }
 
-    console.log(`\nPassword for every seed account: ${SEED_PASSWORD}`);
+    console.log(
+      OWN_SEED_PASSWORD
+        ? '\nPassword for every NEW seed account: the SEED_PASSWORD you gave (existing accounts keep theirs).'
+        : `\nPassword for every seed account: ${SEED_PASSWORD}`,
+    );
   } finally {
     await mongoose.disconnect();
   }
