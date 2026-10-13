@@ -78,9 +78,7 @@ Which answer goes where is one file: `features/trainees/data/questionnaireProfil
   4. פרטים בסיסיים — name, birth date (formatted, with her age), gender, preferred units.
   Each is a definition list: the label in a quiet 160px column, the answer in medium weight.
   Multi-value answers are small pills.
-- **Weight goal** (`WeightGoalBar`): her latest weigh-in (or her questionnaire weight when she has
-  none later), the target, a progress bar from the questionnaire weight to the target, and under
-  it what can be computed: "−6 ק״ג · 12 שבועות · כ-0.5 ק״ג בשבוע".
+- **Weight goal**: see the color pass below (the "היעד שלה" card).
 - **Empty answers** are not drawn. `MissingFieldsCard` in the side column says "6 שדות לא מולאו ·
   <names>" with "הצגת שדות ריקים"; pressed, the empty rows appear in their sections as faint
   "לא נענה", and the button becomes "הסתרת שדות ריקים". A section with nothing to show is not
@@ -113,6 +111,50 @@ Questionnaire decisions — please check
    just disappears).
 10. **The age next to the birth date reads "גיל 36"** — neutral, since her gender answer can be
     anything; the reference's "בת 36" is feminine.
+
+## Questionnaire tab — color pass
+
+On top of the profile sheet; the same answers and the same mapping file.
+
+- **Key numbers are four tiles** (radius 24, each on its own blurred cloud): age = lilac / pink,
+  height = peach, weight = pink, days a week = an ink tile with a pink glow and white text. The
+  value is 40px light with a small unit; the label small at 70% ink. Two per row under 760px.
+- **"היעד שלה"** (`GoalCard`, the pink / peach cloud) took the place of the goals rows: her
+  current weight faded and her target strong, large (54px light), with a Cherry Rose arrow from
+  one to the other along the reading direction; each number has a small caption ("שקילה אחרונה"
+  or "בשאלון", and "יעד"). Under them, pills: her goals, "−6 ק״ג · 12 שבועות", "כ-0.5 ק״ג בשבוע",
+  "תזונה: צמחונית". Without a weight goal: the pills only. With no goal, no weight goal and no
+  diet answer the card is not drawn.
+- **Section color identity** — each section card has a 30px rounded icon chip in its soft color
+  with the icon in its strong color, and its pills take the same pair: training = lilac,
+  exercise preferences = orange, personal details = blue. The remaining nutrition answers keep
+  the brand pink.
+- **"שימי לב"** stays amber — the only warning color on the tab.
+
+Color-pass decisions — please check
+1. **A "תזונה" section remains** under the goal card (pink identity): diet style, religious,
+   intolerances, allergies, loves, dislikes, meals a day. The reference's goal card replaces the
+   whole goals & nutrition section, but dropping those rows would hide existing answers.
+2. **The weight-goal progress bar is gone** (the reference has none now); `WeightGoalBar` was
+   deleted. The latest weigh-in is still loaded — it is the faded "current" number.
+3. **Captions over the two weights** ("שקילה אחרונה" / "בשאלון", "יעד") are my addition: without
+   them it is not clear whether the faded number is her questionnaire weight or a newer weigh-in.
+4. **The arrow follows the reading direction**: current on the reading-start side, target after
+   it (right → left in Hebrew, mirrored in English). Each number itself reads left to right.
+5. **Goals, weight goal and diet have no row any more** (they are on the card); a missing one is
+   listed under "fields not filled in" and gets its row in "תזונה" when the empty fields are shown.
+6. **Tokens**: training reuses the workout lilac pair (`--color-workout-2`; its soft is #EEE7FF,
+   the reference's #EFE8FF is one step away) and the orange soft reuses `--color-workout-3-soft`
+   (the same #FFEEDD). New values: orange #C75A00, blue #0070C9 / #E2F0FB. The tile clouds are
+   mixed from existing tokens (lilac, peach, the pinks) — no new hex for them.
+7. The diet pill reads "תזונה: צמחונית" (label + answer) so that "בלי הגבלות" is not left
+   without context; say if you prefer the bare answer.
+
+Checked in Chrome on Dev Trainee Two (desktop and a 390px frame): the four tiles and their
+classes, the goal card's two weights and five pills, each section's class and pill color, the
+empty-fields toggle (6 rows), no sideways scroll. **Not checked:** a trainee without a weight
+goal (pills only), one with no goal card at all, English / LTR (the arrow's direction there),
+white-on-ink contrast was not measured.
 
 ## Decisions I made — please check
 
@@ -165,7 +207,9 @@ translated.
 
 `--color-flag`, `--color-flag-soft`, `--gradient-avatar`, `--gradient-profile-cloud`,
 `--color-ring-track`, `--text-profile-name` (36px), `--shadow-avatar`.
-Questionnaire round: `--surface-on-flag`, `--text-key-number` (32px). The amber of the attention
+Questionnaire rounds: `--surface-on-flag`, `--text-goal` (54px), `--color-section-training` /
+`-soft`, `--color-section-exercises` / `-soft`, `--color-section-personal` / `-soft`,
+`--color-on-ink-muted`. The amber of the attention
 card is the `--color-flag` / `--color-flag-soft` pair added for the header chips.
 
 ## i18n keys (he + en; English is placeholder)
@@ -176,7 +220,7 @@ Added — `features/trainees/copy`: `backToAllTrainees`, `windowPassed`, `window
 `duplicateAfterFirst`, `noPlansNote`, `planEnded`, `openWeek`*.
 Questionnaire round: `age`, `ageYears`*, `attentionTitle`, `noteSource`, `missingFields`
 (plural), `showEmptyFields`, `hideEmptyFields`*, `goalAtStart`*, `goalLatest`*, `goalTarget`,
-`goalRate`.
+`goalRate`; color pass: `herGoal`, `goalDiet`*.
 \* = my placeholder wording; the rest is the reference's Hebrew.
 Removed (unused now) — `features/trainees/copy`: `noPlans`, `backToTrainees`, `window48h`;
 `features/aiDraft/copy` (`training.`): `summaryTitle`, `experience`, `useInNewPlan`,
@@ -187,7 +231,7 @@ Removed (unused now) — `features/trainees/copy`: `noPlans`, `backToTrainees`, 
 Added (each component = `.tsx` + `.css` in its own folder)
 - `apps/dashboard/src/features/trainees/components/`: `TraineeHeader/`, `PlanWindowPill/`,
   `TraineeTabs/`, `PlanStartOptions/`, `PlanWeekRow/`; questionnaire round: `KeyNumbers/`,
-  `AttentionCard/`, `AnswerSection/`, `WeightGoalBar/`, `MissingFieldsCard/`
+  `AttentionCard/`, `AnswerSection/`, `GoalCard/`, `MissingFieldsCard/`
 - `apps/dashboard/src/features/trainees/hooks/`: `useTraineePlans.ts`, `usePlanCreation.ts`,
   `useLatestWeight.ts`
 - `apps/dashboard/src/features/trainees/data/`: `traineeHeader.ts`, `questionnaireProfile.ts`
@@ -255,9 +299,10 @@ npm run dev:all                      # http://localhost:5174, seed coach: coach@
     - the key numbers show age, height, weight, days a week; a trainee missing one shows fewer;
     - the amber card lists her recovery note, flags, allergies and intolerances with their source;
       a trainee with none of them has no amber card;
-    - the four sections in order; goals, activities, equipment etc. as pills; the weight goal as
-      a bar with "שקילה אחרונה … / יעד …" and the "−6 ק״ג · 12 שבועות · כ-0.5 ק״ג בשבוע" line;
-      the birth date with her age;
+    - four colored tiles (lilac, peach, pink, ink); the "היעד שלה" card with the faded current
+      weight → the target and its pills; a trainee without a weight goal shows the pills only;
+    - the sections in order, each with its colored icon chip and pills (תזונה pink, אימונים lilac,
+      העדפות תרגילים orange, פרטים בסיסיים blue); the birth date with her age;
     - no "—" anywhere; the side card says "N שדות לא מולאו · …"; "הצגת שדות ריקים" adds the empty
       rows ("לא נענה", faint) to their sections, "הסתרת שדות ריקים" removes them;
     - "הושלם …" under the side column; a trainee who has not started shows the existing line;
