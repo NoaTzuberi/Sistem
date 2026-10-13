@@ -100,7 +100,10 @@ npm run promote:coach -- <email>  # DEV ONLY: make an existing user a coach
 `seed:dev` and `promote:coach` refuse to run with `NODE_ENV=production` and refuse a
 non-local database unless `--allow-remote` is added (they print which database they
 will touch). Seed accounts: `coach@sistem.dev`, `trainee1@sistem.dev`,
-`trainee2@sistem.dev`, password `sistem-dev-1234`.
+`trainee2@sistem.dev`, password `sistem-dev-1234` — or your own with `SEED_PASSWORD=<12+ characters>`
+(always set it for a database a public server uses; it is never printed).
+
+Deploying the server: `docs/deploy/render.md` (Render Blueprint `render.yaml`).
 
 New trainees are assigned to the coach in `DEFAULT_COACH_EMAIL` (apps/server/.env), or to
 the only coach if there is exactly one; otherwise they stay unassigned until a coach is
