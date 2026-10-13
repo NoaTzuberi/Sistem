@@ -1,0 +1,73 @@
+.week-timeline {
+  padding: 14px;
+  border-radius: var(--radius-panel);
+  background-color: var(--surface-timeline);
+}
+
+.week-timeline-title {
+  margin: 4px 8px 10px;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.week-timeline-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.week-timeline-row {
+  display: grid;
+  grid-template-columns: 18px 150px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 10px 8px;
+  border-radius: var(--radius-row);
+  transition: background-color var(--transition-fast) ease;
+}
+
+.week-timeline-dot {
+  justify-self: center;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-dash-outline);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-dash-outline) 30%, transparent);
+}
+
+.week-timeline-dates {
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.week-timeline-name {
+  overflow: hidden;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .week-timeline-row:hover {
+    background-color: var(--color-card);
+  }
+}
+
+/* Narrow: the dates and the arrow only. */
+@media (max-width: 640px) { /* = --breakpoint-md */
+  .week-timeline-row {
+    grid-template-columns: 18px minmax(0, 1fr) auto;
+  }
+
+  .week-timeline-name {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .week-timeline-row {
+    transition: none;
+  }
+}

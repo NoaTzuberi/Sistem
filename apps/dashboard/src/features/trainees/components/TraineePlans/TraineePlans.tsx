@@ -1,19 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import type { CoachTraineeDetail } from '@sistem/types';
-import { sharedCopy, useCopy } from '@sistem/shared';
+import { addDaysToDate, sharedCopy, useCopy } from '@sistem/shared';
 import { PillButton } from '../../../../components/common/PillButton/PillButton';
 import { useCoachData } from '../../../../services/coach/CoachDataContext';
 import { AiDraftSheet } from '../../../aiDraft/components/AiDraftSheet/AiDraftSheet';
 import { AiPlanCard } from '../../../aiDraft/components/AiPlanCard/AiPlanCard';
 import { useLatestAiDraft } from '../../../aiDraft/hooks/useLatestAiDraft';
-import { aiDraftCopy } from '../../../aiDraft/copy';
 import { useTrainingConfig } from '../../../trainingConfig/useTrainingConfig';
-import { usePlanCreation } from '../../hooks/usePlanCreation';
+import { splitPlansByWeek } from '../../data/planWeeks';
+import { useNewPlanPopover } from '../../hooks/useNewPlanPopover';
 import type { TraineePlansLoad } from '../../hooks/useTraineePlans';
+import { NewPlanPopover } from '../NewPlanPopover/NewPlanPopover';
+import { NextWeekCard } from '../NextWeekCard/NextWeekCard';
+import { PlansToolbar } from '../PlansToolbar/PlansToolbar';
 import { PlanStartOptions } from '../PlanStartOptions/PlanStartOptions';
-import { PlanWeekRow } from '../PlanWeekRow/PlanWeekRow';
-import { WeekPicker } from '../WeekPicker/WeekPicker';
+import { ThisWeekCard } from '../ThisWeekCard/ThisWeekCard';
+import { WeekTimeline } from '../WeekTimeline/WeekTimeline';
 import './TraineePlans.css';
 import { traineesCopy } from '../../copy';
 
@@ -21,7 +24,7 @@ interface TraineePlansProps {
   trainee: CoachTraineeDetail;
   /** Her plans, loaded by the page. */
   plansLoad: TraineePlansLoad;
-  /** The header's "build plan" was pressed: open the week picker, then report it handled. */
+  /** The header's "build plan" was pressed: open the "new plan" popover, then report it handled. */
   wantsNewPlan: boolean;
   onNewPlanHandled: () => void;
   /** A plan was created — the trainee's status may have changed. */
@@ -30,34 +33,33 @@ interface TraineePlansProps {
 
 /**
  * The Plans tab. Without plans: the AI draft as the main card, with "from scratch" beside it.
- * With plans: one row per week. Either way a new plan starts with the week picker, and the AI
- * draft's options live in its side sheet.
+ * With plans: this week (large), next week beside it, then the weeks before. Every new plan
+ * starts in the "new plan" popover; the AI draft's options live in its side sheet.
  */
 export function TraineePlans({ trainee, plansLoad, wantsNewPlan, onNewPlanHandled, onPlansChanged }: TraineePlansProps) {
   const shared = useCopy(sharedCopy);
-  const aiText = useCopy(aiDraftCopy);
   const copy = useCopy(traineesCopy);
   const { plans, error, isLoading, reload } = plansLoad;
   const ai = useLatestAiDraft(trainee.id);
   const config = useTrainingConfig();
   const { weekOf } = useCoachData();
   const [isAiSheetOpen, setIsAiSheetOpen] = useState(false);
-  const creation = usePlanCreation(trainee.id, () => {
+  const popover = useNewPlanPopover(trainee.id, ai.ready?.id, () => {
     reload();
     onPlansChanged();
   });
-  const { openPicker } = creation;
+  const openNewPlan = popover.open;
   const currentPlan = weekOf(trainee.id)?.currentPlan ?? null;
 
   // "New plan" from the top line or the drawer — and "duplicate last week" from the plan builder —
-  // land here with the week picker already open.
+  // land here with the popover already open.
   const linkState = useLocation().state as { newPlan?: boolean; duplicate?: boolean } | null;
   const cameForNewPlan = linkState?.newPlan === true;
   const openedFromLink = useRef(false);
   useEffect(() => {
     if (!cameForNewPlan || openedFromLink.current) return;
     openedFromLink.current = true;
-    void openPicker(linkState?.duplicate ? 'duplicate' : 'new');
+    void openNewPlan({ method: linkState?.duplicate ? 'duplicate' : 'scratch' });
     // Once, when the page is entered that way.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cameForNewPlan]);
@@ -66,28 +68,29 @@ export function TraineePlans({ trainee, plansLoad, wantsNewPlan, onNewPlanHandle
   useEffect(() => {
     if (!wantsNewPlan) return;
     onNewPlanHandled();
-    void openPicker('new');
-  }, [wantsNewPlan, onNewPlanHandled, openPicker]);
+    void openNewPlan();
+  }, [wantsNewPlan, onNewPlanHandled, openNewPlan]);
 
-  const picker = creation.picker && (
-    <WeekPicker
-      key={creation.picker.mode}
-      traineeId={trainee.id}
-      mode={creation.picker.mode}
-      options={creation.picker.options}
-      isCreating={creation.isCreating}
-      onConfirm={(week) => void creation.create(week)}
-      onCancel={creation.closePicker}
-    />
-  );
+  const hasPlans = plans !== undefined && plans.length > 0;
+  const byWeek = plans ? splitPlansByWeek(plans, trainee.currentWeekStart) : null;
+  // This week's statuses belong to this week's PUBLISHED plan only.
+  const progress = byWeek?.thisWeek && currentPlan?.id === byWeek.thisWeek.id ? currentPlan : null;
 
   return (
     <div className="trainee-plans">
-      {creation.error && (
-        <p className="plans-error" role="alert">
-          {creation.error}
-        </p>
-      )}
+      {/* The popover hangs from this bar; a trainee without plans has no pills in it. */}
+      <div className="plans-bar">
+        {hasPlans && <PlansToolbar onStart={(method) => void openNewPlan({ method })} />}
+        <NewPlanPopover
+          popover={popover}
+          aiWorkoutCount={ai.ready?.output?.workouts.length}
+          onOpenAiOptions={() => {
+            popover.close();
+            setIsAiSheetOpen(true);
+          }}
+        />
+      </div>
+
       {isLoading && <p className="plans-message">{shared.common.loading}</p>}
       {error && (
         <p className="plans-message" role="alert">
@@ -98,44 +101,34 @@ export function TraineePlans({ trainee, plansLoad, wantsNewPlan, onNewPlanHandle
         </p>
       )}
 
-      {plans && plans.length === 0 && (
-        <>
-          {picker}
-          <div className="plans-start-grid">
-            <AiPlanCard
-              ai={ai}
-              disabled={creation.isBusy}
-              onOpenInBuilder={() => ai.ready && void openPicker('new', { loadAiDraftId: ai.ready.id })}
-              onOpenOptions={() => setIsAiSheetOpen(true)}
-            />
-            <PlanStartOptions disabled={creation.isBusy} onFromScratch={() => void openPicker('new')} />
-          </div>
-        </>
+      {plans && !hasPlans && (
+        <div className="plans-start-grid">
+          <AiPlanCard
+            ai={ai}
+            disabled={popover.isCreating}
+            onOpenInBuilder={() => void openNewPlan({ method: 'ai' })}
+            onOpenOptions={() => setIsAiSheetOpen(true)}
+          />
+          <PlanStartOptions disabled={popover.isCreating} onFromScratch={() => void openNewPlan()} />
+        </div>
       )}
 
-      {plans && plans.length > 0 && (
+      {hasPlans && byWeek && (
         <>
-          <div className="plans-actions">
-            <PillButton disabled={creation.isBusy} onClick={() => void openPicker('new')}>
-              {copy.newPlan}
-            </PillButton>
-            <PillButton disabled={creation.isBusy} onClick={() => void openPicker('duplicate')}>
-              {copy.duplicateLastWeek}
-            </PillButton>
-            <PillButton onClick={() => setIsAiSheetOpen(true)}>{aiText.training.title}</PillButton>
+          <div className="plans-now">
+            <ThisWeekCard traineeId={trainee.id} traineeName={trainee.name} plan={byWeek.thisWeek} progress={progress} onNewPlan={() => void openNewPlan()} />
+            <NextWeekCard
+              traineeId={trainee.id}
+              traineeName={trainee.name}
+              weekStartDate={addDaysToDate(trainee.currentWeekStart, 7)}
+              plan={byWeek.nextWeek}
+              // The server says how many days this week's plan has left; next week starts the day after.
+              startsInDays={currentPlan ? currentPlan.daysLeft + 1 : undefined}
+              onNewPlan={() => void openNewPlan()}
+            />
           </div>
-          {picker}
-          <ul className="plans-weeks">
-            {plans.map((plan) => (
-              <PlanWeekRow
-                key={plan.id}
-                traineeId={trainee.id}
-                plan={plan}
-                currentWeekStart={trainee.currentWeekStart}
-                weekProgress={currentPlan?.id === plan.id ? currentPlan : null}
-              />
-            ))}
-          </ul>
+          <WeekTimeline traineeId={trainee.id} title={copy.laterWeeks} plans={byWeek.later} showStatus />
+          <WeekTimeline traineeId={trainee.id} title={copy.pastWeeks} plans={byWeek.past} />
         </>
       )}
 
@@ -146,14 +139,14 @@ export function TraineePlans({ trainee, plansLoad, wantsNewPlan, onNewPlanHandle
         ai={ai}
         config={config}
         linkedRecommendationId={undefined}
-        canApply={!creation.isBusy}
+        canApply={!popover.isCreating}
         onUseFullPlan={(recommendation) => {
           setIsAiSheetOpen(false);
-          void openPicker('new', { loadAiDraftId: recommendation.id });
+          void openNewPlan({ method: 'ai', aiStart: { loadAiDraftId: recommendation.id } });
         }}
         onUseSplitOnly={(option, recommendation) => {
           setIsAiSheetOpen(false);
-          void openPicker('new', { splitOnly: { splitId: option.splitId, daysPerWeek: option.daysPerWeek, recommendationId: recommendation.id } });
+          void openNewPlan({ method: 'ai', aiStart: { splitOnly: { splitId: option.splitId, daysPerWeek: option.daysPerWeek, recommendationId: recommendation.id } } });
         }}
       />
     </div>

@@ -1,0 +1,91 @@
+.plans-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Each property is named: never `transition: all`. The press is transform only. */
+.plans-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: var(--radius-round);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  white-space: nowrap;
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+  transition:
+    transform var(--transition-press) var(--ease-press),
+    box-shadow var(--transition-hover) ease,
+    background-color var(--transition-hover) ease;
+}
+
+.plans-pill-icon {
+  color: var(--color-text-muted);
+  transition: color var(--transition-hover) ease;
+}
+
+.plans-pill-primary {
+  color: var(--color-on-primary);
+  background-color: var(--color-primary);
+  box-shadow: var(--shadow-button);
+}
+
+.plans-pill-primary .plans-pill-icon {
+  color: var(--color-on-primary);
+}
+
+.plans-pill-ai {
+  background: var(--gradient-ai-soft);
+}
+
+/* Hover belongs to a fine pointer only: a lift, a deeper shadow, the icon turning pink. */
+@media (hover: hover) and (pointer: fine) {
+  .plans-pill:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-pill-hover);
+  }
+
+  .plans-pill:hover .plans-pill-icon {
+    color: var(--color-primary);
+  }
+
+  .plans-pill-primary:hover {
+    background-color: var(--color-primary-hover);
+    box-shadow: var(--shadow-button-hover);
+  }
+
+  .plans-pill-primary:hover .plans-pill-icon {
+    color: var(--color-on-primary);
+  }
+
+  .plans-pill-ai:hover {
+    background: var(--gradient-ai-soft-hover);
+  }
+}
+
+/* After the hover rules: the press wins while the pointer is still over the pill. */
+.plans-pill:active {
+  transform: scale(0.97);
+}
+
+.plans-pill:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plans-pill,
+  .plans-pill-icon {
+    transition: none;
+  }
+
+  .plans-pill:hover,
+  .plans-pill:active {
+    transform: none;
+  }
+}

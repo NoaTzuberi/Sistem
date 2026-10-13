@@ -5,10 +5,15 @@
   min-width: 0;
 }
 
-.plans-error {
-  margin: 0;
-  font-size: var(--text-sm);
-  color: var(--color-error);
+/* The toolbar, and the anchor of the "new plan" popover (which hangs under it). */
+.plans-bar {
+  position: relative;
+  z-index: var(--z-raised);
+}
+
+/* Without pills the bar takes no room (and no gap of the column). */
+.plans-bar:empty {
+  display: none;
 }
 
 .plans-message {
@@ -24,23 +29,21 @@
   align-items: start;
 }
 
-.plans-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.plans-weeks {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+/* This week (about 60%) and next week beside it. */
+.plans-now {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 16px;
 }
 
 @media (max-width: 1180px) { /* = --breakpoint-dash-grid */
   .plans-start-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 1000px) {
+  .plans-now {
     grid-template-columns: minmax(0, 1fr);
   }
 }

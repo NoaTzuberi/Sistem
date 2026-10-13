@@ -46,16 +46,8 @@ export const he = {
   newPlan: 'תוכנית חדשה',
   duplicateLastWeek: 'שכפול השבוע שעבר',
   planSize: '{workouts} אימונים · {exercises} תרגילים',
-  open: 'פתיחה',
-  pickNewTitle: 'תוכנית חדשה — בחירת שבוע',
-  pickDuplicateTitle: 'שכפול השבוע שעבר — בחירת שבוע',
-  later: 'מאוחר יותר…',
-  weekTaken: 'ל־{week} כבר יש תוכנית ({status}).',
-  openPlan: 'פתיחת התוכנית',
   copiesFrom: 'מעתיק את התוכנית של {week}.',
   nothingToCopy: 'אין תוכנית קודמת להעתיק לשבוע הזה.',
-  createPlan: 'יצירת תוכנית',
-  duplicate: 'שכפול',
   photo: 'תמונה',
   exercise: 'תרגיל',
   set: 'סט',
@@ -95,12 +87,11 @@ export const he = {
   fromScratchHint: 'אימון ריק ראשון, ותבני בעצמך',
   duplicateAfterFirst: 'יהיה זמין אחרי התוכנית הראשונה',
   noPlansNote: 'עוד אין לה תוכניות. ברגע שתפרסמי, היא תקבל התראה והאפליקציה שלה תעבור למסך הבית.',
-  planEnded: 'הסתיים',
   openWeek: 'פתיחת התוכנית של {week}', // PLACEHOLDER
   // Questionnaire tab as a profile sheet (design). Wording from the reference unless marked PLACEHOLDER.
   age: 'גיל',
   ageYears: 'גיל {age}', // PLACEHOLDER
-  attentionTitle: 'שימי לב לפני שבונים',
+  attentionTitle: 'שימי לב לפני שאת בונה תוכנית',
   noteSource: 'הערה מהשאלון',
   missingFields: plural({ one: 'שדה אחד לא מולא', two: 'שני שדות לא מולאו', other: '{count} שדות לא מולאו' }),
   showEmptyFields: 'הצגת שדות ריקים',
@@ -109,4 +100,27 @@ export const he = {
   goalLatest: 'שקילה אחרונה', // PLACEHOLDER
   goalTarget: 'יעד',
   goalRate: 'כ-{amount} ק״ג בשבוע',
+  herGoal: 'היעד שלה',
+  goalDiet: '{label}: {value}', // PLACEHOLDER
+  // Plans tab v2 + the "new plan" popover (design). Wording from the reference / brief unless marked PLACEHOLDER.
+  pastWeeks: 'שבועות קודמים',
+  laterWeeks: 'שבועות הבאים', // PLACEHOLDER
+  workoutDone: 'בוצע',
+  workoutPlanned: 'מתוכנן',
+  workoutMissed: 'פוספס',
+  statusOnDay: '{status} · {day}',
+  openInBuilderShort: 'פתיחה בבונה',
+  notPublishedNote: 'עוד לא פורסם. {name} לא תראה אותו עד שתפרסמי.',
+  continueAndPublish: 'המשך עריכה ופרסום',
+  noPlanNextWeek: 'עוד אין תוכנית לשבוע הבא.', // PLACEHOLDER
+  startsIn: plural({ one: 'עוד יום אחד', two: 'עוד יומיים', other: 'עוד {count} ימים' }),
+  newPlanSubtitle: 'לאיזה שבוע, ואיך להתחיל?',
+  weekGroup: 'שבוע',
+  howToStart: 'איך להתחיל',
+  inWeeks: plural({ one: 'בעוד שבוע', two: 'בעוד שבועיים', other: 'בעוד {count} שבועות' }),
+  weekFree: 'פנוי',
+  startScratch: 'מאפס',
+  weekTakenNote: 'לשבוע הזה כבר יש תוכנית ({status}) — נפתח אותה.',
+  openExisting: 'פתיחת התוכנית הקיימת',
+  createFor: 'יצירת תוכנית ל־{range}',
 } as const;

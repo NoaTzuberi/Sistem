@@ -1,0 +1,275 @@
+/* Hangs under the Plans toolbar, at the reading-start side (its container is positioned). */
+.new-plan {
+  position: absolute;
+  inset-block-start: calc(100% + 10px);
+  inset-inline-start: 0;
+  z-index: var(--z-overlay);
+  width: min(520px, calc(100vw - 32px));
+  padding: 20px;
+  border-radius: var(--radius-panel);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-float);
+  animation: new-plan-in var(--transition-popover) var(--ease-press);
+}
+
+/* Grows from the corner under its trigger (transform-origin has no logical form). */
+:root[dir='rtl'] .new-plan {
+  transform-origin: top right; /* physical: the reading-start corner in right-to-left */
+}
+
+:root[dir='ltr'] .new-plan {
+  transform-origin: top left; /* physical: the reading-start corner in left-to-right */
+}
+
+@keyframes new-plan-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@keyframes new-plan-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.new-plan-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.new-plan-title {
+  margin: 0 0 4px;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-medium);
+}
+
+.new-plan-subtitle,
+.new-plan-loading {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.new-plan-loading {
+  margin-top: 14px;
+}
+
+/* 36px round; the pseudo-element keeps a 44px touch target (the button is its anchor). */
+.new-plan-close {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-fill-soft);
+  transition:
+    transform var(--transition-press) var(--ease-press),
+    background-color var(--transition-fast) ease;
+}
+
+.new-plan-close::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+}
+
+.new-plan-label {
+  margin: 14px 0 8px;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.new-plan-weeks {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.new-plan-methods {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+/* A week / a start method: a soft tile; selected = white with a border. */
+.week-tile,
+.start-method {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: var(--border-width-medium) solid transparent;
+  color: var(--color-text);
+  text-align: start;
+  background-color: var(--color-fill-soft);
+  transition:
+    transform var(--transition-press) var(--ease-press),
+    border-color var(--transition-fast) ease,
+    background-color var(--transition-fast) ease;
+}
+
+.week-tile {
+  gap: 4px;
+  padding: 12px 10px;
+  border-radius: var(--radius-tile);
+}
+
+.start-method {
+  gap: 2px;
+  padding: 12px;
+  border-radius: var(--radius-row);
+}
+
+.week-tile-label,
+.start-method-hint {
+  font-size: var(--text-2xs);
+  color: var(--color-text-muted);
+}
+
+.week-tile-dates {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+.start-method-label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.week-tile-status {
+  font-size: var(--text-2xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Free = quiet grey · draft = dark amber · published = Cherry Rose. No green. */
+.week-tile-status-free {
+  color: var(--color-text-muted);
+}
+
+.week-tile-status-draft {
+  color: var(--color-flag);
+}
+
+.week-tile-status-published {
+  color: var(--color-primary-deep);
+}
+
+.week-tile[aria-checked='true'] {
+  border-color: var(--color-primary);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-selected);
+}
+
+.start-method[aria-checked='true'] {
+  border-color: var(--color-text);
+  background-color: var(--color-card);
+}
+
+.start-method:disabled {
+  opacity: var(--opacity-faint);
+  cursor: default;
+}
+
+/* "Other split options": a text link, tall enough to press. */
+.new-plan-link {
+  min-height: 36px;
+  margin-top: 4px;
+  padding: 0 2px;
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-deep);
+}
+
+/* The selected week already has a plan: amber, the one warning color. */
+.new-plan-note {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-field);
+  font-size: var(--text-xs);
+  color: var(--color-flag);
+  background-color: var(--color-flag-soft);
+}
+
+.new-plan-error {
+  margin: 10px 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-error);
+}
+
+.new-plan-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.new-plan-actions .new-plan-confirm {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .new-plan-close:hover {
+    background-color: var(--color-hairline);
+  }
+
+  .week-tile:hover:not([aria-checked='true']),
+  .start-method:hover:not(:disabled, [aria-checked='true']) {
+    border-color: var(--color-dash-outline);
+  }
+
+  .new-plan-link:hover {
+    text-decoration: underline;
+  }
+}
+
+/* After the hover rules: the press wins while the pointer is still over it. */
+.new-plan-close:active,
+.week-tile:active,
+.start-method:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.new-plan-close:focus-visible,
+.week-tile:focus-visible,
+.start-method:focus-visible,
+.new-plan-link:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Narrow: the weeks 2 × 2, the start methods in one column. */
+@media (max-width: 640px) { /* = --breakpoint-md */
+  .new-plan-weeks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .new-plan-methods {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Reduced motion: it fades in, without growing; nothing presses or slides. */
+@media (prefers-reduced-motion: reduce) {
+  .new-plan {
+    animation: new-plan-fade var(--transition-popover) ease;
+  }
+
+  .new-plan-close,
+  .week-tile,
+  .start-method {
+    transition: none;
+  }
+
+  .new-plan-close:active,
+  .week-tile:active,
+  .start-method:active:not(:disabled) {
+    transform: none;
+  }
+}

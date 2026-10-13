@@ -163,6 +163,23 @@
   --color-workout-5-soft: #f8e1ea;
   --surface-on-workout: color-mix(in srgb, var(--color-card) 80%, transparent);          /* chips on a workout's hero band */
   --surface-on-workout-strong: color-mix(in srgb, var(--color-card) 85%, transparent);   /* the notes field on the band */
+  /* The trainee's Plans tab: the pink pill under the pointer, and the quiet "AI draft" pill. */
+  --color-primary-hover: color-mix(in srgb, var(--color-primary) 91%, var(--color-text));
+  --gradient-ai-soft: linear-gradient(120deg, var(--color-primary-tint), var(--color-lilac-mist));
+  --gradient-ai-soft-hover: linear-gradient(120deg, color-mix(in srgb, var(--color-primary) 18%, var(--color-card)), color-mix(in srgb, var(--color-lilac) 40%, var(--color-card)));
+  --gradient-week-cloud:
+    radial-gradient(40% 40% at 60% 40%, color-mix(in srgb, var(--color-primary) 22%, transparent), transparent 70%),
+    radial-gradient(35% 35% at 30% 70%, color-mix(in srgb, var(--color-peach) 35%, transparent), transparent 70%);
+  --surface-timeline: color-mix(in srgb, var(--color-card) 55%, transparent);   /* the past-weeks timeline */
+  /* Section identity on a trainee's questionnaire: which part of her answers this is (icon chip,
+     pills). Not statuses. Training and the orange soft reuse the workout identity values. */
+  --color-section-training: var(--color-workout-2);
+  --color-section-training-soft: var(--color-workout-2-soft);
+  --color-section-exercises: #c75a00;
+  --color-section-exercises-soft: var(--color-workout-3-soft);
+  --color-section-personal: #0070c9;
+  --color-section-personal-soft: #e2f0fb;
+  --color-on-ink-muted: color-mix(in srgb, var(--color-on-primary) 65%, transparent);   /* small text on an ink tile */
   /* A reported injury / limitation on a trainee's profile: "look here", not an error and not a status. */
   --color-flag: #a85800;
   --color-flag-soft: #fff0dc;
@@ -207,7 +224,7 @@
   --text-4xl: 40px;
   --text-5xl: 44px;
   --text-hero: 76px;
-  --text-key-number: 32px;        /* The big light numbers of her questionnaire (age, height, weight, days) */
+  --text-goal: 54px;              /* "68 → 62": her weight goal on its gradient card */
   --text-profile-name: 36px;      /* A trainee's name on her profile header */
   --text-hero-title: 30px;        /* The selected workout's title on its hero band (plan builder) */
 
@@ -298,6 +315,9 @@
   --shadow-photo: 0 8px 20px color-mix(in srgb, var(--color-text) 12%, transparent);    /* stacked Daily Pump photos */
   --shadow-side-sheet: 0 0 60px color-mix(in srgb, var(--color-text) 16%, transparent); /* the off-canvas sidebar */
   --shadow-avatar: 0 10px 26px color-mix(in srgb, var(--color-primary) 25%, transparent);   /* the profile avatar */
+  --shadow-pill-hover: 0 10px 24px color-mix(in srgb, var(--color-text) 10%, transparent);       /* a toolbar pill under the pointer */
+  --shadow-button-hover: 0 12px 26px color-mix(in srgb, var(--color-primary) 32%, transparent);  /* … the pink one */
+  --shadow-selected: 0 6px 16px color-mix(in srgb, var(--color-primary) 14%, transparent);       /* a selected week tile */
   --shadow-exercise: 0 1px 2px color-mix(in srgb, var(--color-text) 4%, transparent);          /* an exercise card in its slot */
   --shadow-exercise-hover: 0 6px 18px color-mix(in srgb, var(--color-text) 7%, transparent);  /* … under a fine pointer */
   --shadow-menu: 0 20px 50px color-mix(in srgb, var(--color-text) 16%, transparent);    /* a small menu under its button */
@@ -331,6 +351,8 @@
   --transition-drawer-out: 200ms;
   --transition-toast: 200ms;     /* A toast rising in / fading out */
   --transition-menu: 150ms;      /* A menu growing from its button */
+  --transition-popover: 180ms;   /* The "new plan" popover growing from its corner */
+  --transition-hover: 180ms;     /* A pill lifting / changing shade under a fine pointer */
   --transition-chevron: 200ms;   /* An exercise card's chevron turning as it opens */
   --loop-slow: 2s;               /* Repeating hints (scroll bounce) */
 
@@ -369,7 +391,7 @@
   /* ═══ 11. App chrome & touch ══════════════════════════════════════════════════ */
   --touch-target-min: 44px;
   --sidebar-width: 248px;            /* Dashboard sidebar: open, icon rail, off-canvas */
-  --sidebar-width-rail: 84px;
+  --sidebar-width-rail:90px;
   --sidebar-width-sheet: 272px;
   --drawer-width: 460px;
   --tab-bar-height: 64px;
