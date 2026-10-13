@@ -1,3 +1,4 @@
+import { plural } from '@sistem/shared';
 // The trainees screens of the dashboard. Texts coach mode shows too are in the shared copy (coach.*).
 // DRAFT Hebrew of the English placeholders (phase-15 report).
 export const he = {
@@ -44,7 +45,6 @@ export const he = {
   createError: 'לא הצלחנו ליצור את התוכנית.',
   newPlan: 'תוכנית חדשה',
   duplicateLastWeek: 'שכפול השבוע שעבר',
-  noPlans: 'עדיין אין תוכניות.',
   planSize: '{workouts} אימונים · {exercises} תרגילים',
   open: 'פתיחה',
   pickNewTitle: 'תוכנית חדשה — בחירת שבוע',
@@ -62,10 +62,8 @@ export const he = {
   type: 'סוג',
   performed: 'בוצע בפועל',
   done: 'בוצע',
-  backToTrainees: '→ מתאמנות',
   email: 'אימייל',
   timezone: 'אזור זמן',
-  window48h: 'חלון 48 שעות',
   name: 'שם',
   lastActivity: 'פעילות אחרונה',
   workoutLogs: 'תיעודי אימונים',
@@ -81,4 +79,34 @@ export const he = {
   buildPlan: 'לבניית התוכנית',
   openWeekPlan: 'לתוכנית של השבוע',
   fullProfile: 'לפרופיל המלא',
+  // Trainee profile design (docs/design/coach-dashboard.html). Wording from the reference unless marked PLACEHOLDER.
+  backToAllTrainees: '→ כל המתאמנות',
+  windowPassed: 'חלון 48 השעות עבר',
+  windowRunning: 'חלון 48 השעות', // PLACEHOLDER
+  workoutsThisWeek: 'אימונים השבוע',
+  buildPlanShort: 'בניית תוכנית',
+  nextWeek: 'לשבוע הבא',
+  aiReadyTag: 'טיוטת AI מוכנה',
+  checkBeforeStart: 'לבדוק איתה לפני שמתחילים',
+  openInBuilder: 'פתיחה בבונה התוכניות',
+  otherSplits: 'אפשרויות חלוקה אחרות',
+  draftOnlyYou: 'טיוטה · רק את רואה אותה',
+  fromScratch: 'תוכנית מאפס',
+  fromScratchHint: 'אימון ריק ראשון, ותבני בעצמך',
+  duplicateAfterFirst: 'יהיה זמין אחרי התוכנית הראשונה',
+  noPlansNote: 'עוד אין לה תוכניות. ברגע שתפרסמי, היא תקבל התראה והאפליקציה שלה תעבור למסך הבית.',
+  planEnded: 'הסתיים',
+  openWeek: 'פתיחת התוכנית של {week}', // PLACEHOLDER
+  // Questionnaire tab as a profile sheet (design). Wording from the reference unless marked PLACEHOLDER.
+  age: 'גיל',
+  ageYears: 'גיל {age}', // PLACEHOLDER
+  attentionTitle: 'שימי לב לפני שבונים',
+  noteSource: 'הערה מהשאלון',
+  missingFields: plural({ one: 'שדה אחד לא מולא', two: 'שני שדות לא מולאו', other: '{count} שדות לא מולאו' }),
+  showEmptyFields: 'הצגת שדות ריקים',
+  hideEmptyFields: 'הסתרת שדות ריקים', // PLACEHOLDER
+  goalAtStart: 'בשאלון', // PLACEHOLDER
+  goalLatest: 'שקילה אחרונה', // PLACEHOLDER
+  goalTarget: 'יעד',
+  goalRate: 'כ-{amount} ק״ג בשבוע',
 } as const;

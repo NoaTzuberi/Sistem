@@ -1,0 +1,51 @@
+.builder-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.builder-heading {
+  flex: 1;
+  min-width: 180px;
+}
+
+.builder-title {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--text-3xl);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-display);
+}
+
+.builder-subline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.builder-dates {
+  font-variant-numeric: tabular-nums;
+}
+
+.builder-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The menu hangs from the far edge of the whole actions group (not of its button), so it
+   always opens inward — also when the group wraps to the start side on a phone. */
+.builder-actions {
+  position: relative;
+}
+
+.builder-actions .action-menu {
+  position: static;
+}

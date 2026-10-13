@@ -254,6 +254,11 @@ export function addExerciseToWorkout(workout: DraftWorkout, facts: ExerciseFacts
   return { ...workout, exercises: orderBySlots([...workout.exercises, newExercise(facts, slot)], type) };
 }
 
+/** Takes one exercise out of a workout (the row's "Remove exercise"). */
+export function removeExercise(workout: DraftWorkout, exerciseKey: string): DraftWorkout {
+  return { ...workout, exercises: workout.exercises.filter((exercise) => exercise.key !== exerciseKey) };
+}
+
 export function moveItem<T>(items: T[], from: number, to: number): T[] {
   if (to < 0 || to >= items.length || from === to) return items;
   const next = [...items];

@@ -1,0 +1,133 @@
+.trainee-header {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 24px;
+  /* clip, not hidden: the oversized cloud must not make the card scrollable (focus could scroll it). */
+  overflow: clip;
+  border-radius: var(--radius-drawer);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+  /* Its own stacking context, so the cloud stays behind the content and inside the card. */
+  isolation: isolate;
+}
+
+/* A soft pink / lilac cloud in the far corner. */
+.trainee-header::before {
+  content: '';
+  position: absolute;
+  inset-block: -60% auto;
+  inset-inline: auto -20%;
+  z-index: -1;
+  width: 70%;
+  height: 220%;
+  background: var(--gradient-profile-cloud);
+  filter: blur(40px);
+  pointer-events: none;
+}
+
+.trainee-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+  border-radius: var(--radius-round);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-on-primary);
+  background: var(--gradient-avatar);
+  box-shadow: var(--shadow-avatar);
+}
+
+.trainee-identity {
+  min-width: 0;
+}
+
+.trainee-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--text-profile-name);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.05;
+  letter-spacing: var(--letter-spacing-display);
+}
+
+/* The status pills keep their own letter spacing next to the large name. */
+.trainee-name .tag {
+  font-family: var(--font-family-body);
+  letter-spacing: 0;
+}
+
+.trainee-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trainee-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: var(--radius-round);
+  font-size: var(--text-xs);
+  background-color: var(--color-fill-soft);
+}
+
+/* A reported injury or limitation: amber, so it is seen before a plan is built. */
+.trainee-chip-flag {
+  color: var(--color-flag);
+  background-color: var(--color-flag-soft);
+}
+
+.trainee-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 10px 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.trainee-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+/* Narrow: avatar + name first, then the window and the action across the full width. */
+@media (max-width: 860px) { /* = --breakpoint-dash-nav */
+  .trainee-header {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 14px;
+    padding: 18px;
+  }
+
+  .trainee-avatar {
+    width: 60px;
+    height: 60px;
+    font-size: var(--text-lg);
+  }
+
+  .trainee-name {
+    font-size: var(--text-2xl);
+  }
+
+  .trainee-side {
+    grid-column: 1 / -1;
+    align-items: stretch;
+  }
+}

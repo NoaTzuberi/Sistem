@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 import type { PlanWeekOption, PlanWeekOptions, Language } from '@sistem/types';
 import { fill, formatWeekSpan, sharedCopy, useCopy, useLanguage } from '@sistem/shared';
 import { planPath } from '../../../../app/config/routes';
-import { Badge } from '../../../../components/common/Badge/Badge';
-import { Button } from '../../../../components/common/Button/Button';
+import { PillButton } from '../../../../components/common/PillButton/PillButton';
+import { Tag } from '../../../../components/common/Tag/Tag';
 import './WeekPicker.css';
 import { traineesCopy } from '../../copy';
 
@@ -68,7 +68,7 @@ export function WeekPicker({ traineeId, mode, options, isCreating, onConfirm, on
                 <span className="week-picker-label">{weekLabel(week, language)}</span>
                 {status && week.plan && (
                   <>
-                    <Badge tone={week.plan.status === 'published' ? 'accent' : 'neutral'}>{status}</Badge>
+                    <Tag tone={week.plan.status === 'published' ? 'accent' : 'neutral'}>{status}</Tag>
                     <Link className="week-picker-open" to={planPath(traineeId, week.plan.id)}>
                       {copy.open}
                     </Link>
@@ -106,18 +106,18 @@ export function WeekPicker({ traineeId, mode, options, isCreating, onConfirm, on
                     : copy.nothingToCopy}
                 </p>
               )}
-              <Button
+              <PillButton
                 variant="primary"
                 disabled={isCreating || (mode === 'duplicate' && !selectedWeek.copiesFromWeek)}
                 onClick={() => onConfirm(selectedWeek.weekStartDate)}
               >
                 {mode === 'new' ? copy.createPlan : copy.duplicate} · {formatWeekSpan(selectedWeek.weekStartDate, language)}
-              </Button>
+              </PillButton>
             </>
           )}
-          <Button onClick={onCancel} disabled={isCreating}>
+          <PillButton variant="fill" onClick={onCancel} disabled={isCreating}>
             {shared.common.cancel}
-          </Button>
+          </PillButton>
         </div>
       )}
     </fieldset>

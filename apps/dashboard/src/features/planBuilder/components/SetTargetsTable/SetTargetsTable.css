@@ -1,8 +1,11 @@
 .set-targets {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 10px;
+  padding: 12px;
   overflow-x: auto;
+  border-radius: var(--radius-field);
+  background-color: var(--color-card);
 }
 
 .set-targets-table {
@@ -11,38 +14,48 @@
 }
 
 .set-targets-table th {
-  padding: 0 var(--space-2) var(--space-1) 0;
+  padding-block: 0 4px;
+  padding-inline: 0 8px;
   font-size: var(--text-xs);
   font-weight: var(--font-weight-regular);
-  color: var(--color-text-muted);
+  color: var(--color-text-faint);
   text-align: start;
 }
 
 .set-targets-table td {
-  padding: var(--space-1) var(--space-2) var(--space-1) 0;
+  padding-block: 4px;
+  padding-inline: 0 8px;
   vertical-align: middle;
 }
 
 .set-targets-number {
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-medium);
   font-variant-numeric: tabular-nums;
 }
 
-.set-targets-type {
-  min-height: var(--space-5);
-  padding: 0 var(--space-1);
-  background-color: var(--color-bg);
-  border: var(--border-width-thin) solid var(--color-border);
-  border-radius: var(--radius-none);
+/* The shared NumberField and the type select, in the builder's soft rounded look. */
+.set-targets-type,
+.set-targets .number-field-input {
+  min-height: 36px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-tooltip);
+  background-color: var(--color-fill-soft);
+}
+
+.set-targets-type:focus,
+.set-targets .number-field-input:focus {
+  outline: none;
+  box-shadow: var(--ring-field);
 }
 
 .set-targets-actions {
   display: flex;
-  gap: var(--space-1);
+  gap: 6px;
 }
 
 .set-targets-add {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: 8px;
 }

@@ -21,8 +21,3 @@ export function variantFacts(family: Pick<ExerciseFamilySummary, 'id' | 'muscles
     patterns: family.patterns,
   };
 }
-
-/** What the picker's typo-tolerant search matches: the family name and every variant's name. */
-export function familySearchText(family: ExerciseFamilySummary): string {
-  return [family.name, ...family.variants.map((variant) => variant.name)].join(' · ');
-}

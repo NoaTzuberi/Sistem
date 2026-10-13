@@ -1,0 +1,59 @@
+.key-numbers {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  margin: 0;
+  padding: 18px 8px;
+  border-radius: var(--radius-panel);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+}
+
+/* Thin dividers between the numbers. */
+.key-number {
+  padding: 0 14px;
+  border-inline-start: var(--border-width-thin) solid var(--color-hairline);
+}
+
+.key-number:first-child {
+  border-inline-start: 0;
+}
+
+.key-number dt {
+  margin-bottom: 6px;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.key-number dd {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  margin: 0;
+}
+
+.key-number-value {
+  font-size: var(--text-key-number);
+  font-weight: var(--font-weight-light);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-display);
+}
+
+.key-number-unit {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* Narrow: 2 × 2. */
+@media (max-width: 600px) { /* = --breakpoint-sm */
+  .key-numbers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-flow: row;
+    row-gap: 16px;
+  }
+
+  .key-number:nth-child(odd) {
+    border-inline-start: 0;
+  }
+}

@@ -1,0 +1,115 @@
+.trainee-picker {
+  position: relative;
+  min-width: 0;
+}
+
+.trainee-picker-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  min-height: 52px;
+  padding-block: 0;
+  padding-inline: 8px 16px;
+  border-radius: var(--radius-round);
+  color: var(--color-text);
+  text-align: start;
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+  transition: transform var(--transition-press) var(--ease-press);
+}
+
+.trainee-picker-button:active {
+  transform: scale(0.97);
+}
+
+.trainee-picker-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.trainee-picker-name {
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-medium);
+}
+
+.trainee-picker-details {
+  overflow: hidden;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trainee-picker-chevron {
+  color: var(--color-text-faint);
+}
+
+.trainee-picker-menu {
+  position: absolute;
+  inset-block-start: calc(100% + 8px);
+  inset-inline-start: 0;
+  z-index: var(--z-overlay);
+  width: max-content;
+  min-width: 100%;
+  max-width: min(320px, 90vw);
+  max-height: 320px;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  list-style: none;
+  border-radius: var(--radius-tile);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-float);
+}
+
+.trainee-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--touch-target-min);
+  padding: 0 10px;
+  border-radius: var(--radius-field);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.trainee-picker-item-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trainee-picker-item-status {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.trainee-picker-item[aria-current='true'] {
+  background-color: var(--color-fill-soft);
+}
+
+.trainee-picker-item:active {
+  background-color: var(--color-primary-tint);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .trainee-picker-item:hover {
+    background-color: var(--color-fill-soft);
+  }
+}
+
+.trainee-picker-button:focus-visible,
+.trainee-picker-item:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trainee-picker-button {
+    transition: none;
+  }
+}

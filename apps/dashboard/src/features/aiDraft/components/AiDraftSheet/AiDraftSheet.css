@@ -1,0 +1,198 @@
+.ai-sheet-status:empty {
+  display: none;
+}
+
+.ai-sheet-muted,
+.ai-sheet-error {
+  margin: 0;
+  line-height: var(--line-height-base);
+  color: var(--color-text-muted);
+}
+
+.ai-sheet-error {
+  color: var(--color-error);
+}
+
+.ai-sheet-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* A split option: a selectable card (radio). Only the selected one shows its pros and cons. */
+.split-option {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  padding: 16px;
+  border-radius: var(--radius-block);
+  color: var(--color-text);
+  text-align: start;
+  background-color: var(--color-fill-soft);
+  transition: transform var(--transition-press) var(--ease-press);
+}
+
+.split-option:active {
+  transform: scale(0.97);
+}
+
+.split-option[aria-checked='true'] {
+  background-color: var(--color-card);
+  box-shadow: var(--ring-field), var(--shadow-panel);
+}
+
+.split-option-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+}
+
+.split-option-radio {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: var(--border-width-medium) solid var(--color-control-border);
+  border-radius: var(--radius-round);
+}
+
+.split-option[aria-checked='true'] .split-option-radio {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary);
+  /* The white dot of a checked radio. */
+  box-shadow: inset 0 0 0 4px var(--color-primary), inset 0 0 0 10px var(--color-on-primary);
+}
+
+.split-option-title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-medium);
+}
+
+.split-option-tag {
+  padding: 3px 9px;
+  border-radius: var(--radius-round);
+  font-size: var(--text-2xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  background-color: var(--color-card);
+}
+
+.split-option[aria-checked='true'] .split-option-tag:not(.split-option-tag-solid) {
+  background-color: var(--color-fill-soft);
+}
+
+.split-option .split-option-tag-solid {
+  color: var(--color-on-primary);
+  background-color: var(--color-primary);
+}
+
+/* Under the title, past the radio. */
+.split-option-why,
+.split-option-points {
+  padding-inline-start: 32px;
+  line-height: var(--line-height-base);
+}
+
+.split-option-why {
+  color: var(--color-text-muted);
+}
+
+.split-option-points {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.split-option-point {
+  display: flex;
+  gap: 6px;
+}
+
+.split-option-plus {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-deep);
+}
+
+.split-option-minus {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.split-option:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.ai-sheet-note {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-row);
+  font-size: var(--text-xs);
+  line-height: var(--line-height-base);
+  color: var(--color-text-muted);
+  background-color: var(--color-primary-tint);
+}
+
+/* The explanation sits flat inside the sheet (its own card look is for a page). */
+.side-sheet .ai-rationale {
+  padding: 0 14px;
+  border-radius: var(--radius-tile);
+  background-color: var(--color-fill-soft);
+  box-shadow: none;
+}
+
+.side-sheet .ai-rationale-workout {
+  background-color: var(--color-card);
+}
+
+.side-sheet .ai-rationale-facts {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Footer: the primary pill, the compact "regenerate for" line, then the two soft pills. */
+.ai-sheet-regenerate {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.ai-sheet-select {
+  flex: 1;
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-round);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  background-color: var(--color-fill-soft);
+}
+
+.ai-sheet-select:focus {
+  outline: none;
+  box-shadow: var(--ring-field);
+}
+
+.ai-sheet-secondary {
+  display: flex;
+  gap: 8px;
+}
+
+.ai-sheet-secondary .pill-button {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .split-option {
+    transition: none;
+  }
+}

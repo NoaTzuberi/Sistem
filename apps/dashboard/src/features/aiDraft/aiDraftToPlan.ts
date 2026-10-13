@@ -1,7 +1,7 @@
-import type { AiTrainingPlanDraft, Language, TrainingConfig } from '@sistem/types';
+import type { AiTrainingPlanDraft, AiTrainingRecommendation, Language, TrainingConfig } from '@sistem/types';
 import { splitWorkoutTitles, splitWorkoutTypes } from '@sistem/shared';
 import { newKey } from '../planBuilder/planDraft';
-import type { DraftWorkout } from '../planBuilder/types';
+import type { DraftWorkout, PlanDraft } from '../planBuilder/types';
 
 /**
  * The AI draft as editable workouts — all new items (no ids). The coach-only "focus"
@@ -59,4 +59,18 @@ export function draftWorkoutsFromSplit(
     workoutType,
     exercises: [],
   }));
+}
+
+/**
+ * "Use the full plan": the AI's workouts replace the plan's, and the plan is linked to the draft
+ * (its explanation, its slot suggestions). The plan's notes stay. A draft without output changes nothing.
+ */
+export function applyAiDraft(draft: PlanDraft, recommendation: Pick<AiTrainingRecommendation, 'id' | 'output'>): PlanDraft {
+  if (!recommendation.output) return draft;
+  return {
+    ...draft,
+    aiRecommendationId: recommendation.id,
+    splitId: recommendation.output.splitId ?? draft.splitId,
+    workouts: draftWorkoutsFromAi(recommendation.output),
+  };
 }

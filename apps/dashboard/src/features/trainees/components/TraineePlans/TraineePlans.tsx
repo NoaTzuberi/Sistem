@@ -1,158 +1,161 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import type { CoachTraineeDetail, PlanWeekOptions } from '@sistem/types';
-import { createPlan, listPlanWeeks, listPlans } from '../../../../services/coach/coachService';
-import { fill, formatWeekSpan, sharedCopy, useCopy, useLanguage, useLoad, weekRelationLabel } from '@sistem/shared';
-import { planPath } from '../../../../app/config/routes';
-import { Badge } from '../../../../components/common/Badge/Badge';
-import { Button } from '../../../../components/common/Button/Button';
-import { WeekPicker } from '../WeekPicker/WeekPicker';
-import type { WeekPickerMode } from '../WeekPicker/WeekPicker';
-import { TrainingSummaryCard } from '../../../aiDraft/components/TrainingSummaryCard/TrainingSummaryCard';
-import type { SplitOnlyRequest } from '../../../planBuilder/types';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import type { CoachTraineeDetail } from '@sistem/types';
+import { sharedCopy, useCopy } from '@sistem/shared';
+import { PillButton } from '../../../../components/common/PillButton/PillButton';
+import { useCoachData } from '../../../../services/coach/CoachDataContext';
+import { AiDraftSheet } from '../../../aiDraft/components/AiDraftSheet/AiDraftSheet';
+import { AiPlanCard } from '../../../aiDraft/components/AiPlanCard/AiPlanCard';
 import { useLatestAiDraft } from '../../../aiDraft/hooks/useLatestAiDraft';
 import { aiDraftCopy } from '../../../aiDraft/copy';
+import { useTrainingConfig } from '../../../trainingConfig/useTrainingConfig';
+import { usePlanCreation } from '../../hooks/usePlanCreation';
+import type { TraineePlansLoad } from '../../hooks/useTraineePlans';
+import { PlanStartOptions } from '../PlanStartOptions/PlanStartOptions';
+import { PlanWeekRow } from '../PlanWeekRow/PlanWeekRow';
+import { WeekPicker } from '../WeekPicker/WeekPicker';
 import './TraineePlans.css';
 import { traineesCopy } from '../../copy';
 
-/** What a new plan starts from (router state for the plan builder). */
-type PlanStart = { loadAiDraftId: string } | { splitOnly: SplitOnlyRequest };
-
 interface TraineePlansProps {
   trainee: CoachTraineeDetail;
+  /** Her plans, loaded by the page. */
+  plansLoad: TraineePlansLoad;
+  /** The header's "build plan" was pressed: open the week picker, then report it handled. */
+  wantsNewPlan: boolean;
+  onNewPlanHandled: () => void;
   /** A plan was created — the trainee's status may have changed. */
   onPlansChanged: () => void;
 }
 
-export function TraineePlans({ trainee, onPlansChanged }: TraineePlansProps) {
-  const language = useLanguage();
+/**
+ * The Plans tab. Without plans: the AI draft as the main card, with "from scratch" beside it.
+ * With plans: one row per week. Either way a new plan starts with the week picker, and the AI
+ * draft's options live in its side sheet.
+ */
+export function TraineePlans({ trainee, plansLoad, wantsNewPlan, onNewPlanHandled, onPlansChanged }: TraineePlansProps) {
   const shared = useCopy(sharedCopy);
   const aiText = useCopy(aiDraftCopy);
   const copy = useCopy(traineesCopy);
-  const navigate = useNavigate();
-  const load = useCallback(() => listPlans(trainee.id), [trainee.id]);
-  const { data: plans, error, isLoading, reload } = useLoad(load, copy.plansLoadError);
+  const { plans, error, isLoading, reload } = plansLoad;
   const ai = useLatestAiDraft(trainee.id);
-  // The week picker: which action opened it, the weeks the server offers (fresh each time),
-  // and what the new plan starts from: the whole AI draft, or only its split (Phase 12b).
-  const [picker, setPicker] = useState<{ mode: WeekPickerMode; options: PlanWeekOptions; start?: PlanStart } | null>(null);
-  const [isOpeningPicker, setIsOpeningPicker] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-  const [createError, setCreateError] = useState<string>();
+  const config = useTrainingConfig();
+  const { weekOf } = useCoachData();
+  const [isAiSheetOpen, setIsAiSheetOpen] = useState(false);
+  const creation = usePlanCreation(trainee.id, () => {
+    reload();
+    onPlansChanged();
+  });
+  const { openPicker } = creation;
+  const currentPlan = weekOf(trainee.id)?.currentPlan ?? null;
 
-  async function openPicker(mode: WeekPickerMode, start?: PlanStart) {
-    setIsOpeningPicker(true);
-    setCreateError(undefined);
-    try {
-      setPicker({ mode, options: await listPlanWeeks(trainee.id), start });
-    } catch {
-      setCreateError(copy.weeksLoadError);
-    } finally {
-      setIsOpeningPicker(false);
-    }
-  }
-
-  // "New plan" from the top line or the drawer lands here with the week picker already open.
-  const wantsNewPlan = (useLocation().state as { newPlan?: boolean } | null)?.newPlan === true;
+  // "New plan" from the top line or the drawer — and "duplicate last week" from the plan builder —
+  // land here with the week picker already open.
+  const linkState = useLocation().state as { newPlan?: boolean; duplicate?: boolean } | null;
+  const cameForNewPlan = linkState?.newPlan === true;
   const openedFromLink = useRef(false);
   useEffect(() => {
-    if (!wantsNewPlan || openedFromLink.current) return;
+    if (!cameForNewPlan || openedFromLink.current) return;
     openedFromLink.current = true;
-    void openPicker('new');
-    // Once, when the page is entered that way — not when openPicker's identity changes.
+    void openPicker(linkState?.duplicate ? 'duplicate' : 'new');
+    // Once, when the page is entered that way.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wantsNewPlan]);
+  }, [cameForNewPlan]);
 
-  async function handleCreate(weekStartDate: string) {
-    if (!picker) return;
-    setIsCreating(true);
-    setCreateError(undefined);
-    try {
-      const plan = await createPlan(trainee.id, { weekStartDate, duplicatePrevious: picker.mode === 'duplicate' });
-      onPlansChanged();
-      navigate(planPath(trainee.id, plan.id), picker.start ? { state: picker.start } : undefined);
-    } catch (createFailure) {
-      setCreateError(createFailure instanceof Error ? createFailure.message : copy.createError);
-      reload();
-      setIsCreating(false);
-      // The weeks may have changed (e.g. a plan made elsewhere): show the fresh state.
-      void openPicker(picker.mode, picker.start);
-    }
-  }
+  // The header's pink pill.
+  useEffect(() => {
+    if (!wantsNewPlan) return;
+    onNewPlanHandled();
+    void openPicker('new');
+  }, [wantsNewPlan, onNewPlanHandled, openPicker]);
+
+  const picker = creation.picker && (
+    <WeekPicker
+      key={creation.picker.mode}
+      traineeId={trainee.id}
+      mode={creation.picker.mode}
+      options={creation.picker.options}
+      isCreating={creation.isCreating}
+      onConfirm={(week) => void creation.create(week)}
+      onCancel={creation.closePicker}
+    />
+  );
 
   return (
     <div className="trainee-plans">
-      <TrainingSummaryCard
-        ai={ai}
-        disabled={isOpeningPicker || picker !== null}
-        onUseFullPlan={() => ai.ready && void openPicker('new', { loadAiDraftId: ai.ready.id })}
-        onUseSplitOnly={({ splitId, daysPerWeek }) =>
-          void openPicker('new', { splitOnly: { splitId, daysPerWeek, recommendationId: ai.ready?.id } })
-        }
-      />
-
-      {!picker && (
-        <div className="plans-create">
-          <Button variant="primary" disabled={isOpeningPicker} onClick={() => void openPicker('new')}>
-            {copy.newPlan}
-          </Button>
-          <Button disabled={isOpeningPicker || !plans || plans.length === 0} onClick={() => void openPicker('duplicate')}>
-            {copy.duplicateLastWeek}
-          </Button>
-        </div>
-      )}
-      {picker && (
-        <WeekPicker
-          key={picker.mode}
-          traineeId={trainee.id}
-          mode={picker.mode}
-          options={picker.options}
-          isCreating={isCreating}
-          onConfirm={(week) => void handleCreate(week)}
-          onCancel={() => setPicker(null)}
-        />
-      )}
-      {createError && (
+      {creation.error && (
         <p className="plans-error" role="alert">
-          {createError}
+          {creation.error}
         </p>
       )}
-
-      {isLoading && !plans && <p className="plans-message">{shared.common.loading}</p>}
+      {isLoading && <p className="plans-message">{shared.common.loading}</p>}
       {error && (
         <p className="plans-message" role="alert">
-          {error} <Button size="sm" onClick={reload}>{shared.common.retry}</Button>
+          {error}{' '}
+          <PillButton size="sm" onClick={reload}>
+            {shared.common.retry}
+          </PillButton>
         </p>
       )}
-      {plans && plans.length === 0 && <p className="plans-message">{copy.noPlans}</p>}
+
+      {plans && plans.length === 0 && (
+        <>
+          {picker}
+          <div className="plans-start-grid">
+            <AiPlanCard
+              ai={ai}
+              disabled={creation.isBusy}
+              onOpenInBuilder={() => ai.ready && void openPicker('new', { loadAiDraftId: ai.ready.id })}
+              onOpenOptions={() => setIsAiSheetOpen(true)}
+            />
+            <PlanStartOptions disabled={creation.isBusy} onFromScratch={() => void openPicker('new')} />
+          </div>
+        </>
+      )}
 
       {plans && plans.length > 0 && (
-        <ul className="plans-list">
-          {plans.map((plan) => {
-            const exerciseCount = plan.workouts.reduce((total, workout) => total + workout.exercises.length, 0);
-            const relation = weekRelationLabel(plan.weekStartDate, trainee.currentWeekStart, language);
-            return (
-              <li key={plan.id} className="plans-item">
-                <div className="plans-item-main">
-                  <span className="plans-item-week">{formatWeekSpan(plan.weekStartDate, language)}</span>
-                  <Badge tone={plan.status === 'published' ? 'accent' : 'neutral'}>
-                    {shared.coach.planStatus[plan.status]}
-                  </Badge>
-                  {relation && <Badge>{relation}</Badge>}
-                  {plan.locked && <Badge>{shared.coach.startedByTrainee}</Badge>}
-                  {plan.aiRecommendationId && <Badge>{aiText.training.fromAiBadge}</Badge>}
-                </div>
-                <span className="plans-item-size">
-                  {fill(copy.planSize, { workouts: plan.workouts.length, exercises: exerciseCount })}
-                </span>
-                <Link className="plans-item-open" to={planPath(trainee.id, plan.id)}>
-                  {copy.open}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <>
+          <div className="plans-actions">
+            <PillButton disabled={creation.isBusy} onClick={() => void openPicker('new')}>
+              {copy.newPlan}
+            </PillButton>
+            <PillButton disabled={creation.isBusy} onClick={() => void openPicker('duplicate')}>
+              {copy.duplicateLastWeek}
+            </PillButton>
+            <PillButton onClick={() => setIsAiSheetOpen(true)}>{aiText.training.title}</PillButton>
+          </div>
+          {picker}
+          <ul className="plans-weeks">
+            {plans.map((plan) => (
+              <PlanWeekRow
+                key={plan.id}
+                traineeId={trainee.id}
+                plan={plan}
+                currentWeekStart={trainee.currentWeekStart}
+                weekProgress={currentPlan?.id === plan.id ? currentPlan : null}
+              />
+            ))}
+          </ul>
+        </>
       )}
+
+      <AiDraftSheet
+        isOpen={isAiSheetOpen}
+        onClose={() => setIsAiSheetOpen(false)}
+        traineeId={trainee.id}
+        ai={ai}
+        config={config}
+        linkedRecommendationId={undefined}
+        canApply={!creation.isBusy}
+        onUseFullPlan={(recommendation) => {
+          setIsAiSheetOpen(false);
+          void openPicker('new', { loadAiDraftId: recommendation.id });
+        }}
+        onUseSplitOnly={(option, recommendation) => {
+          setIsAiSheetOpen(false);
+          void openPicker('new', { splitOnly: { splitId: option.splitId, daysPerWeek: option.daysPerWeek, recommendationId: recommendation.id } });
+        }}
+      />
     </div>
   );
 }

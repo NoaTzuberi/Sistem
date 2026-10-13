@@ -71,3 +71,33 @@ button {
   direction: ltr;
   text-align: end;
 }
+
+/*
+ * A workout's identity color, by its place in the plan (workoutColorClass). Used by the
+ * plan builder and by the AI draft card on a trainee's profile. Visual only: which
+ * workout this is — never a status.
+ */
+.workout-color-1 {
+  --workout-color: var(--color-workout-1);
+  --workout-color-soft: var(--color-workout-1-soft);
+}
+
+.workout-color-2 {
+  --workout-color: var(--color-workout-2);
+  --workout-color-soft: var(--color-workout-2-soft);
+}
+
+.workout-color-3 {
+  --workout-color: var(--color-workout-3);
+  --workout-color-soft: var(--color-workout-3-soft);
+}
+
+.workout-color-4 {
+  --workout-color: var(--color-workout-4);
+  --workout-color-soft: var(--color-workout-4-soft);
+}
+
+.workout-color-5 {
+  --workout-color: var(--color-workout-5);
+  --workout-color-soft: var(--color-workout-5-soft);
+}

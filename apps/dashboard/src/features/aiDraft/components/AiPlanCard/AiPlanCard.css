@@ -1,0 +1,184 @@
+.ai-plan-card {
+  position: relative;
+  min-width: 0;
+  padding: 24px;
+  /* clip, not hidden: the oversized cloud must not make the card scrollable (focus could scroll it). */
+  overflow: clip;
+  border-radius: var(--radius-drawer);
+  box-shadow: var(--shadow-panel);
+  /* Its own stacking context, so the cloud stays behind the content and inside the card. */
+  isolation: isolate;
+}
+
+/* The same blurred pink cloud as the Overview's hero card. */
+.ai-plan-card::before {
+  content: '';
+  position: absolute;
+  inset: -30%;
+  z-index: -1;
+  background: var(--gradient-hero-pink);
+  filter: var(--blur-hero);
+}
+
+.ai-plan-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 38px;
+}
+
+.ai-plan-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: var(--radius-round);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+  background-color: var(--surface-on-workout);
+}
+
+.ai-plan-tag-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-primary);
+}
+
+.ai-plan-title {
+  margin: 16px 0 6px;
+  font-family: var(--font-family-display);
+  font-size: var(--text-hero-title);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.1;
+  letter-spacing: var(--letter-spacing-display);
+}
+
+/* ONE short line: the AI's summary, cut after three lines (all of it is in the AI sheet). */
+.ai-plan-lead {
+  display: -webkit-box;
+  max-width: 56ch;
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--color-on-hero-muted);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
+.ai-plan-workouts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 18px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ai-plan-workout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: var(--radius-round);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  background-color: var(--surface-on-workout);
+}
+
+.ai-plan-workout-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-round);
+  background-color: var(--workout-color);
+}
+
+.ai-plan-checks {
+  margin: 0;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: var(--radius-block);
+  background-color: var(--surface-on-workout);
+}
+
+.ai-plan-checks-title {
+  float: inline-start;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.ai-plan-check {
+  display: flex;
+  clear: both;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: var(--text-sm);
+  line-height: var(--line-height-base);
+  cursor: pointer;
+}
+
+.ai-plan-check input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: var(--color-primary);
+}
+
+.ai-plan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+/* A soft pill on the cloud: white at an alpha instead of the canvas pill's solid white. */
+.ai-plan-card .ai-plan-soft {
+  background-color: var(--surface-on-workout);
+  box-shadow: none;
+}
+
+.ai-plan-meta {
+  margin-inline-start: auto;
+  font-size: var(--text-2xs);
+  color: var(--color-on-hero-muted);
+}
+
+.ai-plan-state {
+  margin-top: 16px;
+  line-height: var(--line-height-base);
+  color: var(--color-on-hero-muted);
+}
+
+.ai-plan-state p {
+  margin: 0;
+}
+
+.ai-plan-state .ai-plan-error {
+  color: var(--color-error);
+}
+
+@media (max-width: 860px) { /* = --breakpoint-dash-nav */
+  .ai-plan-card {
+    padding: 18px;
+  }
+
+  .ai-plan-title {
+    font-size: var(--text-xl);
+  }
+
+  .ai-plan-meta {
+    flex-basis: 100%;
+    margin-inline-start: 0;
+  }
+}

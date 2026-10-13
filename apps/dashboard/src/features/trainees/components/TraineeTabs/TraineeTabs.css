@@ -1,0 +1,65 @@
+.trainee-tabs {
+  display: flex;
+  gap: 4px;
+  width: max-content;
+  max-width: 100%;
+  margin-bottom: 16px;
+  padding: 5px;
+  overflow-x: auto;
+  border-radius: var(--radius-round);
+  background-color: var(--surface-pill);
+}
+
+.trainee-tab {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 16px;
+  border-radius: var(--radius-round);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  transition: transform var(--transition-press) var(--ease-press);
+}
+
+.trainee-tab:active {
+  transform: scale(0.97);
+}
+
+.trainee-tab[aria-selected='true'] {
+  color: var(--color-text);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+}
+
+.trainee-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-round);
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
+  background-color: var(--color-fill-soft);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .trainee-tab:not([aria-selected='true']):hover {
+    color: var(--color-text);
+  }
+}
+
+.trainee-tab:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trainee-tab {
+    transition: none;
+  }
+}

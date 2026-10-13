@@ -1,78 +1,53 @@
+/* The trainee profile sits straight on the dashboard canvas. */
+.trainee-detail {
+  min-width: 0;
+}
+
 .trainee-back {
-  display: inline-block;
-  margin-bottom: var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  margin-bottom: 12px;
   font-size: var(--text-sm);
-  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
   text-decoration: none;
 }
 
-.trainee-message {
-  color: var(--color-text-muted);
-}
-
-.trainee-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2) var(--space-3);
-  margin-bottom: var(--space-4);
-}
-
-.trainee-name {
-  margin: 0;
-  font-family: var(--font-family-display);
-  font-size: var(--text-2xl);
-  line-height: var(--line-height-tight);
-}
-
-.trainee-facts {
-  display: flex;
-  flex-wrap: wrap;
-  flex-basis: 100%;
-  gap: var(--space-2) var(--space-5);
-  margin: 0;
-  font-size: var(--text-sm);
-}
-
-.trainee-facts dt {
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-}
-
-.trainee-facts dd {
-  margin: 0;
-}
-
-.trainee-tabs {
-  display: flex;
-  gap: var(--space-1);
-  overflow-x: auto;
-  border-bottom: var(--border-width-thin) solid var(--color-border);
-}
-
-.trainee-tab {
-  min-height: var(--touch-target-min);
-  padding: 0 var(--space-3);
-  font-weight: var(--font-weight-semibold);
-  white-space: nowrap;
-  color: var(--color-text-muted);
-  border-bottom: var(--border-width-medium) solid transparent;
-}
-
-.trainee-tab[aria-selected='true'] {
+.trainee-back:active {
   color: var(--color-primary-deep);
-  border-bottom-color: var(--color-primary);
 }
 
-.trainee-tab:active {
-  background-color: var(--color-surface);
+@media (hover: hover) and (pointer: fine) {
+  .trainee-back:hover {
+    color: var(--color-text);
+  }
 }
 
-.trainee-tab:focus-visible {
-  outline: var(--border-width-medium) solid var(--color-primary);
-  outline-offset: calc(-1 * var(--focus-ring-offset));
+.trainee-message {
+  margin: 0;
+  padding: 24px;
+  border-radius: var(--radius-panel);
+  color: var(--color-text-muted);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
 }
 
 .trainee-panel {
-  padding-top: var(--space-4);
+  min-width: 0;
+}
+
+/* The sections that were not redesigned yet: their own content, on one white card. */
+.trainee-panel-card {
+  padding: var(--space-4);
+  border-radius: var(--radius-panel);
+  background-color: var(--color-bg);
+  box-shadow: var(--shadow-panel);
+  /* These sections were sized for the app's base text, not the dashboard's smaller one. */
+  font-size: var(--text-base);
+}
+
+@media (max-width: 860px) { /* = --breakpoint-dash-nav */
+  .trainee-panel-card {
+    padding: var(--space-3);
+  }
 }

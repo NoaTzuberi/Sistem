@@ -1,0 +1,89 @@
+.start-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.start-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 150px;
+  padding: 22px;
+  /* clip, not hidden: the oversized cloud must not make the card scrollable (focus could scroll it). */
+  overflow: clip;
+  border-radius: var(--radius-panel);
+  color: var(--color-text);
+  text-align: start;
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+  transition: transform var(--transition-press) var(--ease-press);
+  /* Its own stacking context: the AI card's cloud stays behind its text and inside the card. */
+  isolation: isolate;
+}
+
+.start-card:active {
+  transform: scale(0.97);
+}
+
+/* The same blurred pink cloud as the Overview's hero card. */
+.start-card-ai::before {
+  content: '';
+  position: absolute;
+  inset: -30%;
+  z-index: -1;
+  background: var(--gradient-hero-pink);
+  filter: var(--blur-hero);
+}
+
+.start-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-fill-soft);
+}
+
+.start-card-ai .start-card-icon {
+  background-color: var(--surface-glass-chip);
+}
+
+.start-card-title {
+  margin-top: auto;
+  padding-top: 14px;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-medium);
+}
+
+.start-card-hint {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.start-card-ai .start-card-hint {
+  color: var(--color-on-hero-muted);
+}
+
+.start-card:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (max-width: 860px) { /* = --breakpoint-dash-nav */
+  .start-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .start-card {
+    min-height: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .start-card {
+    transition: none;
+  }
+}

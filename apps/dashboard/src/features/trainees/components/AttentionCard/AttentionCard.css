@@ -1,0 +1,42 @@
+/* Amber: "look here before you plan" — not an error and not a status. */
+.attention-card {
+  padding: 18px 20px;
+  border-radius: var(--radius-panel);
+  background-color: var(--color-flag-soft);
+}
+
+.attention-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-flag);
+}
+
+.attention-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attention-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: var(--radius-row);
+  line-height: var(--line-height-base);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  background-color: var(--surface-on-flag);
+}
+
+.attention-source {
+  font-size: var(--text-2xs);
+  color: var(--color-flag);
+}

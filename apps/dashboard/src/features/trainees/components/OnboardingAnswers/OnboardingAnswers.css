@@ -1,40 +1,48 @@
-.onboarding-answers {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: var(--space-3);
-}
-
-.onboarding-status,
 .onboarding-empty {
-  grid-column: 1 / -1;
   margin: 0;
-  font-size: var(--text-sm);
+  padding: 24px;
+  border-radius: var(--radius-panel);
   color: var(--color-text-muted);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
 }
 
-.onboarding-section {
-  padding: var(--space-3);
-  border: var(--border-width-thin) solid var(--color-border);
+/* The sections, and beside them (sticky) what to notice and what is missing. */
+.onboarding-sheet {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 16px;
+  align-items: start;
 }
 
-.onboarding-section-title {
-  margin: 0 0 var(--space-2);
-  font-size: var(--text-base);
-}
-
-.onboarding-rows {
+.onboarding-main,
+.onboarding-side {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  margin: 0;
+  gap: 16px;
+  min-width: 0;
 }
 
-.onboarding-row dt {
+.onboarding-side {
+  position: sticky;
+  top: 16px;
+}
+
+.onboarding-status {
+  margin: 0;
+  padding: 0 6px;
   font-size: var(--text-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-faint);
 }
 
-.onboarding-row dd {
-  margin: 0;
-  white-space: pre-wrap;
+/* Narrower: the side column goes first, above the sections. */
+@media (max-width: 1100px) {
+  .onboarding-sheet {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .onboarding-side {
+    position: static;
+    order: -1;
+  }
 }

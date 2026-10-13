@@ -5,8 +5,6 @@ import { plural } from '@sistem/shared';
 export const he = {
   training: {
     // Phase 12b — Training summary (split options, the coach's paths)
-    summaryTitle: 'סיכום אימונים',
-    experience: 'ניסיון',
     splitOptions: 'אפשרויות חלוקה',
     recommended: 'מומלץ',
     drafted: 'יש תוכנית',
@@ -29,9 +27,6 @@ export const he = {
     tryAgain: 'ניסיון נוסף',
     generating: 'יוצרת את הטיוטה… זה יכול לקחת דקה.',
     failedPrefix: 'לא הצלחנו ליצור טיוטת AI:',
-    useInNewPlan: 'שימוש בתוכנית חדשה',
-    loadIntoPlan: 'טעינת טיוטת AI',
-    loadingRunning: 'טיוטת AI בהכנה…',
     replaceConfirm: 'להחליף את האימונים בתוכנית הזו בטיוטת ה־AI?',
     reviewNote: 'טיוטת AI — בדקי וערכי הכול לפני פרסום. רק את רואה אותה; המתאמנת רואה את התוכנית רק אחרי שתפרסמי.',
     reviewBadge: 'טיוטת AI — לבדוק לפני פרסום',

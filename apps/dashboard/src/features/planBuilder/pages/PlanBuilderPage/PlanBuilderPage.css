@@ -1,6 +1,11 @@
+/* Loading / error, on the canvas like the builder itself. */
 .plan-builder-state {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 8px;
+  padding: 24px;
+  border-radius: var(--radius-panel);
   color: var(--color-text-muted);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
 }

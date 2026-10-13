@@ -1,3 +1,4 @@
+import { plural } from '@sistem/shared';
 import type { CopyShape } from '@sistem/shared';
 import type { he } from './he';
 
@@ -45,7 +46,6 @@ export const en: CopyShape<typeof he> = {
   createError: "Couldn't create the plan.",
   newPlan: 'New plan',
   duplicateLastWeek: 'Duplicate last week',
-  noPlans: 'No plans yet.',
   planSize: '{workouts} workouts · {exercises} exercises',
   open: 'Open',
   pickNewTitle: 'New plan — choose the week',
@@ -63,10 +63,8 @@ export const en: CopyShape<typeof he> = {
   type: 'Type',
   performed: 'Performed',
   done: 'Done',
-  backToTrainees: '← Trainees',
   email: 'Email',
   timezone: 'Time zone',
-  window48h: '48h window',
   name: 'Name',
   lastActivity: 'Last activity',
   workoutLogs: 'Workout logs',
@@ -80,4 +78,34 @@ export const en: CopyShape<typeof he> = {
   buildPlan: 'Build the plan',
   openWeekPlan: "Open this week's plan",
   fullProfile: 'Open the full profile',
+  // Trainee profile design. PLACEHOLDER English.
+  backToAllTrainees: '← All trainees',
+  windowPassed: 'The 48-hour window has passed',
+  windowRunning: 'The 48-hour window',
+  workoutsThisWeek: 'Workouts this week',
+  buildPlanShort: 'Build plan',
+  nextWeek: 'Next week',
+  aiReadyTag: 'AI draft ready',
+  checkBeforeStart: 'Check with her before starting',
+  openInBuilder: 'Open in the plan builder',
+  otherSplits: 'Other split options',
+  draftOnlyYou: 'Draft · only you see it',
+  fromScratch: 'Plan from scratch',
+  fromScratchHint: 'A first empty workout, and you build it yourself',
+  duplicateAfterFirst: 'Available after the first plan',
+  noPlansNote: 'She has no plans yet. Once you publish, she is notified and her app moves to the home screen.',
+  planEnded: 'Ended',
+  openWeek: 'Open the plan of {week}',
+  // Questionnaire tab as a profile sheet. PLACEHOLDER English.
+  age: 'Age',
+  ageYears: 'age {age}',
+  attentionTitle: 'Before you build',
+  noteSource: 'Note from the questionnaire',
+  missingFields: plural({ one: '{count} field not filled in', other: '{count} fields not filled in' }),
+  showEmptyFields: 'Show empty fields',
+  hideEmptyFields: 'Hide empty fields',
+  goalAtStart: 'In the questionnaire',
+  goalLatest: 'Latest weigh-in',
+  goalTarget: 'Target',
+  goalRate: 'about {amount} kg a week',
 };

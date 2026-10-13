@@ -1,0 +1,61 @@
+.exercise-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.exercise-field-label {
+  overflow: hidden;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* One white box; a range puts its two numbers in the same box. */
+.exercise-field-box {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  border-radius: var(--radius-field);
+  background-color: var(--color-card);
+}
+
+/* The ring appears at once, in the workout's color: inputs never animate. */
+.exercise-field-box:focus-within {
+  box-shadow: 0 0 0 1.5px var(--workout-color, var(--color-primary));
+}
+
+/* The long selector outranks the dashboard's base rule, which aligns number inputs to the end in Hebrew. */
+:root .exercise-field .exercise-field-box input.exercise-field-input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0 6px;
+  border: 0;
+  /* 16px: no zoom on focus on a phone. */
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  text-align: center;
+  background: none;
+  appearance: textfield;
+}
+
+.exercise-field-input::-webkit-inner-spin-button,
+.exercise-field-input::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+.exercise-field-input:focus {
+  outline: none;
+}
+
+.exercise-field-dash {
+  flex: none;
+  color: var(--color-text-faint);
+}

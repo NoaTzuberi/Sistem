@@ -3,7 +3,7 @@ import { Link, useLocation, useParams } from 'react-router-dom';
 import { getPlan, getTrainee } from '../../../../services/coach/coachService';
 import { sharedCopy, useCopy, useLoad } from '@sistem/shared';
 import { traineePath } from '../../../../app/config/routes';
-import { Button } from '../../../../components/common/Button/Button';
+import { PillButton } from '../../../../components/common/PillButton/PillButton';
 import { PlanEditor } from '../../components/PlanEditor/PlanEditor';
 import './PlanBuilderPage.css';
 import { planBuilderCopy } from '../../copy';
@@ -34,7 +34,7 @@ export function PlanBuilderPage() {
         {isLoading && <p>{shared.common.loading}</p>}
         {error && (
           <p role="alert">
-            {error} <Button size="sm" onClick={reload}>{shared.common.retry}</Button>
+            {error} <PillButton size="sm" onClick={reload}>{shared.common.retry}</PillButton>
           </p>
         )}
       </div>

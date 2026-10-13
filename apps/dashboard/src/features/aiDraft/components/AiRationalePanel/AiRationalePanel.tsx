@@ -15,7 +15,7 @@ import {
   workoutTypeLabel,
 } from '@sistem/shared';
 import { getAiRecommendation } from '../../../../services/coach/coachService';
-import { Badge } from '../../../../components/common/Badge/Badge';
+import { Tag } from '../../../../components/common/Tag/Tag';
 import { aiDraftCopy } from '../../copy';
 import './AiRationalePanel.css';
 
@@ -24,6 +24,8 @@ interface AiRationalePanelProps {
   recommendationId: string;
   /** Already loaded (the latest draft) — saves a request. */
   recommendation?: AiTrainingRecommendation | null;
+  /** Starts closed (inside the AI draft sheet, under the split options). */
+  startClosed?: boolean;
 }
 
 // Her answers are option ids: the coach reads the questionnaire's own labels (shared copy).
@@ -52,7 +54,7 @@ function profileRows(profile: AiTraineeProfile, copy: AiDraftText, language: Lan
 type AiDraftText = (typeof aiDraftCopy)['he'];
 
 /** Plan builder: why the AI drafted this plan, and what it was given. Coach-only. */
-export function AiRationalePanel({ traineeId, recommendationId, recommendation }: AiRationalePanelProps) {
+export function AiRationalePanel({ traineeId, recommendationId, recommendation, startClosed = false }: AiRationalePanelProps) {
   const language = useLanguage();
   const copy = useCopy(aiDraftCopy);
   const known = recommendation?.id === recommendationId ? recommendation : null;
@@ -66,10 +68,10 @@ export function AiRationalePanel({ traineeId, recommendationId, recommendation }
   const output = data?.output;
 
   return (
-    <details className="ai-rationale" open>
+    <details className="ai-rationale" open={!startClosed}>
       <summary className="ai-rationale-summary">
         <span className="ai-rationale-title">{copy.training.rationaleTitle}</span>
-        <Badge tone="alert">{copy.training.reviewBadge}</Badge>
+        <Tag tone="accent">{copy.training.reviewBadge}</Tag>
       </summary>
 
       {error && <p className="ai-rationale-muted">{error}</p>}

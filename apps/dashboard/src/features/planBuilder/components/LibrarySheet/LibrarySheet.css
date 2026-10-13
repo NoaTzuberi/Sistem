@@ -1,0 +1,218 @@
+.library-search {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: var(--radius-round);
+  color: var(--color-text-muted);
+  background-color: var(--color-fill-soft);
+}
+
+.library-search:focus-within {
+  box-shadow: var(--ring-field);
+}
+
+.library-search-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  font-size: var(--text-base);
+  color: var(--color-text);
+  background: none;
+}
+
+.library-search-input:focus {
+  outline: none;
+}
+
+/* One line of pills that scrolls sideways; the padding keeps the focus rings visible. */
+.library-pills {
+  display: flex;
+  flex: none;
+  gap: 6px;
+  margin: -3px;
+  padding: 3px;
+  overflow-x: auto;
+}
+
+.library-pill {
+  flex: none;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-round);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  background-color: var(--color-fill-soft);
+  transition: transform var(--transition-press) var(--ease-press);
+}
+
+.library-pill:active {
+  transform: scale(0.97);
+}
+
+.library-pill[aria-pressed='true'] {
+  color: var(--color-on-primary);
+  background-color: var(--color-text);
+}
+
+.library-filters {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
+
+.library-level {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-round);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  background-color: var(--color-fill-soft);
+}
+
+.library-level:focus {
+  outline: none;
+  box-shadow: var(--ring-field);
+}
+
+.library-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  cursor: pointer;
+}
+
+.library-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+}
+
+/* "Show all exercises" / "back to the slot's exercises": a text link, tall enough to press. */
+.library-link {
+  min-height: 34px;
+  padding: 0 4px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary-deep);
+}
+
+.library-link:active {
+  color: var(--color-primary);
+}
+
+.library-recent {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.library-recent-label {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.library-message {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.library-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0 -6px;
+  padding: 0;
+  list-style: none;
+}
+
+/* The whole row adds the exercise. */
+.library-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 8px;
+  border-radius: var(--radius-row);
+  color: var(--color-text);
+  text-align: start;
+}
+
+.library-item:disabled {
+  opacity: var(--opacity-disabled);
+}
+
+.library-item-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.library-item-name {
+  align-self: flex-start;
+  max-width: 100%;
+  font-weight: var(--font-weight-medium);
+}
+
+.library-item-facts {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.library-variant-off {
+  color: var(--color-text-faint);
+  text-decoration: line-through;
+}
+
+.library-item-plus {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-round);
+  color: var(--color-primary-deep);
+  background-color: var(--color-primary-tint);
+}
+
+.library-item-added .library-item-plus {
+  color: var(--color-on-primary);
+  background-color: var(--color-primary);
+}
+
+.library-item:active:not(:disabled) {
+  background-color: var(--color-primary-tint);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .library-item:hover:not(:disabled) {
+    background-color: var(--color-fill-soft);
+  }
+
+  .library-link:hover {
+    text-decoration: underline;
+  }
+}
+
+.library-pill:focus-visible,
+.library-link:focus-visible,
+.library-item:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .library-pill {
+    transition: none;
+  }
+}

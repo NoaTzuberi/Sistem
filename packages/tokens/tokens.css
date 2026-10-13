@@ -148,6 +148,32 @@
   --color-on-hero-muted: color-mix(in srgb, var(--color-text) 70%, transparent); /* captions on a hero card */
   --color-tick-rest: color-mix(in srgb, var(--color-text) 18%, transparent);     /* hero mini columns */
   --color-scrim: color-mix(in srgb, var(--color-text) 22%, transparent);         /* behind the drawer / palette */
+  /* Workout identity colors (plan builder): which workout of the week this is, by its place in
+     the plan, cycling through five. NOT status colors — done / success stays Cherry Rose. Each has
+     a soft background of its own. */
+  --color-workout-1: #ff006e;
+  --color-workout-1-soft: #ffe3ef;
+  --color-workout-2: #7c4dff;
+  --color-workout-2-soft: #eee7ff;
+  --color-workout-3: #ff7a00;
+  --color-workout-3-soft: #ffeedd;
+  --color-workout-4: #0094ff;
+  --color-workout-4-soft: #e0f1ff;
+  --color-workout-5: #a50047;
+  --color-workout-5-soft: #f8e1ea;
+  --surface-on-workout: color-mix(in srgb, var(--color-card) 80%, transparent);          /* chips on a workout's hero band */
+  --surface-on-workout-strong: color-mix(in srgb, var(--color-card) 85%, transparent);   /* the notes field on the band */
+  /* A reported injury / limitation on a trainee's profile: "look here", not an error and not a status. */
+  --color-flag: #a85800;
+  --color-flag-soft: #fff0dc;
+  --surface-on-flag: color-mix(in srgb, var(--color-card) 75%, transparent);   /* a row on the amber "before you build" card */
+  /* The trainee profile: the initials avatar, and the soft pink / lilac cloud in the header card's corner. */
+  --gradient-avatar: linear-gradient(140deg, var(--color-pink-bright), var(--color-primary-deep));
+  --gradient-profile-cloud:
+    radial-gradient(40% 40% at 60% 40%, color-mix(in srgb, var(--color-primary) 16%, transparent), transparent 70%),
+    radial-gradient(35% 35% at 30% 60%, color-mix(in srgb, var(--color-lilac) 22%, transparent), transparent 70%);
+  --color-ring-track: color-mix(in srgb, var(--color-text) 8%, transparent);   /* the empty part of a progress ring */
+  --color-on-workout-muted: color-mix(in srgb, var(--color-on-primary) 80%, transparent); /* small text on a filled workout pill */
 
   /* Third-party button colors fixed by the provider's guidelines (social sign-in, Phase 5c). */
   --color-apple-button: #000000;
@@ -181,6 +207,9 @@
   --text-4xl: 40px;
   --text-5xl: 44px;
   --text-hero: 76px;
+  --text-key-number: 32px;        /* The big light numbers of her questionnaire (age, height, weight, days) */
+  --text-profile-name: 36px;      /* A trainee's name on her profile header */
+  --text-hero-title: 30px;        /* The selected workout's title on its hero band (plan builder) */
 
   --font-weight-light: 300;      /* The dashboard's large numbers */
   --font-weight-regular: 400;
@@ -227,6 +256,7 @@
   --radius-tooltip: 10px;
   --radius-square: 5px;         /* The week squares in the trainees table */
   --radius-bar: 4px;            /* Bar tops in a chart */
+  --radius-field: 12px;         /* A field of an open exercise row, a menu item */
   --cut-size: 12px;
   /* One corner cut at the top-end (the card / tile pattern). */
   --cut-corner: polygon(0 0, calc(100% - var(--cut-size)) 0, 100% var(--cut-size), 100% 100%, 0 100%);
@@ -267,8 +297,13 @@
   --shadow-float: 0 30px 80px color-mix(in srgb, var(--color-text) 20%, transparent);   /* drawer, palette */
   --shadow-photo: 0 8px 20px color-mix(in srgb, var(--color-text) 12%, transparent);    /* stacked Daily Pump photos */
   --shadow-side-sheet: 0 0 60px color-mix(in srgb, var(--color-text) 16%, transparent); /* the off-canvas sidebar */
+  --shadow-avatar: 0 10px 26px color-mix(in srgb, var(--color-primary) 25%, transparent);   /* the profile avatar */
+  --shadow-exercise: 0 1px 2px color-mix(in srgb, var(--color-text) 4%, transparent);          /* an exercise card in its slot */
+  --shadow-exercise-hover: 0 6px 18px color-mix(in srgb, var(--color-text) 7%, transparent);  /* … under a fine pointer */
+  --shadow-menu: 0 20px 50px color-mix(in srgb, var(--color-text) 16%, transparent);    /* a small menu under its button */
   --ring-panel: 0 0 0 2px var(--color-card);            /* The notification dot on its round button */
   --ring-center: 0 0 0 1.5px var(--color-primary);      /* The centered wheel item */
+  --ring-field: 0 0 0 1.5px var(--color-primary);       /* A focused field / a selected card in a sheet */
   --ring-badge: 0 0 0 2px var(--color-card);            /* Around the wheel's check badge */
   --ring-focus: 0 0 0 3px var(--color-primary);
   --blur-soft: blur(10px);
@@ -294,6 +329,9 @@
   --ease-drawer-out: cubic-bezier(0.23, 1, 0.32, 1);
   --transition-drawer-in: 300ms;
   --transition-drawer-out: 200ms;
+  --transition-toast: 200ms;     /* A toast rising in / fading out */
+  --transition-menu: 150ms;      /* A menu growing from its button */
+  --transition-chevron: 200ms;   /* An exercise card's chevron turning as it opens */
   --loop-slow: 2s;               /* Repeating hints (scroll bounce) */
 
   /* ═══ 8. Opacity ══════════════════════════════════════════════════════════════ */
@@ -312,6 +350,7 @@
   --z-side-sheet: 200;  /* The dashboard's off-canvas sidebar */
   --z-drawer: 300;      /* The trainee drawer and its scrim */
   --z-palette: 400;     /* The command palette */
+  --z-toast: 500;       /* A toast, above everything but a modal */
   --z-modal: 1000;
 
   /* ═══ 10. Breakpoints ═════════════════════════════════════════════════════════
@@ -325,6 +364,7 @@
   --breakpoint-3xl: 1024px;
   --breakpoint-dash-nav: 860px;    /* Dashboard: the sidebar becomes an off-canvas drawer */
   --breakpoint-dash-grid: 1180px;  /* Dashboard: the 12-column widget grid folds */
+  --breakpoint-builder-rows: 720px; /* Plan builder: an exercise's four fields become 2 × 2 */
 
   /* ═══ 11. App chrome & touch ══════════════════════════════════════════════════ */
   --touch-target-min: 44px;

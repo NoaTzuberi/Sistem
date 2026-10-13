@@ -4,8 +4,6 @@ import type { he } from './he';
 export const en: CopyShape<typeof he> = {
   training: {
     // Phase 12b — Training summary (split options, the coach's paths)
-    summaryTitle: 'Training summary',
-    experience: 'Experience',
     splitOptions: 'Split options',
     recommended: 'Recommended',
     drafted: 'plan drafted',
@@ -28,9 +26,6 @@ export const en: CopyShape<typeof he> = {
     tryAgain: 'Try again',
     generating: 'Generating the draft… this can take a minute.',
     failedPrefix: "Couldn't generate an AI draft:",
-    useInNewPlan: 'Use in a new plan',
-    loadIntoPlan: 'Load AI draft',
-    loadingRunning: 'AI draft generating…',
     replaceConfirm: 'Replace the workouts in this plan with the AI draft?',
     reviewNote: 'AI draft — review and edit everything before publishing. Only you see it; the trainee sees the plan only after you publish.',
     reviewBadge: 'AI draft — review before publishing',

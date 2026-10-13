@@ -1,0 +1,256 @@
+/* The band of the selected workout. --workout-color / --workout-color-soft come from the card. */
+.workout-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px 22px 18px;
+}
+
+/*
+ * The cloud: the workout's color as two blurred blobs over its soft variant, like the dashboard
+ * hero cards. Clipped to the card's top corners here, so the band itself does not clip its menu.
+ */
+.workout-hero-cloud {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-start-start-radius: var(--radius-panel);
+  border-start-end-radius: var(--radius-panel);
+  background-color: var(--workout-color-soft);
+}
+
+.workout-hero-cloud::before {
+  content: '';
+  position: absolute;
+  inset: -40% -10% -10%;
+  background:
+    radial-gradient(35% 60% at 92% 20%, color-mix(in srgb, var(--workout-color) 55%, transparent), transparent 70%),
+    radial-gradient(40% 60% at 20% 90%, color-mix(in srgb, var(--workout-color) 28%, transparent), transparent 70%);
+  filter: var(--blur-hero);
+}
+
+/* Everything else sits on the cloud. */
+.workout-hero > :not(.workout-hero-cloud) {
+  position: relative;
+}
+
+.workout-hero-top {
+  /* Above the rows under it, so the "⋯" menu opens over them. */
+  z-index: var(--z-raised);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.workout-hero-dot {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-round);
+  background-color: var(--workout-color);
+}
+
+/* An inline title: it reads as text until it has the focus, then a line in the workout's color. */
+.workout-hero-title {
+  flex: 1;
+  min-width: 0;
+  padding: 2px 0;
+  border: 0;
+  border-bottom: var(--border-width-medium) solid transparent;
+  font-family: var(--font-family-display);
+  font-size: var(--text-hero-title);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: var(--letter-spacing-display);
+  color: var(--color-text);
+  background: none;
+}
+
+.workout-hero-title:focus {
+  outline: none;
+  border-bottom-color: var(--workout-color);
+}
+
+/* The menu hangs from the band's far edge and opens inward. */
+.workout-hero-top .action-menu {
+  position: static;
+}
+
+/* Row 2: compact chips, lined up under the title (past the dot). */
+.workout-hero-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-inline-start: 24px;
+}
+
+.hero-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  border-radius: var(--radius-round);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  background-color: var(--surface-on-workout);
+}
+
+.hero-chip:focus-within {
+  box-shadow: 0 0 0 1.5px var(--workout-color);
+}
+
+/* A select without the browser's arrow; the chip draws its own small chevron at the far end. */
+.hero-select {
+  min-height: 32px;
+  max-width: 200px;
+  padding-block: 0;
+  padding-inline: 12px 28px;
+  border: 0;
+  border-radius: var(--radius-round);
+  font: inherit;
+  color: inherit;
+  background: none;
+  cursor: pointer;
+  appearance: none;
+}
+
+.hero-select:focus {
+  outline: none;
+}
+
+.hero-chip-select::after {
+  content: '';
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: 12px;
+  width: 6px;
+  height: 6px;
+  margin-top: -5px;
+  border-bottom: 1.5px solid var(--color-text-muted);
+  border-inline-end: 1.5px solid var(--color-text-muted);
+  rotate: 45deg;
+  pointer-events: none;
+}
+
+:root[dir='rtl'] .hero-chip-select::after {
+  rotate: -45deg;
+}
+
+.hero-chip-button {
+  padding: 0 14px;
+  transition: transform var(--transition-press) var(--ease-press);
+}
+
+.hero-chip-button:active {
+  transform: scale(0.97);
+}
+
+.hero-chip-button:focus-visible {
+  outline: var(--border-width-medium) solid var(--workout-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.workout-hero-notes {
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--radius-field);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  resize: vertical;
+  background-color: var(--surface-on-workout-strong);
+}
+
+.workout-hero-notes:focus {
+  outline: none;
+  box-shadow: 0 0 0 1.5px var(--workout-color);
+}
+
+/* Row 3: the workout in big light numbers; the covered muscle groups at the far end. */
+.workout-hero-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px 28px;
+  margin-top: 6px;
+}
+
+.hero-stats {
+  display: flex;
+  gap: 28px;
+  margin: 0;
+}
+
+/* The number on top, its label under it (the markup is label first, for screen readers). */
+.hero-stat {
+  display: flex;
+  flex-direction: column-reverse;
+  /* Both start at the reading edge — the "~32" is left-to-right text of its own. */
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.hero-stat dt {
+  font-size: var(--text-xs);
+  color: var(--color-on-hero-muted);
+}
+
+.hero-stat dd {
+  margin: 0;
+  font-size: var(--text-3xl);
+  font-weight: var(--font-weight-light);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-display);
+}
+
+.hero-groups {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  max-width: 52%;
+  margin: 0;
+  margin-inline-start: auto;
+  padding: 0;
+  list-style: none;
+}
+
+.hero-group {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: var(--radius-round);
+  font-size: var(--text-xs);
+  background-color: var(--surface-on-workout);
+}
+
+@media (max-width: 720px) { /* = --breakpoint-builder-rows */
+  .workout-hero {
+    padding: 18px 16px 16px;
+  }
+
+  .workout-hero-title {
+    font-size: var(--text-xl);
+  }
+
+  .hero-stats {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .hero-groups {
+    justify-content: flex-start;
+    max-width: 100%;
+    margin-inline-start: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-chip-button {
+    transition: none;
+  }
+}

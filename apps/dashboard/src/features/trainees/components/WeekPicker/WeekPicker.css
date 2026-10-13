@@ -1,98 +1,110 @@
+/* The week choice for a new plan: a white card on the canvas. */
 .week-picker {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 10px;
   max-width: 560px;
-  margin: 0 0 var(--space-3);
-  padding: var(--space-3);
-  background-color: var(--color-surface);
+  margin: 0;
+  padding: 18px;
   border: 0;
+  border-radius: var(--radius-card);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
 }
 
 .week-picker-title {
   float: inline-start;
   width: 100%;
-  margin-bottom: var(--space-2);
+  margin-bottom: 4px;
   padding: 0;
-  font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-medium);
 }
 
 .week-picker-list {
+  display: flex;
   clear: both;
+  flex-direction: column;
+  gap: 4px;
   margin: 0;
   padding: 0;
   list-style: none;
-  background-color: var(--color-bg);
-  border: var(--border-width-thin) solid var(--color-border);
-}
-
-.week-picker-list li + li {
-  border-top: var(--border-width-thin) solid var(--color-border);
 }
 
 .week-picker-option {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 10px;
   min-height: var(--touch-target-min);
-  padding: 0 var(--space-3);
+  padding: 0 12px;
+  border-radius: var(--radius-field);
+  background-color: var(--color-fill-soft);
   cursor: pointer;
 }
 
 .week-picker-option:has(input:checked) {
-  background-color: var(--color-primary-soft);
+  background-color: var(--color-primary-tint);
 }
 
 .week-picker-option input {
-  accent-color: var(--color-primary-deep);
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
 }
 
 .week-picker-label {
   flex: 1;
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
 }
 
 .week-picker-open {
   display: inline-flex;
   align-items: center;
   min-height: 32px;
-  padding: 0 var(--space-2);
+  padding: 0 12px;
+  border-radius: var(--radius-round);
   font-size: var(--text-sm);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
   text-decoration: none;
-  border: var(--border-width-thin) solid var(--color-border);
-  background-color: var(--color-bg);
+  background-color: var(--color-card);
 }
 
 .week-picker-open:active {
-  background-color: var(--color-primary-soft);
+  background-color: var(--color-primary-tint);
 }
 
 .week-picker-open-primary {
   min-height: var(--touch-target-min);
-  padding: 0 var(--space-3);
+  padding: 0 22px;
   font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-on-primary);
+  background-color: var(--color-primary);
+  box-shadow: var(--shadow-button);
+}
+
+.week-picker-open-primary:active {
   background-color: var(--color-primary-deep);
-  border-color: var(--color-primary-deep);
 }
 
 .week-picker-later {
   align-self: flex-start;
   min-height: var(--touch-target-min);
-  font-weight: var(--font-weight-semibold);
+  padding: 0 4px;
+  font-weight: var(--font-weight-medium);
   color: var(--color-primary-deep);
 }
 
 .week-picker-later:active {
-  background-color: var(--color-border);
+  color: var(--color-primary);
 }
 
 .week-picker-footer {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
+  gap: 8px;
 }
 
 .week-picker-note {
@@ -102,8 +114,18 @@
   color: var(--color-text-muted);
 }
 
-@media (hover: hover) {
-  .week-picker-option:hover {
-    background-color: var(--color-primary-soft);
+@media (hover: hover) and (pointer: fine) {
+  .week-picker-option:not(:has(input:checked)):hover {
+    background-color: var(--color-hairline);
   }
+
+  .week-picker-later:hover {
+    text-decoration: underline;
+  }
+}
+
+.week-picker-open:focus-visible,
+.week-picker-later:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
 }

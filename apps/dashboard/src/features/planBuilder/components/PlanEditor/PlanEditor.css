@@ -1,50 +1,36 @@
+/* The plan builder sits straight on the dashboard canvas: one column, white rounded cards. */
+.plan-editor {
+  min-width: 0;
+}
+
 .plan-back {
   display: inline-block;
-  margin-bottom: var(--space-3);
+  margin-bottom: 12px;
   font-size: var(--text-sm);
-  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
   text-decoration: none;
 }
 
-/* Stays in view under the top bar, so the save state is visible while editing. */
-.plan-header {
-  position: sticky;
-  top: calc(var(--touch-target-min) + var(--space-3) + 1px);
-  z-index: var(--z-overlay);
-  display: flex;
-  padding: var(--space-2) 0;
-  background-color: var(--color-bg);
-  border-bottom: var(--border-width-thin) solid var(--color-border);
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2) var(--space-3);
+.plan-back:active {
+  color: var(--color-primary-deep);
 }
 
-.plan-heading,
-.plan-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.plan-title {
-  margin: 0;
-  font-family: var(--font-family-display);
-  font-size: var(--text-2xl);
-  line-height: var(--line-height-tight);
+@media (hover: hover) and (pointer: fine) {
+  .plan-back:hover {
+    color: var(--color-text);
+  }
 }
 
 .plan-mode-note {
-  margin: var(--space-2) 0 var(--space-3);
+  margin: -8px 0 16px;
   font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
 
 .plan-errors {
-  margin-bottom: var(--space-3);
-  padding: var(--space-2) var(--space-3);
+  margin-bottom: 14px;
+  padding: 12px 16px;
+  border-radius: var(--radius-tile);
   font-size: var(--text-sm);
   color: var(--color-error);
   background-color: var(--color-error-soft);
@@ -56,104 +42,36 @@
 }
 
 .plan-errors-list {
-  margin: var(--space-1) 0 0;
-  padding-inline-start: var(--space-3);
-}
-
-/* Desktop-first: workouts on the left, the library beside them and in view. */
-.plan-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
-  gap: var(--space-4);
-  align-items: start;
-}
-
-.plan-layout > .exercise-library {
-  position: sticky;
-  top: calc(2 * var(--touch-target-min) + var(--space-6));
-  max-height: calc(100vh - 2 * var(--touch-target-min) - var(--space-7));
-  overflow-y: auto;
-}
-
-.plan-main {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-3);
-  min-width: 0;
+  margin: 4px 0 0;
+  padding-inline-start: 18px;
 }
 
 .plan-notes {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  width: 100%;
+  gap: 6px;
+  margin-top: 16px;
 }
 
 .plan-notes-label {
+  padding-inline-start: 4px;
   font-size: var(--text-xs);
   color: var(--color-text-muted);
 }
 
 .plan-notes-input {
   width: 100%;
-  padding: var(--space-1) var(--space-2);
+  padding: 10px 14px;
+  border: 0;
+  border-radius: var(--radius-tile);
   font-size: var(--text-sm);
+  color: var(--color-text);
   resize: vertical;
-  background-color: var(--color-bg);
-  border: var(--border-width-thin) solid var(--color-border);
-  border-radius: var(--radius-none);
+  background-color: var(--surface-pill);
 }
 
-.plan-notes-input:focus-visible {
-  outline: var(--border-width-medium) solid var(--color-primary);
-  outline-offset: 0;
-}
-
-.plan-empty {
-  margin: 0;
-  color: var(--color-text-muted);
-}
-
-.plan-workouts {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-@media (max-width: 1024px) { /* = --breakpoint-3xl */
-  .plan-layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .plan-layout > .exercise-library {
-    position: static;
-    max-height: none;
-  }
-}
-
-/* Phase 12b: the new workout's type next to "+ Add workout". */
-.plan-add-workout {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.plan-add-select {
-  min-height: var(--space-5);
-  padding: 0 var(--space-2);
-  font-size: var(--text-sm);
-  background-color: var(--color-bg);
-  border: var(--border-width-thin) solid var(--color-border);
-  border-radius: var(--radius-none);
-}
-
-.plan-add-select:focus-visible {
-  outline: var(--border-width-medium) solid var(--color-primary);
-  outline-offset: 0;
+.plan-notes-input:focus {
+  outline: none;
+  background-color: var(--color-card);
+  box-shadow: var(--ring-field);
 }

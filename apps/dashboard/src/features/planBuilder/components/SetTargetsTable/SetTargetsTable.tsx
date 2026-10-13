@@ -1,6 +1,6 @@
 import { fill, sharedCopy, useCopy } from '@sistem/shared';
 import type { SetType } from '@sistem/types';
-import { Button } from '../../../../components/common/Button/Button';
+import { PillButton } from '../../../../components/common/PillButton/PillButton';
 import { NumberField } from '../../../../components/common/NumberField/NumberField';
 import { SET_TYPE_IDS } from '../../data/planDefaults';
 import { newKey, newSetTarget } from '../../planDraft';
@@ -104,10 +104,10 @@ export function SetTargetsTable({ targets, onChange }: SetTargetsTableProps) {
                   />
                 </td>
                 <td className="set-targets-actions">
-                  <Button size="sm" aria-label={fill(copy.duplicateNamed, { name: setLabel })} onClick={() => duplicate(index)}>
+                  <PillButton size="sm" aria-label={fill(copy.duplicateNamed, { name: setLabel })} onClick={() => duplicate(index)}>
                     {copy.copy}
-                  </Button>
-                  <Button
+                  </PillButton>
+                  <PillButton
                     size="sm"
                     variant="danger"
                     aria-label={fill(copy.removeNamed, { name: setLabel })}
@@ -115,7 +115,7 @@ export function SetTargetsTable({ targets, onChange }: SetTargetsTableProps) {
                     onClick={() => onChange(targets.filter((other) => other.key !== target.key))}
                   >
                     {copy.remove}
-                  </Button>
+                  </PillButton>
                 </td>
               </tr>
             );
@@ -124,15 +124,15 @@ export function SetTargetsTable({ targets, onChange }: SetTargetsTableProps) {
       </table>
 
       <div className="set-targets-add">
-        <Button size="sm" onClick={() => onChange([...targets, newSetTarget('working', last)])}>
+        <PillButton size="sm" onClick={() => onChange([...targets, newSetTarget('working', last)])}>
           {copy.addSet}
-        </Button>
-        <Button size="sm" onClick={() => onChange([newSetTarget('warmup', first), ...targets])}>
+        </PillButton>
+        <PillButton size="sm" onClick={() => onChange([newSetTarget('warmup', first), ...targets])}>
           {copy.addWarmupSet}
-        </Button>
-        <Button size="sm" onClick={() => onChange([...targets, newSetTarget('drop', last)])}>
+        </PillButton>
+        <PillButton size="sm" onClick={() => onChange([...targets, newSetTarget('drop', last)])}>
           {copy.addDropSet}
-        </Button>
+        </PillButton>
       </div>
     </div>
   );

@@ -1,0 +1,47 @@
+.missing-card {
+  padding: 14px 16px;
+  border-radius: var(--radius-card);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  background-color: var(--surface-pill);
+}
+
+.missing-text {
+  margin: 0;
+  line-height: var(--line-height-base);
+}
+
+.missing-count {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+/* A text button, tall enough to press. */
+.missing-toggle {
+  min-height: 36px;
+  padding: 0;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-deep);
+  transition: transform var(--transition-press) var(--ease-press);
+}
+
+.missing-toggle:active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .missing-toggle:hover {
+    text-decoration: underline;
+  }
+}
+
+.missing-toggle:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .missing-toggle {
+    transition: none;
+  }
+}

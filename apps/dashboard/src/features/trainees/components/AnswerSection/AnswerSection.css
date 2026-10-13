@@ -1,0 +1,77 @@
+.answer-section {
+  padding: 18px 20px 8px;
+  border-radius: var(--radius-panel);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+}
+
+.answer-section-title {
+  margin: 0 0 6px;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+.answer-list {
+  margin: 0;
+}
+
+/* The label in a quiet 160px column, the answer beside it. */
+.answer-row {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  padding: 12px 0;
+  border-top: var(--border-width-thin) solid var(--color-hairline);
+}
+
+.answer-row:first-child {
+  border-top: 0;
+}
+
+.answer-row dt {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.answer-row dd {
+  min-width: 0;
+  margin: 0;
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-base);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.answer-row .answer-empty {
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-faint);
+}
+
+.answer-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  white-space: normal;
+}
+
+.answer-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 2px 12px;
+  border-radius: var(--radius-round);
+  font-size: var(--text-sm);
+  background-color: var(--color-fill-soft);
+}
+
+/* Narrow: the label goes above its answer. */
+@media (max-width: 600px) { /* = --breakpoint-sm */
+  .answer-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}

@@ -1,64 +1,46 @@
-.plans-create {
+.trainee-plans {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
 }
 
 .plans-error {
-  margin: 0 0 var(--space-3);
+  margin: 0;
   font-size: var(--text-sm);
   color: var(--color-error);
 }
 
 .plans-message {
+  margin: 0;
   color: var(--color-text-muted);
 }
 
-.plans-list {
+/* No plans yet: the AI draft, and the other ways to start beside it. */
+.plans-start-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.plans-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.plans-weeks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   margin: 0;
   padding: 0;
   list-style: none;
-  border-top: var(--border-width-thin) solid var(--color-border);
 }
 
-.plans-item {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2) var(--space-3);
-  padding: var(--space-3) 0;
-  border-bottom: var(--border-width-thin) solid var(--color-border);
-}
-
-.plans-item-main {
-  display: flex;
-  flex: 1 1 320px;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.plans-item-week {
-  font-weight: var(--font-weight-semibold);
-}
-
-.plans-item-size {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
-.plans-item-open {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--touch-target-min);
-  padding: 0 var(--space-3);
-  font-weight: var(--font-weight-semibold);
-  text-decoration: none;
-  border: var(--border-width-thin) solid var(--color-border);
-}
-
-.plans-item-open:active {
-  background-color: var(--color-primary-soft);
+@media (max-width: 1180px) { /* = --breakpoint-dash-grid */
+  .plans-start-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

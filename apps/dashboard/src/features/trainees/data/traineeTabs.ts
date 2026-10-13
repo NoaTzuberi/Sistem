@@ -9,5 +9,10 @@ export function traineeTabLabel(tab: TraineeTab, copy: (typeof traineesCopy)['he
   return shared.coach.tabs[tab];
 }
 
+/** The id of a section's tab on her page (its panel is labelled by it). */
+export function traineeTabId(tab: TraineeTab): string {
+  return `trainee-tab-${tab}`;
+}
+
 /** The drawer's order: what she works on first (the trainee page keeps its own order). */
 export const DRAWER_TABS: readonly TraineeTab[] = ['plans', 'logs', 'metrics', 'nutrition', 'onboarding', 'achievements'];
