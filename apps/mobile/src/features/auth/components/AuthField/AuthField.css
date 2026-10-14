@@ -70,7 +70,8 @@
 }
 
 .auth-field-helper,
-.auth-field-error {
+.auth-field-error,
+.auth-field-status {
   padding-inline: var(--space-3);
   font-size: var(--text-sm);
 }
@@ -81,6 +82,10 @@
 
 .auth-field-error {
   color: var(--color-error);
+}
+
+.auth-field-status {
+  color: var(--color-primary-deep);
 }
 
 /* Browser autofill paints its own square background over the pill. It can't be turned off, only

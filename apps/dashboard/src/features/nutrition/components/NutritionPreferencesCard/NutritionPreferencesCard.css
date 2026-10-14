@@ -1,0 +1,57 @@
+.nutrition-prefs-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.nutrition-prefs-tile {
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-tile);
+  background-color: var(--color-fill-soft);
+}
+
+.nutrition-prefs-tile dt {
+  margin-block-end: 3px;
+  font-size: var(--text-2xs);
+  color: var(--color-text-muted);
+}
+
+.nutrition-prefs-tile dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.nutrition-pref-pink {
+  background-color: var(--color-primary-tint);
+}
+
+.nutrition-pref-pink dd {
+  color: var(--color-primary-deep);
+}
+
+.nutrition-pref-amber {
+  background-color: var(--color-warning-soft);
+}
+
+.nutrition-pref-amber dd {
+  color: var(--color-warning-text);
+}
+
+.nutrition-pref-blue {
+  background-color: var(--color-stat-blue-mist);
+}
+
+.nutrition-pref-blue dd {
+  color: var(--color-stat-blue);
+}
+
+.nutrition-prefs-missing {
+  margin: 0 2px;
+  font-size: var(--text-2xs);
+  line-height: var(--line-height-base);
+  color: var(--color-text-faint);
+}

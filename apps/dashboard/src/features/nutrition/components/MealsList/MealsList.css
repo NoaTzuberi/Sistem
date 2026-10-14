@@ -1,0 +1,98 @@
+.meals-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.meals-list-meal {
+  --meal-color: var(--color-ach-workouts-light);
+  display: grid;
+  grid-template-columns: 4px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  border-radius: var(--radius-tile);
+  background-color: var(--surface-meal);
+  transition:
+    transform var(--transition-lift) var(--ease-press),
+    background-color var(--transition-hover) ease,
+    box-shadow var(--transition-hover) ease;
+}
+
+.meals-list-tone-2 {
+  --meal-color: var(--color-ach-perfect-light);
+}
+
+.meals-list-tone-3 {
+  --meal-color: var(--color-ach-streaks-light);
+}
+
+.meals-list-tone-4 {
+  --meal-color: var(--color-ach-records-light);
+}
+
+.meals-list-strip {
+  width: 4px;
+  height: 32px;
+  border-radius: var(--radius-round);
+  background-color: var(--meal-color);
+}
+
+.meals-list-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.meals-list-name {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.meals-list-portions {
+  overflow: hidden;
+  font-size: var(--text-2xs);
+  color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meals-list-kcal {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.meals-list-kcal small {
+  font-size: var(--text-2xs);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-muted);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .meals-list-meal:hover {
+    background-color: var(--color-card);
+    box-shadow: var(--shadow-qv-lift);
+    transform: translateY(-2px);
+  }
+}
+
+@media (max-width: 760px) {
+  .meals-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meals-list-meal {
+    transition: none;
+  }
+
+  .meals-list-meal:hover {
+    transform: none;
+  }
+}

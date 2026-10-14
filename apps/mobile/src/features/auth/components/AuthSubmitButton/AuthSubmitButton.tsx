@@ -5,13 +5,14 @@ import './AuthSubmitButton.css';
 
 interface AuthSubmitButtonProps {
   loading?: boolean;
+  disabled?: boolean;
   children: ReactNode;
 }
 
 /** The pink pill that submits the login / sign-up form; its arrow points along the reading direction. */
-export function AuthSubmitButton({ loading = false, children }: AuthSubmitButtonProps) {
+export function AuthSubmitButton({ loading = false, disabled = false, children }: AuthSubmitButtonProps) {
   return (
-    <button type="submit" className="auth-submit" disabled={loading} aria-busy={loading}>
+    <button type="submit" className="auth-submit" disabled={loading || disabled} aria-busy={loading}>
       {loading ? (
         <Spinner size="sm" />
       ) : (

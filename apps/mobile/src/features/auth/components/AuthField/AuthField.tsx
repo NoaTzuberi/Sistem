@@ -7,6 +7,7 @@ interface AuthFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
   icon: ReactNode;
   error?: string;
+  statusText?: string;
   helperText?: string;
   /** A control inside the pill, after the input (the "forgot" link). */
   trailing?: ReactNode;
@@ -16,11 +17,11 @@ interface AuthFieldProps extends InputHTMLAttributes<HTMLInputElement> {
 const KEYBOARD_OPEN_DELAY_MS = 300;
 
 /** The pill input of the login / sign-up card: round icon chip, input, optional trailing control. */
-export function AuthField({ label, icon, error, helperText, trailing, id, onFocus, ...rest }: AuthFieldProps) {
+export function AuthField({ label, icon, error, statusText, helperText, trailing, id, onFocus, ...rest }: AuthFieldProps) {
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const noteId = `${inputId}-note`;
-  const note = error ?? helperText;
+  const note = error ?? statusText ?? helperText;
 
   function handleFocus(event: FocusEvent<HTMLInputElement>) {
     onFocus?.(event);
@@ -52,7 +53,7 @@ export function AuthField({ label, icon, error, helperText, trailing, id, onFocu
         {trailing}
       </div>
       {note && (
-        <span id={noteId} className={error ? 'auth-field-error' : 'auth-field-helper'}>
+        <span id={noteId} className={error ? 'auth-field-error' : statusText ? 'auth-field-status' : 'auth-field-helper'}>
           {note}
         </span>
       )}

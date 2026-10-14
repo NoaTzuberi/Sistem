@@ -46,6 +46,7 @@ export interface RegisterPayload {
   name: string;
   email: string;
   password: string;
+  confirmPassword?: string;
   /** Device time zone (IANA). An unknown value falls back to the server default. */
   timezone?: string;
   /** The language on screen when she signed up (Phase 15); default Hebrew. */
@@ -78,7 +79,8 @@ export type OnboardingStepId =
   | 'recovery'
   | 'equipment'
   | 'nutrition_preferences'
-  | 'review';
+  | 'review'
+  | 'starting_photo';
 
 export type WeightUnit = 'kg' | 'lb';
 export type DistanceUnit = 'km' | 'miles';
@@ -657,6 +659,11 @@ export interface ProgressPhoto extends PrivatePhoto {
   pose: ProgressPhotoPose;
 }
 
+/** One private baseline photo for the trainee; its date is the containing BodyMetric date. */
+export interface StartingPhoto extends PrivatePhoto {
+  tag: 'starting';
+}
+
 /** One day of body tracking — at most one per trainee per date. */
 export interface BodyMetric {
   id: string;
@@ -669,6 +676,7 @@ export interface BodyMetric {
   measurements: Record<string, number>;
   /** At most one per pose, in front / side / back order. */
   photos: ProgressPhoto[];
+  startingPhoto?: StartingPhoto;
   notes?: string;
 }
 
@@ -852,7 +860,8 @@ export interface CoachWeekPlan {
   /** Coach-only split id (Phase 12b), when the plan follows one. */
   splitId: string | null;
   /** In the plan's own order. */
-  workouts: { id: string; status: WorkoutStatus }[];
+  /** dayOfWeek: 0 = Sunday … 6, or null for a workout without a set day. */
+  workouts: { id: string; status: WorkoutStatus; dayOfWeek: number | null }[];
   planned: number;
   completed: number;
   /** Days until the plan's week ends in her zone (0 = it ends today). */

@@ -32,6 +32,8 @@ export function traineesPath(filter?: string): string {
 
 /** Router state for a trainee's Plans tab: open the "new plan" week picker right away. */
 export const NEW_PLAN_STATE = { newPlan: true } as const;
+/** The same, with the picker on "from the AI draft" (the quick view's AI strip). */
+export const AI_PLAN_STATE = { newPlan: true, ai: true } as const;
 /** The same, with the picker in "duplicate last week" mode (the plan builder's header). */
 export const DUPLICATE_WEEK_STATE = { newPlan: true, duplicate: true } as const;
 

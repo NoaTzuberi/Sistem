@@ -1,0 +1,57 @@
+.filter-segment {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 3px;
+  border-radius: var(--radius-field);
+  background-color: var(--surface-notice-quiet);
+}
+
+/* The white thumb under the chosen half. It only ever moves by transform. */
+.filter-segment-thumb {
+  position: absolute;
+  inset-block: 3px;
+  inset-inline-start: 3px;
+  width: calc(50% - 3px);
+  border-radius: var(--radius-segment);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-segment-thumb);
+  transition: transform var(--transition-segment) var(--ease-press);
+}
+
+/* The second half is further along the reading direction (transforms have no logical form). */
+:root[dir='rtl'] .filter-segment-second .filter-segment-thumb {
+  transform: translateX(-100%);
+}
+
+:root[dir='ltr'] .filter-segment-second .filter-segment-thumb {
+  transform: translateX(100%);
+}
+
+.filter-segment-option {
+  position: relative;
+  min-height: 30px;
+  border-radius: var(--radius-segment);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+/* 30px high; the pseudo-element keeps a 44px touch target (the button is its anchor). */
+.filter-segment-option::after {
+  content: '';
+  position: absolute;
+  inset: -7px 0;
+}
+
+.filter-segment-option:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filter-segment-thumb {
+    transition: none;
+  }
+}

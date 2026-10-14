@@ -1,0 +1,211 @@
+/* The sidebar cards share this shell. */
+.nb-side-card {
+  padding: 18px;
+  border-radius: var(--radius-panel);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+}
+
+.nb-side-title {
+  margin: 0 0 12px;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.nb-budget-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.nb-budget-ring {
+  position: relative;
+  flex: none;
+  width: 84px;
+  height: 84px;
+}
+
+.nb-budget-ring svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.nb-budget-track,
+.nb-budget-value {
+  fill: none;
+  stroke-width: 8;
+}
+
+.nb-budget-track {
+  stroke: var(--color-meter-track);
+}
+
+.nb-budget-value {
+  stroke: var(--color-primary);
+  stroke-linecap: round;
+}
+
+.nb-budget-value[data-over] {
+  stroke: var(--color-qv-attention-avatar-to);
+}
+
+.nb-budget-pct {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.nb-budget-text {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+/* Missing: strong solid pink · over: amber · exact: Cherry Rose on soft pink. */
+.nb-budget-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 12px;
+  border-radius: var(--radius-chart-tip);
+  background-color: var(--color-primary);
+  box-shadow: var(--shadow-nb-alert);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.4;
+  color: var(--color-on-primary);
+}
+
+.nb-budget-alert[data-tone='over'] {
+  background-color: var(--color-warning-soft);
+  box-shadow: none;
+  color: var(--color-warning-text);
+}
+
+.nb-budget-alert[data-tone='exact'] {
+  background-color: var(--color-primary-soft);
+  box-shadow: none;
+  color: var(--color-primary-deep);
+}
+
+.nb-budget-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* --nb-line / --nb-line-text / --nb-line-soft: the group's colors (the one portion map). */
+.nb-budget-line {
+  --nb-line: var(--color-portion-protein);
+  --nb-line-text: var(--color-portion-protein-text);
+  --nb-line-soft: var(--color-portion-protein-soft);
+}
+
+.nb-budget-line[data-group='carb'] {
+  --nb-line: var(--color-portion-carb);
+  --nb-line-text: var(--color-portion-carb-text);
+  --nb-line-soft: var(--color-portion-carb-soft);
+}
+
+.nb-budget-line[data-group='fat'] {
+  --nb-line: var(--color-portion-fat);
+  --nb-line-text: var(--color-portion-fat-text);
+  --nb-line-soft: var(--color-portion-fat-soft);
+}
+
+.nb-budget-line-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+  font-size: var(--text-sm);
+}
+
+.nb-budget-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-round);
+  background-color: var(--nb-line);
+}
+
+.nb-budget-name {
+  flex: 1;
+  font-weight: var(--font-weight-medium);
+}
+
+.nb-budget-count {
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--nb-line-text);
+}
+
+.nb-budget-state {
+  padding: 1px 7px;
+  border-radius: var(--radius-round);
+  font-size: var(--text-2xs);
+  font-style: normal;
+  font-weight: var(--font-weight-bold);
+}
+
+.nb-budget-state[data-state='missing'] {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.nb-budget-state[data-state='over'] {
+  background-color: var(--color-warning-soft);
+  color: var(--color-warning-text);
+}
+
+.nb-budget-state[data-state='ok'] {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary-deep);
+}
+
+.nb-budget-bar {
+  position: relative;
+  display: block;
+  height: 10px;
+  overflow: hidden;
+  border-radius: var(--radius-round);
+  background-color: var(--nb-line-soft);
+}
+
+.nb-budget-fill {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: var(--nb-share);
+  border-radius: var(--radius-round);
+  background-color: var(--nb-line);
+}
+
+.nb-budget-bar[data-over] .nb-budget-fill {
+  background-image: repeating-linear-gradient(135deg, var(--nb-line) 0 6px, color-mix(in srgb, var(--nb-line) 70%, var(--color-card)) 6px 12px);
+}
+
+.nb-budget-snack {
+  display: flex;
+  justify-content: space-between;
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 0.5px solid var(--color-hairline);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.nb-budget-snack b {
+  color: var(--color-portion-snack-text);
+}

@@ -35,6 +35,12 @@
   object-fit: cover;
 }
 
+/* A wide clip whose subject stands at its right edge: keep that side on a tall screen. */
+.onboarding-background-media-focus-right {
+  /* physical: follows the picture, which is never mirrored for RTL */
+  object-position: 90% center;
+}
+
 .onboarding-background-video-layer {
   opacity: 0;
   transition: opacity var(--transition-base) var(--ease-out);

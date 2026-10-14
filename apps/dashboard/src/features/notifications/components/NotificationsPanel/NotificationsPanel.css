@@ -1,0 +1,188 @@
+/* A light veil over the page while the panel is open; a press on it closes the panel. */
+.notice-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-notifications);
+  background-color: var(--color-notice-scrim);
+  -webkit-backdrop-filter: var(--blur-notice-scrim);
+  backdrop-filter: var(--blur-notice-scrim);
+  animation: notice-fade var(--transition-notice) ease;
+}
+
+/* Frosted glass, opening inward from the bell's corner (its container is positioned). It starts
+   at the bell's own top edge, covering the bell while it is open. */
+.notice-panel {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  z-index: var(--z-notifications);
+  display: flex;
+  flex-direction: column;
+  width: min(398px, calc(100vw - 24px));
+  max-height: min(560px, calc(100vh - 32px));
+  /* The list scrolls inside; nothing shows past the rounded corners. */
+  overflow: clip;
+  border-radius: var(--radius-notice-panel);
+  font-size: var(--text-sm);
+  background-color: var(--surface-notice-panel);
+  -webkit-backdrop-filter: var(--blur-notice-panel);
+  backdrop-filter: var(--blur-notice-panel);
+  box-shadow: var(--shadow-notice-panel);
+  animation: notice-panel-in var(--transition-notice-panel) var(--ease-press);
+}
+
+.notice-panel:focus {
+  outline: none;
+}
+
+/* Grows from the bell's corner (transform-origin has no logical form). */
+:root[dir='rtl'] .notice-panel {
+  transform-origin: top left; /* physical: the bell's side in right-to-left */
+}
+
+:root[dir='ltr'] .notice-panel {
+  transform-origin: top right; /* physical: the bell's side in left-to-right */
+}
+
+@keyframes notice-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+}
+
+@keyframes notice-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.notice-panel-head {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px 10px;
+}
+
+.notice-panel-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.notice-panel-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0;
+  font-size: var(--text-panel-title);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.notice-panel-count {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0;
+  color: var(--color-text-muted);
+}
+
+/* "Mark all as read": a pink text button, tall enough to press. */
+.notice-panel-link {
+  flex: none;
+  min-height: 32px;
+  padding: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary-deep);
+  transition: transform var(--transition-press) var(--ease-press);
+}
+
+.notice-panel-link:disabled {
+  color: var(--color-text-faint);
+}
+
+.notice-panel-link:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.notice-panel-link:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.notice-panel-body {
+  padding: 0 12px 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.notice-group {
+  margin-top: 6px;
+}
+
+.notice-group-title {
+  margin: 10px 8px 8px;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.notice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notice-panel-message {
+  margin: 0;
+  padding: 12px 8px;
+  color: var(--color-text-muted);
+}
+
+.notice-panel-empty {
+  padding: 40px 20px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.notice-panel-empty p {
+  margin: 0;
+}
+
+.notice-panel-empty .notice-panel-empty-title {
+  margin-bottom: 4px;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+/* Narrow: across the screen, 12px from each side, under the top line. */
+@media (max-width: 640px) { /* = --breakpoint-md */
+  .notice-panel {
+    position: fixed;
+    inset-block-start: 12px;
+    inset-inline: 12px;
+    width: auto;
+  }
+}
+
+/* Reduced motion: opacity only. */
+@media (prefers-reduced-motion: reduce) {
+  .notice-panel {
+    animation: notice-fade var(--transition-notice) ease;
+  }
+
+  .notice-panel-link {
+    transition: none;
+  }
+
+  .notice-panel-link:active:not(:disabled) {
+    transform: none;
+  }
+}

@@ -10,8 +10,15 @@
   color: var(--color-text);
 }
 
+.input-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
 /* 16px minimum font size: iOS zooms the page on focus below that. */
 .input-field {
+  width: 100%;
   min-height: var(--touch-target-min);
   font-family: var(--font-family-body);
   font-size: var(--text-base);
@@ -23,6 +30,10 @@
   transition:
     background-color var(--transition-fast) var(--ease-standard),
     border-color var(--transition-fast) var(--ease-standard);
+}
+
+.input-control-trailing .input-field {
+  padding-inline-end: calc(var(--space-3) + 2.5rem);
 }
 
 .input-field::placeholder {
@@ -53,4 +64,9 @@
 .input-error {
   font-size: var(--text-sm);
   color: var(--color-error);
+}
+
+.input-status {
+  font-size: var(--text-sm);
+  color: var(--color-primary-deep);
 }

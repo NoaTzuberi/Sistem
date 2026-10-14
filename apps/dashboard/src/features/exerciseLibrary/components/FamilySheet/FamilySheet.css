@@ -1,0 +1,56 @@
+/* The whole screen, on the canvas; out: fast, plain ease-out. */
+.family-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-drawer);
+  padding: 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background-color: var(--color-canvas);
+  transition: transform var(--transition-drawer-out) var(--ease-drawer-out);
+}
+
+/* Parked off the reading-start edge (transforms have no logical form). */
+:root[dir='rtl'] .family-sheet {
+  transform: translateX(100%);
+}
+
+:root[dir='ltr'] .family-sheet {
+  transform: translateX(-100%);
+}
+
+/* In: the drawer curve, a little slower. */
+:root .family-sheet.family-sheet-shown {
+  transform: none;
+  transition: transform var(--transition-drawer-in) var(--ease-drawer);
+}
+
+.family-sheet-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target-min);
+  margin-bottom: 8px;
+  padding: 0 4px;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  transition: transform var(--transition-press) var(--ease-press);
+}
+
+.family-sheet-back:active {
+  transform: scale(0.97);
+}
+
+.family-sheet-back:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Reduced motion: it appears without sliding. */
+@media (prefers-reduced-motion: reduce) {
+  .family-sheet,
+  :root .family-sheet.family-sheet-shown,
+  .family-sheet-back {
+    transition: none;
+  }
+}

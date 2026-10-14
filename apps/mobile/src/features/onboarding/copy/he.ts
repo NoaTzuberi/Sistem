@@ -64,7 +64,6 @@ export const he = {
     height: 'גובה (ס״מ)',
     weight: 'משקל',
     gender: 'מגדר (לא חובה)',
-    selectPlaceholder: 'בחירה...',
     preferredUnits: 'יחידות מועדפות',
   },
   goals: {
@@ -109,5 +108,11 @@ export const he = {
   review: {
     title: 'פרופיל ה־Sistem שלך מוכן.',
     body: 'Sistem תשתמש במטרות, בלו״ז, בפעילויות, בהעדפות ובציוד שלך כדי לבנות חוויית אימון מתאימה יותר.',
+  },
+  startingPhoto: {
+    title: 'תמונת התחלה',
+    explanation: 'התמונה פרטית, גלויה רק לך ולמאמנת שלך, ותעזור לכן להשוות את ההתקדמות שלך.',
+    upload: 'צילום / העלאת תמונה',
+    skip: 'אדלג בינתיים',
   },
 } as const;

@@ -1,0 +1,124 @@
+.family-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding-block: 10px;
+  padding-inline: 14px 12px;
+  border-radius: var(--radius-card);
+  color: var(--color-text);
+  text-align: start;
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+  transition:
+    transform var(--transition-press) var(--ease-press),
+    box-shadow var(--transition-notice) ease;
+}
+
+.family-row[aria-current='true'] {
+  box-shadow: var(--shadow-row-selected);
+}
+
+.family-row-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.family-row-name {
+  /* Sized to its text, so an English name starts at the reading edge in both languages. */
+  align-self: flex-start;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.family-row-meta {
+  margin-top: 2px;
+  overflow: hidden;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.family-row-pattern {
+  font-weight: var(--font-weight-semibold);
+  color: var(--pattern-color);
+}
+
+.pattern-group-none .family-row-pattern {
+  color: var(--color-text-muted);
+}
+
+.family-row-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.family-row-flag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: var(--radius-round);
+  font-size: var(--text-2xs);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
+.family-row-flag-warning {
+  color: var(--color-warning-text);
+  background-color: var(--color-warning-soft);
+}
+
+.family-row-flag-quiet {
+  color: var(--color-text-muted);
+  background-color: var(--color-fill-soft);
+  box-shadow: inset 0 0 0 var(--border-width-thin) var(--color-dash-outline);
+}
+
+.family-row-count {
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-faint);
+  white-space: nowrap;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .family-row:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-row-hover);
+  }
+
+  .family-row[aria-current='true']:hover {
+    box-shadow: var(--shadow-row-selected);
+  }
+}
+
+/* After the hover rules: the press wins while the pointer is still over the row. */
+.family-row:active {
+  transform: scale(0.98);
+}
+
+.family-row:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .family-row {
+    transition: none;
+  }
+
+  .family-row:hover,
+  .family-row:active {
+    transform: none;
+  }
+}

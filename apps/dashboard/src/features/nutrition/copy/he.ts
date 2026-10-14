@@ -149,9 +149,6 @@ export const he = {
   preferencesTitle: 'ההעדפות שלה (מהשאלון)',
   issuesTitle: 'לפני פרסום',
   noIssues: 'מוכן לפרסום.',
-  tabTitle: 'תוכנית תזונה',
-  tabEmpty: 'עדיין אין תוכנית תזונה.',
-  openBuilder: 'פתיחת בונה התזונה',
   foodsTitle: 'רשימת מזון',
   foodsIntro: 'שורה אחת = מנה אחת. אפשר להחליף כל פריט בפריט אחר מאותה קבוצה.',
   showArchived: 'הצגת פריטים בארכיון',
@@ -207,4 +204,88 @@ export const he = {
   limitRate: 'אחוז משקל הגוף לשבוע',
   limitMaxDeficit: 'הגירעון הגדול ביותר',
   limitFloor: 'הרצפה',
+  // The builder redesign (coach dashboard design, round 2). Wording from the approved design;
+  // lines marked PLACEHOLDER are not in it and wait for the owner.
+  builder: {
+    title: 'תוכנית תזונה',
+    back: 'חזרה למתאמנת',
+    statusDraft: 'טיוטה',
+    statusLive: 'פורסמה',
+    neverPublished: 'מעולם לא פורסמה',
+    saving: 'שומר…',
+    saved: 'נשמר ✓',
+    saveFailed: 'לא נשמר',
+    retry: 'ניסיון חוזר',
+    blockers: plural({ one: 'דבר אחד לפני פרסום', two: '2 דברים לפני פרסום', other: '{count} דברים לפני פרסום' }),
+    stepsLabel: 'שלבי התוכנית', // PLACEHOLDER (screen readers)
+    step1: 'יעד קלורי',
+    step2: 'ארוחות',
+    step3: 'הודעה וטיפים',
+    mealCount: plural({ one: 'ארוחה אחת', two: '2 ארוחות', other: '{count} ארוחות' }),
+    tipCount: plural({ one: 'טיפ אחד', two: '2 טיפים', other: '{count} טיפים' }),
+    noTargetYet: 'עוד לא נקבע', // PLACEHOLDER
+    fromQuestionnaire: 'מהשאלון',
+    optional: 'רשות',
+    weight: 'משקל',
+    height: 'גובה',
+    targetWeight: 'משקל יעד',
+    timeline: 'פרק זמן',
+    kg: 'ק״ג',
+    cm: 'ס״מ',
+    years: 'שנים',
+    weeksUnit: 'שבועות',
+    activityShort: 'פעילות',
+    goalLabel: 'מטרה',
+    dailyTarget: 'יעד יומי',
+    lessKcal: 'פחות 50 קק״ל', // PLACEHOLDER (screen readers)
+    moreKcal: 'עוד 50 קק״ל', // PLACEHOLDER (screen readers)
+    useSuggestion: 'שימוש בהצעה · {kcal}',
+    fromSuggestion: '{diff} מההצעה',
+    backToSuggestion: 'חזרה ל־{kcal}',
+    portionsApprox: '≈ {kcal}',
+    mealNumber: 'ארוחה {number}', // PLACEHOLDER (screen readers)
+    newMealName: 'ארוחה {number}',
+    newOptionLabel: 'אפשרות {letter}',
+    optionLetters: ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ז׳', 'ח׳'],
+    removeMealConfirm: 'למחוק את ״{name}״? יש בה מנות.', // PLACEHOLDER
+    mealTools: 'פעולות על הארוחה', // PLACEHOLDER (screen readers)
+    removeLess: '{group} −½', // screen readers
+    addMore: '{group} +½', // screen readers
+    previewTitle: 'כך היא תראה את זה',
+    previewEmpty: 'ההודעה שלך תופיע כאן', // PLACEHOLDER
+    tipPlaceholder: 'טיפ חדש…', // PLACEHOLDER
+    tipAdd: 'הוספה',
+    budgetTitle: 'חלוקת המנות', // PLACEHOLDER
+    budgetAllocated: '{allocated} / {target} קק״ל חולקו לארוחות',
+    budgetNoTarget: 'קבעי יעד קלורי כדי לראות כמה מנות לחלק.', // PLACEHOLDER
+    budgetMissing: 'חסרות {list}',
+    budgetOver: 'עודף של {list}', // PLACEHOLDER
+    budgetExact: 'כל המנות חולקו בדיוק',
+    budgetPending: 'החלוקה מתעדכנת אחרי השמירה…', // PLACEHOLDER
+    statusMissing: 'חסר',
+    statusOver: 'עודף',
+    checkTarget: 'נקבע יעד קלורי', // PLACEHOLDER
+    checkPortions: 'כל המנות חולקו', // PLACEHOLDER
+    checkMeals: 'לפחות ארוחה אחת', // PLACEHOLDER
+    checkIssues: 'הארוחות תקינות', // PLACEHOLDER
+    checkMessage: 'הודעה אליה',
+    noPreferences: 'היא לא ענתה על שאלות התזונה',
+  },
+  tab: {
+    // The trainee's Nutrition tab (design round: Body / Achievements / Nutrition). Wording from the design brief.
+    currentPlan: 'התוכנית הנוכחית',
+    kcalPerDay: 'קק״ל ליום',
+    // The plan is portions, not grams: the bars count portions a day.
+    portionsUnit: 'מנות',
+    mealsADay: '{meals} ביום',
+    editInBuilder: 'עריכה בבונה התזונה',
+    newPlan: 'תוכנית חדשה',
+    preferencesTitle: 'ההעדפות שלה',
+    fromQuestionnaire: 'מהשאלון',
+    notSpecified: 'לא צוין:',
+    emptyTitle: 'עדיין אין תוכנית תזונה',
+    emptyFromPreferences: 'נבנה לה תוכנית לפי ההעדפות מהשאלון: {list}.',
+    buildPlan: 'בניית תוכנית תזונה',
+    aiDraft: 'טיוטת AI לפי השאלון',
+  },
 } as const;

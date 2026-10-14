@@ -1,0 +1,145 @@
+/* Cherry Rose → Neon Pink → light pink, a soft peach / lilac glow and a faint dot pattern toward the reading start. */
+.ach-hero {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 20px;
+  align-items: center;
+  padding: 26px;
+  overflow: hidden;
+  border-radius: var(--radius-notice-panel);
+  background-image: var(--gradient-ach-hero);
+  box-shadow: var(--shadow-ach-hero);
+  color: var(--color-on-primary);
+}
+
+.ach-hero::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -40%;
+  background-image: var(--gradient-ach-hero-glow);
+  filter: var(--blur-ach-glow);
+  pointer-events: none;
+}
+
+.ach-hero::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background-image: radial-gradient(var(--color-ach-hero-dots) 1px, transparent 1.5px);
+  background-size: 18px 18px;
+  opacity: 0.18;
+  -webkit-mask-image: linear-gradient(to left, var(--color-text), transparent 70%);
+  mask-image: linear-gradient(to left, var(--color-text), transparent 70%);
+  pointer-events: none;
+}
+
+[dir='ltr'] .ach-hero::after {
+  -webkit-mask-image: linear-gradient(to right, var(--color-text), transparent 70%);
+  mask-image: linear-gradient(to right, var(--color-text), transparent 70%);
+}
+
+.ach-hero-main {
+  min-width: 0;
+}
+
+.ach-hero-eyebrow {
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-on-hero-muted);
+}
+
+.ach-hero-count {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  margin: 4px 0 14px;
+  font-size: var(--text-base);
+  color: var(--color-on-hero-muted);
+}
+
+.ach-hero-number {
+  font-size: var(--text-hero);
+  font-weight: var(--font-weight-light);
+  font-variant-numeric: tabular-nums;
+  line-height: 0.9;
+  letter-spacing: var(--letter-spacing-display);
+  color: var(--color-on-primary);
+}
+
+.ach-hero-xp {
+  max-width: 460px;
+  height: 10px;
+  overflow: hidden;
+  border-radius: var(--radius-round);
+  background-color: var(--surface-on-hero-track);
+}
+
+/* Full width, scaled to the share unlocked from the reading start. */
+.ach-hero-xp-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-round);
+  background-image: var(--gradient-xp);
+  box-shadow: var(--shadow-xp);
+  transform: scaleX(var(--xp));
+  /* physical: transform-origin has no logical keyword — the bar grows from the reading start */
+  transform-origin: right;
+}
+
+[dir='ltr'] .ach-hero-xp-fill {
+  transform-origin: left;
+}
+
+.ach-hero-xp-fill.is-intro {
+  animation: ach-hero-xp-grow var(--intro-xp) var(--ease-press) both;
+}
+
+@keyframes ach-hero-xp-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.ach-hero-next {
+  margin: 12px 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-on-hero-muted);
+}
+
+.ach-hero-next b {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-on-primary);
+}
+
+.ach-hero-side {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+@media (max-width: 760px) {
+  .ach-hero {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 20px;
+  }
+
+  .ach-hero-number {
+    font-size: var(--text-goal);
+  }
+
+  .ach-hero-side > * {
+    flex: 1;
+    width: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ach-hero-xp-fill.is-intro {
+    animation: none;
+  }
+}

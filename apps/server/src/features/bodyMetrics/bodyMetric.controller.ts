@@ -11,6 +11,7 @@ import {
   listBodyMetricsForTrainee,
   removeProgressPhoto,
   saveBodyMetric,
+  setStartingPhoto,
   setProgressPhoto,
 } from './bodyMetric.service';
 import { sendError } from '../../i18n';
@@ -78,6 +79,11 @@ export const putMyProgressPhoto = withDate(async (req, res, date) => {
     return;
   }
   await sendSavedDay(res, req.userId!, await setProgressPhoto(req.userId!, date, pose.value, req.body as Buffer));
+});
+
+/** The body is the already compressed image; only this trainee can create her baseline. */
+export const putMyStartingPhoto = withDate(async (req, res, date) => {
+  sendDay(res, await setStartingPhoto(req.userId!, date, req.body as Buffer));
 });
 
 export const deleteMyProgressPhoto = withDate(async (req, res, date) => {

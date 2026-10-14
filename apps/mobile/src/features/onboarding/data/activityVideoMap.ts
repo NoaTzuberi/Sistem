@@ -9,6 +9,17 @@ import onboardingMedia from './onboardingMedia.json';
  * hand. Only URLs are bundled; the video files themselves never are. Every activity
  * has a clip except 'other_activity', which intentionally has none.
  */
+// How a clip is shown, tuned by eye per clip (the files themselves are not re-cut).
+const CLIP_TUNING: Partial<Record<string, Pick<OnboardingMedia, 'startAt' | 'focus'>>> = {
+  // Opens on an empty wall: the hands reach the bar after about 2 seconds.
+  calisthenics: { startAt: 2 },
+  // The battle-ropes clip is wide and he stands at its right edge: a centered crop cuts him off.
+  functional_training: { focus: 'right' },
+};
+
 export const ACTIVITY_VIDEO_MAP: Partial<Record<string, OnboardingMedia>> = Object.fromEntries(
-  Object.entries(onboardingMedia).map(([activityId, { video, poster }]) => [activityId, { video, poster }]),
+  Object.entries(onboardingMedia).map(([activityId, { video, poster }]) => [
+    activityId,
+    { video, poster, ...CLIP_TUNING[activityId] },
+  ]),
 );

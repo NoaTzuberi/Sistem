@@ -1,102 +1,59 @@
-import { useCallback, useState } from 'react';
-import { fill, formatDateOnly, measurementDays, measurementLabel, measurementPoints, poseLabel, sharedCopy, todayInTimezone, useCopy, useLanguage, useLoad, weightPoints } from '@sistem/shared';
-import { listTraineeBodyMetrics } from '../../../../services/coach/coachService';
-import { Button } from '../../../../components/common/Button/Button';
-import { BodyTrendChart } from '../BodyTrendChart/BodyTrendChart';
-import { ProgressPhotos } from '../ProgressPhotos/ProgressPhotos';
+import type { BodyMetricList } from '@sistem/types';
+import { sharedCopy, todayInTimezone, useCopy } from '@sistem/shared';
+import { PillButton } from '../../../../components/common/PillButton/PillButton';
+import { useStatsIntro } from '../../../stats/hooks/useStatsIntro';
+import { summarizeBody } from '../../data/bodySummary';
+import { useBodyMetrics } from '../../hooks/useBodyMetrics';
+import { BodyRecordsTable } from '../BodyRecordsTable/BodyRecordsTable';
+import { BodySummaryTiles } from '../BodySummaryTiles/BodySummaryTiles';
+import { MeasurementsCard } from '../MeasurementsCard/MeasurementsCard';
+import { ProgressPhotosCard } from '../ProgressPhotosCard/ProgressPhotosCard';
+import { WeightTrendCard } from '../WeightTrendCard/WeightTrendCard';
 import './BodyTracking.css';
-import { traineesCopy } from '../../copy';
 
 interface BodyTrackingProps {
   traineeId: string;
+  traineeName: string;
   /** The trainee's time zone: chart ranges end on her today. */
   timezone: string;
 }
 
 /**
- * The Body tab (Phase 10, PRD §6): weight and measurement charts, every entry as a
- * table, and the progress photos with compare. Read-only, kg / cm.
+ * The Body tab (Phase 10, PRD §6) as a data page: four numbers, her weight trend, her
+ * measurements, every record and the progress photos. Read-only, kg / cm.
  */
-export function BodyTracking({ traineeId, timezone }: BodyTrackingProps) {
-  const language = useLanguage();
+export function BodyTracking({ traineeId, traineeName, timezone }: BodyTrackingProps) {
   const shared = useCopy(sharedCopy);
-  const copy = useCopy(traineesCopy);
-  const load = useCallback(() => listTraineeBodyMetrics(traineeId), [traineeId]);
-  const { data: list, error, isLoading, reload } = useLoad(load, copy.bodyLoadError);
-  const [picked, setPicked] = useState<string | null>(null);
+  const { list, error, isLoading, reload } = useBodyMetrics(traineeId);
 
   if (isLoading && !list) return <p className="body-tracking-message">{shared.common.loading}</p>;
   if (!list) {
     return (
       <p className="body-tracking-message" role="alert">
-        {error} <Button size="sm" onClick={reload}>{shared.common.retry}</Button>
+        {error}{' '}
+        <PillButton size="sm" onClick={reload}>
+          {shared.common.retry}
+        </PillButton>
       </p>
     );
   }
-  if (list.items.length === 0) return <p className="body-tracking-message">{copy.bodyEmpty}</p>;
+  return <BodyTrackingContent list={list} traineeName={traineeName} timezone={timezone} />;
+}
 
+/** Mounted with the data, so the entrance (count-up, line drawing) starts when there is something to show. */
+function BodyTrackingContent({ list, traineeName, timezone }: { list: BodyMetricList; traineeName: string; timezone: string }) {
+  const intro = useStatsIntro('sistem.trainee.bodyIntroPlayed');
   const today = todayInTimezone(timezone);
-  const firstLogged = list.measurementIds.find((id) => measurementDays(list.items).some((day) => day.measurements[id] !== undefined));
-  const measurementId = picked ?? firstLogged ?? list.measurementIds[0];
 
   return (
     <div className="body-tracking">
-      <div className="body-tracking-charts">
-        <BodyTrendChart points={weightPoints(list.items, 'kg')} unit="kg" title={copy.weight} today={today} />
-        <div className="body-tracking-measurement">
-          <BodyTrendChart
-            key={measurementId}
-            points={measurementPoints(list.items, measurementId, 'cm')}
-            unit="cm"
-            title={measurementLabel(measurementId, language)}
-            today={today}
-          />
-          <div className="body-tracking-measurement-picker" role="group" aria-label={copy.measurement}>
-            {list.measurementIds.map((id) => (
-              <button key={id} type="button" className="body-tracking-chip" aria-pressed={id === measurementId} onClick={() => setPicked(id)}>
-                {measurementLabel(id, language)}
-              </button>
-            ))}
-          </div>
-        </div>
+      <BodySummaryTiles summary={summarizeBody(list.items)} intro={intro} />
+      <div className="body-tracking-grid">
+        <WeightTrendCard metrics={list.items} today={today} intro={intro} />
+        <MeasurementsCard metrics={list.items} measurementIds={list.measurementIds} intro={intro} />
+        {list.items.length > 0 && <BodyRecordsTable metrics={list.items} measurementIds={list.measurementIds} />}
+        <ProgressPhotosCard metrics={list.items} traineeName={traineeName} />
       </div>
-
-      <section aria-label={copy.everyEntry}>
-        <h3 className="body-tracking-heading">{copy.entries}</h3>
-        <div className="body-tracking-scroll">
-          <table className="body-tracking-table">
-            <thead>
-              <tr>
-                <th scope="col">{copy.date}</th>
-                <th scope="col">{copy.weightKg}</th>
-                {list.measurementIds.map((id) => (
-                  <th key={id} scope="col">
-                    {fill(copy.cmSuffix, { label: measurementLabel(id, language) })}
-                  </th>
-                ))}
-                <th scope="col">{copy.photos}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.items.map((metric) => (
-                <tr key={metric.id}>
-                  <td>{formatDateOnly(metric.date, language)}</td>
-                  <td>{metric.weight ?? '—'}</td>
-                  {list.measurementIds.map((id) => (
-                    <td key={id}>{metric.measurements[id] ?? '—'}</td>
-                  ))}
-                  <td>{metric.photos.length > 0 ? metric.photos.map((photo) => poseLabel(photo.pose, language)).join(', ') : '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section aria-label={copy.progressPhotos}>
-        <h3 className="body-tracking-heading">{copy.progressPhotos}</h3>
-        <ProgressPhotos metrics={list.items} />
-      </section>
     </div>
   );
 }

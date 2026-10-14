@@ -1,0 +1,98 @@
+.tqv-facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0;
+}
+
+/* --tqv-fact: the icon square; --tqv-fact-mist: the corner cloud. Identity colors, not statuses. */
+.tqv-fact {
+  --tqv-fact: var(--color-primary);
+  --tqv-fact-mist: var(--color-stat-pink-mist);
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px 14px;
+  overflow: hidden;
+  border-radius: var(--radius-qv-tile);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+  transition:
+    transform var(--transition-hover) var(--ease-press),
+    box-shadow var(--transition-hover) ease;
+}
+
+.tqv-fact[data-fact='days'] {
+  --tqv-fact: var(--color-stat-purple);
+  --tqv-fact-mist: var(--color-stat-purple-mist);
+}
+
+.tqv-fact[data-fact='plan'] {
+  --tqv-fact: var(--color-stat-orange);
+  --tqv-fact-mist: var(--color-stat-orange-mist);
+}
+
+.tqv-fact[data-fact='consistency'] {
+  --tqv-fact: var(--color-stat-blue);
+  --tqv-fact-mist: var(--color-stat-blue-mist);
+}
+
+.tqv-fact::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset-block-start: -60px;
+  inset-inline-end: -50px;
+  width: 120px;
+  height: 120px;
+  border-radius: var(--radius-round);
+  background-color: var(--tqv-fact-mist);
+  filter: var(--blur-qv-tile);
+  pointer-events: none;
+}
+
+.tqv-fact-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-qv-icon);
+  background-color: var(--tqv-fact);
+  color: var(--color-on-primary);
+}
+
+.tqv-fact-label {
+  font-size: var(--text-2xs);
+  color: var(--color-text-muted);
+}
+
+.tqv-fact-value {
+  max-width: 100%;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.25;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tqv-fact:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-qv-lift);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tqv-fact {
+    transition: none;
+  }
+
+  .tqv-fact:hover {
+    transform: none;
+  }
+}

@@ -1,0 +1,106 @@
+.tqv-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-drawer);
+  background-color: var(--color-scrim);
+  opacity: 0;
+  transition: opacity var(--transition-drawer-out) ease;
+}
+
+.tqv-scrim-shown {
+  opacity: 1;
+  transition-duration: var(--transition-drawer-in);
+}
+
+/* Floats 12px inside the window, on the far side from the sidebar. Out: 200ms ease-out. */
+.tqv {
+  position: fixed;
+  inset-block: 12px;
+  inset-inline-end: 12px;
+  z-index: var(--z-drawer);
+  display: flex;
+  flex-direction: column;
+  width: min(var(--drawer-width), calc(100% - 24px));
+  overflow: hidden;
+  border-radius: var(--radius-drawer);
+  background-color: var(--color-quick-view-bg);
+  box-shadow: var(--shadow-float);
+  font-size: var(--text-sm);
+  transition: transform var(--transition-drawer-out) var(--ease-drawer-out);
+}
+
+/* Parked off the screen edge it hangs on: transforms have no logical form. */
+:root[dir='rtl'] .tqv {
+  transform: translateX(calc(-100% - 24px));
+}
+
+:root[dir='ltr'] .tqv {
+  transform: translateX(calc(100% + 24px));
+}
+
+/* In: 300ms on the drawer curve. */
+:root .tqv.tqv-shown {
+  transform: none;
+  transition: transform var(--transition-drawer-in) var(--ease-drawer);
+}
+
+/* A glass circle floating over the hero, at the top inline-end corner. */
+.tqv-close {
+  position: absolute;
+  z-index: var(--z-raised);
+  inset-block-start: 16px;
+  inset-inline-end: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-round);
+  background-color: var(--surface-qv-close);
+  -webkit-backdrop-filter: var(--blur-qv-glass);
+  backdrop-filter: var(--blur-qv-glass);
+  color: var(--color-text);
+  transition:
+    transform var(--transition-press) var(--ease-press),
+    background-color var(--transition-fast) ease;
+}
+
+.tqv-close:active {
+  transform: scale(0.97);
+}
+
+.tqv-close:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Only the body scrolls; the footer stays. */
+.tqv-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  padding: 0 16px 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.tqv-body > * {
+  flex: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tqv-close:hover {
+    background-color: var(--color-card);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root .tqv,
+  :root .tqv.tqv-shown,
+  .tqv-scrim,
+  .tqv-close {
+    transition: none;
+  }
+}

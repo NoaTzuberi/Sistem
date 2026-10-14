@@ -1,0 +1,62 @@
+/* The three step cards share this shell (they sit under the sticky header when scrolled to). */
+.nb-card {
+  min-width: 0;
+  padding: 22px;
+  border-radius: var(--radius-drawer);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+  scroll-margin-top: var(--nb-header-offset);
+}
+
+.nb-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.nb-card-number {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-field);
+  background-color: var(--color-primary-soft);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary-deep);
+}
+
+.nb-card-title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-tight);
+  outline: none;
+}
+
+.nb-card-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-inline-start: auto;
+}
+
+.nb-error {
+  margin: 12px 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-error);
+}
+
+@media (max-width: 760px) {
+  .nb-card {
+    padding: 18px 14px;
+  }
+
+  .nb-card-tools {
+    width: 100%;
+    margin-inline-start: 0;
+  }
+}

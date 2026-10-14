@@ -12,6 +12,7 @@ export const ONBOARDING_STEP_IDS = [
   'equipment',
   'nutrition_preferences',
   'review',
+  'starting_photo',
 ] as const satisfies readonly OnboardingStepId[];
 
 export const ONBOARDING_FIELDS = [
@@ -33,7 +34,7 @@ export const ONBOARDING_FIELDS = [
 ] as const;
 export type OnboardingField = (typeof ONBOARDING_FIELDS)[number];
 
-/** Which answers each step may save. 'welcome' and 'review' only record progress. */
+/** Which answers each step may save. Bookend and photo steps only record progress. */
 export const ONBOARDING_STEP_FIELDS: Record<OnboardingStepId, readonly OnboardingField[]> = {
   welcome: [],
   basic_profile: ['name', 'birthDate', 'height', 'weight', 'gender', 'units'],
@@ -49,6 +50,7 @@ export const ONBOARDING_STEP_FIELDS: Record<OnboardingStepId, readonly Onboardin
   // trainees who finished before it existed are never sent back.
   nutrition_preferences: ['nutritionPreferences', 'weightGoal'],
   review: [],
+  starting_photo: [],
 };
 
 // Fields that must be present to complete onboarding (the rest are optional).

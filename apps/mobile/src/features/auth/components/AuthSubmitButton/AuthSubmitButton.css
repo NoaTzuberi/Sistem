@@ -28,7 +28,8 @@
 }
 
 .auth-submit:disabled {
-  cursor: progress;
+  cursor: not-allowed;
+  opacity: var(--opacity-disabled);
 }
 
 /* The default spinner is pink on grey — on the pink button it is white. */

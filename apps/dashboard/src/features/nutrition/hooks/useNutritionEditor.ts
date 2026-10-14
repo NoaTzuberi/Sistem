@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import type { CoachNutritionPlanResponse, NutritionIssue } from '@sistem/types';
 import { NutritionRequestError } from '@sistem/api-client';
 import { applyNutritionTemplate, publishNutritionPlan, saveNutritionPlan } from '../../../services/coach/coachService';
@@ -6,6 +6,7 @@ import { assignSavedIds, draftFromPlan, emptyDraft, keysOf, toPayload } from '..
 import type { NutritionDraft } from '../nutritionDraft';
 import { getActiveLanguage } from '@sistem/shared';
 import { nutritionCopy } from '../copy';
+import { useAutosave } from './useAutosave';
 
 // Read when the text is needed (callbacks run later): the language on screen at that moment.
 const text = () => nutritionCopy[getActiveLanguage()];
@@ -98,21 +99,10 @@ export function useNutritionEditor(traineeId: string, initial: CoachNutritionPla
   const payloadJson = useMemo(() => JSON.stringify(toPayload(draft)), [draft]);
   const isDirty = payloadJson !== savedJson;
 
-  useEffect(() => {
-    if (!isDirty || isSaving || payloadJson === failedJson) return;
-    const timer = window.setTimeout(() => void save(), AUTOSAVE_DELAY_MS);
-    return () => window.clearTimeout(timer);
-  }, [isDirty, isSaving, payloadJson, failedJson, save]);
+  useAutosave({ isDirty, isSaving, payloadJson, failedJson, save, delayMs: AUTOSAVE_DELAY_MS });
 
-  // Leaving the builder inside the dashboard: send the last changes.
-  useEffect(() => () => void save(), [save]);
-
-  useEffect(() => {
-    if (!isDirty) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [isDirty]);
+  /** "Not saved · try again": sends the refused draft once more. */
+  const retry = useCallback(() => void save(), [save]);
 
   const publish = useCallback(async (): Promise<boolean> => {
     if (!(await save())) return false;
@@ -147,5 +137,5 @@ export function useNutritionEditor(traineeId: string, initial: CoachNutritionPla
   if (isSaving) saveStatus = 'saving';
   else if (isDirty) saveStatus = payloadJson === failedJson ? 'error' : 'unsaved';
 
-  return { response, draft, updateDraft, saveStatus, isDirty, saveIssues, error, save, publish, applyTemplate };
+  return { response, draft, updateDraft, saveStatus, isDirty, saveIssues, error, save, retry, publish, applyTemplate };
 }

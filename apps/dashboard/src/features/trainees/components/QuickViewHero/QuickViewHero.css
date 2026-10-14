@@ -1,0 +1,110 @@
+/* --tqv-cloud / --tqv-cloud-2: the two blobs behind it; --tqv-avatar-*: the avatar; --tqv-ink: the pill. */
+.tqv-hero {
+  --tqv-cloud: var(--color-qv-waiting-cloud);
+  --tqv-cloud-2: var(--color-qv-waiting-cloud-warm);
+  --tqv-avatar-from: var(--color-qv-waiting-avatar-from);
+  --tqv-avatar-to: var(--color-qv-waiting-avatar-to);
+  --tqv-ink: var(--color-primary-deep);
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 0 -16px;
+  padding: 28px 22px 20px;
+  text-align: center;
+}
+
+.tqv-hero[data-status='active'] {
+  --tqv-cloud: var(--color-qv-active-cloud);
+  --tqv-cloud-2: var(--color-qv-waiting-cloud);
+  --tqv-avatar-from: var(--color-qv-active-avatar-from);
+  --tqv-avatar-to: var(--color-qv-active-avatar-to);
+  --tqv-ink: var(--color-qv-active-ink);
+}
+
+.tqv-hero[data-status='attention'] {
+  --tqv-cloud: var(--color-qv-attention-cloud);
+  --tqv-cloud-2: var(--color-qv-attention-cloud-light);
+  --tqv-avatar-from: var(--color-qv-attention-avatar-from);
+  --tqv-avatar-to: var(--color-qv-attention-avatar-to);
+  --tqv-ink: var(--color-warning-text);
+}
+
+.tqv-hero[data-status='idle'] {
+  --tqv-cloud: var(--color-qv-inactive-cloud);
+  --tqv-cloud-2: var(--color-qv-inactive-cloud-dark);
+  --tqv-avatar-from: var(--color-qv-inactive-avatar-from);
+  --tqv-avatar-to: var(--color-qv-inactive-avatar-to);
+  --tqv-ink: var(--color-text-muted);
+}
+
+.tqv-hero::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0 0 -30px;
+  background-image:
+    radial-gradient(40% 55% at 30% 40%, var(--tqv-cloud), transparent 70%),
+    radial-gradient(40% 55% at 72% 50%, var(--tqv-cloud-2), transparent 70%);
+  filter: var(--blur-qv-cloud);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.tqv-hero-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 76px;
+  height: 76px;
+  border-radius: var(--radius-round);
+  background-image: linear-gradient(140deg, var(--tqv-avatar-from), var(--tqv-avatar-to));
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--color-card) 80%, transparent),
+    0 12px 28px color-mix(in srgb, var(--tqv-avatar-to) 25%, transparent);
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-on-primary);
+}
+
+.tqv-hero-name {
+  max-width: 100%;
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+  font-size: var(--text-2xl);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.1;
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.tqv-hero-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.tqv-hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--radius-round);
+  background-color: var(--surface-qv-pill);
+  font-weight: var(--font-weight-semibold);
+  color: var(--tqv-ink);
+}
+
+.tqv-hero-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-round);
+  background-color: currentColor;
+}

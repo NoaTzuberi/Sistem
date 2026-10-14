@@ -3,6 +3,7 @@ import type {
   BodyMetric as PublicBodyMetric,
   BodyMetricList,
   ProgressPhotoPose,
+  StartingPhoto as PublicStartingPhoto,
   SaveBodyMetricPayload,
 } from '@sistem/types';
 import { localDateString } from '../plans/planWeek';
@@ -51,6 +52,9 @@ export function toPublicBodyMetric(metric: LeanBodyMetric): PublicBodyMetric {
     photos: [...metric.photos]
       .sort((a, b) => poseOrder(a.pose) - poseOrder(b.pose))
       .map((photo) => ({ pose: photo.pose, ...toPublicPhoto(photo) })),
+    ...(metric.startingPhoto && {
+      startingPhoto: { tag: 'starting', ...toPublicPhoto(metric.startingPhoto) } satisfies PublicStartingPhoto,
+    }),
     notes: metric.notes,
   };
 }
@@ -73,6 +77,7 @@ function isEmptyDay(metric: LeanBodyMetric): boolean {
     metric.weight === undefined &&
     Object.keys(metric.measurements ?? {}).length === 0 &&
     metric.photos.length === 0 &&
+    !metric.startingPhoto &&
     !metric.notes
   );
 }
@@ -87,6 +92,7 @@ async function currentDay(traineeId: string, date: string): Promise<PublicBodyMe
     _id: metric._id,
     weight: { $exists: false },
     photos: { $size: 0 },
+    startingPhoto: { $exists: false },
     notes: { $in: [null, ''] },
     $or: [{ measurements: { $exists: false } }, { measurements: {} }],
   });
@@ -132,6 +138,7 @@ export async function saveBodyMetric(
 export async function deleteBodyMetricDay(traineeId: string, date: string): Promise<void> {
   const deleted = await BodyMetric.findOneAndDelete({ traineeId, date }).lean<LeanBodyMetric>();
   for (const photo of deleted?.photos ?? []) await deleteQuietly(photo.publicId);
+  if (deleted?.startingPhoto) await deleteQuietly(deleted.startingPhoto.publicId);
 }
 
 /** A replaced or removed photo is deleted from storage. A failure there is logged, not shown to her. */
@@ -188,6 +195,48 @@ export async function setProgressPhoto(
     throw error;
   }
   if (replaced) await deleteQuietly(replaced.publicId);
+  return currentDay(traineeId, date);
+}
+
+/** Replaces the trainee's single dated baseline photo, in the same private photo store. */
+export async function setStartingPhoto(
+  traineeId: string,
+  date: string,
+  data: Buffer,
+  now: Date = new Date(),
+): Promise<PublicBodyMetric | null> {
+  await assertNotInFuture(traineeId, date, now);
+  if (!isAcceptedImage(data)) throw new InvalidProgressPhotoError('photo_invalid_image');
+
+  const publicId = await uploadPrivatePhoto(data, `${PROGRESS_PHOTO_FOLDER}/${traineeId}`, `${date}-starting`);
+  let previous: LeanBodyMetric | null = null;
+  try {
+    previous = await BodyMetric.findOneAndUpdate(
+      { traineeId, startingPhoto: { $exists: true } },
+      { $unset: { startingPhoto: '' } },
+      { returnDocument: 'before' },
+    ).lean<LeanBodyMetric>();
+    await BodyMetric.updateOne(
+      { traineeId, date },
+      { $set: { startingPhoto: { publicId, tag: 'starting', uploadedAt: now } } },
+      { upsert: true, runValidators: true },
+    );
+  } catch (error) {
+    await deleteQuietly(publicId);
+    if (previous?.startingPhoto) {
+      await BodyMetric.updateOne(
+        { traineeId, date: previous.date },
+        { $set: { startingPhoto: previous.startingPhoto } },
+        { upsert: true },
+      ).catch((restoreError) => console.error('[privatePhotos] could not restore starting photo', restoreError));
+    }
+    throw error;
+  }
+
+  if (previous?.startingPhoto) {
+    await deleteQuietly(previous.startingPhoto.publicId);
+    if (previous.date !== date) await currentDay(traineeId, previous.date);
+  }
   return currentDay(traineeId, date);
 }
 

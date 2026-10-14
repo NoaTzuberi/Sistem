@@ -19,6 +19,7 @@ export const en: Record<keyof typeof he, string> = {
   name_required: 'Name is required.',
   email_invalid: 'A valid email is required.',
   password_too_short: 'Password must be at least {min} characters.',
+  passwords_differ: 'Passwords do not match.',
   timezone_not_string: 'Time zone must be a string.',
   password_required: 'Password is required.',
   reset_token_required: 'Reset token is required.',

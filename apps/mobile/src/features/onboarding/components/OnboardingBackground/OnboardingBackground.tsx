@@ -49,24 +49,46 @@ interface BackgroundClipProps {
   onReady: () => void;
 }
 
+// A loop restarts a moment before the real end, so the skipped opening never flashes.
+const LOOP_MARGIN_SEC = 0.3;
+
 function BackgroundClip({ media, active, onReady }: BackgroundClipProps) {
   const clip = useBackgroundClip(active);
+  const startAt = media.startAt ?? 0;
+  const focusClass = media.focus === 'right' ? ' onboarding-background-media-focus-right' : '';
 
   return (
     <div className={'onboarding-background-clip' + (active ? ' onboarding-background-clip-active' : '')}>
-      <img className="onboarding-background-media" src={media.poster} alt="" decoding="async" onLoad={onReady} />
+      <img
+        className={'onboarding-background-media' + focusClass}
+        src={media.poster}
+        alt=""
+        decoding="async"
+        onLoad={onReady}
+      />
       {clip.status !== 'poster-only' && (
         <video
           ref={clip.videoRef}
           className={
             'onboarding-background-media onboarding-background-video-layer' +
+            focusClass +
             (clip.status === 'playing' ? ' onboarding-background-video-playing' : '')
           }
-          src={media.video}
+          // "#t=" makes the first play start there; the loop is sent back by onTimeUpdate.
+          src={startAt > 0 ? `${media.video}#t=${startAt}` : media.video}
           loop
           muted
           playsInline
           preload="auto"
+          onTimeUpdate={
+            startAt > 0
+              ? (event) => {
+                  const video = event.currentTarget;
+                  const nearEnd = Number.isFinite(video.duration) && video.currentTime > video.duration - LOOP_MARGIN_SEC;
+                  if (video.currentTime < startAt || nearEnd) video.currentTime = startAt;
+                }
+              : undefined
+          }
           onPlaying={() => {
             clip.onPlaying();
             onReady();

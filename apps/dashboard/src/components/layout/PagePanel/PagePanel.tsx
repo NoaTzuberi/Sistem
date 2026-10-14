@@ -2,7 +2,7 @@ import { Outlet } from 'react-router-dom';
 import './PagePanel.css';
 
 /**
- * The pages that were not redesigned yet (nutrition, exercises)
+ * The pages that were not redesigned yet (nutrition)
  * were built on a white page: they sit on one white panel on the new canvas until their turn.
  */
 export function PagePanel() {

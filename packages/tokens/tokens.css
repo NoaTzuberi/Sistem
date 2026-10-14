@@ -187,6 +187,33 @@
   --color-star-rest: color-mix(in srgb, var(--color-primary-deep) 20%, transparent); /* the empty part of a star */
   --surface-chart-tip: color-mix(in srgb, var(--color-card) 92%, transparent);  /* the glass tooltip on a chart */
   --surface-delta-pill: color-mix(in srgb, var(--color-card) 80%, transparent); /* the change pill on a statistics tile */
+  /* Trainee quick view (dashboard drawer): its ground, and the status colors of its hero —
+     the cloud behind the name, the avatar's gradient and shadow, the status pill's ink. No green. */
+  --color-quick-view-bg: #f7f5f7;
+  --color-qv-waiting-cloud: #ff8fc0;
+  --color-qv-waiting-cloud-warm: #ffb59e;
+  --color-qv-waiting-avatar-from: #ff5ca2;
+  --color-qv-waiting-avatar-to: #a50047;
+  --color-qv-active-cloud: #c9a6ff;
+  --color-qv-active-avatar-from: #b18cff;
+  --color-qv-active-avatar-to: #7c4dff;
+  --color-qv-active-ink: #5b2fd6;
+  --color-qv-attention-cloud: #ffc48a;
+  --color-qv-attention-cloud-light: #ffd9a8;
+  --color-qv-attention-avatar-from: #ffb061;
+  --color-qv-attention-avatar-to: #c75a00;
+  --color-qv-inactive-cloud: #e2dde3;
+  --color-qv-inactive-cloud-dark: #d9d2d8;
+  --color-qv-inactive-avatar-from: #c9c2cb;
+  --color-qv-inactive-avatar-to: #8f8792;
+  --color-qv-late-tint: #fff0f5;          /* The spotlight card when the 48h window has passed */
+  --color-qv-hairline: color-mix(in srgb, var(--color-text) 12%, transparent); /* the grouped list's separators */
+  --color-qv-row-hover: #faf8fa;
+  --color-qv-skip-stripe: #ece8eb;        /* The second stripe of a skipped workout tile */
+  --color-qv-achievements: #d9952b;       /* The achievements row's icon square */
+  --surface-qv-close: color-mix(in srgb, var(--color-card) 75%, transparent);   /* the floating close button */
+  --surface-qv-pill: color-mix(in srgb, var(--color-card) 85%, transparent);    /* the status pill and the AI strip's icon tile */
+  --surface-qv-footer: color-mix(in srgb, var(--color-quick-view-bg) 85%, transparent);
   --color-primary-hover: color-mix(in srgb, var(--color-primary) 91%, var(--color-text));
   --gradient-ai-soft: linear-gradient(120deg, var(--color-primary-tint), var(--color-lilac-mist));
   --gradient-ai-soft-hover: linear-gradient(120deg, color-mix(in srgb, var(--color-primary) 18%, var(--color-card)), color-mix(in srgb, var(--color-lilac) 40%, var(--color-card)));
@@ -194,6 +221,30 @@
     radial-gradient(40% 40% at 60% 40%, color-mix(in srgb, var(--color-primary) 22%, transparent), transparent 70%),
     radial-gradient(35% 35% at 30% 70%, color-mix(in srgb, var(--color-peach) 35%, transparent), transparent 70%);
   --surface-timeline: color-mix(in srgb, var(--color-card) 55%, transparent);   /* the past-weeks timeline */
+  /* Movement-pattern colors: THE one map (exercise library now, the plan builder later). Seven
+     body-area groups; every pattern belongs to one (patternGroups.ts). --c strong, --s soft.
+     Identity colors — which kind of movement this is — never statuses; no green. */
+  --color-pattern-knee: #e08a5c;
+  --color-pattern-knee-soft: #ffd3b8;
+  --color-pattern-hip: #d46a95;
+  --color-pattern-hip-soft: #f7c6da;
+  --color-pattern-chest: #9a77db;
+  --color-pattern-chest-soft: #e6d8ff;
+  --color-pattern-back: #5e9cc4;
+  --color-pattern-back-soft: #cfe6f5;
+  --color-pattern-shoulders: #d9952b;
+  --color-pattern-shoulders-soft: #ffe3b0;
+  --color-pattern-core: var(--color-primary);
+  --color-pattern-core-soft: #ffc2da;
+  --color-pattern-full: var(--color-primary-deep);
+  --color-pattern-full-soft: var(--color-square-missed);
+  /* No pattern: a striped grey tile. */
+  --color-pattern-none: var(--color-text-faint);
+  --color-pattern-none-soft: var(--color-hairline);
+  --gradient-pattern-none: repeating-linear-gradient(135deg, var(--color-fill-soft) 0 6px, var(--color-hairline) 6px 12px);
+  /* A warning (library issues): the amber of the attention card, with its darker text. */
+  --color-warning-text: #8a4a00;
+  --color-warning-soft: #fff4e5;
   /* Notification types (the bell's panel): icon, unread dot and action take the color; the unread
      card's glow is the same color at a low alpha. Kinds of news, not statuses — no green.
      "late" is the only red: a 48h window that has passed. */
@@ -226,6 +277,115 @@
     radial-gradient(40% 40% at 60% 40%, color-mix(in srgb, var(--color-primary) 16%, transparent), transparent 70%),
     radial-gradient(35% 35% at 30% 60%, color-mix(in srgb, var(--color-lilac) 22%, transparent), transparent 70%);
   --color-ring-track: color-mix(in srgb, var(--color-text) 8%, transparent);   /* the empty part of a progress ring */
+  /* Glass cards on a trainee's Body / Achievements / Nutrition tabs: white 78 %, blur, inner hairline. */
+  --surface-glass-card: color-mix(in srgb, var(--color-card) 78%, transparent);
+  --blur-glass-card: blur(20px) saturate(160%);
+  --shadow-glass-card:
+    inset 0 0 0 1px color-mix(in srgb, var(--color-card) 70%, transparent),
+    0 10px 30px color-mix(in srgb, var(--color-text) 6%, transparent);
+  /* Body measurements: which measurement a line / dot / row is. Identity colors, not statuses. */
+  --color-measure-chest: #9a77db;
+  --color-measure-waist: #ff006e;
+  --color-measure-hips: #d46a95;
+  --color-measure-arms: #0070c9;
+  --color-measure-thighs: #e08a5c;
+  --gradient-empty-stripes: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-fill-soft) 80%, transparent) 0 10px,
+    color-mix(in srgb, var(--color-hairline) 60%, transparent) 10px 20px
+  );
+  --color-compare-handle: var(--color-card);
+  --shadow-compare-handle: 0 4px 14px color-mix(in srgb, var(--color-text) 18%, transparent);
+  /* Achievements: one identity color per category (ink + lighter shade). Kinds, not statuses. */
+  --color-ach-workouts: #ff006e;
+  --color-ach-workouts-light: #ff8fc0;
+  --color-ach-streaks: #ff7a00;
+  --color-ach-streaks-light: #ffc48a;
+  --color-ach-perfect: #7c4dff;
+  --color-ach-perfect-light: #c9a6ff;
+  --color-ach-records: #0094ff;
+  --color-ach-records-light: #9ed3ff;
+  --color-ach-volume: #a50047;
+  --color-ach-volume-light: #ff8fb8;
+  --color-ach-tracking: #d9952b;       /* Body tracking — not in the design; see the report */
+  --color-ach-tracking-light: #ffe3b0;
+  --gradient-ach-hero: linear-gradient(125deg, #a50047 0%, #ff006e 55%, #ff7a9f 100%);
+  --gradient-ach-hero-glow:
+    radial-gradient(30% 35% at 80% 20%, color-mix(in srgb, #ffc48a 75%, transparent), transparent 70%),
+    radial-gradient(30% 40% at 15% 90%, color-mix(in srgb, #c9a6ff 60%, transparent), transparent 70%);
+  --color-ach-hero-dots: color-mix(in srgb, var(--color-on-primary) 90%, transparent);
+  --shadow-ach-hero: 0 20px 50px color-mix(in srgb, var(--color-primary-deep) 28%, transparent);
+  --surface-on-hero: color-mix(in srgb, var(--color-on-primary) 16%, transparent);       /* the streak card */
+  --surface-on-hero-strong: color-mix(in srgb, var(--color-on-primary) 95%, transparent); /* the latest-unlock card */
+  --surface-on-hero-track: color-mix(in srgb, var(--color-on-primary) 25%, transparent); /* the XP bar's track, a cold flame */
+  --color-on-hero-muted: color-mix(in srgb, var(--color-on-primary) 80%, transparent);
+  --gradient-xp: linear-gradient(to left, var(--color-on-primary), #ffd6e6);
+  --shadow-xp: 0 0 12px color-mix(in srgb, var(--color-on-primary) 70%, transparent);
+  --gradient-flame: linear-gradient(160deg, #ffc48a, #ff7a00);
+  --shadow-flame: 0 6px 18px color-mix(in srgb, #ff7a00 50%, transparent);
+  --gradient-medal-locked: linear-gradient(160deg, var(--color-fill-soft), #e6e1e7);
+  --shadow-medal-locked:
+    inset 0 2px 4px color-mix(in srgb, var(--color-card) 90%, transparent),
+    inset 0 -3px 6px color-mix(in srgb, var(--color-text) 6%, transparent);
+  --gradient-medal-gloss: radial-gradient(80% 80% at 30% 20%, color-mix(in srgb, var(--color-card) 55%, transparent), transparent 50%);
+  --gradient-medal-sweep: linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-card) 70%, transparent), transparent);
+  --shadow-medal-lock: 0 2px 6px color-mix(in srgb, var(--color-text) 15%, transparent);
+  --color-ach-scrim: color-mix(in srgb, var(--color-text) 24%, transparent);
+  --blur-ach-scrim: blur(10px);
+  --blur-ach-glow: blur(40px);     /* the hero's and the modal's soft color glow */
+  --surface-ach-modal: color-mix(in srgb, var(--color-card) 92%, transparent);
+  --shadow-ach-modal: 0 40px 100px color-mix(in srgb, var(--color-text) 30%, transparent);
+  /* Nutrition plan builder: THE portion-group map (fill, text, soft) — identity colors, never statuses.
+     Missing = solid pink, over = amber (--color-warning-*), complete = Cherry Rose. */
+  --color-portion-protein: #ff006e;
+  --color-portion-protein-text: #ff006e;
+  --color-portion-protein-soft: #ffe3ee;
+  --color-portion-carb: #7c4dff;
+  --color-portion-carb-text: #5b2fd6;
+  --color-portion-carb-soft: #efe7ff;
+  --color-portion-fat: #ff7a00;
+  --color-portion-fat-text: #c75a00;
+  --color-portion-fat-soft: #ffebd6;
+  --color-portion-snack: #0094ff;
+  --color-portion-snack-text: #0070c9;
+  --color-portion-snack-soft: #e1f1ff;
+  --color-nb-goal-loss: #0070c9;     /* Goal buttons: losing, keeping, gaining */
+  --color-nb-goal-keep: #7c4dff;
+  --color-nb-goal-gain: #ff006e;
+  --color-nb-recommended-from: #ff4e9a; /* The recommended-kcal card's gradient */
+  --color-nb-recommended-to: #d4005c;
+  --color-nb-target-tint: #fff0f6;   /* The daily target panel */
+  --color-nb-tip: #fff8e9;           /* A coach tip row */
+  --color-nb-meal-ground: #fbfafb;   /* A meal card at rest */
+  --color-nb-dash: #d9d2d8;          /* The "+ meal" tile's dashed edge */
+  --color-nb-switch-off: color-mix(in srgb, var(--color-text-muted) 22%, transparent);
+  --color-nb-delete: #d70015;        /* A destructive tool (the meal's delete) */
+  --color-nb-delete-soft: #ffe5e7;
+  --surface-nb-header: color-mix(in srgb, var(--color-card) 78%, transparent);
+  --blur-nb-header: blur(24px) saturate(170%);
+  --shadow-nb-header:
+    0 0 0 0.5px color-mix(in srgb, var(--color-text) 6%, transparent),
+    0 10px 30px color-mix(in srgb, var(--color-text) 8%, transparent);
+  --shadow-nb-recommended: 0 10px 24px color-mix(in srgb, var(--color-primary) 28%, transparent);
+  --shadow-nb-alert: 0 10px 24px color-mix(in srgb, var(--color-primary) 25%, transparent);
+  --shadow-nb-meal-hover: 0 10px 26px color-mix(in srgb, var(--color-text) 7%, transparent);
+  --nb-header-offset: 100px;         /* scroll-margin under the sticky header */
+  /* Nutrition: the portion groups' share of the day (donut, bars) — identity colors. */
+  --color-macro-protein: var(--color-primary);
+  --color-macro-carb: #7c4dff;
+  --color-macro-fat: #ff7a00;
+  --color-macro-snack: #0094ff;
+  --gradient-nutrition-cloud:
+    radial-gradient(40% 40% at 60% 40%, #ffc48a, transparent 70%),
+    radial-gradient(35% 35% at 30% 60%, #ff8fc0, transparent 70%);
+  --gradient-nutrition-empty:
+    radial-gradient(30% 30% at 30% 30%, #ffc48a, transparent 70%),
+    radial-gradient(30% 30% at 70% 40%, #ff8fc0, transparent 70%),
+    radial-gradient(30% 30% at 50% 80%, #c9a6ff, transparent 70%);
+  --gradient-blob-pink: linear-gradient(150deg, var(--color-primary-tint), #ffc2da);
+  --gradient-blob-peach: linear-gradient(150deg, #ffebd6, #ffc48a);
+  --gradient-blob-lilac: linear-gradient(150deg, #efe7ff, #c9a6ff);
+  --surface-meal: color-mix(in srgb, var(--color-fill-soft) 85%, transparent);
   --color-on-workout-muted: color-mix(in srgb, var(--color-on-primary) 80%, transparent); /* small text on a filled workout pill */
 
   /* Third-party button colors fixed by the provider's guidelines (social sign-in, Phase 5c). */
@@ -313,7 +473,10 @@
   --radius-tooltip: 10px;
   --radius-square: 5px;         /* The week squares in the trainees table */
   --radius-bar: 4px;            /* Bar tops in a chart */
-  --radius-chart-tip: 14px;     /* The glass tooltip on a chart */
+  --radius-chart-tip: 14px;
+  --radius-qv-card: 24px;       /* The quick view's spotlight card */
+  --radius-qv-tile: 20px;       /* Its fact tiles, notes and grouped list */
+  --radius-qv-icon: 9px;        /* A small colored icon square */     /* The glass tooltip on a chart */
   --radius-field: 12px;         /* A field of an open exercise row, a menu item */
   --cut-size: 12px;
   /* One corner cut at the top-end (the card / tile pattern). */
@@ -356,6 +519,13 @@
   --shadow-photo: 0 8px 20px color-mix(in srgb, var(--color-text) 12%, transparent);    /* stacked Daily Pump photos */
   --shadow-side-sheet: 0 0 60px color-mix(in srgb, var(--color-text) 16%, transparent); /* the off-canvas sidebar */
   --shadow-avatar: 0 10px 26px color-mix(in srgb, var(--color-primary) 25%, transparent);   /* the profile avatar */
+  --shadow-row-hover:
+    0 2px 4px color-mix(in srgb, var(--color-text) 4%, transparent),
+    0 16px 34px color-mix(in srgb, var(--color-text) 9%, transparent);                              /* a family row under the pointer */
+  --shadow-row-selected: 0 0 0 2px var(--color-primary), 0 12px 28px color-mix(in srgb, var(--color-primary) 14%, transparent);
+  --shadow-tile: 0 12px 28px color-mix(in srgb, var(--color-text) 14%, transparent);              /* the family tile in the detail hero */
+  --shadow-variant-hover: 0 14px 30px color-mix(in srgb, var(--color-text) 10%, transparent);
+  --ring-search: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);             /* the library search in focus */
   --shadow-notice-panel:
     0 0 0 0.5px color-mix(in srgb, var(--color-text) 8%, transparent),
     0 30px 80px color-mix(in srgb, var(--color-text) 22%, transparent),
@@ -379,6 +549,8 @@
   --shadow-chart-tip:
     0 10px 30px color-mix(in srgb, var(--color-text) 16%, transparent),
     0 0 0 0.5px color-mix(in srgb, var(--color-text) 6%, transparent);
+  --shadow-qv-lift: 0 12px 26px color-mix(in srgb, var(--color-text) 8%, transparent);  /* a quick-view fact tile under the pointer */
+  --shadow-qv-late: 0 0 0 1px color-mix(in srgb, var(--color-primary) 14%, transparent);  /* the late spotlight's pink hairline */
   --shadow-menu: 0 20px 50px color-mix(in srgb, var(--color-text) 16%, transparent);    /* a small menu under its button */
   --ring-panel: 0 0 0 2px var(--color-card);            /* The notification dot on its round button */
   --ring-center: 0 0 0 1.5px var(--color-primary);      /* The centered wheel item */
@@ -386,6 +558,10 @@
   --ring-badge: 0 0 0 2px var(--color-card);            /* Around the wheel's check badge */
   --ring-focus: 0 0 0 3px var(--color-primary);
   --blur-soft: blur(10px);
+  --blur-qv-glass: blur(12px);     /* The quick view's close button */
+  --blur-qv-footer: blur(20px);
+  --blur-qv-cloud: blur(30px);     /* The cloud behind the quick view's hero */
+  --blur-qv-tile: blur(22px);      /* A fact tile's corner cloud */
   --blur-chart-tip: blur(16px);
   --blur-stat-cloud: blur(34px);   /* The colored cloud in a statistics tile's corner */
   --blur-rating-cloud: blur(24px);
@@ -419,6 +595,7 @@
   --transition-popover: 180ms;   /* The "new plan" popover growing from its corner */
   --transition-hover: 180ms;     /* A pill lifting / changing shade under a fine pointer */
   --transition-chevron: 200ms;
+  --transition-qv-ring: 900ms;     /* The quick view's spotlight ring filling as it opens */
   /* Statistics page. Hover / thumb motion, then the once-per-session intro. */
   --transition-range-thumb: 260ms; /* The range control's thumb sliding */
   --transition-lift: 220ms;        /* A tile rising under a fine pointer */
@@ -432,6 +609,12 @@
   --intro-goal: 800ms;             /* A goal bar growing; one every --intro-goal-step */
   --intro-goal-step: 60ms;
   --intro-ring: 1000ms;            /* A retention ring filling */
+  --transition-medal-sweep: 700ms; /* The light crossing an unlocked medal under the pointer */
+  --transition-medal-flip: 700ms;  /* The medal turning to face her as its modal opens */
+  --transition-confetti: 1100ms;   /* A confetti piece flying out (each adds up to --confetti-spread) */
+  --confetti-spread: 500ms;
+  --confetti-delay: 120ms;         /* The burst waits for the modal to start opening */
+  --intro-xp: 900ms;               /* The achievements XP bar growing, once */
   --intro-meter: 900ms;            /* A tile's meter growing */   /* An exercise card's chevron turning as it opens */
   --loop-slow: 2s;               /* Repeating hints (scroll bounce) */
 

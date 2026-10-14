@@ -51,15 +51,15 @@ export function TraineePlans({ trainee, plansLoad, wantsNewPlan, onNewPlanHandle
   const openNewPlan = popover.open;
   const currentPlan = weekOf(trainee.id)?.currentPlan ?? null;
 
-  // "New plan" from the top line or the drawer — and "duplicate last week" from the plan builder —
+  // "New plan" from the top line or the drawer (its AI strip: on "from the AI draft") — and "duplicate last week" from the plan builder —
   // land here with the popover already open.
-  const linkState = useLocation().state as { newPlan?: boolean; duplicate?: boolean } | null;
+  const linkState = useLocation().state as { newPlan?: boolean; duplicate?: boolean; ai?: boolean } | null;
   const cameForNewPlan = linkState?.newPlan === true;
   const openedFromLink = useRef(false);
   useEffect(() => {
     if (!cameForNewPlan || openedFromLink.current) return;
     openedFromLink.current = true;
-    void openNewPlan({ method: linkState?.duplicate ? 'duplicate' : 'scratch' });
+    void openNewPlan({ method: linkState?.ai ? 'ai' : linkState?.duplicate ? 'duplicate' : 'scratch' });
     // Once, when the page is entered that way.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cameForNewPlan]);

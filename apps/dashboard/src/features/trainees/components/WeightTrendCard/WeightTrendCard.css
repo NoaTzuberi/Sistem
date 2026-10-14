@@ -1,0 +1,4 @@
+/* The chart grows to the card's height (the measurements card beside it sets the row). */
+.weight-trend-card {
+  min-height: 320px;
+}

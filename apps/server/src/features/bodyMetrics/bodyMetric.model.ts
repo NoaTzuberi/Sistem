@@ -1,12 +1,21 @@
 import { Schema, model } from 'mongoose';
 import { isDateString } from '../plans/planWeek';
 import { BODY_MEASUREMENT_IDS, PROGRESS_PHOTO_POSE_IDS } from './bodyMetric.constants';
-import type { BodyMetricDocument, ProgressPhotoFields } from './bodyMetric.types';
+import type { BodyMetricDocument, ProgressPhotoFields, StartingPhotoFields } from './bodyMetric.types';
 
 const progressPhotoSchema = new Schema<ProgressPhotoFields>(
   {
     publicId: { type: String, required: true },
     pose: { type: String, enum: PROGRESS_PHOTO_POSE_IDS, required: true },
+    uploadedAt: { type: Date, required: true, default: () => new Date() },
+  },
+  { _id: false },
+);
+
+const startingPhotoSchema = new Schema<StartingPhotoFields>(
+  {
+    publicId: { type: String, required: true },
+    tag: { type: String, enum: ['starting'], required: true, default: 'starting' },
     uploadedAt: { type: Date, required: true, default: () => new Date() },
   },
   { _id: false },
@@ -36,6 +45,7 @@ const bodyMetricSchema = new Schema<BodyMetricDocument>(
       validate: { validator: hasOnlyKnownMeasurements, message: 'Unknown body measurement.' },
     },
     photos: { type: [progressPhotoSchema], default: [] },
+    startingPhoto: { type: startingPhotoSchema, default: undefined },
     notes: { type: String, trim: true },
   },
   { timestamps: true },
@@ -44,5 +54,9 @@ const bodyMetricSchema = new Schema<BodyMetricDocument>(
 // One day of body tracking per trainee: weight, measurements and photos of the same
 // date share it (owner decision, Phase 10).
 bodyMetricSchema.index({ traineeId: 1, date: -1 }, { unique: true });
+bodyMetricSchema.index(
+  { traineeId: 1 },
+  { unique: true, partialFilterExpression: { startingPhoto: { $exists: true } } },
+);
 
 export const BodyMetric = model<BodyMetricDocument>('BodyMetric', bodyMetricSchema);

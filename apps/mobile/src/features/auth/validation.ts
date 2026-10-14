@@ -25,7 +25,7 @@ export function validateLoginPassword(password: string): AuthErrorKey | undefine
 }
 
 export function validateConfirmPassword(password: string, confirmPassword: string): AuthErrorKey | undefined {
-  return confirmPassword !== password ? 'passwordsDiffer' : undefined;
+  return !confirmPassword || confirmPassword !== password ? 'passwordsDiffer' : undefined;
 }
 
 /** The message of a key in the given copy ({min} filled). */

@@ -1,0 +1,64 @@
+.ach-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.ach-grid-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-inline: 4px;
+}
+
+.ach-grid-title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.ach-grid-empty {
+  margin: 0 4px;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.ach-grid-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 4px 10px;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.ach-grid-group-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-round);
+  background-color: var(--ach-color);
+}
+
+.ach-grid-group-count {
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-faint);
+}
+
+/* The perspective the badges lean in. */
+.ach-grid-badges {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  perspective: 800px;
+}
+
+@media (max-width: 760px) {
+  .ach-grid-badges {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -18,6 +18,7 @@ export const he = {
   name_required: 'יש להזין שם.',
   email_invalid: 'יש להזין אימייל תקין.',
   password_too_short: 'הסיסמה חייבת להכיל לפחות {min} תווים.',
+  passwords_differ: 'הסיסמאות לא תואמות',
   timezone_not_string: 'אזור הזמן חייב להיות טקסט.',
   password_required: 'יש להזין סיסמה.',
   reset_token_required: 'חסר קוד איפוס.',

@@ -1,0 +1,106 @@
+.issue {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--radius-card);
+}
+
+/* Many copies: amber, the warning color. */
+.issue-warning {
+  background-color: var(--color-warning-soft);
+}
+
+.issue-warning .issue-title {
+  color: var(--color-warning-text);
+}
+
+.issue-quiet {
+  background-color: var(--color-fill-soft);
+}
+
+.issue-title {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.issue-text {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--line-height-base);
+  color: var(--color-on-hero-muted);
+}
+
+.issue-patterns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.issue-pattern {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-round);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+  transition: transform var(--transition-press) var(--ease-press);
+}
+
+.issue-pattern-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-round);
+  background-color: var(--pattern-color);
+}
+
+.issue-pattern[aria-pressed='true'] {
+  color: var(--color-on-primary);
+  background-color: var(--pattern-color);
+}
+
+.issue-pattern[aria-pressed='true'] .issue-pattern-dot {
+  background-color: var(--color-on-primary);
+}
+
+.issue-pattern:active {
+  transform: scale(0.97);
+}
+
+.issue-pattern:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.issue-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* After a save: the pink "marked reviewed" strip (Cherry Rose — no green). */
+.issue-done {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-tile);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary-deep);
+  background-color: var(--color-primary-tint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .issue-pattern {
+    transition: none;
+  }
+}

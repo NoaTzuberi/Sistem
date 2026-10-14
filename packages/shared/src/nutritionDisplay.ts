@@ -110,6 +110,40 @@ function describeItems<T extends string>(items: readonly PreferenceItem<T>[], la
   return items.map((item) => describePreferenceItem(item, labels, language)).join(sharedCopy[language].common.listSeparator);
 }
 
+export type NutritionPreferenceField = 'diet' | 'dietStyle' | 'religious' | 'intolerances' | 'allergies' | 'loves' | 'dislikes' | 'mealsPerDay';
+
+/**
+ * Her nutrition answers one field at a time, for tiles: value null = not answered (no diet
+ * style / religious item, no free text, no meals-per-day preference). An empty intolerance or
+ * allergy list is an answer ("None") — she went through the screen and chose none. null overall
+ * = she skipped the screen.
+ */
+export function nutritionPreferenceFields(
+  preferences: NutritionPreferences | null | undefined,
+  language: Language,
+): { id: NutritionPreferenceField; label: string; value: string | null }[] | null {
+  if (!preferences) return null;
+  const common = sharedCopy[language].common;
+  const copy = sharedCopy[language].nutrition;
+  const labels = copy.preferences;
+  const diet = copy.dietTypes[preferences.dietType] ?? preferences.dietType;
+  const text = (value: string | undefined) => value?.trim() || null;
+  return [
+    {
+      id: 'diet',
+      label: labels.diet,
+      value: preferences.dietTypeDetails ? fill(copy.itemWithDetails, { label: diet, details: isolateAuto(preferences.dietTypeDetails) }) : diet,
+    },
+    { id: 'dietStyle', label: labels.dietStyle, value: describeItems(preferences.dietStyles, copy.dietStyles, language) || null },
+    { id: 'religious', label: labels.religious, value: describeItems(preferences.religious, copy.religious, language) || null },
+    { id: 'intolerances', label: labels.intolerances, value: describeItems(preferences.intolerances, copy.intolerances, language) || common.noneChosen },
+    { id: 'allergies', label: labels.allergies, value: describeItems(preferences.allergies, copy.allergies, language) || common.noneChosen },
+    { id: 'loves', label: labels.loves, value: text(preferences.foodsLoved) },
+    { id: 'dislikes', label: labels.dislikes, value: text(preferences.foodsDisliked) },
+    { id: 'mealsPerDay', label: labels.mealsPerDay, value: preferences.mealsPerDay ? String(preferences.mealsPerDay) : null },
+  ];
+}
+
 /** "How I eat" in one line: 'Vegetarian · Kosher · 4 meals' ('' = nothing chosen). */
 export function summarizeHowIEat(preferences: NutritionPreferences, language: Language): string {
   const copy = sharedCopy[language].nutrition;

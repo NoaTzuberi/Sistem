@@ -1,126 +1,196 @@
+/* --pattern-color / --pattern-soft (its first pattern) color the hero cloud and the variant tiles. */
 .family-detail {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+  min-width: 0;
+  /* clip, not hidden: the oversized cloud must not make the card scrollable. */
+  overflow: clip;
+  border-radius: var(--radius-notice-panel);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
 }
 
-.family-detail-row,
-.family-detail-badges,
+.family-detail-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  padding: 24px;
+  isolation: isolate;
+}
+
+/* A blurred cloud in the pattern's color. */
+.family-detail-hero::before {
+  content: '';
+  position: absolute;
+  inset-block: -60% auto;
+  inset-inline: auto -10%;
+  z-index: -1;
+  width: 75%;
+  height: 240%;
+  background:
+    radial-gradient(40% 40% at 60% 40%, var(--pattern-color), transparent 70%),
+    radial-gradient(35% 35% at 30% 60%, var(--pattern-soft), transparent 70%);
+  filter: blur(40px);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.family-detail-heading {
+  min-width: 0;
+}
+
+.family-detail-name {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--text-3xl);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.05;
+  letter-spacing: var(--letter-spacing-display);
+  overflow-wrap: anywhere;
+}
+
+.family-detail-name:focus {
+  outline: none;
+}
+
 .family-detail-chips {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--space-2);
-}
-
-.family-detail-chips {
-  gap: var(--space-1);
-}
-
-.family-detail-field {
-  display: flex;
-  flex: 1 1 240px;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.family-detail-label {
-  margin: 0;
-  padding: 0;
-  font-size: var(--text-sm);
-  font-weight: var(--font-weight-semibold);
-}
-
-.family-detail-input {
-  min-height: var(--space-5);
-  padding: 0 var(--space-2);
-  font-size: var(--text-sm);
-  background-color: var(--color-bg);
-  border: var(--border-width-thin) solid var(--color-border);
-  border-radius: var(--radius-none);
-}
-
-.family-detail-input:focus-visible {
-  outline: var(--border-width-medium) solid var(--color-primary);
-  outline-offset: 0;
-}
-
-.family-detail-patterns {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.family-detail-chip {
-  min-height: 28px;
-  padding: 0 var(--space-2);
-  font-family: var(--font-family-body);
-  font-size: var(--text-xs);
-  color: var(--color-text);
-  background-color: var(--color-surface);
-  border: var(--border-width-thin) solid var(--color-border);
-  border-radius: var(--radius-none);
-  cursor: pointer;
-}
-
-.family-detail-chip[aria-pressed='true'] {
-  color: var(--color-primary-deep);
-  background-color: var(--color-primary-soft);
-  border-color: var(--color-primary);
-}
-
-.family-detail-chip:active {
-  background-color: var(--color-primary-soft);
-}
-
-@media (hover: hover) {
-  .family-detail-chip:hover {
-    border-color: var(--color-primary);
-  }
-}
-
-.family-detail-members {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  margin: 0 0 var(--space-2);
+  gap: 6px;
+  margin: 10px 0 0;
   padding: 0;
   list-style: none;
 }
 
-.family-detail-member {
-  display: flex;
+.family-detail-chip {
+  display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-1) var(--space-2);
-  background-color: var(--color-surface);
-  border: var(--border-width-thin) solid var(--color-border);
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: var(--radius-round);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  background-color: var(--surface-on-workout);
 }
 
-.family-detail-member-text {
+.family-detail-chip-pattern {
+  color: var(--color-on-primary);
+  background-color: var(--pattern-color);
+}
+
+.family-detail-chip-none {
+  color: var(--color-text-muted);
+  background-color: var(--color-fill-soft);
+  box-shadow: inset 0 0 0 var(--border-width-thin) var(--color-dash-outline);
+}
+
+.family-detail-status {
+  align-self: start;
+  padding: 4px 12px;
+  border-radius: var(--radius-round);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
+/* To review = amber · reviewed = Cherry Rose. No green. */
+.family-detail-status-open {
+  color: var(--color-warning-text);
+  background-color: var(--color-warning-soft);
+}
+
+.family-detail-status-done {
+  color: var(--color-primary-deep);
+  background-color: var(--color-primary-tint);
+}
+
+.family-detail-body {
   display: flex;
-  flex: 1 1 auto;
   flex-direction: column;
-  min-width: 0;
+  gap: 16px;
+  padding: 0 24px 24px;
 }
 
-.family-detail-member-name {
+.family-detail-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-bottom: 10px;
+}
+
+.family-detail-section-title {
+  margin: 0;
   font-size: var(--text-sm);
   font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
 }
 
-.family-detail-muted {
+.family-detail-hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+}
+
+.family-detail-variants {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
   margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.family-detail-offered {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-tile);
   font-size: var(--text-xs);
   color: var(--color-text-muted);
+  background-color: var(--color-fill-soft);
+}
+
+.family-detail-offered-name {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.family-detail-message {
+  margin: 0;
+  padding: 24px;
+  border-radius: var(--radius-panel);
+  color: var(--color-text-muted);
+  background-color: var(--color-card);
 }
 
 .family-detail-error {
   margin: 0;
   font-size: var(--text-sm);
   color: var(--color-error);
+}
+
+@media (max-width: 640px) { /* = --breakpoint-md */
+  .family-detail-hero {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: 18px;
+  }
+
+  .family-detail-status {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .family-detail-name {
+    font-size: var(--text-2xl);
+  }
+
+  .family-detail-body {
+    padding: 0 16px 18px;
+  }
+
+  .family-detail-variants {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

@@ -1,0 +1,101 @@
+.tqv-links-title {
+  margin: 0 0 8px;
+  padding: 0 6px;
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.tqv-links-group {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+  border-radius: var(--radius-qv-tile);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+}
+
+/* --tqv-link: the row's icon square. */
+.tqv-link {
+  --tqv-link: var(--color-primary);
+  position: relative;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto 16px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 50px;
+  padding: 0 14px;
+  font-size: var(--text-sm);
+  text-align: start;
+  transition: background-color var(--transition-fast) ease;
+}
+
+.tqv-link[data-tab='logs'] { --tqv-link: var(--color-stat-purple); }
+.tqv-link[data-tab='nutrition'] { --tqv-link: var(--color-workout-3); }
+.tqv-link[data-tab='metrics'] { --tqv-link: var(--color-workout-4); }
+.tqv-link[data-tab='onboarding'] { --tqv-link: var(--color-primary-deep); }
+.tqv-link[data-tab='achievements'] { --tqv-link: var(--color-qv-achievements); }
+
+/* The hairline between rows starts after the icon, as in a grouped list. */
+li + li .tqv-link::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 56px 0;
+  height: 0.5px;
+  background-color: var(--color-qv-hairline);
+}
+
+.tqv-link-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-qv-icon);
+  background-color: var(--tqv-link);
+  color: var(--color-on-primary);
+}
+
+.tqv-link-label {
+  font-weight: var(--font-weight-medium);
+}
+
+.tqv-link-count {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.tqv-link-chevron {
+  display: flex;
+  color: var(--color-text-faint);
+  transition: color var(--transition-fast) ease;
+}
+
+.tqv-link:active {
+  background-color: var(--color-fill-soft);
+}
+
+.tqv-link:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: calc(var(--border-width-medium) * -1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tqv-link:hover {
+    background-color: var(--color-qv-row-hover);
+  }
+
+  .tqv-link:hover .tqv-link-chevron {
+    color: var(--color-text);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tqv-link,
+  .tqv-link-chevron {
+    transition: none;
+  }
+}

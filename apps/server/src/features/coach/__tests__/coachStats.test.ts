@@ -161,6 +161,12 @@ describe('coach stats', () => {
     expect(week.days.at(-1)).toEqual({ date: TODAY, cell: 'done' });
   });
 
+  it("this week's workouts carry their planned day (null without one)", async () => {
+    await createPlan(trainee, coach, THIS_WEEK);
+    const stats = await getStats(coach.token);
+    expect(stats.trainees[0].currentPlan?.workouts.map((workout) => workout.dayOfWeek)).toEqual([0, null]);
+  });
+
   it('the completion rate counts ended weeks only, and drafts never count', async () => {
     const lastWeek = await createPlan(trainee, coach, LAST_WEEK);
     await completeWorkout(lastWeek, 0, { finishedAt: new Date(Date.now() - 8 * 24 * HOUR_MS) });

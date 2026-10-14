@@ -146,6 +146,7 @@ export function buildCoachStats({ trainees, plans, logs, coachTimezone, range, n
           splitId: current.splitId,
           workouts: current.workouts.map((workout) => ({
             id: workout.id,
+            dayOfWeek: workout.dayOfWeek ?? null,
             status: resolveWorkoutStatus(
               workout.dayOfWeek === undefined ? null : addDays(current.weekStartDate, workout.dayOfWeek),
               current.weekStartDate,

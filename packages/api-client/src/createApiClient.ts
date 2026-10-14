@@ -22,6 +22,12 @@ export interface ApiClientOptions {
 const PUBLIC_AUTH_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password'];
 
 export function createApiClient({ baseURL, getToken, onUnauthorized, getLanguage }: ApiClientOptions): AxiosInstance {
+  // Without a base URL axios sends '/auth/register' to the page's own origin (the Vite dev
+  // server), which answers 404 — fail at startup with the real reason instead.
+  if (typeof baseURL !== 'string' || !baseURL.trim()) {
+    throw new Error('API base URL is missing: set VITE_API_URL in the app\'s .env (see .env.example).');
+  }
+
   const client = axios.create({
     baseURL,
     headers: {

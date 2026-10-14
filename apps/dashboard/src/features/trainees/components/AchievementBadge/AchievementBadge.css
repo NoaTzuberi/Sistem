@@ -1,0 +1,127 @@
+/* A glass card in its category's color (--ach-color / --ach-light from the category class). It leans
+   toward a fine pointer (--tilt-x / --tilt-y, written by useTilt) inside the grid's perspective. */
+.ach-badge {
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 18px 12px 14px;
+  overflow: hidden;
+  border-radius: var(--radius-qv-card);
+  background-color: var(--surface-glass-card);
+  -webkit-backdrop-filter: var(--blur-glass-card);
+  backdrop-filter: var(--blur-glass-card);
+  box-shadow: var(--shadow-glass-card);
+  text-align: center;
+  transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+  transition:
+    transform var(--transition-slide) var(--ease-press),
+    scale var(--transition-press) var(--ease-press),
+    box-shadow var(--transition-base) ease;
+}
+
+.ach-badge-unlocked {
+  background-image: linear-gradient(170deg, var(--color-card) 40%, color-mix(in srgb, var(--ach-light) 35%, var(--color-card)));
+}
+
+/* The soft spotlight under the pointer. */
+.ach-badge::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background-image: radial-gradient(120px circle at var(--spot-x, 50%) var(--spot-y, 0%), color-mix(in srgb, var(--color-card) 90%, transparent), transparent 60%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-hover) ease;
+}
+
+.ach-badge-next {
+  box-shadow:
+    0 0 0 2px var(--ach-color),
+    0 12px 30px color-mix(in srgb, var(--ach-color) 25%, transparent);
+}
+
+.ach-badge-next-label {
+  position: absolute;
+  inset-block-start: 10px;
+  inset-inline-start: 10px;
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: var(--radius-round);
+  background-color: var(--ach-color);
+  font-size: var(--text-2xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-on-primary);
+}
+
+.ach-badge-title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.ach-badge-status {
+  font-size: var(--text-2xs);
+  color: var(--color-text-muted);
+}
+
+.ach-badge-unlocked .ach-badge-status {
+  font-weight: var(--font-weight-semibold);
+  color: color-mix(in srgb, var(--ach-color) 80%, var(--color-text));
+}
+
+.ach-badge:active {
+  scale: 0.97;
+}
+
+.ach-badge:focus-visible {
+  outline: var(--border-width-medium) solid var(--ach-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ach-badge:hover {
+    box-shadow: var(--shadow-tile-lift);
+  }
+
+  .ach-badge-next:hover {
+    box-shadow:
+      0 0 0 2px var(--ach-color),
+      0 16px 34px color-mix(in srgb, var(--ach-color) 30%, transparent);
+  }
+
+  .ach-badge:hover::after {
+    opacity: 1;
+  }
+
+  .ach-badge:hover .medal-locked .medal-disc {
+    color: var(--ach-color);
+  }
+
+  /* The light sweeps across an unlocked disc once per hover; it jumps back unseen on leave. */
+  .ach-badge:hover .medal-unlocked .medal-disc::after {
+    translate: 640% 0;
+    transition: translate var(--transition-medal-sweep) var(--ease-press);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ach-badge,
+  .ach-badge::after {
+    transform: none;
+    transition: none;
+  }
+
+  .ach-badge:hover .medal-unlocked .medal-disc::after {
+    translate: none;
+    transition: none;
+  }
+}

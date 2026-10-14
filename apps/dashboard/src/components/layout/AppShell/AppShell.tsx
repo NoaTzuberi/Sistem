@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { TraineeDrawer } from '../../../features/trainees/components/TraineeDrawer/TraineeDrawer';
+import { TraineeQuickView } from '../../../features/trainees/components/TraineeQuickView/TraineeQuickView';
 import { TraineeDrawerProvider } from '../../../features/trainees/hooks/useTraineeDrawer';
 import type { PaletteMode } from '../../../hooks/useCommandPalette';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
@@ -88,7 +88,7 @@ function ShellFrame() {
         </main>
       </div>
 
-      <TraineeDrawer />
+      <TraineeQuickView />
       {palette && <CommandPalette mode={palette} onClose={closePalette} onModeChange={setPalette} />}
     </div>
   );

@@ -107,4 +107,8 @@ export const INITIAL_ONBOARDING_STATE: OnboardingFormState = {
 export interface OnboardingMedia {
   video: string;
   poster: string;
+  /** Seconds to skip at the start of the clip (also on every loop). */
+  startAt?: number;
+  /** Which side of a wide clip to keep on a tall phone screen (default: the middle). */
+  focus?: 'right';
 }

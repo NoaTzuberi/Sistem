@@ -76,3 +76,10 @@
     transition: none;
   }
 }
+
+.range-segmented-compact .range-segmented-option {
+  min-width: 44px;
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: var(--text-xs);
+}

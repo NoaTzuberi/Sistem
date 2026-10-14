@@ -1,45 +1,35 @@
+/* The plan (or its empty state) beside her preferences; stacked below --breakpoint-stats-fold. */
 .trainee-nutrition {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: var(--space-4);
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 12px;
   align-items: start;
 }
 
-.trainee-nutrition-main {
+.trainee-nutrition-side {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-2);
+  gap: 12px;
+  min-width: 0;
 }
 
-.trainee-nutrition-title {
-  margin: 0;
-  font-size: var(--text-lg);
-}
-
-.trainee-nutrition-status,
 .trainee-nutrition-note {
   margin: 0;
   font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
 
-.trainee-nutrition-meals {
-  margin: 0;
-  padding-inline-start: var(--space-4);
-  font-size: var(--text-sm);
+/* Her portion tracking keeps its own (white) card. */
+.trainee-nutrition-tracking {
+  grid-column: 1 / -1;
+  padding: 20px;
+  border-radius: var(--radius-panel);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
 }
 
-.trainee-nutrition-open {
-  text-decoration: none;
-}
-
-@media (max-width: 960px) { /* = --breakpoint-2xl */
+@media (max-width: 1100px) { /* = --breakpoint-stats-fold */
   .trainee-nutrition {
     grid-template-columns: minmax(0, 1fr);
   }
-}
-
-.trainee-nutrition-tracking {
-  grid-column: 1 / -1;
 }

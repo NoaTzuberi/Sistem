@@ -1,0 +1,199 @@
+.nb-header {
+  position: sticky;
+  z-index: var(--z-overlay);
+  top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  padding-inline-start: 14px;
+  border-radius: var(--radius-panel);
+  background-color: var(--surface-nb-header);
+  -webkit-backdrop-filter: var(--blur-nb-header);
+  backdrop-filter: var(--blur-nb-header);
+  box-shadow: var(--shadow-nb-header);
+}
+
+.nb-header-back {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-fill-soft);
+  color: var(--color-text);
+  transition:
+    transform var(--transition-press) var(--ease-press),
+    background-color var(--transition-fast) ease;
+}
+
+.nb-header-back:active {
+  transform: scale(0.97);
+}
+
+.nb-header-avatar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-round);
+  background-image: linear-gradient(140deg, var(--color-qv-waiting-avatar-from), var(--color-qv-waiting-avatar-to));
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-on-primary);
+}
+
+.nb-header-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.nb-header-name {
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-tight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nb-header-muted {
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-muted);
+}
+
+.nb-header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.nb-header-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-warning-soft);
+  font-size: var(--text-2xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-warning-text);
+}
+
+.nb-header-status[data-status='live'] {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary-deep);
+}
+
+.nb-header-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-round);
+  background-color: currentColor;
+}
+
+.nb-header-save {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary-deep);
+}
+
+.nb-header-save[data-status='saving'],
+.nb-header-save[data-status='unsaved'] {
+  color: var(--color-text-muted);
+}
+
+.nb-header-save[data-status='error'] {
+  color: var(--color-warning-text);
+}
+
+.nb-header-retry {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-deep);
+  text-decoration: underline;
+}
+
+.nb-header-publish {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+}
+
+.nb-header-blockers {
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+}
+
+/* The primary is pink. Blocked: still focusable (it says where to go), but soft. */
+.nb-header-publish-button {
+  min-height: 44px;
+  padding: 0 22px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-on-primary);
+  white-space: nowrap;
+  transition:
+    transform var(--transition-press) var(--ease-press),
+    background-color var(--transition-fast) ease;
+}
+
+.nb-header-publish-button[aria-disabled='true'],
+.nb-header-publish-button:disabled {
+  background-color: var(--color-bar-rest);
+  cursor: not-allowed;
+}
+
+.nb-header-publish-button:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+.nb-header-back:focus-visible,
+.nb-header-publish-button:focus-visible,
+.nb-header-retry:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .nb-header-back:hover {
+    background-color: var(--color-hairline);
+  }
+
+  .nb-header-publish-button:not([aria-disabled='true']):not(:disabled):hover {
+    background-color: var(--color-primary-hover);
+  }
+}
+
+@media (max-width: 760px) {
+  .nb-header {
+    flex-wrap: wrap;
+  }
+
+  .nb-header-publish {
+    width: 100%;
+  }
+
+  .nb-header-publish-button {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nb-header-back,
+  .nb-header-publish-button {
+    transition: none;
+  }
+}

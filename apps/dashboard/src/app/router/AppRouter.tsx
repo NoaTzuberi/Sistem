@@ -27,14 +27,14 @@ export function AppRouter() {
           <Route path={ROUTES.TRAINEES} element={<TraineesPage />} />
           <Route path={ROUTES.TRAINEE} element={<TraineeDetailPage />} />
           <Route path={ROUTES.PLAN} element={<PlanBuilderPage />} />
+          <Route path={ROUTES.EXERCISES} element={<ExerciseLibraryPage />} />
+          <Route path={ROUTES.TRAINEE_NUTRITION} element={<NutritionBuilderPage />} />
           {/* Not redesigned yet: each sits on one white panel on the canvas. */}
           <Route element={<PagePanel />}>
-            <Route path={ROUTES.TRAINEE_NUTRITION} element={<NutritionBuilderPage />} />
             <Route path={ROUTES.NUTRITION} element={<Navigate to={ROUTES.NUTRITION_FOODS} replace />} />
             <Route path={ROUTES.NUTRITION_FOODS} element={<FoodListPage />} />
             <Route path={ROUTES.NUTRITION_TEMPLATES} element={<NutritionTemplatesPage />} />
             <Route path={ROUTES.NUTRITION_SETTINGS} element={<NutritionSettingsPage />} />
-            <Route path={ROUTES.EXERCISES} element={<ExerciseLibraryPage />} />
           </Route>
         </Route>
       </Route>

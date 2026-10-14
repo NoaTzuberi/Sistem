@@ -1,0 +1,22 @@
+.nb-save-template {
+  display: flex;
+  gap: 6px;
+}
+
+.nb-save-template-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius-round);
+  background-color: var(--color-fill-soft);
+  font: inherit;
+  font-size: var(--text-xs);
+  outline: none;
+}
+
+.nb-save-template-input:focus {
+  background-color: var(--color-card);
+  box-shadow: var(--ring-field);
+}

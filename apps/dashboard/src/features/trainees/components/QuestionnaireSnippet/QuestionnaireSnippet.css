@@ -1,0 +1,39 @@
+.tqv-note {
+  padding: 14px;
+  border-radius: var(--radius-qv-tile);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+}
+
+.tqv-note-title {
+  margin: 0 0 8px;
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.tqv-note-text {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.tqv-note-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  min-height: 26px;
+  margin-top: 10px;
+  padding: 0 10px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-warning-soft);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-warning-text);
+}

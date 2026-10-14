@@ -1,0 +1,63 @@
+.nb-message {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  align-items: start;
+  gap: 16px;
+}
+
+.nb-message-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.nb-message-field .nb-note {
+  margin: 0;
+}
+
+.nb-message-input {
+  width: 100%;
+  min-height: 120px;
+  padding: 14px;
+  border: 0;
+  border-radius: var(--radius-chart-tip);
+  background-color: var(--color-fill-soft);
+  font: inherit;
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--color-text);
+  outline: none;
+  resize: vertical;
+  transition:
+    background-color var(--transition-fast) ease,
+    box-shadow var(--transition-fast) ease;
+}
+
+.nb-message-input:focus {
+  background-color: var(--color-card);
+  box-shadow: var(--ring-field);
+}
+
+.nb-message-count {
+  font-size: var(--text-2xs);
+  color: var(--color-text-faint);
+  text-align: end;
+}
+
+.nb-message-count[data-limit] {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-warning-text);
+}
+
+@media (max-width: 760px) {
+  .nb-message {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nb-message-input {
+    transition: none;
+  }
+}

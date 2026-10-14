@@ -1,43 +1,102 @@
-.portion-stepper {
+/* --nb-pill / --nb-pill-soft: the group's text and soft colors; neutral for a line. */
+.nb-stepper {
+  --nb-pill: var(--color-text);
+  --nb-pill-soft: var(--color-fill-soft);
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: 2px;
+  min-height: 40px;
+  padding-block: 0;
+  padding-inline: 12px 4px;
+  border-radius: var(--radius-round);
+  background-color: var(--nb-pill-soft);
+  transition: box-shadow var(--transition-fast) ease;
 }
 
-.portion-stepper-label {
-  margin-inline-end: var(--space-1);
+.nb-stepper[data-group='protein'] {
+  --nb-pill: var(--color-portion-protein-text);
+  --nb-pill-soft: var(--color-portion-protein-soft);
+}
+
+.nb-stepper[data-group='carb'] {
+  --nb-pill: var(--color-portion-carb-text);
+  --nb-pill-soft: var(--color-portion-carb-soft);
+}
+
+.nb-stepper[data-group='fat'] {
+  --nb-pill: var(--color-portion-fat-text);
+  --nb-pill-soft: var(--color-portion-fat-soft);
+}
+
+.nb-stepper[data-group='snack'] {
+  --nb-pill: var(--color-portion-snack-text);
+  --nb-pill-soft: var(--color-portion-snack-soft);
+}
+
+/* Nothing of this group in the meal: outlined and quiet. */
+.nb-stepper[data-zero] {
+  --nb-pill: var(--color-text-faint);
+  background-color: transparent;
+  box-shadow: inset 0 0 0 1px var(--color-hairline);
+}
+
+.nb-stepper-label {
+  margin-inline-end: 6px;
   font-size: var(--text-xs);
-  color: var(--color-text-muted);
+  font-weight: var(--font-weight-semibold);
+  color: var(--nb-pill);
 }
 
-.portion-stepper-button {
+.nb-stepper-value {
+  min-width: 26px;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--nb-pill);
+  text-align: center;
+}
+
+.nb-stepper-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 32px;
   height: 32px;
-  padding: 0;
-  font-size: var(--text-base);
-  background-color: var(--color-bg);
-  border: var(--border-width-thin) solid var(--color-border);
-  border-radius: var(--radius-none);
-  cursor: pointer;
+  border-radius: var(--radius-round);
+  background-color: var(--surface-qv-pill);
+  color: var(--nb-pill);
+  transition:
+    transform var(--transition-press) var(--ease-press),
+    background-color var(--transition-fast) ease;
 }
 
-.portion-stepper-button:active:not(:disabled) {
-  background-color: var(--color-surface);
+.nb-stepper-button:not(:disabled):active {
+  transform: scale(0.97);
 }
 
-@media (hover: hover) {
-  .portion-stepper-button:hover:not(:disabled) {
-    border-color: var(--color-primary);
+.nb-stepper-button:disabled {
+  opacity: var(--opacity-disabled-strong);
+  cursor: default;
+}
+
+.nb-stepper-button:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .nb-stepper:hover {
+    box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--nb-pill) 40%, transparent);
+  }
+
+  .nb-stepper-button:not(:disabled):hover {
+    background-color: var(--color-card);
   }
 }
 
-.portion-stepper-button:disabled {
-  cursor: default;
-  opacity: var(--opacity-faint);
-}
-
-.portion-stepper-value {
-  min-width: 2.5ch;
-  font-weight: var(--font-weight-semibold);
-  text-align: center;
+@media (prefers-reduced-motion: reduce) {
+  .nb-stepper,
+  .nb-stepper-button {
+    transition: none;
+  }
 }

@@ -1,0 +1,66 @@
+.macro-bars {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.macro-bars-top {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto 44px;
+  gap: 8px;
+  align-items: baseline;
+  margin-block-end: 6px;
+  font-size: var(--text-sm);
+}
+
+.macro-bars-dot {
+  align-self: center;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-round);
+  background-color: var(--group-color);
+}
+
+.macro-bars-portions {
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.macro-bars-portions small,
+.macro-bars-percent {
+  font-size: var(--text-2xs);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-muted);
+}
+
+.macro-bars-percent {
+  text-align: end;
+}
+
+.macro-bars-track {
+  display: block;
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-bar);
+  background-color: var(--color-fill-soft);
+}
+
+.macro-bars-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-bar);
+  background-color: var(--group-color);
+  transform: scaleX(var(--share));
+  /* physical: transform-origin has no logical keyword — the bar fills from the reading start */
+  transform-origin: right;
+}
+
+[dir='ltr'] .macro-bars-fill {
+  transform-origin: left;
+}

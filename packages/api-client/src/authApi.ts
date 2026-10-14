@@ -39,9 +39,9 @@ export function createAuthApi(client: AxiosInstance) {
     }
   }
 
-  async function resetPassword(token: string, password: string): Promise<string> {
+  async function resetPassword(token: string, password: string, confirmPassword?: string): Promise<string> {
     try {
-      const { data } = await client.post<{ message: string }>('/auth/reset-password', { token, password });
+      const { data } = await client.post<{ message: string }>('/auth/reset-password', { token, password, confirmPassword });
       return data.message;
     } catch (error) {
       throw new Error(extractErrorMessage(error, ''));

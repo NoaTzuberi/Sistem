@@ -7,6 +7,7 @@ import {
   getMyBodyMetrics,
   putMyBodyMetric,
   putMyProgressPhoto,
+  putMyStartingPhoto,
 } from './bodyMetric.controller';
 
 // The trainee's own body tracking (Phase 10, PRD §5.5), one day per :date
@@ -20,4 +21,5 @@ bodyMetricsRouter.get('/', getMyBodyMetrics);
 bodyMetricsRouter.put('/:date', putMyBodyMetric);
 bodyMetricsRouter.delete('/:date', deleteMyBodyMetric);
 bodyMetricsRouter.put('/:date/photos/:pose', readPhotoBody, putMyProgressPhoto);
+bodyMetricsRouter.put('/:date/starting-photo', readPhotoBody, putMyStartingPhoto);
 bodyMetricsRouter.delete('/:date/photos/:pose', deleteMyProgressPhoto);

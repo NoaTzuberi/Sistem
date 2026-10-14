@@ -101,3 +101,136 @@ button {
   --workout-color: var(--color-workout-5);
   --workout-color-soft: var(--color-workout-5-soft);
 }
+
+/*
+ * A movement pattern's color, by its group (patternGroupClass in exerciseLibrary/data/patternGroups.ts).
+ * --pattern-color strong, --pattern-soft soft. Identity only — never a status.
+ */
+.pattern-group-knee {
+  --pattern-color: var(--color-pattern-knee);
+  --pattern-soft: var(--color-pattern-knee-soft);
+}
+
+.pattern-group-hip {
+  --pattern-color: var(--color-pattern-hip);
+  --pattern-soft: var(--color-pattern-hip-soft);
+}
+
+.pattern-group-chest {
+  --pattern-color: var(--color-pattern-chest);
+  --pattern-soft: var(--color-pattern-chest-soft);
+}
+
+.pattern-group-back {
+  --pattern-color: var(--color-pattern-back);
+  --pattern-soft: var(--color-pattern-back-soft);
+}
+
+.pattern-group-shoulders {
+  --pattern-color: var(--color-pattern-shoulders);
+  --pattern-soft: var(--color-pattern-shoulders-soft);
+}
+
+.pattern-group-core {
+  --pattern-color: var(--color-pattern-core);
+  --pattern-soft: var(--color-pattern-core-soft);
+}
+
+.pattern-group-full {
+  --pattern-color: var(--color-pattern-full);
+  --pattern-soft: var(--color-pattern-full-soft);
+}
+
+.pattern-group-none {
+  --pattern-color: var(--color-pattern-none);
+  --pattern-soft: var(--color-pattern-none-soft);
+}
+
+/*
+ * A body measurement's color (measureColorClass in trainees/data/bodySummary.ts): its dot, line,
+ * sparkline and selected row. Also feeds the area chart (--trend-color) and the sparkline (--stat-color).
+ */
+.measure-color-chest,
+.measure-color-waist,
+.measure-color-hips,
+.measure-color-arms,
+.measure-color-thighs,
+.measure-color-other {
+  --trend-color: var(--measure-color);
+  --stat-color: var(--measure-color);
+}
+
+.measure-color-chest {
+  --measure-color: var(--color-measure-chest);
+}
+
+.measure-color-waist {
+  --measure-color: var(--color-measure-waist);
+}
+
+.measure-color-hips {
+  --measure-color: var(--color-measure-hips);
+}
+
+.measure-color-arms {
+  --measure-color: var(--color-measure-arms);
+}
+
+.measure-color-thighs {
+  --measure-color: var(--color-measure-thighs);
+}
+
+.measure-color-other {
+  --measure-color: var(--color-primary);
+}
+
+/*
+ * An achievement category's color (achievementCategoryClass in trainees/data/achievementCategories.ts):
+ * --ach-color the ink, --ach-light the lighter shade (medal gradient, confetti, unlocked card).
+ */
+.ach-category-workouts {
+  --ach-color: var(--color-ach-workouts);
+  --ach-light: var(--color-ach-workouts-light);
+}
+
+.ach-category-streaks {
+  --ach-color: var(--color-ach-streaks);
+  --ach-light: var(--color-ach-streaks-light);
+}
+
+.ach-category-perfect {
+  --ach-color: var(--color-ach-perfect);
+  --ach-light: var(--color-ach-perfect-light);
+}
+
+.ach-category-records {
+  --ach-color: var(--color-ach-records);
+  --ach-light: var(--color-ach-records-light);
+}
+
+.ach-category-volume {
+  --ach-color: var(--color-ach-volume);
+  --ach-light: var(--color-ach-volume-light);
+}
+
+.ach-category-tracking {
+  --ach-color: var(--color-ach-tracking);
+  --ach-light: var(--color-ach-tracking-light);
+}
+
+/* A portion group's color on a trainee's Nutrition tab (donut, bars): --group-color. Identity, not status. */
+.nutrition-group-protein {
+  --group-color: var(--color-macro-protein);
+}
+
+.nutrition-group-carb {
+  --group-color: var(--color-macro-carb);
+}
+
+.nutrition-group-fat {
+  --group-color: var(--color-macro-fat);
+}
+
+.nutrition-group-snack {
+  --group-color: var(--color-macro-snack);
+}

@@ -1,146 +1,32 @@
-.exercise-library-page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+/* The exercise library sits on the dashboard canvas: the list column and the chosen family. */
+.library-page {
+  min-width: 0;
 }
 
-.exercise-library-title {
-  margin: 0;
-  font-size: var(--text-2xl);
-}
-
-.exercise-library-intro {
-  margin: 0;
-  max-width: 72ch;
-  color: var(--color-text-muted);
-}
-
-.exercise-library-layout {
+.library-layout {
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) minmax(320px, 1.3fr);
-  gap: var(--space-4);
+  grid-template-columns: minmax(360px, 460px) minmax(0, 1fr);
+  gap: 16px;
   align-items: start;
 }
 
-@media (max-width: 900px) { /* = --breakpoint-xl */
-  .exercise-library-layout {
-    grid-template-columns: 1fr;
-  }
-}
-
-.exercise-library-list,
-.exercise-library-detail {
+.library-column {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-3);
-  border: var(--border-width-thin) solid var(--color-border);
+  gap: 12px;
+  min-width: 0;
 }
 
-.exercise-library-detail {
+/* The chosen family stays in view while the list scrolls. */
+.library-detail {
   position: sticky;
-  inset-block-start: var(--space-3);
+  top: 16px;
+  min-width: 0;
 }
 
-.exercise-library-filters,
-.exercise-library-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-}
-
-.exercise-library-filter {
-  min-height: var(--space-5);
-  padding: 0 var(--space-2);
-  font-family: var(--font-family-body);
-  font-size: var(--text-sm);
-  color: var(--color-text);
-  background-color: var(--color-surface);
-  border: var(--border-width-thin) solid var(--color-border);
-  border-radius: var(--radius-none);
-  cursor: pointer;
-}
-
-.exercise-library-filter[aria-pressed='true'] {
-  color: var(--color-primary-deep);
-  background-color: var(--color-primary-soft);
-  border-color: var(--color-primary);
-}
-
-.exercise-library-filter:active,
-.exercise-library-row:active {
-  background-color: var(--color-primary-soft);
-}
-
-@media (hover: hover) {
-  .exercise-library-filter:hover,
-  .exercise-library-row:hover {
-    border-color: var(--color-primary);
+/* Narrower: the list only — a family opens as a full-screen sheet. */
+@media (max-width: 1000px) {
+  .library-layout {
+    grid-template-columns: minmax(0, 1fr);
   }
-}
-
-.exercise-library-input {
-  flex: 1 1 160px;
-  min-height: var(--space-5);
-  padding: 0 var(--space-2);
-  font-size: var(--text-sm);
-  background-color: var(--color-bg);
-  border: var(--border-width-thin) solid var(--color-border);
-  border-radius: var(--radius-none);
-}
-
-.exercise-library-input:focus-visible {
-  outline: var(--border-width-medium) solid var(--color-primary);
-  outline-offset: 0;
-}
-
-.exercise-library-rows {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.exercise-library-row {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-1);
-  width: 100%;
-  padding: var(--space-2);
-  font-family: var(--font-family-body);
-  color: var(--color-text);
-  text-align: start;
-  background-color: var(--color-bg);
-  border: var(--border-width-thin) solid var(--color-border);
-  border-radius: var(--radius-none);
-  cursor: pointer;
-}
-
-.exercise-library-row[aria-current='true'] {
-  border-color: var(--color-primary);
-}
-
-.exercise-library-row-name {
-  font-weight: var(--font-weight-semibold);
-}
-
-.exercise-library-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-}
-
-.exercise-library-muted {
-  margin: 0;
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-}
-
-.exercise-library-error {
-  margin: 0;
-  font-size: var(--text-sm);
-  color: var(--color-error);
 }

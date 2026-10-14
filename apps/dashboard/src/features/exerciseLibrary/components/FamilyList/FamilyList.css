@@ -1,0 +1,47 @@
+.family-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.family-list-count {
+  margin: 0;
+  padding: 0 8px;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.family-list-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.family-list-message {
+  margin: 0;
+  padding: 8px;
+  color: var(--color-text-muted);
+}
+
+.family-list-empty {
+  padding: 32px 20px;
+  border-radius: var(--radius-card);
+  color: var(--color-text-muted);
+  text-align: center;
+  background-color: var(--surface-pill);
+}
+
+.family-list-empty p {
+  margin: 0;
+}
+
+.family-list-empty .family-list-empty-title {
+  margin-bottom: 4px;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}

@@ -1,0 +1,78 @@
+.nb-checklist {
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.nb-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 4px;
+  border-radius: var(--radius-field);
+  font-size: var(--text-sm);
+  text-align: start;
+  transition:
+    transform var(--transition-press) var(--ease-press),
+    background-color var(--transition-fast) ease;
+}
+
+.nb-check:active {
+  transform: scale(0.97);
+}
+
+.nb-check:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+/* Done: Cherry Rose · blocks publishing: pink · advice: amber · optional: quiet. */
+.nb-check-mark {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-primary);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-on-primary);
+}
+
+.nb-check[data-state='ok'] .nb-check-mark {
+  background-color: var(--color-primary-deep);
+}
+
+.nb-check[data-state='advice'] .nb-check-mark {
+  background-color: var(--color-warning-soft);
+  color: var(--color-warning-text);
+}
+
+.nb-check[data-state='optional'] .nb-check-mark {
+  background-color: var(--color-fill-soft);
+}
+
+.nb-check[data-state='todo'] .nb-check-label {
+  font-weight: var(--font-weight-semibold);
+}
+
+.nb-check-optional {
+  margin-inline-start: auto;
+  font-size: var(--text-2xs);
+  color: var(--color-text-muted);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .nb-check:hover {
+    background-color: var(--color-fill-soft);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nb-check {
+    transition: none;
+  }
+}

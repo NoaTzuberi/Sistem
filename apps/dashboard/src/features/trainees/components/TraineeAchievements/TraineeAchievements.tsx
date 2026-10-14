@@ -1,8 +1,13 @@
-import { useCallback } from 'react';
-import type { AchievementProgress, Language } from '@sistem/types';
-import { describeAchievement, describeAchievementProgress, fill, formatUnlockedDate, formatVolume, sharedCopy, streakWeekLabel, streakWeeksLabel, useCopy, useLanguage, useLoad } from '@sistem/shared';
-import { getTraineeAchievements } from '../../../../services/coach/coachService';
-import { Button } from '../../../../components/common/Button/Button';
+import type { AchievementOverview } from '@sistem/types';
+import { fill, sharedCopy, useCopy } from '@sistem/shared';
+import { PillButton } from '../../../../components/common/PillButton/PillButton';
+import { useStatsIntro } from '../../../stats/hooks/useStatsIntro';
+import type { AchievementBoard } from '../../data/achievementBoard';
+import { useAchievementBoard } from '../../hooks/useAchievementBoard';
+import { AchievementGrid } from '../AchievementGrid/AchievementGrid';
+import { AchievementModal } from '../AchievementModal/AchievementModal';
+import { AchievementsHero } from '../AchievementsHero/AchievementsHero';
+import { AchievementStats } from '../AchievementStats/AchievementStats';
 import './TraineeAchievements.css';
 import { traineesCopy } from '../../copy';
 
@@ -10,85 +15,56 @@ interface TraineeAchievementsProps {
   traineeId: string;
 }
 
-function status(entry: AchievementProgress, copy: (typeof traineesCopy)['he'], language: Language): string {
-  if (entry.count > 0 && entry.unlockedAt) {
-    const times = entry.repeatable && entry.count > 1 ? ` · ×${entry.count}` : '';
-    return fill(copy.unlockedOn, { date: formatUnlockedDate(entry.unlockedAt, language) }) + times;
-  }
-  return describeAchievementProgress(entry, language) ?? copy.notYet;
-}
-
 /**
- * The Achievements tab (Phase 11, PRD §6): her weekly streak, lifetime numbers and
- * every achievement with its date or progress. Read-only — computed by the server.
+ * The Achievements tab (Phase 11, PRD §6), game-like: the pink hero (unlocked count, XP bar, what
+ * is next, streak, latest unlock), her numbers, and every badge by category with its modal.
+ * Read-only — everything is computed by the server.
  */
 export function TraineeAchievements({ traineeId }: TraineeAchievementsProps) {
-  const language = useLanguage();
   const shared = useCopy(sharedCopy);
-  const copy = useCopy(traineesCopy);
-  const load = useCallback(() => getTraineeAchievements(traineeId), [traineeId]);
-  const { data, error, isLoading, reload } = useLoad(load, copy.achievementsLoadError);
+  const state = useAchievementBoard(traineeId);
 
-  if (isLoading && !data) return <p className="trainee-achievements-message">{shared.common.loading}</p>;
-  if (!data) {
+  if (state.isLoading && !state.overview) return <p className="trainee-achievements-message">{shared.common.loading}</p>;
+  if (!state.overview || !state.board) {
     return (
       <p className="trainee-achievements-message" role="alert">
-        {error} <Button size="sm" onClick={reload}>{shared.common.retry}</Button>
+        {state.error}{' '}
+        <PillButton size="sm" onClick={state.reload}>
+          {shared.common.retry}
+        </PillButton>
       </p>
     );
   }
+  return <AchievementsContent overview={state.overview} board={state.board} state={state} />;
+}
 
-  const unlocked = data.progress
-    .filter((entry) => entry.count > 0)
-    .sort((a, b) => (b.unlockedAt ?? '').localeCompare(a.unlockedAt ?? ''));
-  const locked = data.progress.filter((entry) => entry.count === 0);
-  const facts = [
-    { label: copy.streak, value: streakWeeksLabel(data.streak.current, language) },
-    { label: copy.bestStreak, value: streakWeeksLabel(data.streak.best, language) },
-    { label: copy.thisWeek, value: streakWeekLabel(data.streak, language) ?? copy.noPlanThisWeek },
-    { label: copy.workouts, value: String(data.stats.completedWorkouts) },
-    { label: shared.coach.totalVolume, value: formatVolume(data.stats.totalVolume, language) },
-    { label: copy.prs, value: String(data.stats.personalRecords) },
-  ];
+/** Mounted with the data, so the entrance (count-up, XP bar) starts when there is something to show. */
+function AchievementsContent({
+  overview,
+  board,
+  state,
+}: {
+  overview: AchievementOverview;
+  board: AchievementBoard;
+  state: ReturnType<typeof useAchievementBoard>;
+}) {
+  const copy = useCopy(traineesCopy);
+  const intro = useStatsIntro('sistem.trainee.achievementsIntroPlayed');
+  const openBadge = board.badges.find((badge) => badge.type === state.openType) ?? null;
 
   return (
     <div className="trainee-achievements">
-      <dl className="trainee-achievements-facts">
-        {facts.map((fact) => (
-          <div key={fact.label}>
-            <dt>{fact.label}</dt>
-            <dd>{fact.value}</dd>
-          </div>
-        ))}
-      </dl>
-      <p className="trainee-achievements-note">
-        {fill(copy.streakRule, { percent: Math.round(data.streak.weekCompletionRatio * 100) })}
-      </p>
-
-      <table className="trainee-achievements-table">
-        <caption>
-          {fill(copy.achievementsCaption, { unlocked: unlocked.length, total: data.progress.length })}
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col">{copy.achievement}</th>
-            <th scope="col">{copy.rule}</th>
-            <th scope="col">{copy.status}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {[...unlocked, ...locked].map((entry) => {
-            const text = describeAchievement(entry.type, language);
-            return (
-              <tr key={entry.type} className={entry.count > 0 ? 'trainee-achievements-unlocked' : undefined}>
-                <th scope="row">{text.name}</th>
-                <td>{text.description}</td>
-                <td>{status(entry, copy, language)}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      <AchievementsHero
+        board={board}
+        streak={overview.streak}
+        noWorkoutsYet={overview.stats.completedWorkouts === 0}
+        intro={intro}
+        onOpen={(badge) => state.open(badge.type)}
+      />
+      <AchievementStats overview={overview} />
+      <AchievementGrid board={board} filter={state.filter} onFilter={state.setFilter} onOpen={state.open} />
+      <p className="trainee-achievements-note">{fill(copy.streakRule, { percent: Math.round(overview.streak.weekCompletionRatio * 100) })}</p>
+      <AchievementModal badge={openBadge} isOpen={state.isOpen} onClose={state.close} />
     </div>
   );
 }

@@ -1,0 +1,169 @@
+.nb-option {
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: var(--radius-chart-tip);
+  background-color: var(--color-card);
+  box-shadow: inset 0 0 0 1px var(--color-hairline);
+}
+
+.nb-option-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Text that reads as text until it is edited (a meal or option name, a text line). */
+.nb-inline-input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--radius-field);
+  background: none;
+  font: inherit;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  outline: none;
+  transition: background-color var(--transition-fast) ease;
+}
+
+.nb-inline-input:focus {
+  background-color: var(--color-card);
+  box-shadow: var(--ring-field);
+}
+
+/* A small icon tool (move, delete, remove a line). */
+.nb-tool {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-field);
+  color: var(--color-text-muted);
+  transition:
+    transform var(--transition-press) var(--ease-press),
+    background-color var(--transition-fast) ease,
+    color var(--transition-fast) ease;
+}
+
+.nb-tool:disabled {
+  opacity: var(--opacity-disabled-strong);
+  cursor: default;
+}
+
+.nb-tool:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+.nb-tool-delete {
+  color: var(--color-nb-delete);
+}
+
+.nb-tool:focus-visible,
+.nb-pill-button:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.nb-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nb-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-field);
+  background-color: var(--color-fill-soft);
+  font-size: var(--text-sm);
+}
+
+.nb-line-food {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 160px;
+}
+
+.nb-line-portion {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.nb-line-select {
+  min-height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-field);
+  background-color: var(--color-card);
+  font: inherit;
+  font-size: var(--text-xs);
+}
+
+.nb-option-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.nb-pill-button {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-fill-soft);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+  transition:
+    transform var(--transition-press) var(--ease-press),
+    background-color var(--transition-fast) ease;
+}
+
+.nb-pill-button:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+.nb-pill-button:disabled {
+  color: var(--color-text-faint);
+  cursor: default;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .nb-tool:not(:disabled):hover {
+    background-color: var(--color-fill-soft);
+    color: var(--color-text);
+  }
+
+  .nb-tool-delete:not(:disabled):hover {
+    background-color: var(--color-nb-delete-soft);
+    color: var(--color-nb-delete);
+  }
+
+  .nb-inline-input:not(:focus):hover {
+    background-color: var(--color-fill-soft);
+  }
+
+  .nb-pill-button:not(:disabled):hover {
+    background-color: var(--color-hairline);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nb-inline-input,
+  .nb-tool,
+  .nb-pill-button {
+    transition: none;
+  }
+}

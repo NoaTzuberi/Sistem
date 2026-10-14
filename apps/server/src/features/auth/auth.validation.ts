@@ -4,6 +4,7 @@ interface RegisterInput {
   name?: string;
   email?: string;
   password?: string;
+  confirmPassword?: unknown;
   timezone?: unknown;
   language?: unknown;
 }
@@ -20,6 +21,7 @@ interface ForgotPasswordInput {
 interface ResetPasswordInput {
   token?: string;
   password?: string;
+  confirmPassword?: unknown;
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -36,6 +38,9 @@ export function validateRegisterInput(input: RegisterInput): ServerMessage | nul
   }
   if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
     return msg('password_too_short', { min: MIN_PASSWORD_LENGTH });
+  }
+  if (input.confirmPassword !== undefined && input.confirmPassword !== password) {
+    return msg('passwords_differ');
   }
   if (input.timezone !== undefined && typeof input.timezone !== 'string') {
     return msg('timezone_not_string');
@@ -74,6 +79,9 @@ export function validateResetPasswordInput(input: ResetPasswordInput): ServerMes
   }
   if (typeof input.password !== 'string' || input.password.length < MIN_PASSWORD_LENGTH) {
     return msg('password_too_short', { min: MIN_PASSWORD_LENGTH });
+  }
+  if (input.confirmPassword !== undefined && input.confirmPassword !== input.password) {
+    return msg('passwords_differ');
   }
 
   return null;

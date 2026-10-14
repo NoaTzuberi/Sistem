@@ -1,0 +1,44 @@
+.library-summary {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+}
+
+.library-summary-card {
+  display: flex;
+  flex-direction: column-reverse;
+  min-width: 96px;
+  padding: 10px 16px;
+  border-radius: var(--radius-block);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+}
+
+.library-summary-card dt {
+  font-size: var(--text-2xs);
+  color: var(--color-text-muted);
+}
+
+.library-summary-card dd {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: var(--font-weight-light);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  letter-spacing: var(--letter-spacing-display);
+}
+
+.library-summary-card-warning dd {
+  color: var(--color-warning-text);
+}
+
+@media (max-width: 640px) { /* = --breakpoint-md */
+  .library-summary {
+    width: 100%;
+  }
+
+  .library-summary-card {
+    flex: 1;
+    min-width: 0;
+  }
+}

@@ -1,0 +1,99 @@
+.status-segmented {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 3px;
+  border-radius: var(--radius-row);
+  background-color: var(--surface-notice-quiet);
+}
+
+/* The white thumb under the chosen quarter. It only ever moves by transform. */
+.status-segmented-thumb {
+  position: absolute;
+  inset-block: 3px;
+  inset-inline-start: 3px;
+  width: calc((100% - 6px) / 4);
+  border-radius: var(--radius-field);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-segment-thumb);
+  transition: transform var(--transition-segment) var(--ease-press);
+}
+
+/* Each step is one quarter along the reading direction (transforms have no logical form). */
+:root[dir='rtl'] .status-segmented-at-1 .status-segmented-thumb { transform: translateX(-100%); }
+:root[dir='rtl'] .status-segmented-at-2 .status-segmented-thumb { transform: translateX(-200%); }
+:root[dir='rtl'] .status-segmented-at-3 .status-segmented-thumb { transform: translateX(-300%); }
+:root[dir='ltr'] .status-segmented-at-1 .status-segmented-thumb { transform: translateX(100%); }
+:root[dir='ltr'] .status-segmented-at-2 .status-segmented-thumb { transform: translateX(200%); }
+:root[dir='ltr'] .status-segmented-at-3 .status-segmented-thumb { transform: translateX(300%); }
+
+.status-segmented-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 4px;
+  border-radius: var(--radius-field);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+/* 34px high; the pseudo-element keeps a 44px touch target (the button is its anchor). */
+.status-segmented-option::after {
+  content: '';
+  position: absolute;
+  inset: -5px 0;
+}
+
+.status-segmented-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-segmented-count {
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+/* To review = amber · unclear = grey · reviewed = Cherry Rose. No green. */
+.status-segmented-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-round);
+}
+
+.status-segmented-dot-needed {
+  background-color: var(--color-pattern-shoulders);
+}
+
+.status-segmented-dot-unclear {
+  background-color: var(--color-text-faint);
+}
+
+.status-segmented-dot-reviewed {
+  background-color: var(--color-primary-deep);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .status-segmented-option:hover .status-segmented-count {
+    color: var(--color-text);
+  }
+}
+
+.status-segmented-option:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-segmented-thumb {
+    transition: none;
+  }
+}

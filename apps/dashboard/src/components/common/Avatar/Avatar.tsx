@@ -1,3 +1,4 @@
+import { initialsOf } from './initials';
 import './Avatar.css';
 
 const TINTS = ['pink', 'lilac', 'peach', 'sky'] as const;
@@ -7,15 +8,6 @@ interface AvatarProps {
   /** Keeps a person's tint the same everywhere (her id); without it the name decides. */
   seed?: string;
   size?: 'sm' | 'md' | 'lg';
-}
-
-function initialsOf(name: string): string {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((word) => Array.from(word)[0] ?? '')
-    .join('');
 }
 
 function tintOf(seed: string): (typeof TINTS)[number] {

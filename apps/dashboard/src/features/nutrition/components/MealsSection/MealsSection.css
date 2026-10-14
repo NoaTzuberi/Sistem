@@ -1,0 +1,44 @@
+.nb-meals {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nb-add-meal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 56px;
+  border: 1.5px dashed var(--color-nb-dash);
+  border-radius: var(--radius-qv-tile);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  transition:
+    transform var(--transition-press) var(--ease-press),
+    background-color var(--transition-fast) ease,
+    border-color var(--transition-fast) ease;
+}
+
+.nb-add-meal:active {
+  transform: scale(0.97);
+}
+
+.nb-add-meal:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .nb-add-meal:hover {
+    border-color: var(--color-qv-waiting-cloud);
+    background-color: var(--color-nb-target-tint);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nb-add-meal {
+    transition: none;
+  }
+}

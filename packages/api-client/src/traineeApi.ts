@@ -150,6 +150,21 @@ export function createTraineeApi(client: AxiosInstance) {
     return data;
   }
 
+  /** The single dated baseline photo; sent after client-side compression as a raw image. */
+  async function uploadStartingPhoto(
+    date: string,
+    photo: Blob,
+    onProgress?: (fraction: number) => void,
+  ): Promise<BodyMetricResponse> {
+    const { data } = await client.put<BodyMetricResponse>(`/body-metrics/${date}/starting-photo`, photo, {
+      headers: { 'Content-Type': photo.type || 'image/jpeg' },
+      onUploadProgress: (event) => {
+        if (onProgress && event.total) onProgress(event.loaded / event.total);
+      },
+    });
+    return data;
+  }
+
   async function removeProgressPhoto(date: string, pose: ProgressPhotoPose): Promise<BodyMetric | null> {
     const { data } = await client.delete<BodyMetricResponse>(`/body-metrics/${date}/photos/${pose}`);
     return data.metric;
@@ -242,6 +257,7 @@ export function createTraineeApi(client: AxiosInstance) {
     saveBodyMetric,
     deleteBodyMetricDay,
     uploadProgressPhoto,
+    uploadStartingPhoto,
     removeProgressPhoto,
     getAchievements,
     markAchievementsSeen,

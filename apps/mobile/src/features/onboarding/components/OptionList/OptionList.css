@@ -50,10 +50,6 @@
     transform var(--transition-fast) var(--ease-standard);
 }
 
-.option-list-multi .option-list-mark {
-  border-radius: var(--radius-check);
-}
-
 .option-list-option:active .option-list-mark {
   transform: scale(0.88);
 }
@@ -76,9 +72,87 @@
   transform: none;
 }
 
+/* The checkbox (multi): an outline that unwraps into the check mark. Both shapes are drawn with
+   stroke dashes, in the 18 × 18 viewBox — the dash numbers below are lengths in that viewBox. */
+.option-list-box {
+  position: relative;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  transition: transform var(--transition-fast) var(--ease-standard);
+}
+
+.option-list-box::before {
+  content: '';
+  position: absolute;
+  inset: -13px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-primary-soft);
+  opacity: 0;
+  transition: opacity var(--transition-fast) ease;
+}
+
+.option-list-box svg {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: var(--color-control-border);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke var(--transition-fast) ease;
+}
+
+.option-list-box path {
+  stroke-dasharray: 60;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset var(--transition-base) linear;
+}
+
+.option-list-box polyline {
+  stroke-dasharray: 22;
+  stroke-dashoffset: 66;
+  transition: stroke-dashoffset var(--transition-fast) linear;
+}
+
+.option-list-option:active .option-list-box {
+  transform: scale(0.88);
+}
+
+@media (hover: hover) {
+  .option-list-option:hover .option-list-box::before {
+    opacity: 1;
+  }
+
+  .option-list-option:hover .option-list-box svg {
+    stroke: var(--color-primary);
+  }
+}
+
+.option-list-option[aria-checked='true'] .option-list-box svg {
+  stroke: var(--color-primary);
+}
+
+.option-list-option[aria-checked='true'] .option-list-box path {
+  stroke-dashoffset: 60;
+}
+
+/* The check starts drawing once the outline is mostly gone. */
+.option-list-option[aria-checked='true'] .option-list-box polyline {
+  stroke-dashoffset: 42;
+  transition-delay: var(--transition-fast);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .option-list-mark,
-  .option-list-check {
+  .option-list-check,
+  .option-list-box,
+  .option-list-box::before,
+  .option-list-box svg,
+  .option-list-box path,
+  .option-list-box polyline {
     transition: none;
   }
 }

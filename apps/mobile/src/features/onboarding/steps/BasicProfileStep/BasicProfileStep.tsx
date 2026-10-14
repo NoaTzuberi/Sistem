@@ -1,7 +1,6 @@
 import { sharedCopy, useCopy } from '@sistem/shared';
 import { onboardingCopy } from '../../copy';
 import { Input } from '../../../../components/common/Input/Input';
-import { Select } from '../../../../components/common/Select/Select';
 import { SelectableChip } from '../../components/SelectableChip/SelectableChip';
 import type { OnboardingFormState } from '../../types';
 import './BasicProfileStep.css';
@@ -16,7 +15,6 @@ interface BasicProfileStepProps {
 export function BasicProfileStep({ formState, updateFormState }: BasicProfileStepProps) {
   const copy = useCopy(onboardingCopy).basicProfile;
   const shared = useCopy(sharedCopy);
-  const genderOptions = GENDER_IDS.map((value) => ({ value, label: shared.onboardingOptions.gender[value] }));
   return (
     <>
       <div className="basic-profile-fields">
@@ -52,18 +50,27 @@ export function BasicProfileStep({ formState, updateFormState }: BasicProfileSte
           value={formState.weight}
           onChange={(event) => updateFormState({ weight: event.target.value })}
         />
-        <Select
-          label={copy.gender}
-          placeholder={copy.selectPlaceholder}
-          value={formState.gender}
-          onChange={(event) => updateFormState({ gender: event.target.value })}
-          options={genderOptions}
-        />
       </div>
 
-      <div className="basic-profile-units">
+      {/* Chips, not a native dropdown: its popup opened in the wrong place on the moving card. */}
+      <div className="basic-profile-group" role="group" aria-label={copy.gender}>
+        <span className="text-label">{copy.gender}</span>
+        <div className="basic-profile-chips">
+          {GENDER_IDS.map((gender) => (
+            <SelectableChip
+              key={gender}
+              label={shared.onboardingOptions.gender[gender]}
+              selected={formState.gender === gender}
+              // Optional: tapping the chosen one clears it.
+              onClick={() => updateFormState({ gender: formState.gender === gender ? '' : gender })}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="basic-profile-group">
         <span className="text-label">{copy.preferredUnits}</span>
-        <div className="basic-profile-units-row">
+        <div className="basic-profile-chips">
           <SelectableChip
             label={shared.units.kg}
             selected={formState.units.weight === 'kg'}

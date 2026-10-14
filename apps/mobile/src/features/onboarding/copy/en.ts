@@ -63,7 +63,6 @@ export const en: CopyShape<typeof he> = {
     height: 'Height (cm)',
     weight: 'Weight',
     gender: 'Gender (optional)',
-    selectPlaceholder: 'Select...',
     preferredUnits: 'Preferred units',
   },
   goals: {
@@ -108,5 +107,11 @@ export const en: CopyShape<typeof he> = {
   review: {
     title: 'Your Sistem profile is ready.',
     body: 'Sistem will use your goals, schedule, activities, preferences, and equipment to build a more relevant training experience.',
+  },
+  startingPhoto: {
+    title: 'Starting photo',
+    explanation: 'Your photo is private, visible only to you and your coach, and helps you compare your progress.',
+    upload: 'Take / upload a photo',
+    skip: 'Skip for now',
   },
 };

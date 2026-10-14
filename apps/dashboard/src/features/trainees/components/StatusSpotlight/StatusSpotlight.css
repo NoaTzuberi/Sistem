@@ -1,0 +1,155 @@
+/* --tqv-ring: the ring's color, by what the card is about. */
+.tqv-spotlight {
+  --tqv-ring: var(--color-primary);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border-radius: var(--radius-qv-card);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+}
+
+.tqv-spotlight[data-tone='late'] {
+  background-image: linear-gradient(120deg, var(--color-qv-late-tint), var(--color-card) 70%);
+  box-shadow: var(--shadow-qv-late), var(--shadow-panel);
+}
+
+.tqv-spotlight[data-tone='late'] .tqv-spotlight-title {
+  color: var(--color-primary-deep);
+}
+
+.tqv-spotlight[data-tone='attention'] {
+  --tqv-ring: var(--color-qv-attention-avatar-to);
+  background-image: linear-gradient(120deg, var(--color-warning-soft), var(--color-card) 70%);
+}
+
+.tqv-spotlight[data-tone='attention'] .tqv-spotlight-title {
+  color: var(--color-warning-text);
+}
+
+.tqv-spotlight[data-tone='idle'] {
+  --tqv-ring: var(--color-text-faint);
+}
+
+.tqv-ring {
+  position: relative;
+  width: 72px;
+  height: 72px;
+}
+
+.tqv-ring-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.tqv-ring-track,
+.tqv-ring-value {
+  fill: none;
+  stroke-width: 7;
+}
+
+.tqv-ring-track {
+  stroke: var(--color-meter-track);
+}
+
+/* Fills from empty as the drawer opens. */
+.tqv-ring-value {
+  stroke: var(--tqv-ring);
+  stroke-linecap: round;
+  animation: tqv-ring-fill var(--transition-qv-ring) var(--ease-press) both;
+}
+
+@keyframes tqv-ring-fill {
+  from {
+    stroke-dashoffset: 100;
+  }
+}
+
+.tqv-ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.tqv-spotlight-text {
+  min-width: 0;
+}
+
+.tqv-spotlight-title {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.tqv-spotlight-line {
+  margin: 3px 0 0;
+  font-size: var(--text-xs);
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+
+/* One tile per planned workout, in its identity color. */
+.tqv-workouts {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(var(--tqv-count), minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tqv-workout {
+  --tqv-workout: var(--color-workout-1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  height: 46px;
+  border-radius: var(--radius-chart-tip);
+  background-color: var(--color-fill-soft);
+  font-size: var(--text-2xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.tqv-workout[data-tone='1'] { --tqv-workout: var(--color-workout-2); }
+.tqv-workout[data-tone='2'] { --tqv-workout: var(--color-stat-orange); }
+.tqv-workout[data-tone='3'] { --tqv-workout: var(--color-stat-blue); }
+.tqv-workout[data-tone='4'] { --tqv-workout: var(--color-workout-5); }
+
+.tqv-workout-letter {
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.tqv-workout[data-state='done'] {
+  background-color: color-mix(in srgb, var(--tqv-workout) 14%, var(--color-card));
+}
+
+.tqv-workout[data-state='done'] .tqv-workout-letter {
+  color: var(--tqv-workout);
+}
+
+.tqv-workout[data-state='missed'] {
+  background-image: repeating-linear-gradient(135deg, var(--color-fill-soft) 0 5px, var(--color-qv-skip-stripe) 5px 10px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tqv-ring-value {
+    animation: none;
+  }
+}

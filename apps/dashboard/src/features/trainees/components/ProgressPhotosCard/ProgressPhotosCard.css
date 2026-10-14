@@ -1,0 +1,171 @@
+/* Before at the reading start, after at the reading end; the slider's split is --compare-split (0–100 %). */
+.photo-compare {
+  position: relative;
+  height: 280px;
+  overflow: hidden;
+  border-radius: var(--radius-block);
+  background-color: var(--color-fill-soft);
+}
+
+.photo-compare-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+/* physical: clip-path has no logical form — the after photo shows past the split, toward the reading end */
+.photo-compare-after {
+  clip-path: inset(0 0 0 var(--compare-split));
+}
+
+[dir='rtl'] .photo-compare-after {
+  clip-path: inset(0 var(--compare-split) 0 0);
+}
+
+.photo-compare-chip {
+  position: absolute;
+  z-index: var(--z-raised);
+  inset-block-start: 12px;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--radius-round);
+  background-color: var(--surface-chart-tip);
+  -webkit-backdrop-filter: var(--blur-soft);
+  backdrop-filter: var(--blur-soft);
+  font-size: var(--text-2xs);
+  font-weight: var(--font-weight-semibold);
+  pointer-events: none;
+}
+
+.photo-compare-chip-before {
+  inset-inline-start: 12px;
+}
+
+.photo-compare-chip-after {
+  inset-inline-end: 12px;
+}
+
+/* The whole photo is the slider: drag anywhere, or arrow keys once focused. */
+.photo-compare-range {
+  position: absolute;
+  z-index: var(--z-overlay);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: ew-resize;
+}
+
+.photo-compare-handle {
+  position: absolute;
+  z-index: var(--z-raised);
+  inset-block: 0;
+  inset-inline-start: var(--compare-split);
+  width: 3px;
+  background-color: var(--color-compare-handle);
+  box-shadow: var(--shadow-compare-handle);
+  translate: -50% 0;
+  pointer-events: none;
+}
+
+[dir='rtl'] .photo-compare-handle {
+  translate: 50% 0;
+}
+
+.photo-compare-handle::after {
+  content: '';
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-compare-handle);
+  box-shadow: var(--shadow-compare-handle);
+  translate: -50% -50%;
+}
+
+[dir='rtl'] .photo-compare-handle::after {
+  translate: 50% -50%;
+}
+
+.photo-compare-range:focus-visible + .photo-compare-handle::after {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.photo-strip {
+  display: grid;
+  grid-auto-columns: 72px;
+  grid-auto-flow: column;
+  gap: 8px;
+  margin: 0;
+  padding: 2px;
+  overflow-x: auto;
+  list-style: none;
+}
+
+.photo-strip-thumb {
+  position: relative;
+  display: block;
+  width: 72px;
+  height: 72px;
+  overflow: hidden;
+  border-radius: var(--radius-row);
+  transition:
+    transform var(--transition-press) var(--ease-press),
+    box-shadow var(--transition-fast) ease;
+}
+
+.photo-strip-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-strip-thumb[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 2px var(--color-primary);
+}
+
+.photo-strip-thumb[aria-pressed='true'] img {
+  opacity: 0.92;
+}
+
+.photo-strip-date {
+  position: absolute;
+  inset-block-end: 4px;
+  inset-inline-start: 4px;
+  padding: 1px 6px;
+  border-radius: var(--radius-round);
+  background-color: var(--surface-chart-tip);
+  font-size: var(--text-2xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.photo-strip-thumb:active {
+  transform: scale(0.97);
+}
+
+.photo-strip-thumb:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .photo-compare {
+    height: 240px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photo-strip-thumb {
+    transition: none;
+  }
+}
