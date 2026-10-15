@@ -125,5 +125,4 @@ promoted or seeded.
 - [`docs/PRD.md`](./docs/PRD.md) — product requirements (source of truth)
 - [`docs/BUILD_PLAN.md`](./docs/BUILD_PLAN.md) — phases and owner decisions
 - [`docs/phase-reports/`](./docs/phase-reports/) — one report per completed phase
-- [`docs/THIRD_PARTY_CONTENT.md`](./docs/THIRD_PARTY_CONTENT.md) — third-party data and licenses
 - [`docs/Onboarding.txt`](./docs/Onboarding.txt) — current onboarding copy

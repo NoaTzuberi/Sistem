@@ -27,6 +27,8 @@ apps/mobile/src/assets/onBoardingvid/
 
 # The coach's own reference content (nutrition guide + review notes) — the repo will become public
 docs/reference/
+# Notes on third-party data sources and licenses — kept locally, not in the public repo
+docs/THIRD_PARTY_CONTENT.md
 
 # Local-only files (kept on disk, not in the repo)
 workdes.txt
