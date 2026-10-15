@@ -27,7 +27,7 @@
   width: 32px;
   height: 32px;
   border-radius: var(--radius-qv-icon);
-  background-color: var(--ach-color);
+  background-color: var(--ach-solid);
   color: var(--color-on-primary);
 }
 

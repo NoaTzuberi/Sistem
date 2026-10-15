@@ -18,7 +18,7 @@
 }
 
 .food-picker-trigger[aria-expanded='true'] {
-  background-color: var(--color-primary);
+  background-color: var(--solid-pink); /* small white text: Neon Pink is only 3.8:1 */
   color: var(--color-on-primary);
 }
 

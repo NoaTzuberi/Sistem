@@ -33,10 +33,10 @@
 }
 
 .tqv-link[data-tab='logs'] { --tqv-link: var(--color-stat-purple); }
-.tqv-link[data-tab='nutrition'] { --tqv-link: var(--color-workout-3); }
+.tqv-link[data-tab='nutrition'] { --tqv-link: var(--solid-orange); } /* solids: white icon ≥ 3:1 */
 .tqv-link[data-tab='metrics'] { --tqv-link: var(--color-workout-4); }
 .tqv-link[data-tab='onboarding'] { --tqv-link: var(--color-primary-deep); }
-.tqv-link[data-tab='achievements'] { --tqv-link: var(--color-qv-achievements); }
+.tqv-link[data-tab='achievements'] { --tqv-link: var(--solid-amber); }
 
 /* The hairline between rows starts after the icon, as in a grouped list. */
 li + li .tqv-link::before {

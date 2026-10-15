@@ -40,7 +40,7 @@
   width: 24px;
   height: 24px;
   border-radius: var(--radius-round);
-  background-color: var(--color-primary);
+  background-color: var(--solid-pink); /* small white text: Neon Pink is only 3.8:1 */
   font-size: var(--text-xs);
   font-weight: var(--font-weight-bold);
   color: var(--color-on-primary);

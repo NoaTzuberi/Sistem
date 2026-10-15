@@ -59,14 +59,14 @@
 /* The number the coach takes: the largest, on the pink gradient. */
 .nb-eq-recommended {
   flex: 1.3;
-  background-image: linear-gradient(140deg, var(--color-nb-recommended-from), var(--color-primary) 60%, var(--color-nb-recommended-to));
+  background-image: linear-gradient(140deg, var(--color-nb-recommended-from), var(--color-nb-recommended-to));
   box-shadow: var(--shadow-nb-recommended);
   color: var(--color-on-primary);
 }
 
 .nb-eq-recommended .nb-eq-label,
 .nb-eq-recommended .nb-eq-small {
-  color: color-mix(in srgb, var(--color-on-primary) 85%, transparent);
+  color: var(--on-pink); /* full white: 11px captions need 4.5:1 */
 }
 
 .nb-eq-recommended .nb-eq-value {

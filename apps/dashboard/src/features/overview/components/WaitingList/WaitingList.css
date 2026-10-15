@@ -53,7 +53,7 @@
 /* Under 12 hours left: act now. */
 .waiting-left-urgent {
   color: var(--color-on-primary);
-  background-color: var(--color-primary);
+  background-color: var(--solid-pink); /* small white text: Neon Pink is only 3.8:1 */
 }
 
 .waiting-more {

@@ -73,7 +73,7 @@
 .medal-unlocked .medal-disc {
   width: var(--medal-disc-on);
   height: var(--medal-disc-on);
-  background-image: var(--gradient-medal-gloss), linear-gradient(150deg, var(--ach-light), var(--ach-color));
+  background-image: var(--gradient-medal-gloss), linear-gradient(150deg, var(--ach-color), var(--ach-solid)); /* ≥ 3:1 under the white icon */
   box-shadow:
     0 0 0 4px var(--color-card),
     0 0 0 6px color-mix(in srgb, var(--ach-color) 30%, transparent),

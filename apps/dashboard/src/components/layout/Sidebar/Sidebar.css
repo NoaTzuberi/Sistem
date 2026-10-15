@@ -139,7 +139,7 @@
 .sidebar-badge-hot {
   font-weight: var(--font-weight-semibold);
   color: var(--color-on-primary);
-  background-color: var(--color-primary);
+  background-color: var(--solid-pink); /* small white text: Neon Pink is only 3.8:1 */
 }
 
 .sidebar-foot {
@@ -239,7 +239,7 @@
 }
 
 .sidebar-rail .sidebar-badge-hot {
-  background-color: var(--color-primary);
+  background-color: var(--solid-pink);
 }
 
 .sidebar-rail .sidebar-foot,

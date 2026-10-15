@@ -44,7 +44,7 @@
   background-color: color-mix(in srgb, var(--nb-meal) 30%, var(--color-card));
   font-size: var(--text-xs);
   font-weight: var(--font-weight-bold);
-  color: color-mix(in srgb, var(--nb-meal) 45%, var(--color-text));
+  color: color-mix(in srgb, var(--nb-meal) 35%, var(--color-text));
 }
 
 .nb-meal-name {

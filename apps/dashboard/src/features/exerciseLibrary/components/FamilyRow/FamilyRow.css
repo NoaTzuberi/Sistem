@@ -48,7 +48,7 @@
 
 .family-row-pattern {
   font-weight: var(--font-weight-semibold);
-  color: var(--pattern-color);
+  color: color-mix(in srgb, var(--pattern-color) 60%, var(--color-text)); /* the light pattern colors are under 4.5:1 as text */
 }
 
 .pattern-group-none .family-row-pattern {

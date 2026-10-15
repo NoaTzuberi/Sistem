@@ -49,6 +49,7 @@
 
 .pill-button-primary.pill-button-sm {
   padding: 0 14px;
+  background-color: var(--solid-pink); /* small white text: Neon Pink is only 3.8:1 */
 }
 
 .pill-button-fill {
@@ -68,6 +69,15 @@
 .pill-button:disabled {
   opacity: var(--opacity-disabled);
   cursor: default;
+}
+
+.pill-button-primary:disabled,
+.pill-button-primary[aria-disabled='true'] {
+  /* Soft pink + Cherry text, not a faded white label. */
+  opacity: 1;
+  color: var(--disabled-ink);
+  background-color: var(--disabled-bg);
+  box-shadow: none;
 }
 
 @media (hover: hover) and (pointer: fine) {

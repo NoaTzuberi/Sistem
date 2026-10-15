@@ -225,7 +225,10 @@
 
 .login-submit:disabled {
   cursor: progress;
-  opacity: var(--opacity-muted);
+  /* Busy: soft pink + Cherry text, not a faded white label. */
+  color: var(--disabled-ink);
+  background: var(--disabled-bg);
+  box-shadow: none;
 }
 
 .login-trainee {

@@ -8,6 +8,7 @@
  */
 .notice {
   --notice-color: var(--color-primary);
+  --notice-solid: var(--solid-pink); /* the action's fill under its small white label */
   --notice-glow: color-mix(in srgb, var(--notice-color) 18%, transparent);
 
   position: relative;
@@ -36,21 +37,25 @@
 
 .notice-warn {
   --notice-color: var(--color-notice-warn);
+  --notice-solid: var(--solid-orange);
   --notice-glow: color-mix(in srgb, var(--color-notice-warn) 28%, transparent);
 }
 
 .notice-late {
   --notice-color: var(--color-notice-late);
+  --notice-solid: var(--color-notice-late);
   --notice-glow: color-mix(in srgb, var(--color-notice-late) 20%, transparent);
 }
 
 .notice-new {
   --notice-color: var(--color-notice-new);
+  --notice-solid: var(--color-notice-new);
   --notice-glow: color-mix(in srgb, var(--color-notice-new) 20%, transparent);
 }
 
 .notice-done {
   --notice-color: var(--color-notice-done);
+  --notice-solid: var(--color-notice-done);
   --notice-glow: color-mix(in srgb, var(--color-primary) 16%, transparent);
 }
 
@@ -131,7 +136,7 @@
   font-size: var(--text-xs);
   font-weight: var(--font-weight-semibold);
   color: var(--color-on-primary);
-  background-color: var(--notice-color);
+  background-color: var(--notice-solid);
   transition: transform var(--transition-press) var(--ease-press);
 }
 

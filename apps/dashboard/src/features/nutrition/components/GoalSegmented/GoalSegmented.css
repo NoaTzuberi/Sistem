@@ -34,7 +34,7 @@
 }
 
 .nb-goal-option[data-direction='gain'] {
-  --nb-goal: var(--color-nb-goal-gain);
+  --nb-goal: var(--solid-pink); /* its 12px white label: Neon Pink is only 3.8:1 */
 }
 
 .nb-goal-pct {

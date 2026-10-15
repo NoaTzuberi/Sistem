@@ -23,7 +23,16 @@
   border-color: var(--color-primary);
 }
 
-.button-primary:active {
+.button-primary:disabled,
+.button-primary[aria-disabled='true'] {
+  /* Soft pink + Cherry text, not a faded white label (white on faded pink was under 2:1). */
+  opacity: 1;
+  color: var(--disabled-ink);
+  background-color: var(--disabled-bg);
+  border-color: var(--disabled-bg);
+}
+
+.button-primary:active:not(:disabled, [aria-disabled='true']) {
   background-color: var(--color-primary-deep);
   border-color: var(--color-primary-deep);
 }

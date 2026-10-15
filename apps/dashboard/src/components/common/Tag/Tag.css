@@ -17,7 +17,7 @@
 
 .tag-solid {
   color: var(--color-on-primary);
-  background-color: var(--color-primary);
+  background-color: var(--solid-pink); /* small white text: Neon Pink is only 3.8:1 */
 }
 
 .tag-quiet {

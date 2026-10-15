@@ -109,7 +109,7 @@
 }
 
 .week-board-pill-missed {
-  color: var(--color-text-faint);
+  color: var(--color-text-muted);
   background-color: var(--color-fill-soft);
 }
 

@@ -74,8 +74,8 @@
 }
 
 .family-detail-chip-pattern {
-  color: var(--color-on-primary);
-  background-color: var(--pattern-color);
+  color: var(--color-text); /* dark on the tint: white on the light pattern colors was under 3:1 */
+  background-color: var(--pattern-soft);
 }
 
 .family-detail-chip-none {

@@ -152,7 +152,9 @@
 
 .nb-header-publish-button[aria-disabled='true'],
 .nb-header-publish-button:disabled {
-  background-color: var(--color-bar-rest);
+  /* Soft pink + Cherry text: white on --color-bar-rest was 1.9:1. */
+  color: var(--disabled-ink);
+  background-color: var(--disabled-bg);
   cursor: not-allowed;
 }
 
