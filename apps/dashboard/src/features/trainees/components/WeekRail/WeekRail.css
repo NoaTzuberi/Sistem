@@ -1,0 +1,10 @@
+/* Room around the items for the selected ring and the lift. */
+.pw-rail {
+  display: flex;
+  gap: 10px;
+  padding: 6px 6px 10px;
+  margin: -6px -6px 0;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}

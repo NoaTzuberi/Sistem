@@ -1,30 +1,10 @@
 import type { CoachPlan, Language, PlanWeekOption } from '@sistem/types';
-import { addDaysToDate, fill, formatPlural, sharedCopy, splitLabel } from '@sistem/shared';
+import { fill, formatPlural, sharedCopy, splitLabel } from '@sistem/shared';
 import { traineesCopy } from '../copy';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** The "new plan" popover offers this week and the next three. */
 export const NEW_PLAN_WEEK_COUNT = 4;
-
-export interface PlansByWeek {
-  thisWeek: CoachPlan | undefined;
-  nextWeek: CoachPlan | undefined;
-  /** Plans further ahead than next week, nearest first. */
-  later: CoachPlan[];
-  /** Plans of weeks that are over, newest first. */
-  past: CoachPlan[];
-}
-
-/** Her plans by where their week is. `currentWeekStart` comes from the server (her time zone). */
-export function splitPlansByWeek(plans: CoachPlan[], currentWeekStart: string): PlansByWeek {
-  const nextWeekStart = addDaysToDate(currentWeekStart, 7);
-  return {
-    thisWeek: plans.find((plan) => plan.weekStartDate === currentWeekStart),
-    nextWeek: plans.find((plan) => plan.weekStartDate === nextWeekStart),
-    later: plans.filter((plan) => plan.weekStartDate > nextWeekStart).sort((a, b) => a.weekStartDate.localeCompare(b.weekStartDate)),
-    past: plans.filter((plan) => plan.weekStartDate < currentWeekStart).sort((a, b) => b.weekStartDate.localeCompare(a.weekStartDate)),
-  };
-}
 
 /** "3 workouts · 20 exercises". */
 export function describePlanSize(plan: CoachPlan, language: Language): string {

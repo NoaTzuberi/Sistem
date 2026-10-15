@@ -1,22 +1,29 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import type { CoachTraineeDetail } from '@sistem/types';
-import { addDaysToDate, sharedCopy, useCopy } from '@sistem/shared';
+import { addDaysToDate, fill, sharedCopy, useCopy } from '@sistem/shared';
+import { planPath } from '../../../../app/config/routes';
 import { PillButton } from '../../../../components/common/PillButton/PillButton';
 import { useCoachData } from '../../../../services/coach/CoachDataContext';
 import { AiDraftSheet } from '../../../aiDraft/components/AiDraftSheet/AiDraftSheet';
 import { AiPlanCard } from '../../../aiDraft/components/AiPlanCard/AiPlanCard';
 import { useLatestAiDraft } from '../../../aiDraft/hooks/useLatestAiDraft';
 import { useTrainingConfig } from '../../../trainingConfig/useTrainingConfig';
-import { splitPlansByWeek } from '../../data/planWeeks';
 import { useNewPlanPopover } from '../../hooks/useNewPlanPopover';
+import type { PlanStartMethod } from '../../hooks/useNewPlanPopover';
+import { useSelectedWeek } from '../../hooks/useSelectedWeek';
+import { useTraineeWeeks } from '../../hooks/useTraineeWeeks';
+import { dayIn } from '../../hooks/useWorkoutLogs';
+import { ConsistencyCard } from '../ConsistencyCard/ConsistencyCard';
+import { EmptyWeekStarts } from '../EmptyWeekStarts/EmptyWeekStarts';
+import { WeekCalendar } from '../WeekCalendar/WeekCalendar';
+import { WeekHero } from '../WeekHero/WeekHero';
+import { WeekInfo } from '../WeekInfo/WeekInfo';
+import { WeekRail } from '../WeekRail/WeekRail';
 import type { TraineePlansLoad } from '../../hooks/useTraineePlans';
 import { NewPlanPopover } from '../NewPlanPopover/NewPlanPopover';
-import { NextWeekCard } from '../NextWeekCard/NextWeekCard';
 import { PlansToolbar } from '../PlansToolbar/PlansToolbar';
 import { PlanStartOptions } from '../PlanStartOptions/PlanStartOptions';
-import { ThisWeekCard } from '../ThisWeekCard/ThisWeekCard';
-import { WeekTimeline } from '../WeekTimeline/WeekTimeline';
 import './TraineePlans.css';
 import { traineesCopy } from '../../copy';
 
@@ -31,10 +38,16 @@ interface TraineePlansProps {
   onPlansChanged: () => void;
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+const HERO_ID = 'pw-week-panel';
+/** The new-plan popover offers this week and the next three. */
+const STARTABLE_DAYS = 21;
+
 /**
  * The Plans tab. Without plans: the AI draft as the main card, with "from scratch" beside it.
- * With plans: this week (large), next week beside it, then the weeks before. Every new plan
- * starts in the "new plan" popover; the AI draft's options live in its side sheet.
+ * With plans: a rail of her program's weeks, the selected week (its facts and calendar, or ways
+ * to start it), and her consistency over the program. Every new plan starts in the "new plan"
+ * popover; the AI draft's options live in its side sheet.
  */
 export function TraineePlans({ trainee, plansLoad, wantsNewPlan, onNewPlanHandled, onPlansChanged }: TraineePlansProps) {
   const shared = useCopy(sharedCopy);
@@ -42,14 +55,17 @@ export function TraineePlans({ trainee, plansLoad, wantsNewPlan, onNewPlanHandle
   const { plans, error, isLoading, reload } = plansLoad;
   const ai = useLatestAiDraft(trainee.id);
   const config = useTrainingConfig();
-  const { weekOf } = useCoachData();
+  const { nowMs } = useCoachData();
   const [isAiSheetOpen, setIsAiSheetOpen] = useState(false);
   const popover = useNewPlanPopover(trainee.id, ai.ready?.id, () => {
     reload();
     onPlansChanged();
   });
   const openNewPlan = popover.open;
-  const currentPlan = weekOf(trainee.id)?.currentPlan ?? null;
+  const weeks = useTraineeWeeks(plans, trainee.currentWeekStart);
+  const { selected, select } = useSelectedWeek(weeks, trainee.currentWeekStart);
+  // Her today, on the server's clock, in her zone.
+  const today = dayIn(new Date(nowMs).toISOString(), trainee.timezone);
 
   // "New plan" from the top line or the drawer (its AI strip: on "from the AI draft") — and "duplicate last week" from the plan builder —
   // land here with the popover already open.
@@ -72,9 +88,64 @@ export function TraineePlans({ trainee, plansLoad, wantsNewPlan, onNewPlanHandle
   }, [wantsNewPlan, onNewPlanHandled, openNewPlan]);
 
   const hasPlans = plans !== undefined && plans.length > 0;
-  const byWeek = plans ? splitPlansByWeek(plans, trainee.currentWeekStart) : null;
-  // This week's statuses belong to this week's PUBLISHED plan only.
-  const progress = byWeek?.thisWeek && currentPlan?.id === byWeek.thisWeek.id ? currentPlan : null;
+  const nextWeekStart = addDaysToDate(trainee.currentWeekStart, 7);
+  const daysUntil = (date: string) => Math.round((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / DAY_MS);
+  const startWeek = (method: PlanStartMethod, week: string) => void openNewPlan({ method, week });
+
+  function selectFromChart(weekStartDate: string) {
+    select(weekStartDate);
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.getElementById(HERO_ID)?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+  }
+
+  function weekPanel() {
+    if (!selected) return null;
+    const label = fill(copy.weeks.week, { number: selected.number });
+    const plan = selected.plan;
+    if (!plan) {
+      const previous = weeks.find((week) => week.weekStartDate === addDaysToDate(selected.weekStartDate, -7));
+      return (
+        <WeekHero tone="empty" id={HERO_ID} label={label}>
+          <EmptyWeekStarts
+            week={selected}
+            previous={previous}
+            canStart={selected.time !== 'past' && daysUntil(selected.weekStartDate) <= STARTABLE_DAYS}
+            hasAiDraft={ai.ready !== null}
+            onStart={(method) => startWeek(method, selected.weekStartDate)}
+          />
+        </WeekHero>
+      );
+    }
+    const isDraft = plan.status === 'draft';
+    const to = planPath(trainee.id, plan.id);
+    const actions = isDraft ? (
+      <PillButton variant="primary" to={to}>
+        {copy.continueAndPublish}
+      </PillButton>
+    ) : selected.time === 'past' ? (
+      <PillButton variant="fill" to={to}>
+        {copy.weeks.viewInBuilder}
+      </PillButton>
+    ) : (
+      <>
+        <PillButton variant="primary" to={to}>
+          {copy.openInBuilderShort}
+        </PillButton>
+        {selected.time === 'current' && <PillButton onClick={() => startWeek('duplicate', nextWeekStart)}>{copy.weeks.duplicateToNext}</PillButton>}
+      </>
+    );
+    return (
+      <WeekHero tone={isDraft ? 'draft' : selected.time === 'past' ? 'past' : 'current'} id={HERO_ID} label={label}>
+        <WeekInfo
+          week={{ ...selected, plan }}
+          traineeName={trainee.name}
+          startsInDays={selected.time === 'future' ? daysUntil(selected.weekStartDate) : null}
+          actions={actions}
+        />
+        <WeekCalendar traineeId={trainee.id} plan={plan} today={today} />
+      </WeekHero>
+    );
+  }
 
   return (
     <div className="trainee-plans">
@@ -113,22 +184,11 @@ export function TraineePlans({ trainee, plansLoad, wantsNewPlan, onNewPlanHandle
         </div>
       )}
 
-      {hasPlans && byWeek && (
+      {hasPlans && selected && (
         <>
-          <div className="plans-now">
-            <ThisWeekCard traineeId={trainee.id} traineeName={trainee.name} plan={byWeek.thisWeek} progress={progress} onNewPlan={() => void openNewPlan()} />
-            <NextWeekCard
-              traineeId={trainee.id}
-              traineeName={trainee.name}
-              weekStartDate={addDaysToDate(trainee.currentWeekStart, 7)}
-              plan={byWeek.nextWeek}
-              // The server says how many days this week's plan has left; next week starts the day after.
-              startsInDays={currentPlan ? currentPlan.daysLeft + 1 : undefined}
-              onNewPlan={() => void openNewPlan()}
-            />
-          </div>
-          <WeekTimeline traineeId={trainee.id} title={copy.laterWeeks} plans={byWeek.later} showStatus />
-          <WeekTimeline traineeId={trainee.id} title={copy.pastWeeks} plans={byWeek.past} />
+          <WeekRail weeks={weeks} selected={selected.weekStartDate} onSelect={select} panelId={HERO_ID} />
+          {weekPanel()}
+          <ConsistencyCard weeks={weeks} selected={selected.weekStartDate} onSelect={selectFromChart} />
         </>
       )}
 

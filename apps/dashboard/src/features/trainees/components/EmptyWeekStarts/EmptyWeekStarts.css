@@ -1,0 +1,126 @@
+.pw-empty-week {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  text-align: center;
+}
+
+.pw-empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 6px;
+  border-radius: var(--radius-qv-tile);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+  color: var(--color-primary);
+}
+
+.pw-empty-title {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-light);
+}
+
+.pw-empty-sub {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.pw-empty-starts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+  max-width: 720px;
+  margin-top: 16px;
+}
+
+/* --pw-start: the card's icon tile. */
+.pw-start {
+  --pw-start: var(--solid-pink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-height: 132px;
+  padding: 18px 14px;
+  border-radius: var(--radius-qv-tile);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+  font-size: var(--text-sm);
+  transition:
+    transform var(--transition-lift) var(--ease-press),
+    box-shadow var(--transition-lift) ease;
+}
+
+.pw-start[data-kind='duplicate'] {
+  --pw-start: var(--solid-purple);
+}
+
+.pw-start small {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.pw-start-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 4px;
+  border-radius: var(--radius-chart-tip);
+  background-color: var(--pw-start);
+  color: var(--on-pink);
+}
+
+.pw-start[data-kind='ai'] .pw-start-icon {
+  background-image: linear-gradient(140deg, var(--solid-purple), var(--solid-pink));
+}
+
+.pw-start:disabled {
+  opacity: var(--opacity-disabled);
+  cursor: default;
+}
+
+.pw-start:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+.pw-start:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pw-start:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-tile-lift);
+  }
+}
+
+@media (max-width: 640px) {
+  .pw-empty-starts {
+    grid-template-columns: 1fr;
+  }
+
+  .pw-start {
+    min-height: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pw-start {
+    transition: none;
+  }
+
+  .pw-start:hover {
+    transform: none;
+  }
+}

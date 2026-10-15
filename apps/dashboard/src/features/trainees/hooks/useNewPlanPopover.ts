@@ -19,6 +19,8 @@ interface OpenOptions {
   method?: PlanStartMethod;
   /** From the AI sheet: exactly this start ("use the full plan" / "split only") instead of the latest draft. */
   aiStart?: PlanStart;
+  /** The week to preselect (the Plans tab's empty week), when the popover offers it. */
+  week?: string;
 }
 
 /**
@@ -47,7 +49,7 @@ export function useNewPlanPopover(traineeId: string, latestAiDraftId: string | u
   const effectiveMethod: PlanStartMethod = (method === 'duplicate' && !canDuplicate) || (method === 'ai' && !canUseAi) ? 'scratch' : method;
 
   const open = useCallback(
-    async ({ method: wanted = 'scratch', aiStart: wantedAiStart }: OpenOptions = {}) => {
+    async ({ method: wanted = 'scratch', aiStart: wantedAiStart, week: wantedWeek }: OpenOptions = {}) => {
       const request = ++latestOpen.current;
       setIsOpen(true);
       setMethod(wanted);
@@ -60,7 +62,8 @@ export function useNewPlanPopover(traineeId: string, latestAiDraftId: string | u
         const offered = loaded.weeks.slice(0, NEW_PLAN_WEEK_COUNT);
         setOptions(loaded);
         // The first free week; when all four are taken, the first (it opens its plan).
-        setSelectedWeek((offered.find((entry) => entry.plan === null) ?? offered[0])?.weekStartDate);
+        const asked = wantedWeek ? offered.find((entry) => entry.weekStartDate === wantedWeek) : undefined;
+        setSelectedWeek((asked ?? offered.find((entry) => entry.plan === null) ?? offered[0])?.weekStartDate);
       } catch {
         if (request === latestOpen.current) setError(traineesCopy[getActiveLanguage()].weeksLoadError);
       }

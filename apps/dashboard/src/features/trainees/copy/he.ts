@@ -196,6 +196,38 @@ export const he = {
       tracking: 'גוף',
     },
   },
+  // The Plans tab, v3: week rail, week calendar, consistency. Wording from the approved design;
+  // PLACEHOLDER lines are not in it.
+  weeks: {
+    railLabel: 'שבועות התוכנית', // PLACEHOLDER (screen readers)
+    week: 'שבוע {number}',
+    empty: 'ריק',
+    newWeek: 'הכנת השבוע', // PLACEHOLDER (screen readers, the "+")
+    statusLive: 'פורסם · פעיל',
+    statusDraft: 'טיוטה · לא פורסם',
+    statusEnded: 'הסתיים',
+    workoutsCount: plural({ one: 'אימון אחד', two: '2 אימונים', other: '{count} אימונים' }),
+    doneOf: '{done} מתוך {planned} בוצעו',
+    notStarted: 'עוד לא התחיל',
+    startsIn: plural({ one: 'מתחיל מחר', two: 'מתחיל בעוד יומיים', other: 'מתחיל בעוד {count} ימים' }),
+    duplicateToNext: 'שכפול לשבוע הבא',
+    viewInBuilder: 'צפייה בבונה',
+    today: 'היום',
+    rest: 'מנוחה',
+    skipped: 'דולג',
+    noFixedDay: 'בלי יום קבוע', // PLACEHOLDER
+    calendarLabel: 'לוח השבוע', // PLACEHOLDER (screen readers)
+    emptyTitle: 'שבוע {number} עדיין ריק',
+    emptyHint: 'אפשר להכין אותו מראש',
+    emptyPast: 'לא הייתה תוכנית בשבוע הזה.', // PLACEHOLDER
+    duplicateWeek: 'שכפול שבוע {number}',
+    consistencyTitle: 'התמדה לאורך התוכנית',
+    weeksInPlan: 'שבועות בתוכנית',
+    averageDone: 'ביצוע ממוצע',
+    fullWeeks: 'שבועות מלאים',
+    workoutsDone: 'אימונים שבוצעו',
+    chartLabel: 'אחוז ביצוע בכל שבוע', // PLACEHOLDER (screen readers)
+  },
   // The workout logs tab (round 3).
   logs: {
     workouts: 'אימונים',

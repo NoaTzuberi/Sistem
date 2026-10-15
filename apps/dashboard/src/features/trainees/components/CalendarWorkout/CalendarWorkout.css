@@ -1,0 +1,92 @@
+/* The workout's identity color: a top strip and a tint (--workout-color / -soft / -solid, globals.css). */
+.pw-workout {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px;
+  padding-top: 12px;
+  border-top: 4px solid var(--workout-color);
+  border-radius: var(--radius-field);
+  background-color: var(--workout-color-soft);
+  color: var(--color-text);
+  text-decoration: none;
+  transition:
+    transform var(--transition-lift) var(--ease-press),
+    box-shadow var(--transition-lift) ease;
+}
+
+.pw-workout-name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pw-workout-count {
+  font-size: var(--text-2xs);
+  color: var(--color-text-muted);
+}
+
+/* Planned: a white chip with the workout's readable color. */
+.pw-workout-chip {
+  margin-top: 2px;
+  padding: 2px 8px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-card);
+  font-size: var(--text-2xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--workout-solid);
+}
+
+/* Done: white text on the workout's solid (darkened) color — never on its light tint. */
+.pw-workout[data-status='done'] .pw-workout-chip {
+  background-color: var(--workout-solid);
+  color: var(--on-pink);
+}
+
+/* Skipped: striped. */
+.pw-workout[data-status='missed'] {
+  background-image: repeating-linear-gradient(135deg, var(--workout-color-soft) 0 6px, var(--color-card) 6px 12px);
+}
+
+.pw-workout[data-status='missed'] .pw-workout-chip {
+  color: var(--color-text-muted);
+}
+
+/* A draft: outlined. */
+.pw-workout[data-status='draft'] {
+  border: 1.5px dashed var(--workout-color);
+  border-top-width: 4px;
+  border-top-style: solid;
+  background-color: var(--color-card);
+}
+
+.pw-workout:active {
+  transform: scale(0.97);
+}
+
+.pw-workout:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pw-workout:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 22px color-mix(in srgb, var(--workout-color) 28%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pw-workout {
+    transition: none;
+  }
+
+  .pw-workout:hover {
+    transform: none;
+  }
+}
