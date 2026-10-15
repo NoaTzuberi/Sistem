@@ -10,11 +10,13 @@ import { resolveTraineeStatus } from '../../coach/coach.service';
 import { Plan } from '../plan.model';
 import { addDays, currentWeekStart } from '../planWeek';
 import { findPublishIssues } from '../plan.validation';
+import type { CoachPlan } from '@sistem/types';
 
 // Phase 6: the coach builds, publishes, unpublishes and deletes plans — only for her
 // own trainees — and publishing announces 'plan.published' exactly once.
 
 type TestUser = Awaited<ReturnType<typeof createTestUser>>;
+type CoachPlanItem = CoachPlan;
 
 const TIMEZONE = 'Asia/Jerusalem';
 const THIS_WEEK = currentWeekStart(TIMEZONE);
@@ -422,6 +424,43 @@ describe('plan builder (coach)', () => {
 
       const mine = await api.request('GET', `/plans/${draft.id}`, { token: trainee.token });
       expect(mine.body.plan.workouts[0].exercises.map((e: { interval?: boolean }) => e.interval)).toEqual([true, true]);
+    });
+  });
+
+  describe('plan list progress (the Plans tab)', () => {
+    it("published plans carry each workout's status; drafts carry none", async () => {
+      const plan = await createPublishedPlan();
+      await createDraft(NEXT_WEEK);
+      // A plan of a week that is over, never touched: every workout is missed.
+      await Plan.create({
+        traineeId: trainee.user._id,
+        coachId: coach.user._id,
+        weekStartDate: addDays(THIS_WEEK, -7),
+        status: 'published',
+        publishedAt: new Date(),
+        workouts: [{ title: 'Old', order: 0, exercises: [{ exerciseId: plank, sets: 3, durationSec: 45 }] }],
+      });
+      await WorkoutLog.create({
+        traineeId: trainee.user._id,
+        planId: plan.id,
+        workoutId: plan.workouts[0].id,
+        workoutTitle: plan.workouts[0].title,
+        status: 'completed',
+        finishedAt: new Date(),
+        sets: [],
+      });
+
+      const res = await api.request('GET', plansPath(), { token: coach.token });
+      expect(res.status).toBe(200);
+      const byWeek = new Map(res.body.items.map((item: CoachPlanItem) => [item.weekStartDate, item]));
+      const current = byWeek.get(THIS_WEEK) as CoachPlanItem;
+      expect(current.progress).toMatchObject({ completed: 1, planned: 2 });
+      expect(current.progress!.statuses[plan.workouts[0].id]).toBe('done');
+      // No day: it stays open until the week ends.
+      expect(current.progress!.statuses[plan.workouts[1].id]).toBe('upcoming');
+      expect((byWeek.get(NEXT_WEEK) as CoachPlanItem).progress).toBeUndefined();
+      const past = byWeek.get(addDays(THIS_WEEK, -7)) as CoachPlanItem;
+      expect(Object.values(past.progress!.statuses)).toEqual(['missed']);
     });
   });
 

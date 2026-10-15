@@ -388,6 +388,13 @@ export interface TraineeWeek {
 // ---------------------------------------------------------------------------
 
 /** A plan as the coach sees it. */
+/** A published plan's workouts as the server judges them today in her zone (done / upcoming / missed). */
+export interface CoachPlanProgress {
+  /** workout id → its status. */
+  statuses: Record<string, WorkoutStatus>;
+  completed: number;
+  planned: number;
+}
 export interface CoachPlan extends Plan {
   /**
    * True once the trainee has a workout log for this plan: it can still be edited,
@@ -398,6 +405,8 @@ export interface CoachPlan extends Plan {
   aiRecommendationId?: string;
   /** Phase 12b: the split the plan follows (coach-only). */
   splitId?: string;
+  /** The plan list only (the Plans tab's week rail): a published plan's workout statuses; absent for a draft. */
+  progress?: CoachPlanProgress;
 }
 
 export interface PlanExerciseInput {

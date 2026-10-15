@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import type { CoachPlan } from '@sistem/types';
+import type { CoachPlan, CoachPlanProgress } from '@sistem/types';
 import { emitAppEvent } from '../../events/appEvents';
 import { User } from '../users/user.model';
 import { WorkoutLog } from '../workoutLogs/workoutLog.model';
@@ -8,7 +8,8 @@ import { isLinkableRecommendation } from '../aiRecommendations/aiRecommendation.
 import { Plan } from './plan.model';
 import { PlanNotFoundError, attachExerciseFacts, toPublicPlan } from './plan.service';
 import type { LeanPlan } from './plan.service';
-import { currentWeekStart } from './planWeek';
+import { addDays, currentWeekStart, localDateString } from './planWeek';
+import { resolveWorkoutStatus } from './planStatus';
 import { checkTrainingIds, findPublishIssues } from './plan.validation';
 import { getEffectiveTrainingConfig } from '../trainingSplits/trainingSplit.service';
 import type { CreatePlanInput, PlanProblem, SavePlanInput } from './plan.validation';
@@ -79,9 +80,32 @@ async function isLocked(planId: string): Promise<boolean> {
   return (await WorkoutLog.exists({ planId })) !== null;
 }
 
-export async function listCoachPlans(traineeId: string): Promise<CoachPlan[]> {
-  const plans = await Plan.find({ traineeId }).sort({ weekStartDate: -1 }).lean<LeanPlan[]>();
-  return toCoachPlans(plans);
+export async function listCoachPlans(traineeId: string, now: Date = new Date()): Promise<CoachPlan[]> {
+  const [plans, trainee] = await Promise.all([
+    Plan.find({ traineeId }).sort({ weekStartDate: -1 }).lean<LeanPlan[]>(),
+    User.findById(traineeId).select('timezone').lean<{ timezone: string }>(),
+  ]);
+  const coachPlans = await toCoachPlans(plans);
+  if (!trainee) return coachPlans;
+
+  // Each published plan's workouts judged by the same rule as her own app (planStatus), as of today in her zone.
+  const today = localDateString(now, trainee.timezone);
+  const published = coachPlans.filter((plan) => plan.status === 'published');
+  const doneLogs = await WorkoutLog.find({ planId: { $in: published.map((plan) => plan.id) }, status: 'completed' })
+    .select('planId workoutId')
+    .lean<{ planId: Types.ObjectId; workoutId: Types.ObjectId }[]>();
+  const done = new Set(doneLogs.map((log) => `${String(log.planId)}:${String(log.workoutId)}`));
+
+  return coachPlans.map((plan) => {
+    if (plan.status !== 'published') return plan;
+    const statuses: CoachPlanProgress['statuses'] = {};
+    for (const workout of plan.workouts) {
+      const date = workout.dayOfWeek === undefined ? null : addDays(plan.weekStartDate, workout.dayOfWeek);
+      statuses[workout.id] = resolveWorkoutStatus(date, plan.weekStartDate, today, done.has(`${plan.id}:${workout.id}`));
+    }
+    const values = Object.values(statuses);
+    return { ...plan, progress: { statuses, completed: values.filter((status) => status === 'done').length, planned: values.length } };
+  });
 }
 
 export async function getCoachPlan(traineeId: string, planId: string): Promise<CoachPlan> {
