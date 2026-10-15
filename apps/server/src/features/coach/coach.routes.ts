@@ -31,8 +31,10 @@ import {
   postRestoreFood,
   getSettings,
   putSettings,
+  postSettingsPreview,
   getTemplates,
   deleteTemplate,
+  patchTemplate,
   getTraineeNutrition,
   getTraineeCalorieSuggestion,
   putTraineeNutrition,
@@ -104,7 +106,9 @@ coachRouter.delete('/nutrition/foods/:foodId', deleteFood);
 coachRouter.post('/nutrition/foods/:foodId/restore', postRestoreFood);
 coachRouter.get('/nutrition/settings', getSettings);
 coachRouter.put('/nutrition/settings', putSettings);
+coachRouter.post('/nutrition/settings/preview', postSettingsPreview);
 coachRouter.get('/nutrition/templates', getTemplates);
+coachRouter.patch('/nutrition/templates/:templateId', patchTemplate);
 coachRouter.delete('/nutrition/templates/:templateId', deleteTemplate);
 coachRouter.get('/trainees/:traineeId/nutrition-plan', loadCoachTrainee, getTraineeNutrition);
 coachRouter.get('/trainees/:traineeId/nutrition-plan/suggestion', loadCoachTrainee, getTraineeCalorieSuggestion);

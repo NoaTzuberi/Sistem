@@ -478,6 +478,17 @@ export async function listNutritionTemplates(coachId: string): Promise<Nutrition
   return templates.map((template) => toPublicTemplate(template, config));
 }
 
+/** A new name only — the meals, tips and target stay as saved. */
+export async function renameNutritionTemplate(coachId: string, templateId: string, name: string): Promise<NutritionTemplate> {
+  const template = await Template.findOneAndUpdate(
+    { _id: templateId, coachId, type: 'nutrition_plan' },
+    { $set: { name } },
+    { new: true },
+  ).lean<LeanTemplate>();
+  if (!template) throw new NutritionPlanNotFoundError('nutrition_template_not_found');
+  return toPublicTemplate(template, await getEffectiveNutritionConfig(coachId));
+}
+
 export async function deleteNutritionTemplate(coachId: string, templateId: string): Promise<void> {
   const result = await Template.deleteOne({ _id: templateId, coachId, type: 'nutrition_plan' });
   if (result.deletedCount === 0) throw new NutritionPlanNotFoundError('nutrition_template_not_found');

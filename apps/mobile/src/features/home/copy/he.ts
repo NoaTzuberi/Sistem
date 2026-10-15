@@ -12,4 +12,7 @@ export const he = {
   intervalTimer: 'טיימר אינטרוולים',
   loading: 'טוען…',
   loadError: 'לא הצלחנו לטעון את השבוע שלך.',
+  startingPhotoReminder: 'הוסיפי תמונת התחלה כדי לראות את השינוי',
+  addStartingPhoto: 'תמונת התחלה',
+  dismissStartingPhotoReminder: 'סגירת התזכורת לתמונת התחלה',
 } as const;

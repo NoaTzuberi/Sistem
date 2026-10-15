@@ -25,6 +25,7 @@ const STEP_FIELDS: Record<OnboardingStepId, (keyof OnboardingAnswersPayload)[]> 
   equipment: ['equipment'],
   nutrition_preferences: ['nutritionPreferences', 'weightGoal'],
   review: [],
+  starting_photo: [],
 };
 
 function toAnswersPayload(formState: OnboardingFormState): OnboardingAnswersPayload {

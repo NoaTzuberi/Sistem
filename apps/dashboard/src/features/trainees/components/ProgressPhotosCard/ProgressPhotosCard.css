@@ -7,6 +7,26 @@
   background-color: var(--color-fill-soft);
 }
 
+.photo-starting-baseline {
+  max-width: 20rem;
+  margin: 0 auto var(--space-3);
+}
+
+.photo-starting-baseline img {
+  display: block;
+  width: 100%;
+  max-height: 22rem;
+  border-radius: var(--radius-block);
+  object-fit: cover;
+}
+
+.photo-starting-baseline figcaption {
+  margin-block-start: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
 .photo-compare-image {
   position: absolute;
   inset: 0;

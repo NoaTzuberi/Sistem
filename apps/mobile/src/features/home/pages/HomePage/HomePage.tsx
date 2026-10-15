@@ -18,6 +18,8 @@ import { workoutCopy } from '../../../workouts/copy';
 import { useStartWorkout } from '../../../workouts/hooks/useStartWorkout';
 import { StartConflictModal } from '../../../workouts/components/StartConflictModal/StartConflictModal';
 import { WeekStrip } from '../../components/WeekStrip/WeekStrip';
+import { StartingPhotoReminder } from '../../components/StartingPhotoReminder/StartingPhotoReminder';
+import { useStartingPhotoReminder } from '../../hooks/useStartingPhotoReminder';
 import { homeCopy } from '../../copy';
 import './HomePage.css';
 
@@ -34,6 +36,7 @@ export function HomePage() {
   const { data: week, error, isLoading, reload } = useLoad(getWeek, copy.loadError);
   const starter = useStartWorkout();
   const { data: achievements } = useMyAchievements();
+  const startingPhotoReminder = useStartingPhotoReminder();
 
   // Anything not celebrated yet (a skipped summary, an unlock on another device) gets its moment here.
   useEffect(() => {
@@ -80,6 +83,12 @@ export function HomePage() {
 
         {week && (
           <>
+            {startingPhotoReminder.isVisible && (
+              <StartingPhotoReminder
+                onAdd={() => navigate(ROUTES.PROFILE_PHOTOS)}
+                onDismiss={startingPhotoReminder.dismiss}
+              />
+            )}
             <WeekStrip weekStartDate={week.weekStartDate} today={week.today} workouts={plan?.workouts ?? []} />
 
             {!plan && <StateMessage>{copy.noPlanThisWeek}</StateMessage>}

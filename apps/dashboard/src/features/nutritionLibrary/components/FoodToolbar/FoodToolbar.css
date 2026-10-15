@@ -1,0 +1,47 @@
+.food-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.food-toolbar-search {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: min(220px, 100%);
+  height: var(--touch-target-min);
+  padding: 0 16px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+  color: var(--color-text-muted);
+  transition: box-shadow var(--transition-fast) ease;
+}
+
+.food-toolbar-search:focus-within {
+  box-shadow: var(--ring-field), var(--shadow-panel);
+}
+
+.food-toolbar-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+/* The switch sits in the row as is (VegToggle pushes itself to the end inside a meal card). */
+.food-toolbar-archive .nb-veg {
+  margin-inline-start: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .food-toolbar-search {
+    transition: none;
+  }
+}

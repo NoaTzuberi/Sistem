@@ -135,6 +135,7 @@ describe('nutrition (API)', () => {
         ['DELETE', `/coach/nutrition/foods/${protein.id}`],
         ['GET', '/coach/nutrition/settings'],
         ['PUT', '/coach/nutrition/settings'],
+        ['POST', '/coach/nutrition/settings/preview'],
         ['GET', '/coach/nutrition/templates'],
         ['GET', planPath()],
         ['PUT', planPath()],
@@ -237,6 +238,24 @@ describe('nutrition (API)', () => {
         body: { ...settings, groupKcal: { protein: 150, carb: 120, fat: 80, snack: 150 } },
       });
       expect(res.status).toBe(409);
+    });
+
+    it('previews unsaved numbers on the example trainee with the real calculation (nothing stored)', async () => {
+      const res = await api.request('POST', '/coach/nutrition/settings/preview', { token: coach.token, body: settings });
+      expect(res.status).toBe(200);
+      // 60 kg · 165 cm · 30 · female: BMR 1320.25 × 1.55 = 2046.4 → recomp −10% → 1840 kcal.
+      expect(res.body).toMatchObject({ status: 'ok', bmr: 1320, tdee: 2046, kcal: 1840, inputs: { goal: 'recomp', trainingDays: 3 } });
+      expect(res.body.portions.protein).toBeGreaterThan(0);
+
+      const floorAboveTdee = await api.request('POST', '/coach/nutrition/settings/preview', {
+        token: coach.token,
+        body: { ...settings, floorKcal: 2100 },
+      });
+      expect(floorAboveTdee.body).toMatchObject({ kcal: 2100, raisedToFloor: true });
+      expect((await api.request('GET', '/coach/nutrition/settings', { token: coach.token })).body.config.floorKcal).toBe(1200);
+
+      const invalid = await api.request('POST', '/coach/nutrition/settings/preview', { token: coach.token, body: { ...settings, floorKcal: 500 } });
+      expect(invalid.status).toBe(400);
     });
   });
 
@@ -405,7 +424,15 @@ describe('nutrition (API)', () => {
           body: { templateId: created.body.template.id },
         })).status,
       ).toBe(404);
-      expect((await api.request('DELETE', `/coach/nutrition/templates/${created.body.template.id}`, { token: coach.token })).status).toBe(204);
+      // Rename: only hers, a name is required.
+      const templatePath = `/coach/nutrition/templates/${created.body.template.id}`;
+      expect((await api.request('PATCH', templatePath, { token: otherCoach.token, body: { name: 'Mine' } })).status).toBe(404);
+      expect((await api.request('PATCH', templatePath, { token: coach.token, body: { name: '  ' } })).status).toBe(400);
+      const renamed = await api.request('PATCH', templatePath, { token: coach.token, body: { name: 'Base 1,500' } });
+      expect(renamed.status).toBe(200);
+      expect(renamed.body.template).toMatchObject({ name: 'Base 1,500', targetKcal: 1500, kcal: { day: 360 } });
+
+      expect((await api.request('DELETE', templatePath, { token: coach.token })).status).toBe(204);
     });
 
     it('one shape rule per type', async () => {

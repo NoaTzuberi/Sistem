@@ -14,4 +14,7 @@ export const en: CopyShape<typeof he> = {
   intervalTimer: 'Interval timer',
   loading: 'Loading…',
   loadError: "Couldn't load your week.",
+  startingPhotoReminder: 'Add a starting photo to see the change',
+  addStartingPhoto: 'Starting photo',
+  dismissStartingPhotoReminder: 'Dismiss starting photo reminder',
 };

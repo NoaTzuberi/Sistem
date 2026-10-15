@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import type { ReactNode, Ref } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Logo } from '../../../../components/common/Logo/Logo';
@@ -19,9 +19,10 @@ import { RecoveryStep } from '../../steps/RecoveryStep/RecoveryStep';
 import { EquipmentStep } from '../../steps/EquipmentStep/EquipmentStep';
 import { NutritionPreferencesStep } from '../../steps/NutritionPreferencesStep/NutritionPreferencesStep';
 import { ReviewStep } from '../../steps/ReviewStep/ReviewStep';
+import { StartingPhotoStep } from '../../steps/StartingPhotoStep/StartingPhotoStep';
 import { INITIAL_ONBOARDING_STATE } from '../../types';
 import type { OnboardingFormState, OnboardingMedia } from '../../types';
-import { toDisplayWeight, useCopy } from '@sistem/shared';
+import { todayInTimezone, toDisplayWeight, useCopy } from '@sistem/shared';
 import { extractErrorMessage } from '@sistem/api-client';
 import type { MyOnboarding } from '@sistem/types';
 import {
@@ -44,7 +45,7 @@ import { useDebouncedValue } from '../../../../hooks/useDebouncedValue';
 import { useKeyboardInset } from '../../../../hooks/useKeyboardInset';
 import './OnboardingPage.css';
 
-const STEP_COUNT = 10;
+const STEP_COUNT = 11;
 const EXERCISE_PREFERENCES_STEP_INDEX = 5;
 const ACTIVITIES_STEP_INDEX = 4;
 const NUTRITION_STEP_INDEX = 8;
@@ -71,6 +72,7 @@ const STEP_IDS: OnboardingStepId[] = [
   'equipment',
   'nutrition_preferences',
   'review',
+  'starting_photo',
 ];
 
 function isStepValid(index: number, state: OnboardingFormState): boolean {
@@ -97,7 +99,7 @@ function isStepValid(index: number, state: OnboardingFormState): boolean {
 
 // 'welcome' and 'review' are bookend screens with no data of their own — not
 // valid targets for the Profile page's "edit just this step" deep link.
-const NON_EDITABLE_STEP_IDS = new Set<OnboardingStepId>(['welcome', 'review']);
+const NON_EDITABLE_STEP_IDS = new Set<OnboardingStepId>(['welcome', 'review', 'starting_photo']);
 
 function isEditableStepId(value: string | undefined): value is OnboardingStepId {
   return (
@@ -141,6 +143,8 @@ function stepHeadingText(stepId: OnboardingStepId, copy: OnboardingCopy): { titl
       return { title: copy.nutrition.title, hints: [copy.nutrition.intro] };
     case 'review':
       return { title: copy.review.title, hints: [] };
+    case 'starting_photo':
+      return { title: copy.startingPhoto.title, hints: [] };
   }
 }
 
@@ -237,11 +241,14 @@ export function OnboardingPage() {
     name: user?.name ?? '',
   }));
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [startingPhotoSaved, setStartingPhotoSaved] = useState(false);
+  const [isStartingPhotoBusy, setIsStartingPhotoBusy] = useState(false);
   const [submitError, setSubmitError] = useState<string>();
   // The activity at the center of the wheel; its video follows once the wheel rests on it.
   const [centerActivityId, setCenterActivityId] = useState<string | null>(null);
   const settledActivityId = useDebouncedValue(centerActivityId, ACTIVITY_VIDEO_SETTLE_MS);
   const titleId = useId();
+  const startingPhotoDate = todayInTimezone(user?.timezone ?? 'UTC');
   // Both modes start from the answers saved on the server.
   const [isLoadingAnswers, setIsLoadingAnswers] = useState(true);
   const [answersLoadError, setAnswersLoadError] = useState<string>();
@@ -345,6 +352,39 @@ export function OnboardingPage() {
     }
   }
 
+  async function finishOnboarding() {
+    setSubmitError(undefined);
+    setIsSubmitting(true);
+    try {
+      const { user: savedUser } = await completeOnboarding(formState);
+      updateUser(savedUser);
+      navigate(landingPath(savedUser.appState), { replace: true });
+    } catch (error) {
+      setSubmitError(extractErrorMessage(error, copy.flow.saveError));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleSkipStartingPhoto() {
+    setSubmitError(undefined);
+    setIsSubmitting(true);
+    try {
+      const { user: savedUser } = await skipOnboardingStep('starting_photo');
+      updateUser(savedUser);
+      const result = await completeOnboarding(formState);
+      updateUser(result.user);
+      navigate(landingPath(result.user.appState), { replace: true });
+    } catch (error) {
+      setSubmitError(extractErrorMessage(error, copy.flow.saveError));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  const handleStartingPhotoSaved = useCallback(() => setStartingPhotoSaved(true), []);
+  const handleStartingPhotoBusyChange = useCallback((busy: boolean) => setIsStartingPhotoBusy(busy), []);
+
   function goToStep(index: number) {
     const state: OnboardingHistoryState = { onboardingStep: index };
     navigate(location.pathname, { state });
@@ -416,6 +456,7 @@ export function OnboardingPage() {
 
   const isFirstStep = shownIndex === 0;
   const isLastStep = shownIndex === STEP_COUNT - 1;
+  const isStartingPhotoStep = shownStepId === 'starting_photo';
   const showSkip = shownIndex === EXERCISE_PREFERENCES_STEP_INDEX;
   const continueLabel = isFirstStep ? copy.flow.start : isLastStep ? copy.flow.createProfile : copy.flow.continue;
 
@@ -455,9 +496,21 @@ export function OnboardingPage() {
           {copy.nutrition.skip}
         </DeckButton>
       )}
-      <DeckButton onClick={handleContinue} loading={isSubmitting} disabled={!isStepValid(shownIndex, formState)}>
-        {continueLabel}
-      </DeckButton>
+      {isStartingPhotoStep ? (
+        startingPhotoSaved ? (
+          <DeckButton onClick={finishOnboarding} loading={isSubmitting}>
+            {copy.flow.createProfile}
+          </DeckButton>
+        ) : (
+          <DeckButton variant="quiet" onClick={handleSkipStartingPhoto} disabled={isSubmitting || isStartingPhotoBusy}>
+            {copy.startingPhoto.skip}
+          </DeckButton>
+        )
+      ) : (
+        <DeckButton onClick={handleContinue} loading={isSubmitting} disabled={!isStepValid(shownIndex, formState)}>
+          {continueLabel}
+        </DeckButton>
+      )}
     </DeckActions>
   );
 
@@ -519,6 +572,13 @@ export function OnboardingPage() {
     equipment: <EquipmentStep formState={formState} updateFormState={updateFormState} />,
     nutrition_preferences: <NutritionPreferencesStep formState={formState} updateFormState={updateFormState} />,
     review: <ReviewStep formState={formState} />,
+    starting_photo: (
+      <StartingPhotoStep
+        date={startingPhotoDate}
+        onPhotoSaved={handleStartingPhotoSaved}
+        onBusyChange={handleStartingPhotoBusyChange}
+      />
+    ),
   };
 
   return (

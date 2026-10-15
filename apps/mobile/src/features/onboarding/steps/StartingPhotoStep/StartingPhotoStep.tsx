@@ -41,9 +41,9 @@ export function StartingPhotoStep({ date, onPhotoSaved, onBusyChange }: Starting
       {upload.error && (
         <div className="starting-photo-step-error" role="alert">
           <span>{upload.error}</span>
-          <DeckButton variant="quiet" onClick={upload.retry} disabled={upload.busy !== null}>
+          {upload.canRetry && <DeckButton variant="quiet" onClick={upload.retry} disabled={upload.busy !== null}>
             {bodyText.retry}
-          </DeckButton>
+          </DeckButton>}
         </div>
       )}
       <input

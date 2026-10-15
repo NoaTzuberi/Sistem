@@ -13,9 +13,15 @@ export function usePhotoCompare(metrics: BodyMetric[]) {
   // Thumbnails clicked since the last pair: a third click starts a new pair.
   const [picked, setPicked] = useState<string[]>([]);
   const [split, setSplit] = useState(MIDDLE);
-  const dates = photoDatesForPose(metrics, pose);
+  const poseDates = photoDatesForPose(metrics, pose);
+  const startingMetric = metrics.find((metric) => metric.startingPhoto);
+  const dates = [...new Set([...(startingMetric ? [startingMetric.date] : []), ...poseDates])].sort();
   const valid = picked.filter((date) => dates.includes(date));
-  const pair = valid.length === 2 ? [...valid].sort() : [dates[0], dates.at(-1)];
+  const defaultBefore = startingMetric?.date ?? poseDates[0];
+  const defaultAfter = startingMetric
+    ? poseDates.filter((date) => date > startingMetric.date).at(-1)
+    : poseDates.at(-1);
+  const pair = valid.length === 2 ? [...valid].sort() : [defaultBefore, defaultAfter];
 
   function setPose(next: ProgressPhotoPose) {
     setPoseState(next);
@@ -37,6 +43,7 @@ export function usePhotoCompare(metrics: BodyMetric[]) {
     dates,
     before: pair[0],
     after: pair[1],
+    startingDate: startingMetric?.date,
     /** The thumbnails chosen so far (one = waiting for its partner). */
     picked: valid,
     pick,

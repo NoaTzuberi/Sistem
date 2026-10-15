@@ -24,10 +24,18 @@ export function ProgressPhotosCard({ metrics, traineeName }: ProgressPhotosCardP
   const compare = usePhotoCompare(metrics);
   const { pose, dates, before, after, picked } = compare;
   const privateNote = fill(copy.body.privateNote, { name: isolateAuto(traineeName) });
-  const photoOf = (date: string) => photoForPose(metrics.find((metric) => metric.date === date), pose);
-  const altOf = (date: string) => fill(copy.photoAlt, { pose: poseLabel(pose, language), date: formatDayMonth(date, language) });
+  const startingDate = compare.startingDate;
+  const startingPhoto = metrics.find((metric) => metric.date === startingDate)?.startingPhoto;
+  const photoOf = (date: string) => {
+    const metric = metrics.find((item) => item.date === date);
+    return date === startingDate ? metric?.startingPhoto : photoForPose(metric, pose);
+  };
+  const altOf = (date: string) => fill(copy.photoAlt, {
+    pose: date === startingDate ? copy.body.startingPhoto : poseLabel(pose, language),
+    date: formatDayMonth(date, language),
+  });
 
-  if (photoDays(metrics).length === 0) {
+  if (photoDays(metrics).length === 0 && !startingDate) {
     return (
       <TabCard className="progress-photos-card" title={copy.progressPhotos} subtitle={privateNote}>
         <StripedEmpty icon="camera" text={copy.body.noPhotos} size="small" />
@@ -60,7 +68,7 @@ export function ProgressPhotosCard({ metrics, traineeName }: ProgressPhotosCardP
           <img className="photo-compare-image" src={beforePhoto.url} alt={altOf(before)} />
           <img className="photo-compare-image photo-compare-after" src={afterPhoto.url} alt={altOf(after)} />
           <span className="photo-compare-chip photo-compare-chip-before">
-            {copy.before} · {formatDayMonth(before, language)}
+            {before === startingDate ? copy.body.startingPhoto : copy.before} · {formatDayMonth(before, language)}
           </span>
           <span className="photo-compare-chip photo-compare-chip-after">
             {copy.after} · {formatDayMonth(after, language)}
@@ -77,7 +85,15 @@ export function ProgressPhotosCard({ metrics, traineeName }: ProgressPhotosCardP
           <span className="photo-compare-handle" aria-hidden="true" />
         </div>
       ) : (
-        <StripedEmpty icon="camera" text={fill(copy.notEnoughPhotos, { pose: poseLabel(pose, language) })} size="small" />
+        <>
+          {startingPhoto && startingDate && (
+            <figure className="photo-starting-baseline">
+              <img src={startingPhoto.url} alt={altOf(startingDate)} />
+              <figcaption>{copy.body.startingPhoto} · {formatDayMonth(startingDate, language)}</figcaption>
+            </figure>
+          )}
+          <StripedEmpty icon="camera" text={fill(copy.notEnoughPhotos, { pose: poseLabel(pose, language) })} size="small" />
+        </>
       )}
 
       {dates.length > 0 && (

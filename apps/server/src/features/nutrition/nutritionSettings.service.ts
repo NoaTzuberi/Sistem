@@ -1,5 +1,6 @@
-import type { NutritionConfig, NutritionSettingsPayload, NutritionSettingsResponse } from '@sistem/types';
-import { DEFAULT_NUTRITION_CONFIG } from './nutrition.config';
+import type { CalorieSuggestion, NutritionConfig, NutritionSettingsPayload, NutritionSettingsResponse } from '@sistem/types';
+import { DEFAULT_NUTRITION_CONFIG, SETTINGS_PREVIEW_SAMPLE } from './nutrition.config';
+import { suggestCalorieTarget } from './calorieTarget';
 import { PORTION_GROUP_IDS } from './nutrition.constants';
 import { NutritionSettings } from './nutritionSettings.model';
 import type { NutritionSettingsDocument } from './nutrition.types';
@@ -97,4 +98,28 @@ export async function saveNutritionSettings(
     { upsert: true },
   );
   return getNutritionSettings(coachId);
+}
+
+/**
+ * The settings screen's live preview: the coach's unsaved numbers run through THE calculation
+ * (suggestCalorieTarget, as in the builder) on a fixed example trainee. Nothing is stored.
+ */
+export function previewNutritionSettings(input: NutritionSettingsPayload, now: Date): CalorieSuggestion {
+  const sample = SETTINGS_PREVIEW_SAMPLE;
+  // Vegetables stay free (0) — the payload carries only the counted groups.
+  const config: NutritionConfig = { ...input, groupKcal: { ...input.groupKcal, vegetable: 0 } };
+  return suggestCalorieTarget(
+    {
+      weight: { kg: sample.weightKg, source: 'onboarding', date: null },
+      heightCm: sample.heightCm,
+      gender: sample.sex,
+      trainingFrequency: { minDays: sample.trainingDays, maxDays: sample.trainingDays },
+      goals: [],
+      weightGoal: null,
+      today: now.toISOString().slice(0, 10),
+    },
+    { goal: sample.goal, overrides: { ageYears: sample.ageYears } },
+    config,
+    now,
+  );
 }

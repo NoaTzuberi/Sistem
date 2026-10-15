@@ -33,6 +33,7 @@ import type {
   NutritionSettingsPayload,
   NutritionSettingsResponse,
   NutritionTemplate,
+  RenameNutritionTemplatePayload,
   PlanIssue,
   PlanWeekOptions,
   SaveNutritionPlanPayload,
@@ -321,9 +322,21 @@ export function createCoachApi(client: AxiosInstance) {
     return nutritionCall("Couldn't save the settings.", async () => (await client.put<NutritionSettingsResponse>('/coach/nutrition/settings', payload)).data);
   }
 
+  /** The settings screen's live preview: unsaved numbers on the server's example trainee (nothing stored). */
+  async function previewNutritionSettings(payload: NutritionSettingsPayload): Promise<CalorieSuggestion> {
+    const { data } = await client.post<CalorieSuggestion>('/coach/nutrition/settings/preview', payload);
+    return data;
+  }
+
   async function listNutritionTemplates(): Promise<NutritionTemplate[]> {
     const { data } = await client.get<{ items: NutritionTemplate[] }>('/coach/nutrition/templates');
     return data.items;
+  }
+
+  function renameNutritionTemplate(templateId: string, payload: RenameNutritionTemplatePayload): Promise<NutritionTemplate> {
+    return nutritionCall("Couldn't rename the template.", async () =>
+      (await client.patch<{ template: NutritionTemplate }>(`/coach/nutrition/templates/${templateId}`, payload)).data.template,
+    );
   }
 
   function deleteNutritionTemplate(templateId: string): Promise<void> {
@@ -408,7 +421,9 @@ export function createCoachApi(client: AxiosInstance) {
     restoreFood,
     getNutritionSettings,
     saveNutritionSettings,
+    previewNutritionSettings,
     listNutritionTemplates,
+    renameNutritionTemplate,
     deleteNutritionTemplate,
     getNutritionPlan,
     getCalorieSuggestion,

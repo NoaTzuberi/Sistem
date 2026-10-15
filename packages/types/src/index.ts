@@ -1908,6 +1908,11 @@ export interface CreateNutritionTemplatePayload {
   description?: string;
 }
 
+/** PATCH /coach/nutrition/templates/:id — a new name only. */
+export interface RenameNutritionTemplatePayload {
+  name: string;
+}
+
 /** POST /coach/trainees/:id/nutrition-plan/from-template */
 export interface ApplyNutritionTemplatePayload {
   templateId: string;

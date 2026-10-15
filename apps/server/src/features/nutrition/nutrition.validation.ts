@@ -4,6 +4,7 @@ import type {
   ApplyNutritionTemplatePayload,
   CalculationOverrides,
   CreateNutritionTemplatePayload,
+  RenameNutritionTemplatePayload,
   DietTag,
   FoodGroup,
   FoodItem,
@@ -693,6 +694,13 @@ export function parseCreateNutritionTemplatePayload(body: unknown): Parse<Create
   }
   const description = typeof body.description === 'string' ? body.description.trim() || undefined : undefined;
   return { value: { name, description }, error: null };
+}
+
+export function parseRenameNutritionTemplatePayload(body: unknown): Parse<RenameNutritionTemplatePayload> {
+  if (!isRecord(body)) return { value: null, error: msg('invalid_body') };
+  const name = trimmedText(body.name, MAX_TEMPLATE_NAME_LENGTH);
+  if (!name) return { value: null, error: msg('nutrition_template_name_required', { max: MAX_TEMPLATE_NAME_LENGTH }) };
+  return { value: { name }, error: null };
 }
 
 export function parseApplyNutritionTemplatePayload(body: unknown): Parse<ApplyNutritionTemplatePayload> {

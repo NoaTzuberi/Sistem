@@ -353,6 +353,20 @@
   --color-portion-snack: #0094ff;
   --color-portion-snack-text: var(--ink-blue);
   --color-portion-snack-soft: #e1f1ff;
+  --color-portion-vegetable: var(--color-primary-deep); /* Vegetables are free: Cherry Rose on a blush */
+  --color-portion-vegetable-text: var(--ink-pink);
+  --color-portion-vegetable-soft: #fbe3ec;
+  /* Nutrition library (food list · templates · settings). */
+  --color-food-warn-ring: #ffd2a0;     /* A food card with a missing kcal / over its group's cap */
+  --gradient-template-tile: linear-gradient(140deg, #ff8fc0, var(--color-lilac));
+  --gradient-goal-deficit: linear-gradient(to right, var(--color-portion-snack), #9ed3ff);   /* the goal scale's minus side */
+  --gradient-goal-surplus: linear-gradient(to right, #ffb3d1, var(--color-primary));          /* … and its plus side */
+  --color-goal-deficit-row: #eef6ff;
+  --color-goal-surplus-row: #fff0f6;
+  --gradient-activity-bar: linear-gradient(to top, var(--color-portion-carb), var(--color-lilac));
+  --gradient-settings-preview:
+    radial-gradient(40% 40% at 60% 40%, #ff8fc0, transparent 70%),
+    radial-gradient(35% 35% at 30% 70%, var(--color-lilac), transparent 70%);
   --color-nb-goal-loss: #0070c9;     /* Goal buttons: losing, keeping, gaining */
   --color-nb-goal-keep: #7c4dff;
   --color-nb-goal-gain: #ff006e;

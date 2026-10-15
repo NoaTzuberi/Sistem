@@ -1578,6 +1578,416 @@ button { cursor: pointer; }
 }
 @media (prefers-reduced-motion: reduce) { .br-bar u, .bud-ring circle.v, .veg .sw::after, .meal2 { transition: none; } }
 
+
+/* ===== nutrition builder v2.1: spacing, foods, template menu, AI banner ===== */
+.ps { height: 44px; gap: 4px; padding: 0 6px 0 14px; }
+[dir="rtl"] .ps { padding: 0 14px 0 6px; }
+.ps button { width: 32px; height: 32px; }
+.ps > span { margin-inline-end: 4px; }
+.tplm { position: relative; }
+.tpl-btn { height: 40px; padding: 0 14px; border: 0; border-radius: 20px; background: var(--soft); display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--ink); transition: background-color 150ms ease, transform 140ms var(--ease-out); }
+.tpl-btn svg:last-child { color: var(--muted); transition: transform 200ms var(--ease-out); }
+.tpl-btn[aria-expanded="true"] { background: #fff; box-shadow: 0 0 0 2px var(--pink); }
+.tpl-btn[aria-expanded="true"] svg:last-child { transform: rotate(180deg); }
+.tpl-btn:active { transform: scale(0.97); }
+.tpl-menu, .fpop { position: absolute; z-index: 20; top: calc(100% + 8px); inset-inline-end: 0; width: 280px; padding: 8px; border-radius: 20px; background: rgba(255,255,255,0.94); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); box-shadow: 0 0 0 0.5px rgba(31,27,34,0.08), 0 24px 50px rgba(31,27,34,0.18); transform-origin: top; animation: pop-in 180ms var(--ease-out); }
+@keyframes pop-in { from { opacity: 0; transform: scale(0.96); } }
+.tpl-menu small { display: block; padding: 4px 10px 6px; font-size: 11px; color: #8A4A00; }
+.tpl-menu button { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 10px; border: 0; border-radius: 14px; background: none; text-align: start; transition: background-color 120ms ease; }
+.tpl-menu b { font-size: 14px; font-weight: 600; } .tpl-menu span { font-size: 12px; color: var(--muted); }
+
+.fbox { margin-top: 12px; border-radius: 18px; background: #fff; box-shadow: inset 0 0 0 1px var(--line); padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+.fbox-h { display: flex; justify-content: space-between; align-items: baseline; padding: 2px 6px 4px; }
+.fbox-h span { font-size: 12px; font-weight: 600; color: var(--muted); } .fbox-h small { font-size: 11px; color: var(--faint); }
+.fi { --c: var(--cP); --s: var(--sP); --t: var(--cP); display: grid; grid-template-columns: 76px minmax(0, 1fr) auto 32px; gap: 12px; align-items: center; min-height: 56px; padding: 8px 10px; border-radius: 14px; background: #FBFAFB; transition: background-color 150ms ease; }
+.fi.C { --c: var(--cC); --s: var(--sC); --t: #5B2FD6; } .fi.F { --c: var(--cF); --s: var(--sF); --t: var(--tF); } .fi.S { --c: var(--cS); --s: var(--sS); --t: var(--tS); }
+.fi.V { --s: var(--pink-soft); --t: var(--cherry); grid-template-columns: 76px minmax(0, 1fr); }
+.fi.T { --s: var(--soft); --t: var(--muted); grid-template-columns: 76px minmax(0, 1fr) 32px; }
+.fc { justify-self: start; height: 26px; padding: 0 10px; border-radius: 13px; background: var(--s); color: var(--t); font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.fn { min-width: 0; } .fn b { display: block; font-size: 14px; font-weight: 600; } .fn b em { font-style: normal; font-weight: 400; color: var(--muted); font-size: 13px; }
+.fn small { display: block; font-size: 12px; color: var(--muted); margin-top: 1px; }
+.fq { display: inline-flex; align-items: center; gap: 4px; height: 40px; padding: 0 4px; border-radius: 20px; background: var(--s); }
+.fq button { width: 32px; height: 32px; border: 0; border-radius: 50%; background: rgba(255,255,255,0.9); color: var(--t); font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; transition: transform 120ms var(--ease-out); }
+.fq button:active { transform: scale(0.9); } .fq button[disabled] { opacity: 0.35; }
+.fq b { min-width: 24px; text-align: center; font-size: 15px; font-weight: 700; color: var(--t); }
+.fq span { font-size: 11px; font-weight: 600; color: var(--t); padding-inline-end: 8px; }
+.fx { width: 32px; height: 32px; border: 0; border-radius: 50%; background: none; color: var(--faint); display: flex; align-items: center; justify-content: center; transition: background-color 150ms ease, color 150ms ease; }
+.ft { min-width: 0; border: 0; background: none; outline: none; font: inherit; font-size: 14px; padding: 6px 8px; border-radius: 10px; }
+.ft:focus { background: #fff; box-shadow: 0 0 0 2px var(--pink); }
+.fadd { position: relative; display: flex; gap: 6px; padding-top: 4px; flex-wrap: wrap; }
+.fadd-b { height: 38px; padding: 0 14px; border: 0; border-radius: 19px; background: var(--pink-soft); color: var(--cherry); font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: background-color 150ms ease, transform 140ms var(--ease-out); }
+.fadd-b.soft { background: var(--soft); color: var(--ink); }
+.fadd-b:active { transform: scale(0.97); }
+.fadd-b[aria-expanded="true"] { background: var(--pink); color: #fff; }
+.fpop { inset-inline-end: auto; inset-inline-start: 0; width: 320px; }
+.fsearch { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border-radius: 14px; background: var(--soft); color: var(--muted); margin-bottom: 6px; }
+.fsearch input { flex: 1; min-width: 0; border: 0; background: none; outline: none; font: inherit; color: var(--ink); }
+.flist { max-height: 260px; overflow-y: auto; display: flex; flex-direction: column; }
+.fopt { --c: var(--cP); display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: 10px; align-items: center; padding: 8px 10px; border: 0; border-radius: 12px; background: none; text-align: start; transition: background-color 120ms ease; }
+.fopt.C { --c: var(--cC); } .fopt.F { --c: var(--cF); } .fopt.S { --c: var(--cS); }
+.fopt i { grid-row: span 2; width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+.fopt b { font-size: 14px; font-weight: 600; } .fopt span { grid-column: 2; font-size: 11px; color: var(--muted); }
+.fopt em { grid-row: 1 / span 2; grid-column: 3; font-style: normal; font-size: 11px; font-weight: 700; color: var(--c); }
+.fnone { margin: 10px; font-size: 12px; color: var(--muted); }
+
+.aib { position: relative; overflow: hidden; isolation: isolate; border-radius: 28px; padding: 20px 22px; background: #fff; box-shadow: 0 0 0 1px rgba(124,77,255,0.14), var(--shadow); }
+.aib::before { content: ''; position: absolute; z-index: -1; inset: -60% -20% auto auto; width: 70%; height: 220%; filter: blur(40px); opacity: 0.55; pointer-events: none; background: radial-gradient(40% 40% at 60% 40%, #C9A6FF, transparent 70%), radial-gradient(35% 35% at 30% 60%, #FF8FC0, transparent 70%); }
+.aib.done { box-shadow: 0 0 0 1px rgba(165,0,71,0.18), var(--shadow); }
+.aib-h { display: flex; align-items: center; gap: 12px; }
+.aib-ic { width: 42px; height: 42px; border-radius: 14px; flex: none; display: flex; align-items: center; justify-content: center; color: #fff; background: linear-gradient(140deg, #B18CFF, #FF4E9A); box-shadow: 0 8px 18px rgba(124,77,255,0.3); }
+.aib-h div { flex: 1; min-width: 0; } .aib-h h3 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.3px; } .aib-h p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+.aib-x { width: 32px; height: 32px; border: 0; border-radius: 50%; background: rgba(255,255,255,0.8); color: var(--muted); display: flex; align-items: center; justify-content: center; }
+.aib-nums { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 16px 0 12px; }
+.aib-nums .k { height: 40px; padding: 0 14px; border-radius: 20px; background: var(--ink); color: #fff; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
+.aib-nums .k b { font-size: 20px; font-weight: 700; letter-spacing: -0.4px; } .aib-nums .k em { font-style: normal; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 8px; background: rgba(255,255,255,0.18); }
+.aib-sum { margin: 0; font-size: 14px; line-height: 1.6; color: rgba(31,27,34,0.8); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-width: 70ch; }
+.aib-sum.open { -webkit-line-clamp: unset; display: block; }
+.aib-more { border: 0; background: none; padding: 4px 0; font-size: 12px; font-weight: 600; color: #5B2FD6; }
+.aib-warn { display: flex; gap: 8px; align-items: flex-start; margin-top: 10px; padding: 10px 12px; border-radius: 14px; background: #FFF4E5; color: #8A4A00; font-size: 12px; line-height: 1.5; }
+.aib-warn svg { flex: none; margin-top: 1px; } .aib-warn b { font-weight: 700; }
+.aib-acts { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+@media (hover: hover) and (pointer: fine) {
+  .tpl-btn:hover { background: #ECE8EB; } .tpl-menu button:hover, .fopt:hover { background: var(--soft); }
+  .fi:hover { background: #F6F3F6; } .fx:hover { background: #FFE5E7; color: #D70015; }
+  .fadd-b:hover { background: #FFD3E5; } .fadd-b.soft:hover { background: #ECE8EB; } .fadd-b[aria-expanded="true"]:hover { background: #E8005F; }
+  .fq button:hover { background: #fff; }
+  .aib-x:hover { background: #fff; color: var(--ink); } .aib-more:hover { text-decoration: underline; }
+}
+@media (max-width: 760px) {
+  .fi { grid-template-columns: minmax(0, 1fr) 32px; row-gap: 8px; } .fi .fc, .fi .fn { grid-column: 1 / -1; } .fi .fq { justify-self: start; }
+  .fi.V, .fi.T { grid-template-columns: minmax(0, 1fr) 32px; } .fi.V .fc, .fi.T .fc { grid-column: 1 / -1; }
+  .fpop, .tpl-menu { width: min(320px, calc(100vw - 48px)); }
+  .tplm { width: 100%; } .tpl-btn { width: 100%; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) { .tpl-menu, .fpop { animation: none; } }
+
+
+/* ===== portion tracking ===== */
+.ptrack { margin-top: 12px; --cP: #FF006E; --sP: #FFE3EE; --cC: #7C4DFF; --sC: #EFE7FF; --cF: #FF7A00; --sF: #FFEBD6; --cS: #0094FF; --sS: #E1F1FF; }
+.ptrack .P { --c: var(--cP); --s: var(--sP); } .ptrack .C { --c: var(--cC); --s: var(--sC); } .ptrack .F { --c: var(--cF); --s: var(--sF); } .ptrack .S { --c: var(--cS); --s: var(--sS); }
+.wnav { display: flex; align-items: center; gap: 6px; }
+.wnav b { min-width: 104px; text-align: center; font-size: 14px; font-weight: 600; }
+.wn { width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--soft); display: flex; align-items: center; justify-content: center; transition: background-color 150ms ease, transform 140ms var(--ease-out); }
+.wn[disabled] { opacity: 0.35; } .wn:not([disabled]):active { transform: scale(0.94); }
+.tr-rings { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+.tr-r { display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 8px; border-radius: 18px; background: color-mix(in srgb, var(--s) 60%, #fff); }
+.tr-r span { display: block; font-size: 11px; color: var(--muted); } .tr-r b { font-size: 15px; font-weight: 700; color: var(--c); }
+.days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.day { border: 0; border-radius: 18px; background: #FBFAFB; box-shadow: inset 0 0 0 1px var(--line); padding: 10px; display: flex; flex-direction: column; gap: 6px; text-align: start; min-height: 142px; transition: transform 200ms var(--ease-out), box-shadow 200ms ease, background-color 200ms ease; }
+.dh { display: flex; align-items: baseline; gap: 6px; } .dh b { font-size: 14px; font-weight: 700; } .dh span { font-size: 12px; color: var(--muted); }
+.dh em { margin-inline-start: auto; font-style: normal; font-size: 10px; font-weight: 700; color: #fff; background: var(--pink); padding: 2px 7px; border-radius: 8px; }
+.day.today { background: #fff; box-shadow: 0 0 0 2px var(--pink), 0 10px 24px rgba(255,0,110,0.14); }
+.db { height: 8px; border-radius: 4px; background: var(--s); overflow: hidden; }
+.db u { display: block; height: 100%; width: var(--v); border-radius: 4px; background: var(--c); }
+.dm { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 4px; font-size: 11px; font-weight: 600; color: var(--muted); }
+.dm .ph { font-style: normal; display: inline-flex; align-items: center; gap: 3px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--soft); color: var(--ink); }
+.dz { margin: auto 0; font-size: 12px; color: var(--faint); text-align: center; }
+.day.none { background: repeating-linear-gradient(135deg, #FBFAFB 0 8px, #F4F1F4 8px 16px); }
+.day.none .dz { color: var(--muted); }
+.day.fut { background: transparent; box-shadow: inset 0 0 0 1px dashed var(--line); border: 1.5px dashed #E2DDE3; }
+.tr-leg { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 12px; font-size: 11px; color: var(--muted); }
+.tr-leg i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--c); margin-inline-end: 5px; }
+
+/* ===== workout logs ===== */
+.lg-sum { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 18px; }
+.lg-list { display: flex; flex-direction: column; gap: 16px; }
+.lg-day h4 { margin: 0 6px 8px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.lg { --wc: var(--pink); border-radius: 22px; background: rgba(255,255,255,0.82); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: var(--shadow); overflow: hidden; transition: box-shadow 200ms ease, transform 200ms var(--ease-out); margin-bottom: 8px; }
+.lg-h { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 0; background: none; text-align: start; }
+.lg-dot { width: 12px; height: 40px; border-radius: 6px; background: var(--wc); flex: none; }
+.lg-n { flex: 1; min-width: 0; } .lg-n b { display: block; font-size: 16px; font-weight: 600; text-align: end; } [dir="ltr"] .lg-n b { text-align: start; }
+.lg-n small { font-size: 12px; color: var(--muted); }
+.lg-st { height: 26px; padding: 0 10px; border-radius: 13px; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; }
+.lg-st.ok { background: var(--pink-soft); color: var(--cherry); } .lg-st.part { background: #FFF4E5; color: #8A4A00; } .lg-st.skip { background: var(--soft); color: var(--muted); }
+.lg-stars { display: inline-flex; gap: 3px; direction: ltr; }
+.lg-stars i { width: 8px; height: 8px; border-radius: 50%; background: #E6E1E7; } .lg-stars i.on { background: #FF9F0A; }
+.lg-pr { height: 26px; padding: 0 10px; border-radius: 13px; background: linear-gradient(140deg, #5BB8FF, #0070C9); color: #fff; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 6px 14px rgba(0,112,201,0.25); }
+.lg-ph { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(160deg, #FFE3EE, #C9A6FF); box-shadow: 0 0 0 2px #fff, var(--shadow); }
+.lg-chev { width: 32px; height: 32px; border-radius: 50%; background: var(--soft); display: flex; align-items: center; justify-content: center; color: var(--muted); transition: transform 250ms var(--ease-out); flex: none; }
+.lg.open .lg-chev { transform: rotate(180deg); }
+.lg-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 280ms var(--ease-out); }
+.lg.open .lg-body { grid-template-rows: 1fr; }
+.lg-in { overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; padding: 0 16px; }
+.lg.open .lg-in { padding: 0 16px 16px; }
+.lg-ex { display: flex; flex-direction: column; gap: 6px; }
+.ex-r { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--soft); font-size: 13px; }
+.ex-r b { flex: 1; font-weight: 600; text-align: end; } [dir="ltr"] .ex-r b { text-align: start; }
+.ex-r span { color: var(--muted); }
+.ex-r.pr { background: #E1F1FF; } .ex-r.pr span { color: #0070C9; font-weight: 600; }
+.ex-r em { font-style: normal; display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; color: #0070C9; }
+.lg-side { width: 220px; display: flex; flex-direction: column; gap: 8px; }
+.lg-note { padding: 12px; border-radius: 14px; background: #FFF8E9; font-size: 13px; line-height: 1.5; }
+.lg-note small { display: block; font-size: 11px; color: #8A4A00; font-weight: 700; margin-bottom: 2px; }
+.lg-photo { height: 120px; border-radius: 14px; position: relative; }
+.lg-photo span { position: absolute; bottom: 8px; inset-inline-start: 8px; font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.85); padding: 3px 8px; border-radius: 8px; }
+@media (hover: hover) and (pointer: fine) {
+  .wn:not([disabled]):hover { background: #ECE8EB; }
+  .day:not([disabled]):hover { transform: translateY(-3px); background: #fff; box-shadow: 0 0 0 1px var(--line), 0 14px 30px rgba(31,27,34,0.09); }
+  .day.today:hover { box-shadow: 0 0 0 2px var(--pink), 0 14px 30px rgba(255,0,110,0.18); }
+  .lg:hover { box-shadow: 0 2px 4px rgba(31,27,34,0.04), 0 16px 34px rgba(31,27,34,0.09); }
+  .lg-h:hover .lg-chev { background: #ECE8EB; color: var(--ink); }
+}
+@media (max-width: 1000px) { .days { grid-template-columns: repeat(7, 132px); overflow-x: auto; padding-bottom: 4px; } .tr-rings, .lg-sum { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) { .lg-h { flex-wrap: wrap; } .lg-n { flex-basis: calc(100% - 70px); } .lg-in { grid-template-columns: 1fr; } .lg-side { width: auto; } .wnav b { min-width: 0; } }
+@media (prefers-reduced-motion: reduce) { .lg-body, .lg-chev, .day { transition: none; } }
+
+
+/* ===== trainee plans tab v3 ===== */
+.pw-rail { display: grid; grid-template-columns: repeat(8, minmax(118px, 1fr)); gap: 8px; margin-bottom: 14px; overflow-x: auto; padding: 4px 2px 8px; scrollbar-width: thin; }
+.pw-wk { border: 0; border-radius: 20px; padding: 12px; background: rgba(255,255,255,0.6); text-align: start; display: flex; flex-direction: column; gap: 4px; min-width: 0; transition: transform 200ms var(--ease-out), box-shadow 200ms ease, background-color 200ms ease; }
+.pw-wk .t { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.pw-wk b { font-size: 14px; font-weight: 700; }
+.pw-wk em { font-style: normal; font-size: 11px; font-weight: 700; color: var(--muted); }
+.pw-wk small { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pw-wk .mb { display: flex; gap: 3px; margin-top: 6px; height: 8px; }
+.pw-wk .mb i { flex: 1; border-radius: 4px; background: color-mix(in srgb, var(--c) 18%, #fff); }
+.pw-wk .mb i.on { background: var(--c); }
+.pw-wk .mb i.miss { background: repeating-linear-gradient(135deg, #ECE8EB 0 3px, #F6F4F6 3px 6px); }
+.pw-wk .mb.add { height: 20px; align-items: center; color: var(--pink); }
+.pw-wk.cur em { color: #fff; background: var(--pink); padding: 2px 8px; border-radius: 9px; }
+.pw-wk.draft { background: rgba(255,255,255,0.4); box-shadow: inset 0 0 0 1.5px #E2DDE3; }
+.pw-wk.draft em { color: #8A4A00; }
+.pw-wk.pw-empty { background: transparent; box-shadow: inset 0 0 0 1.5px #E2DDE3; border: 0; }
+.pw-wk.pw-empty em { color: var(--pink); }
+.pw-wk[aria-selected="true"] { background: #fff; box-shadow: 0 0 0 2px var(--pink), 0 12px 28px rgba(255,0,110,0.16); }
+.pw-wk:active { transform: scale(0.97); }
+
+.pw-hero { position: relative; overflow: hidden; isolation: isolate; display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 20px; padding: 22px; border-radius: 30px; background: #fff; box-shadow: var(--shadow); margin-bottom: 14px; }
+.pw-hero::before { content: ''; position: absolute; z-index: -1; inset: -40% auto auto -10%; width: 60%; height: 160%; filter: blur(50px); opacity: 0.55; pointer-events: none; background: radial-gradient(40% 40% at 50% 40%, #FF8FC0, transparent 70%), radial-gradient(35% 35% at 40% 70%, #FFC48A, transparent 70%); }
+[dir="rtl"] .pw-hero::before { inset: -40% -10% auto auto; }
+.pw-hero.draft { background: #FDFCFD; box-shadow: inset 0 0 0 1.5px #E2DDE3; }
+.pw-hero.draft::before { background: radial-gradient(40% 40% at 50% 40%, #FFD9A8, transparent 70%); opacity: 0.4; }
+.pw-hero.done::before { background: radial-gradient(40% 40% at 50% 40%, #C9A6FF, transparent 70%); opacity: 0.4; }
+.pw-info { display: flex; flex-direction: column; gap: 4px; }
+.pw-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pw-pill { height: 24px; padding: 0 10px; border-radius: 12px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; }
+.pw-pill i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.pw-pill.cur { background: var(--pink-soft); color: var(--cherry); } .pw-pill.draft { background: #FFF4E5; color: #8A4A00; } .pw-pill.done { background: var(--soft); color: var(--muted); }
+.pw-info h2 { margin: 4px 0 0; font-size: 30px; font-weight: 400; letter-spacing: -1px; line-height: 1.1; }
+.pw-info p { margin: 0; font-size: 13px; color: var(--muted); }
+.pw-ring { position: relative; width: 124px; height: 124px; margin: 16px 0 12px; }
+.pw-ring b { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 30px; font-weight: 300; letter-spacing: -1px; }
+.pw-ring b small { font-size: 11px; color: var(--muted); letter-spacing: 0; font-weight: 400; }
+.pw-warn { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 14px; background: #FFF4E5; color: #8A4A00; font-size: 12px; font-weight: 600; line-height: 1.45; margin-bottom: 10px; }
+.pw-warn svg { flex: none; }
+.pw-acts { margin-top: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+.pw-soft { height: 44px; padding: 0 16px; border: 0; border-radius: 22px; background: var(--soft); color: var(--ink); font-weight: 600; transition: background-color 150ms ease, transform 140ms var(--ease-out); }
+.pw-soft:active { transform: scale(0.97); }
+
+.pw-cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.pw-day { display: flex; flex-direction: column; gap: 8px; min-width: 0; border-radius: 20px; padding: 8px; background: rgba(246,244,246,0.7); }
+.pw-day .dh { display: flex; align-items: baseline; gap: 4px; padding: 2px 4px; }
+.pw-day .dh b { font-size: 13px; font-weight: 700; } .pw-day .dh span { font-size: 12px; color: var(--muted); }
+.pw-day .dh em { margin-inline-start: auto; font-style: normal; font-size: 10px; font-weight: 700; color: var(--cherry); }
+.pw-day.today { background: var(--pink-soft); box-shadow: inset 0 0 0 1.5px rgba(255,0,110,0.35); }
+.pw-rest { flex: 1; min-height: 120px; border-radius: 14px; border: 1.5px dashed #E2DDE3; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--faint); }
+.pw-wo { flex: 1; min-height: 120px; border: 0; border-radius: 16px; padding: 10px; text-align: start; display: flex; flex-direction: column; gap: 3px; position: relative; overflow: hidden;
+  background: color-mix(in srgb, var(--c) 12%, #fff); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 22%, transparent); transition: transform 200ms var(--ease-out), box-shadow 200ms ease; }
+.pw-wo::before { content: ''; position: absolute; top: 0; inset-inline: 0; height: 4px; background: var(--c); }
+.pw-wo b { font-size: 13px; font-weight: 700; color: color-mix(in srgb, var(--c) 70%, #1F1B22); text-align: end; line-height: 1.2; margin-top: 4px; }
+[dir="ltr"] .pw-wo b { text-align: start; }
+.pw-wo small { font-size: 11px; color: var(--muted); }
+.pw-wo .ws { margin-top: auto; align-self: flex-start; height: 22px; padding: 0 8px; border-radius: 11px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px; }
+.ws.ok { background: color-mix(in srgb, var(--c) 85%, #1F1B22); color: #fff; }
+.ws.pl { background: rgba(255,255,255,0.9); color: var(--ink); box-shadow: inset 0 0 0 1px rgba(31,27,34,0.08); }
+.ws.miss { background: #fff; color: var(--muted); }
+.pw-wo.miss { background: repeating-linear-gradient(135deg, #FBFAFB 0 6px, #F2EFF2 6px 12px); box-shadow: inset 0 0 0 1px var(--line); }
+.pw-wo.miss::before { background: #D9D2D8; } .pw-wo.miss b { color: var(--muted); }
+.pw-wo.draft { background: #fff; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 35%, transparent); }
+
+.pw-hero.pw-empty { grid-template-columns: 1fr; background: rgba(255,255,255,0.6); box-shadow: inset 0 0 0 1.5px #E2DDE3; }
+.pw-e { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 20px 0 10px; }
+.pw-eic { width: 60px; height: 60px; border-radius: 20px; background: var(--pink-soft); color: var(--pink); display: flex; align-items: center; justify-content: center; margin-bottom: 6px; }
+.pw-e h2 { margin: 0; font-size: 26px; font-weight: 500; letter-spacing: -0.6px; } .pw-e p { margin: 0; color: var(--muted); font-size: 14px; }
+.pw-starts { display: grid; grid-template-columns: repeat(3, minmax(0, 200px)); gap: 10px; margin-top: 16px; }
+.pw-start { border: 0; border-radius: 22px; background: #fff; box-shadow: var(--shadow); padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 4px; transition: transform 200ms var(--ease-out), box-shadow 200ms ease; }
+.pw-start span { width: 40px; height: 40px; border-radius: 13px; background: var(--soft); display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
+.pw-start:first-child span { background: var(--pink); color: #fff; }
+.pw-start.ai span { background: linear-gradient(140deg, #B18CFF, #FF4E9A); color: #fff; }
+.pw-start b { font-size: 14px; } .pw-start small { font-size: 12px; color: var(--muted); }
+.pw-start:active { transform: scale(0.97); }
+
+.pw-cons { border-radius: 28px; background: rgba(255,255,255,0.75); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); box-shadow: var(--shadow); padding: 20px; }
+.pw-ch { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.pw-ch h3 { margin: 0; font-size: 16px; font-weight: 600; } .pw-ch p { margin: 3px 0 0; font-size: 12px; color: var(--muted); }
+.pw-stats { display: flex; gap: 8px; flex-wrap: wrap; }
+.pw-stats div { padding: 8px 14px; border-radius: 16px; background: color-mix(in srgb, var(--c) 9%, #fff); }
+.pw-stats b { display: block; font-size: 20px; font-weight: 600; color: color-mix(in srgb, var(--c) 75%, #1F1B22); letter-spacing: -0.4px; }
+.pw-stats span { font-size: 11px; color: var(--muted); }
+.pw-bars { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(48px, 1fr); gap: 10px; align-items: end; height: 170px; }
+.pw-bar { height: 100%; border: 0; background: none; padding: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.pw-bar em { font-style: normal; font-size: 12px; font-weight: 700; color: var(--muted); }
+.pw-bar span { flex: 1; width: 100%; max-width: 56px; border-radius: 14px; background: var(--soft); display: flex; align-items: flex-end; overflow: hidden; }
+.pw-bar u { display: block; width: 100%; height: var(--v); border-radius: 14px; background: linear-gradient(to top, #FF8FC0, #FFB8D4); transition: filter 150ms ease; }
+.pw-bar.full u { background: linear-gradient(to top, #FF006E, #FF5CA2); }
+.pw-bar.cur u { background: repeating-linear-gradient(135deg, #FF006E 0 6px, #FF4E9A 6px 12px); }
+.pw-bar.full em, .pw-bar.cur em { color: var(--cherry); }
+.pw-bar small { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+@media (hover: hover) and (pointer: fine) {
+  .pw-wk:not([aria-selected="true"]):hover { background: #fff; transform: translateY(-2px); box-shadow: 0 10px 24px rgba(31,27,34,0.08); }
+  .pw-wo:hover { transform: translateY(-3px); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 35%, transparent), 0 12px 24px color-mix(in srgb, var(--c) 22%, transparent); }
+  .pw-soft:hover { background: #ECE8EB; }
+  .pw-start:hover { transform: translateY(-3px); box-shadow: 0 16px 34px rgba(31,27,34,0.10); }
+  .pw-bar:hover u { filter: brightness(1.08) saturate(1.1); }
+  .pw-bar:hover small { color: var(--ink); }
+}
+@media (max-width: 1100px) { .pw-hero { grid-template-columns: 1fr; } .pw-info { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; } .pw-info .pw-ring { grid-row: 1 / span 3; grid-column: 2; margin: 0; } .pw-cal { overflow-x: auto; grid-template-columns: repeat(7, 120px); } }
+@media (max-width: 640px) { .pw-info { display: flex; } .pw-info .pw-ring { margin: 12px 0; } .pw-starts { grid-template-columns: 1fr; width: 100%; } .pw-rail { grid-template-columns: repeat(8, 120px); } }
+@media (prefers-reduced-motion: reduce) { .pw-wk, .pw-wo, .pw-start { transition: none; } }
+
+
+/* ===== food library ===== */
+.fd-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.fd-head h1 { margin: 0; font-size: 40px; font-weight: 400; letter-spacing: -1.2px; }
+.fd-head p { margin: 8px 0 0; color: var(--muted); max-width: 56ch; }
+.fd-tabs { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 4px; border-radius: 22px; background: rgba(255,255,255,0.65); }
+.fd-tabs i { position: absolute; top: 4px; bottom: 4px; inset-inline-start: 4px; width: calc((100% - 8px) / 3); border-radius: 18px; background: #fff; box-shadow: var(--shadow); transform: translateX(calc(var(--i) * -100%)); transition: transform 260ms var(--ease-out); }
+[dir="ltr"] .fd-tabs i { transform: translateX(calc(var(--i) * 100%)); }
+.fd-tabs button { position: relative; z-index: 1; height: 38px; min-width: 116px; padding: 0 14px; border: 0; background: none; font-weight: 600; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; transition: color 150ms ease; }
+.fd-tabs button[aria-selected="true"] { color: var(--ink); }
+.fd-tabs button span { font-size: 11px; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--soft); display: inline-flex; align-items: center; justify-content: center; }
+.fd-how { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
+.fd-how > div { display: flex; gap: 12px; align-items: flex-start; padding: 14px; border-radius: 20px; background: rgba(255,255,255,0.7); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: var(--shadow); }
+.fd-how > div > span { width: 36px; height: 36px; border-radius: 12px; flex: none; display: flex; align-items: center; justify-content: center; color: var(--c); background: color-mix(in srgb, var(--c) 12%, #fff); }
+.fd-how b { display: block; font-size: 14px; font-weight: 600; } .fd-how small { font-size: 12px; color: var(--muted); line-height: 1.45; }
+.fd-groups { display: flex; gap: 6px; overflow-x: auto; padding: 2px; margin-bottom: 10px; scrollbar-width: none; }
+.gch { --c: var(--ink); --s: var(--soft); --t: var(--ink); flex: none; height: 38px; padding: 0 14px; border: 0; border-radius: 19px; background: #fff; box-shadow: var(--shadow); font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; gap: 7px; transition: background-color 150ms ease, color 150ms ease, transform 140ms var(--ease-out); }
+.gch i { width: 9px; height: 9px; border-radius: 50%; background: var(--c); }
+.gch span { font-size: 11px; color: var(--muted); }
+.gch[aria-pressed="true"] { background: var(--s); color: var(--t); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 40%, transparent); }
+.gch[data-fg="all"][aria-pressed="true"] { background: var(--ink); color: #fff; box-shadow: none; } .gch[data-fg="all"][aria-pressed="true"] span { color: rgba(255,255,255,0.75); }
+.gch:active { transform: scale(0.97); }
+.fd-tools { display: flex; gap: 10px; align-items: center; margin-bottom: 18px; flex-wrap: wrap; }
+.fd-search { flex: 1; min-width: 220px; display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 16px; border-radius: 22px; background: #fff; box-shadow: var(--shadow); color: var(--muted); }
+.fd-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font: inherit; color: var(--ink); }
+.fd-search:focus-within { box-shadow: 0 0 0 3px rgba(255,0,110,0.18), var(--shadow); }
+.fd-arch { margin: 0; }
+.fd-grp { margin-bottom: 20px; }
+.fd-grp h3 { margin: 0 4px 10px; display: flex; align-items: baseline; gap: 8px; font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+.fd-grp h3 i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); align-self: center; }
+.fd-grp h3 small { font-size: 12px; font-weight: 600; color: var(--t); background: var(--s); padding: 2px 8px; border-radius: 9px; }
+.fd-grp h3 span { margin-inline-start: auto; font-size: 12px; font-weight: 500; color: var(--muted); }
+.fd-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.food { position: relative; border-radius: 22px; background: #fff; box-shadow: var(--shadow); padding: 14px; display: flex; flex-direction: column; gap: 6px; overflow: hidden; transition: transform 200ms var(--ease-out), box-shadow 200ms ease; }
+.food::before { content: ''; position: absolute; top: 0; inset-inline: 0; height: 4px; background: var(--c); }
+.fo-top { display: flex; align-items: center; gap: 6px; min-height: 28px; }
+.fo-cat { height: 22px; padding: 0 9px; border-radius: 11px; background: var(--s); color: var(--t); font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; }
+.fo-new { height: 22px; padding: 0 8px; border-radius: 11px; background: var(--ink); color: #fff; font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; }
+.fo-acts { margin-inline-start: auto; display: flex; gap: 2px; opacity: 0; transition: opacity 150ms ease; }
+.fo-acts button { width: 30px; height: 30px; border: 0; border-radius: 50%; background: var(--soft); color: var(--muted); display: flex; align-items: center; justify-content: center; }
+.food:focus-within .fo-acts { opacity: 1; }
+.food h4 { margin: 2px 0 0; font-size: 16px; font-weight: 600; letter-spacing: -0.2px; }
+.food p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.45; min-height: 34px; }
+.fo-num { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; color: var(--muted); margin-top: 4px; }
+.fo-num b { font-size: 17px; font-weight: 700; color: var(--ink); }
+.fo-num .miss, .fo-num .over { color: #8A4A00; font-weight: 600; } .fo-num .miss b, .fo-num .over b { color: #8A4A00; }
+.fo-bar { height: 6px; border-radius: 3px; background: var(--s); overflow: hidden; }
+.fo-bar u { display: block; height: 100%; width: var(--v); border-radius: 3px; background: var(--c); }
+.food.warn { box-shadow: 0 0 0 1.5px #FFD2A0, var(--shadow); }
+.fo-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+.fo-tags span { height: 22px; padding: 0 8px; border-radius: 11px; background: var(--soft); font-size: 11px; display: inline-flex; align-items: center; }
+.fo-tags.none span { background: none; color: var(--faint); padding: 0; }
+
+.fd-scrim { position: fixed; inset: 0; z-index: 70; background: rgba(31,27,34,0.2); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); animation: st-fade 200ms ease both; }
+.fd-sheet { position: fixed; z-index: 71; top: 12px; bottom: 12px; inset-inline-end: 12px; width: min(460px, calc(100vw - 24px)); border-radius: 28px; background: #fff; box-shadow: 0 30px 80px rgba(31,27,34,0.25); display: flex; flex-direction: column; animation: sheet-in 300ms cubic-bezier(.32,.72,0,1) both; }
+@keyframes sheet-in { from { transform: translateX(-104%); } }
+[dir="ltr"] .fd-sheet { animation-name: sheet-in-ltr; } @keyframes sheet-in-ltr { from { transform: translateX(104%); } }
+.fs-h { display: flex; align-items: center; justify-content: space-between; padding: 20px 20px 8px; } .fs-h h2 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.4px; }
+.fs-b { flex: 1; overflow-y: auto; padding: 8px 20px 16px; display: flex; flex-direction: column; gap: 10px; }
+.fs-l { margin: 8px 0 0; font-size: 12px; font-weight: 600; color: var(--muted); } .fs-l small { font-weight: 400; color: var(--faint); margin-inline-start: 6px; }
+.fs-g { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.fs-g button { height: 40px; border: 0; border-radius: 14px; background: var(--soft); font-size: 13px; font-weight: 600; color: var(--muted); transition: background-color 150ms ease, color 150ms ease; }
+.fs-g button[aria-pressed="true"] { background: var(--s); color: var(--t); box-shadow: inset 0 0 0 1.5px var(--c); }
+.fs-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fs-b .fld input { font-size: 15px; }
+.fld.bad { box-shadow: 0 0 0 2px #FFB25C; background: #FFF8EE; }
+.fs-c { display: flex; flex-wrap: wrap; gap: 6px; }
+.fs-c button { height: 32px; padding: 0 12px; border: 0; border-radius: 16px; background: var(--soft); font-size: 12px; font-weight: 500; transition: background-color 150ms ease, color 150ms ease, transform 120ms var(--ease-out); }
+.fs-c button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+.fs-c button:active { transform: scale(0.95); }
+.fs-f { display: flex; gap: 8px; padding: 14px 20px 18px; border-top: 0.5px solid var(--line); } .fs-f .btn-pk { flex: 1; justify-content: center; }
+.fs-f .btn-pk[aria-disabled="true"] { background: var(--pink-soft); color: var(--cherry); box-shadow: none; cursor: not-allowed; }
+
+.tp-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.tcard { border-radius: 24px; background: #fff; box-shadow: var(--shadow); padding: 16px; display: flex; flex-direction: column; gap: 8px; transition: transform 200ms var(--ease-out), box-shadow 200ms ease; }
+.tcard:focus-within .fo-acts { opacity: 1; }
+.tc-top { display: flex; align-items: center; }
+.tc-ic { width: 40px; height: 40px; border-radius: 13px; background: linear-gradient(140deg, #FF8FC0, #C9A6FF); color: #fff; display: flex; align-items: center; justify-content: center; }
+.tcard h4 { margin: 4px 0 0; font-size: 17px; font-weight: 600; } .tcard p { margin: 0; font-size: 13px; color: var(--muted); } .tcard p b { color: var(--ink); }
+.tc-por { display: flex; gap: 6px; flex-wrap: wrap; }
+.tc-por span { height: 28px; padding: 0 10px; border-radius: 14px; background: var(--s); color: var(--t); font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; } .tc-por b { font-size: 14px; }
+.tc-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--faint); margin-top: 2px; }
+.tc-use { margin-top: 4px; height: 40px; border: 0; border-radius: 20px; background: var(--soft); font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background-color 150ms ease, color 150ms ease; }
+
+.st-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+.st-main { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.st-card { border-radius: 26px; background: #fff; box-shadow: var(--shadow); padding: 20px; }
+.st-h { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 16px; }
+.st-n { width: 30px; height: 30px; border-radius: 10px; background: var(--ink); color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; flex: none; }
+.st-h h3 { margin: 0; font-size: 17px; font-weight: 600; } .st-h p { margin: 3px 0 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
+.kc-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.kc { border-radius: 20px; padding: 12px; background: var(--s); display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.kc > span { font-size: 13px; font-weight: 700; color: var(--t); } .kc small { font-size: 11px; color: var(--t); opacity: 0.8; }
+.kc-in { display: flex; align-items: center; gap: 4px; height: 44px; padding: 0 6px; border-radius: 22px; background: rgba(255,255,255,0.85); }
+.kc-in button { width: 32px; height: 32px; border: 0; border-radius: 50%; background: var(--soft); font-size: 16px; font-weight: 600; color: var(--ink); display: flex; align-items: center; justify-content: center; transition: transform 120ms var(--ease-out), background-color 150ms ease; }
+.kc-in button:active { transform: scale(0.9); }
+.kc-in input { width: 56px; border: 0; background: none; outline: none; text-align: center; font: inherit; font-size: 20px; font-weight: 700; color: var(--ink); -moz-appearance: textfield; }
+.kc-in input::-webkit-outer-spin-button, .kc-in input::-webkit-inner-spin-button, .act-c input::-webkit-inner-spin-button, .act-c input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.kc-in.sm { height: 40px; } .kc-in.sm input { width: 44px; font-size: 16px; }
+.kc-in.big { height: 56px; padding: 0 8px; border-radius: 28px; background: var(--soft); } .kc-in.big button { width: 40px; height: 40px; background: #fff; } .kc-in.big input { width: 96px; font-size: 28px; font-weight: 300; letter-spacing: -0.8px; }
+.gscale { position: relative; height: 64px; margin: 0 24px 14px; }
+.gs-track { position: absolute; top: 28px; inset-inline: 0; height: 8px; border-radius: 4px; background: var(--soft); direction: ltr; }
+.gs-track i.neg { position: absolute; left: 0; width: 66.6%; height: 100%; border-radius: 4px 0 0 4px; background: linear-gradient(to right, #0094FF, #9ED3FF); }
+.gs-track i.pos { position: absolute; left: 66.6%; right: 0; height: 100%; border-radius: 0 4px 4px 0; background: linear-gradient(to right, #FFB3D1, #FF006E); }
+.gs-track b { position: absolute; left: var(--p); top: 12px; transform: translateX(-50%); font-size: 10px; color: var(--muted); }
+.gs-m { position: absolute; left: var(--p); top: calc(var(--row) * 40px); transform: translateX(-50%); direction: ltr; }
+.gscale { direction: ltr; }
+.gs-m em { font-style: normal; display: inline-block; height: 22px; padding: 0 8px; border-radius: 11px; font-size: 11px; font-weight: 700; background: #fff; box-shadow: var(--shadow); line-height: 22px; }
+.gs-m.dn em { color: #0070C9; } .gs-m.up em { color: var(--cherry); }
+.g-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.g-row { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 14px; border-radius: 18px; background: var(--soft); }
+[dir="rtl"] .g-row { padding: 6px 14px 6px 6px; }
+.g-row > span { flex: 1; font-size: 13px; font-weight: 500; } .g-row small { color: var(--muted); font-size: 12px; }
+.g-row.dn { background: #EEF6FF; } .g-row.up { background: #FFF0F6; }
+.act-cols { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; align-items: end; }
+.act-c { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.act-c input { width: 100%; max-width: 74px; height: 36px; border: 0; border-radius: 12px; background: var(--soft); text-align: center; font: inherit; font-size: 14px; font-weight: 700; outline: none; -moz-appearance: textfield; }
+.act-c input:focus { background: #fff; box-shadow: 0 0 0 2px var(--pink); }
+.act-bar { width: 100%; max-width: 74px; height: 90px; border-radius: 14px; background: var(--soft); display: flex; align-items: flex-end; overflow: hidden; }
+.act-bar u { display: block; width: 100%; height: var(--v); border-radius: 14px; background: linear-gradient(to top, #7C4DFF, #C9A6FF); transition: height 300ms var(--ease-out); }
+.act-c span { font-size: 11px; color: var(--muted); }
+.floor { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; } .floor > span { font-size: 13px; color: var(--muted); }
+.st-prev { position: sticky; top: 16px; overflow: hidden; isolation: isolate; border-radius: 28px; padding: 22px; background: #fff; box-shadow: var(--shadow); }
+.st-prev::before { content: ''; position: absolute; z-index: -1; inset: -40% -30% auto auto; width: 90%; height: 120%; filter: blur(40px); opacity: 0.6; pointer-events: none; background: radial-gradient(40% 40% at 60% 40%, #FF8FC0, transparent 70%), radial-gradient(35% 35% at 30% 70%, #C9A6FF, transparent 70%); }
+.st-prev h3 { margin: 4px 0; font-size: 20px; font-weight: 600; } .st-prev > p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
+.sp-big { margin: 18px 0 12px; } .sp-big b { font-size: 48px; font-weight: 300; letter-spacing: -1.8px; line-height: 1; } .sp-big span { display: block; font-size: 12px; color: var(--muted); }
+.sp-por { display: flex; gap: 6px; flex-wrap: wrap; }
+.sp-por span { height: 34px; padding: 0 12px; border-radius: 17px; background: var(--s); color: var(--t); font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; } .sp-por b { font-size: 16px; }
+.sp-note { display: flex; gap: 8px; align-items: flex-start; margin-top: 16px !important; padding: 10px 12px; border-radius: 14px; background: var(--soft); color: var(--ink) !important; }
+.sp-note svg { flex: none; margin-top: 1px; color: var(--muted); }
+.st-save { position: sticky; bottom: 16px; z-index: 10; margin-top: 16px; display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 18px; border-radius: 26px; background: rgba(255,255,255,0.86); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); box-shadow: 0 0 0 0.5px rgba(31,27,34,0.08), 0 16px 40px rgba(31,27,34,0.16); animation: pop-in 220ms var(--ease-out); }
+[dir="rtl"] .st-save { padding: 10px 18px 10px 10px; }
+.st-save > span { flex: 1; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #8A4A00; }
+@media (hover: hover) and (pointer: fine) {
+  .gch:not([aria-pressed="true"]):hover { background: var(--s); color: var(--t); }
+  .food:hover, .tcard:hover { transform: translateY(-3px); box-shadow: 0 2px 4px rgba(31,27,34,0.04), 0 18px 36px rgba(31,27,34,0.10); }
+  .food:hover .fo-acts, .tcard:hover .fo-acts { opacity: 1; }
+  .fo-acts button:hover { background: var(--ink); color: #fff; }
+  .tc-use:hover { background: var(--pink); color: #fff; }
+  .fd-tabs button:not([aria-selected="true"]):hover { color: var(--ink); }
+  .fs-g button:not([aria-pressed="true"]):hover, .fs-c button:not([aria-pressed="true"]):hover { background: #ECE8EB; }
+  .kc-in button:hover { background: #fff; box-shadow: var(--shadow); }
+}
+@media (hover: none) { .fo-acts { opacity: 1; } }
+@media (max-width: 1100px) { .st-wrap { grid-template-columns: 1fr; } .st-prev { position: static; } }
+@media (max-width: 760px) {
+  .fd-how { grid-template-columns: 1fr; } .fd-tabs { width: 100%; } .fd-tabs button { min-width: 0; }
+  .kc-grid { grid-template-columns: 1fr 1fr; } .st-card { padding: 16px 12px; } .act-c input { padding: 0; } .g-rows { grid-template-columns: 1fr; } .act-cols { gap: 4px; } .act-c input { font-size: 12px; } .act-c span { font-size: 10px; }
+  .fs-g { grid-template-columns: repeat(3, 1fr); } .fs-row { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { .fd-sheet, .fd-scrim, .st-save { animation: none; } .food, .tcard, .fd-tabs i { transition: none; } }
+
 /* ===== responsive ===== */
 @media (max-width: 1180px) { .s4 { grid-column: span 6; } .s4.pump { grid-column: span 12; } .s7, .s5 { grid-column: span 12; } .stats { gap: 24px; } }
 @media (max-width: 860px) {
@@ -1785,6 +2195,7 @@ button { cursor: pointer; }
     <section class="page" id="p-trainee" hidden></section>
     <section class="page" id="p-library" hidden></section>
     <section class="page" id="p-nutrition" hidden></section>
+    <section class="page" id="p-foods" hidden></section>
 
     <section class="page" id="p-other" hidden>
       <div class="ph"><div><h1 id="otherTitle"></h1><p id="otherSub"></p></div></div>
@@ -1854,10 +2265,11 @@ button { cursor: pointer; }
     document.getElementById('p-stats').hidden = id !== 'stats';
     document.getElementById('p-builder').hidden = id !== 'builder';
     document.getElementById('p-trainee').hidden = true;
+    document.getElementById('p-foods').hidden = id !== 'foods'; if (id === 'foods' && window.__renderFoods) window.__renderFoods();
     document.getElementById('p-nutrition').hidden = id !== 'nutrition'; if (id === 'nutrition' && window.__renderNB) window.__renderNB();
     document.getElementById('p-library').hidden = id !== 'library'; if (id === 'library' && window.__renderLib) window.__renderLib();
     document.getElementById('p-trainees').hidden = id !== 'trainees' && id !== 'waiting';
-    var other = id !== 'nutrition' && id !== 'library' && id !== 'overview' && id !== 'stats' && id !== 'builder' && id !== 'trainees' && id !== 'waiting';
+    var other = id !== 'foods' && id !== 'nutrition' && id !== 'library' && id !== 'overview' && id !== 'stats' && id !== 'builder' && id !== 'trainees' && id !== 'waiting';
     document.getElementById('p-other').hidden = !other;
     if (other) { document.getElementById('otherTitle').textContent = TITLES[id]; document.getElementById('otherSub').textContent = SUBS[id] || ''; }
     if (id === 'waiting') setFilter('waiting'); else if (id === 'trainees') setFilter('all');
@@ -2404,24 +2816,7 @@ button { cursor: pointer; }
           '<button type="button" class="alt-card" disabled><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="13" height="13" rx="3"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg></span><span><b>שכפול השבוע הקודם</b><small>יהיה זמין אחרי התוכנית הראשונה</small></span></button>' +
           '<p class="alt-note">עוד אין לה תוכניות. ברגע שתפרסמי, היא תקבל התראה והאפליקציה שלה תעבור למסך הבית.</p></div></div>';
       } else if (tab === 'plans') {
-        var ic = function (p) { return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>'; };
-        var r = 48, c = 2 * Math.PI * r;
-        var bigRing = '<div class="big-ring"><svg width="112" height="112" viewBox="0 0 112 112" aria-hidden="true"><circle cx="56" cy="56" r="' + r + '" fill="none" stroke="rgba(31,27,34,.07)" stroke-width="10"/><circle cx="56" cy="56" r="' + r + '" fill="none" stroke="#FF006E" stroke-width="10" stroke-linecap="round" stroke-dasharray="' + (c * 0.75).toFixed(1) + ' ' + c.toFixed(1) + '" transform="rotate(-90 56 56)"/></svg><b class="num">75%<small>3 מתוך 4</small></b></div>';
-        var WO = [['Full Body A', '#FF006E', 'בוצע · א׳', 1], ['Full Body B', '#7C4DFF', 'בוצע · ג׳', 1], ['Full Body C', '#C75A00', 'בוצע · ה׳', 1], ['Full Body D', '#0070C9', 'מתוכנן · ש׳', 0]];
-        var hist = [['4–10 באוק׳', 'שבוע 5 · עליון / תחתון', [1, 1, 1, 1], '100%'], ['27 בספט׳–3 באוק׳', 'שבוע 4 · עליון / תחתון', [1, 1, 2, 1], '75%'], ['20–26 בספט׳', 'שבוע 3 · פול באדי', [1, 1, 1], '100%'], ['13–19 בספט׳', 'שבוע 2 · פול באדי', [1, 2, 1], '67%']];
-        body = '<div class="pl-bar"><button type="button" class="pl-btn pk press" data-np="new">' + ic('<path d="M12 5v14M5 12h14"/>') + 'תוכנית חדשה</button>' +
-          '<button type="button" class="pl-btn press" data-np="dup">' + ic('<rect x="8" y="8" width="13" height="13" rx="3"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>') + 'שכפול השבוע שעבר</button>' +
-          '<button type="button" class="pl-btn ai press" data-np="ai">' + ic('<path d="M12 3l1.8 4.6L18 9.5l-4.2 1.9L12 16l-1.8-4.6L6 9.5l4.2-1.9z"/>') + 'טיוטת AI</button>' +
-          '<div class="np" id="np" role="dialog" aria-label="תוכנית חדשה" data-off></div></div>' +
-          '<div class="now-grid"><section class="now-card"><div class="now-top"><span class="eyebrow">השבוע</span><span class="tag pr">פורסמה</span></div><h2>שבוע 6 · עליון / תחתון</h2><div class="sub num">11–17 באוקטובר · 4 אימונים · 18 תרגילים</div>' +
-          '<div class="now-body">' + bigRing + '<div class="wo-list">' + WO.map(function (w) { return '<div class="wo' + (w[3] ? ' done' : '') + '"><i style="background:' + w[1] + '"></i><b>' + w[0] + '</b><span>' + w[2] + '</span></div>'; }).join('') + '</div></div>' +
-          '<div class="now-acts"><button type="button" class="btn-pk press" data-go="builder">פתיחה בבונה</button></div></section>' +
-          '<section class="next-card"><span class="eyebrow">השבוע הבא</span><h3>שבוע 7 · טיוטה</h3><div class="sub num">18–24 באוקטובר · עוד 5 ימים</div>' +
-          '<div class="chips"><span><i style="background:#FF006E"></i>Full Body A</span><span><i style="background:#7C4DFF"></i>Full Body B</span><span><i style="background:#C75A00"></i>Full Body C</span></div>' +
-          '<div class="warn">עוד לא פורסם. מאיה לא תראה אותו עד שתפרסמי.</div><button type="button" class="btn-pk press" data-go="builder">המשך עריכה ופרסום</button></section></div>' +
-          '<section class="hist"><h3>שבועות קודמים</h3>' + hist.map(function (h) {
-            return '<div class="hist-row"><span class="tl"></span><span class="d">' + h[0] + '</span><span class="n">' + h[1] + '</span><span class="sq">' + h[2].map(function (d) { return '<i style="background:' + (d === 1 ? 'var(--pink)' : '#F6C9D9') + '"></i>'; }).join('') + '<b class="pct num">' + h[3] + '</b></span><button type="button" class="arrow-btn press" data-go="builder" aria-label="פתיחת השבוע">' + ARROW + '</button></div>';
-          }).join('') + '</section>';
+        body = window.__plansActive();
       } else if (tab === 'questionnaire') {
         var P = function (arr) { return arr.map(function (x) { return '<span class="pill">' + x + '</span>'; }).join(''); };
         var row = function (k, v, empty) { return '<div' + (empty ? ' class="empty-row"' : '') + '><dt>' + k + '</dt><dd' + (empty ? ' class="none"' : '') + '>' + (empty ? 'לא צוין' : v) + '</dd></div>'; };
@@ -2557,6 +2952,80 @@ button { cursor: pointer; }
     });
     nt.addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-nid]')) { e.preventDefault(); e.target.click(); } });
     render();
+  })();
+
+  // ---- trainee plans tab v3 (active): week rail + week calendar hero + consistency ----
+  (function () {
+    var pg = document.getElementById('p-trainee');
+    function ic(p, s) { return '<svg width="' + (s || 16) + '" height="' + (s || 16) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg>'; }
+    var WO = [['Full Body A', '#FF006E', 6], ['Full Body B', '#7C4DFF', 5], ['Full Body C', '#FF7A00', 5], ['Full Body D', '#0094FF', 4]];
+    var DN = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
+    var W = [
+      { n: 1, d: '6–12 בספט׳', d0: 6, name: 'פול באדי', st: 'done', w: [1, 1, 2], days: [0, 2, 4] },
+      { n: 2, d: '13–19 בספט׳', d0: 13, name: 'פול באדי', st: 'done', w: [1, 2, 1], days: [0, 2, 4] },
+      { n: 3, d: '20–26 בספט׳', d0: 20, name: 'פול באדי', st: 'done', w: [1, 1, 1], days: [0, 2, 4] },
+      { n: 4, d: '27 בספט׳–3 באוק׳', d0: 27, name: 'עליון / תחתון', st: 'done', w: [1, 1, 2, 1], days: [0, 2, 4, 6] },
+      { n: 5, d: '4–10 באוק׳', d0: 4, name: 'עליון / תחתון', st: 'done', w: [1, 1, 1, 1], days: [0, 2, 4, 6] },
+      { n: 6, d: '11–17 באוק׳', d0: 11, name: 'עליון / תחתון', st: 'cur', w: [1, 1, 1, 0], days: [0, 2, 4, 6], today: 4 },
+      { n: 7, d: '18–24 באוק׳', d0: 18, name: 'פול באדי', st: 'draft', w: [0, 0, 0], days: [0, 2, 4] },
+      { n: 8, d: '25–31 באוק׳', d0: 25, st: 'pw-empty' }
+    ];
+    var sel = 5;
+    function pct(wk) { return wk.w ? Math.round(wk.w.filter(function (x) { return x === 1; }).length / wk.w.length * 100) : 0; }
+    function rail() {
+      return '<div class="pw-rail" role="tablist" aria-label="שבועות">' + W.map(function (wk, i) {
+        var lab = { done: pct(wk) + '%', cur: 'השבוע', draft: 'טיוטה', 'pw-empty': 'ריק' }[wk.st];
+        return '<button type="button" role="tab" class="pw-wk ' + wk.st + '" data-pw="' + i + '" aria-selected="' + (i === sel) + '"><span class="t"><b>שבוע ' + wk.n + '</b><em>' + lab + '</em></span><small>' + wk.d + '</small>' +
+          (wk.w ? '<span class="mb">' + wk.w.map(function (x, k) { return '<i class="' + (x === 1 ? 'on' : x === 2 ? 'miss' : '') + '" style="--c:' + WO[k][1] + '"></i>'; }).join('') + '</span>' : '<span class="mb add">' + ic('<path d="M12 5v14M5 12h14"/>', 14) + '</span>') + '</button>';
+      }).join('') + '</div>';
+    }
+    function hero() {
+      var wk = W[sel];
+      if (wk.st === 'pw-empty') {
+        return '<section class="pw-hero pw-empty"><div class="pw-e"><span class="pw-eic">' + ic('<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4M12 13v5M9.5 15.5h5"/>', 26) + '</span><h2>שבוע ' + wk.n + ' עדיין ריק</h2><p>' + wk.d + ' · אפשר להכין אותו מראש, והוא יתפרסם כשתבחרי</p>' +
+          '<div class="pw-starts"><button type="button" class="pw-start" data-np="new"><span>' + ic('<path d="M12 5v14M5 12h14"/>', 18) + '</span><b>מאפס</b><small>אימון ריק ראשון</small></button><button type="button" class="pw-start" data-np="dup"><span>' + ic('<rect x="8" y="8" width="13" height="13" rx="3"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>', 18) + '</span><b>שכפול שבוע 7</b><small>3 אימונים · טיוטה</small></button><button type="button" class="pw-start ai" data-np="ai"><span>' + ic('<path d="M12 3l1.8 4.6L18 9.5l-4.2 1.9L12 16l-1.8-4.6L6 9.5l4.2-1.9z"/>', 18) + '</span><b>טיוטת AI</b><small>לפי ההתקדמות שלה</small></button></div></div></section>';
+      }
+      var done = wk.w.filter(function (x) { return x === 1; }).length, p = done / wk.w.length, r = 52, C = 2 * Math.PI * r;
+      var ringCol = wk.st === 'draft' ? '#D9D2D8' : '#FF006E';
+      var status = { done: '<span class="pw-pill done">הסתיים</span>', cur: '<span class="pw-pill cur"><i></i>פורסם · פעיל</span>', draft: '<span class="pw-pill draft">טיוטה · לא פורסם</span>' }[wk.st];
+      var cal = '<div class="pw-cal">' + DN.map(function (dn, di) {
+        var k = wk.days.indexOf(di), isT = wk.today === di;
+        var date = wk.d0 + di > 30 && wk.d0 > 20 ? wk.d0 + di - 30 : wk.d0 + di;
+        var cell = '<div class="pw-day' + (isT ? ' today' : '') + (k < 0 ? ' rest' : '') + '"><div class="dh"><b>' + dn + '</b><span class="num">' + date + '</span>' + (isT ? '<em>היום</em>' : '') + '</div>';
+        if (k < 0) return cell + '<div class="pw-rest">מנוחה</div></div>';
+        var s = wk.w[k], o = WO[k];
+        var stx = wk.st === 'draft' ? '<span class="ws pl">טיוטה</span>' : s === 1 ? '<span class="ws ok">' + ic('<path d="m5 12.5 4.5 4.5L19 7.5"/>', 12) + 'בוצע</span>' : s === 2 ? '<span class="ws miss">דולג</span>' : '<span class="ws pl">מתוכנן</span>';
+        return cell + '<button type="button" class="pw-wo' + (s === 1 ? ' done' : '') + (s === 2 ? ' miss' : '') + (wk.st === 'draft' ? ' draft' : '') + '" style="--c:' + o[1] + '" data-go="builder"><b dir="ltr">' + o[0] + '</b><small>' + o[2] + ' תרגילים</small>' + stx + '</button></div>';
+      }).join('') + '</div>';
+      var acts = wk.st === 'draft' ? '<button type="button" class="btn-pk press" data-go="builder">המשך עריכה ופרסום</button>' :
+        wk.st === 'cur' ? '<button type="button" class="btn-pk press" data-go="builder">פתיחה בבונה</button><button type="button" class="pw-soft press" data-np="dup">שכפול לשבוע הבא</button>' :
+        '<button type="button" class="pw-soft press" data-go="builder">צפייה בבונה</button><button type="button" class="pw-soft press" data-np="dup">שימוש כבסיס</button>';
+      return '<section class="pw-hero ' + wk.st + '"><div class="pw-info"><div class="pw-top"><span class="eyebrow">שבוע ' + wk.n + '</span>' + status + '</div><h2>' + wk.name + '</h2><p class="num">' + wk.d + ' · ' + wk.w.length + ' אימונים</p>' +
+        '<div class="pw-ring"><svg width="124" height="124" viewBox="0 0 124 124" aria-hidden="true"><circle cx="62" cy="62" r="' + r + '" fill="none" stroke="rgba(31,27,34,.07)" stroke-width="12"/>' + (p > 0 ? '<circle cx="62" cy="62" r="' + r + '" fill="none" stroke="' + ringCol + '" stroke-width="12" stroke-linecap="round" stroke-dasharray="' + (C * p).toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 62 62)"/>' : '') + '</svg><b class="num">' + (wk.st === 'draft' ? '—' : Math.round(p * 100) + '%') + '<small>' + (wk.st === 'draft' ? 'עוד לא התחיל' : done + ' מתוך ' + wk.w.length + ' בוצעו') + '</small></b></div>' +
+        (wk.st === 'draft' ? '<div class="pw-warn">' + ic('<circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/>', 16) + 'מאיה לא תראה את השבוע עד שתפרסמי. מתחיל בעוד 3 ימים.</div>' : '') +
+        '<div class="pw-acts">' + acts + '</div></div>' + cal + '</section>';
+    }
+    function consistency() {
+      var past = W.filter(function (w) { return w.st === 'done' || w.st === 'cur'; });
+      var avg = Math.round(past.filter(function (w) { return w.st === 'done'; }).reduce(function (a, w) { return a + pct(w); }, 0) / past.filter(function (w) { return w.st === 'done'; }).length);
+      var stats = [['שבועות בתוכנית', past.length, '#FF006E'], ['ביצוע ממוצע', avg + '%', '#7C4DFF'], ['שבועות מלאים', past.filter(function (w) { return pct(w) === 100; }).length, '#FF7A00'], ['אימונים שבוצעו', past.reduce(function (a, w) { return a + w.w.filter(function (x) { return x === 1; }).length; }, 0), '#0094FF']];
+      return '<section class="pw-cons"><div class="pw-ch"><div><h3>התמדה לאורך התוכנית</h3><p>אחוז ביצוע בכל שבוע</p></div><div class="pw-stats">' + stats.map(function (s) { return '<div style="--c:' + s[2] + '"><b class="num" dir="ltr">' + s[1] + '</b><span>' + s[0] + '</span></div>'; }).join('') + '</div></div>' +
+        '<div class="pw-bars">' + past.map(function (w) { var v = pct(w); return '<button type="button" class="pw-bar' + (w.st === 'cur' ? ' cur' : '') + (v === 100 ? ' full' : '') + '" data-pw="' + W.indexOf(w) + '" aria-label="שבוע ' + w.n + ': ' + v + '%"><em class="num">' + v + '%</em><span><u style="--v:' + Math.max(4, v) + '%"></u></span><small>שבוע ' + w.n + '</small></button>'; }).join('') + '</div></section>';
+    }
+    window.__plansActive = function () {
+      var bar = '<div class="pl-bar"><button type="button" class="pl-btn pk press" data-np="new">' + ic('<path d="M12 5v14M5 12h14"/>') + 'תוכנית חדשה</button>' +
+        '<button type="button" class="pl-btn press" data-np="dup">' + ic('<rect x="8" y="8" width="13" height="13" rx="3"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>') + 'שכפול השבוע שעבר</button>' +
+        '<button type="button" class="pl-btn ai press" data-np="ai">' + ic('<path d="M12 3l1.8 4.6L18 9.5l-4.2 1.9L12 16l-1.8-4.6L6 9.5l4.2-1.9z"/>') + 'טיוטת AI</button>' +
+        '<div class="np" id="np" role="dialog" aria-label="תוכנית חדשה" data-off></div></div>';
+      return bar + rail() + '<div id="pwHero">' + hero() + '</div>' + consistency();
+    };
+    pg.addEventListener('click', function (e) {
+      var t = e.target.closest('[data-pw]'); if (!t) return;
+      sel = +t.dataset.pw;
+      pg.querySelectorAll('.pw-wk').forEach(function (b, i) { b.setAttribute('aria-selected', i === sel); });
+      document.getElementById('pwHero').innerHTML = hero();
+      if (t.classList.contains('pw-bar')) document.getElementById('pwHero').scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    });
   })();
 
   // ---- trainee tabs: body (data), achievements (game), nutrition (summary) ----
@@ -2750,10 +3219,61 @@ button { cursor: pointer; }
       var hist = '<section class="gcard"><div class="gh"><div><h3>תוכניות קודמות</h3><p>2 תוכניות</p></div></div>' + [['צמחונית · מאוזנת', '1,950 קק״ל', '12 באוג׳–3 באוק׳'], ['צמחונית · התחלה', '2,050 קק״ל', '12 ביולי–11 באוג׳']].map(function (h) {
         return '<button type="button" class="nh-row" data-go="nutrition"><span class="d"></span><span><b>' + h[0] + '</b><small>' + h[2] + '</small></span><span class="num k">' + h[1] + '</span><span class="arrow-btn" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 17 7 7M7 16V7h9"/></svg></span></button>';
       }).join('') + '</section>';
-      return '<div class="nu-grid">' + plan + '<div class="nu-side">' + prefCard() + hist + '</div></div>';
+      return '<div class="nu-grid">' + plan + '<div class="nu-side">' + prefCard() + hist + '</div></div>' + trackCard();
     }
 
-    window.__tpTab = { body: bodyTab, achievements: achTab, nutrition: nutTab };
+    /* ================= PORTION TRACKING ================= */
+    var PT = { wk: 0 };
+    var DT = { P: 4, C: 3, F: 3, S: 1 }, PL = { P: 'חלבון', C: 'פחמימה', F: 'שומן', S: 'נשנוש' };
+    var DAYS = [['א׳', '11', { P: 4, C: 3, F: 2, S: 1 }, 2], ['ב׳', '12', { P: 3.5, C: 3, F: 3, S: 0 }, 0], ['ג׳', '13', { P: 4, C: 2.5, F: 3, S: 1 }, 1], ['ד׳', '14', null, 0], ['ה׳', '15', { P: 1.5, C: 1, F: 1, S: 0 }, 1, 'today'], ['ו׳', '16', 'future'], ['ש׳', '17', 'future']];
+    function frx(n) { var w = Math.floor(n), h = n - w >= 0.5; return '<bdi dir="ltr">' + (w || !h ? w : '') + (h ? '½' : '') + '</bdi>'; }
+    function trackCard() {
+      var tot = { P: 0, C: 0, F: 0, S: 0 }; DAYS.forEach(function (d) { if (d[2] && d[2] !== 'future') Object.keys(tot).forEach(function (k2) { tot[k2] += d[2][k2]; }); });
+      var rings = Object.keys(DT).map(function (k2) {
+        var goal = DT[k2] * 7, p = Math.min(1, tot[k2] / goal), r = 22, C = 2 * Math.PI * r;
+        return '<div class="tr-r ' + k2 + '"><svg width="56" height="56" viewBox="0 0 56 56" aria-hidden="true"><circle cx="28" cy="28" r="' + r + '" fill="none" stroke="var(--s)" stroke-width="6"/><circle cx="28" cy="28" r="' + r + '" fill="none" stroke="var(--c)" stroke-width="6" stroke-linecap="round" stroke-dasharray="' + (C * p).toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 28 28)"/></svg><div><span>' + PL[k2] + '</span><b dir="ltr">' + frx(tot[k2]) + ' / ' + frx(goal) + '</b></div></div>';
+      }).join('');
+      var days = DAYS.map(function (d) {
+        var st = d[2] === 'future' ? 'fut' : !d[2] ? 'none' : '';
+        var body = st === 'fut' ? '<p class="dz">עדיין לא</p>' : st === 'none' ? '<p class="dz">לא סומן דבר</p>' :
+          Object.keys(DT).map(function (k2) { var v = d[2][k2], g = DT[k2]; return '<div class="db ' + k2 + '" title="' + PL[k2] + ' ' + v + '/' + g + '"><u style="--v:' + Math.min(100, v / g * 100) + '%"></u></div>'; }).join('') +
+          '<div class="dm"><span dir="ltr">' + frx(d[2].P + d[2].C + d[2].F + d[2].S) + ' / ' + (DT.P + DT.C + DT.F + DT.S) + '</span>' + (d[3] ? '<i class="ph">' + ic('<rect x="3" y="5" width="18" height="15" rx="3"/><circle cx="12" cy="12.5" r="3.5"/>', 11) + d[3] + '</i>' : '') + '</div>';
+        return '<button type="button" class="day ' + st + (d[4] ? ' today' : '') + '"' + (st ? ' disabled' : '') + '><div class="dh"><b>' + d[0] + '</b><span>' + d[1] + '</span>' + (d[4] ? '<em>היום</em>' : '') + '</div>' + body + '</button>';
+      }).join('');
+      return '<section class="gcard ptrack"><div class="gh"><div><h3>מעקב מנות</h3><p>מה היא סימנה בכל יום, מול היעד היומי</p></div><div class="wnav"><button type="button" class="wn" data-wk="-1" aria-label="השבוע הקודם">' + ic('<path d="m9 6 6 6-6 6"/>') + '</button><b>11–17 באוק׳</b><button type="button" class="wn" data-wk="1" aria-label="השבוע הבא" disabled>' + ic('<path d="m15 6-6 6 6 6"/>') + '</button></div></div>' +
+        '<div class="tr-rings">' + rings + '</div><div class="days">' + days + '</div><div class="tr-leg">' + Object.keys(DT).map(function (k2) { return '<span class="' + k2 + '"><i></i>' + PL[k2] + ' · ' + DT[k2] + ' ביום</span>'; }).join('') + '</div></section>';
+    }
+
+    /* ================= WORKOUT LOGS ================= */
+    var LG = { f: 'all', open: 1 };
+    var LOGS = [
+      ['ה׳, 15 באוק׳', [['Full Body C', '#C75A00', '09:12', 'done', 5, 0, 1, '48 דק׳', [['Goblet squat', '3×12 · 16 ק״ג'], ['Dumbbell RDL', '3×10 · 14 ק״ג'], ['One-arm row', '3×12 · 12 ק״ג']], 'הרגשתי חזקה היום!']]],
+      ['ג׳, 13 באוק׳', [['Full Body B', '#7C4DFF', '18:40', 'done', 4, 1, 1, '52 דק׳', [['Dumbbell bench press', '3×10 · 12 ק״ג', 1], ['Hip thrust', '3×12 · 40 ק״ג'], ['Plank', '3×40 שנ׳']], '']]],
+      ['א׳, 11 באוק׳', [['Full Body A', '#FF006E', '07:30', 'done', 4, 0, 0, '45 דק׳', [['Goblet squat', '3×12 · 14 ק״ג'], ['Shoulder press', '3×10 · 8 ק״ג']], '']]],
+      ['ו׳, 9 באוק׳', [['Full Body D', '#0070C9', '10:05', 'partial', 2, 0, 0, '20 דק׳', [['Burpee', '2×10'], ['Plank', '1×30 שנ׳']], 'הברך הציקה, עצרתי באמצע']]]
+    ];
+    function logTab(waiting) {
+      if (waiting) return '<section class="gcard"><div class="bd-empty">' + ic('<path d="M6 7v10M3 9v6M18 7v10M21 9v6M6 12h12"/>', 24) + '<b>עדיין אין תיעודי אימונים</b><span>כשנועה תסיים אימון ראשון, הוא יופיע כאן עם הדירוג, השיאים והתמונות</span></div></section>';
+      var all = []; LOGS.forEach(function (d) { d[1].forEach(function (l) { all.push(l); }); });
+      var F = [['all', 'הכול · ' + all.length], ['pr', 'שיאים · ' + all.filter(function (l) { return l[5]; }).length], ['ph', 'עם תמונה · ' + all.filter(function (l) { return l[6]; }).length]];
+      var sum = '<div class="lg-sum">' + [['אימונים', '21', '#FF006E', '<path d="M6 7v10M3 9v6M18 7v10M21 9v6M6 12h12"/>'], ['השבוע', '3/4', '#7C4DFF', '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18"/>'], ['דירוג ממוצע', '3.8', '#FF7A00', '<path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/>'], ['שיאים אישיים', '6', '#0094FF', '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/>']].map(function (s) {
+        return '<div class="ast" style="--c:' + s[2] + '"><span class="i">' + ic(s[3], 15) + '</span><span>' + s[0] + '</span><b class="num" dir="ltr">' + s[1] + '</b></div>'; }).join('') + '</div>';
+      var n = 0;
+      var groups = LOGS.map(function (d) {
+        var items = d[1].filter(function (l) { return LG.f === 'all' || (LG.f === 'pr' ? l[5] : l[6]); }); if (!items.length) return '';
+        return '<section class="lg-day"><h4>' + d[0] + '</h4>' + items.map(function (l) {
+          var id = ++n, open = LG.open === id, st = { done: ['הושלם', 'ok'], partial: ['חלקי', 'part'], skip: ['דולג', 'skip'] }[l[3]];
+          return '<article class="lg' + (open ? ' open' : '') + '" style="--wc:' + l[1] + '"><button type="button" class="lg-h" data-lg="' + id + '" aria-expanded="' + open + '"><span class="lg-dot"></span><div class="lg-n"><b dir="ltr">' + l[0] + '</b><small><span class="num">' + l[2] + '</span> · ' + l[7] + '</small></div>' +
+            '<span class="lg-st ' + st[1] + '">' + st[0] + '</span><span class="lg-stars" aria-label="דירוג ' + l[4] + ' מתוך 5">' + [1, 2, 3, 4, 5].map(function (s) { return '<i class="' + (s <= l[4] ? 'on' : '') + '"></i>'; }).join('') + '</span>' +
+            (l[5] ? '<span class="lg-pr">' + ic('<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/>', 12) + 'שיא אישי</span>' : '') + (l[6] ? '<span class="lg-ph" aria-label="יש תמונה"></span>' : '') +
+            '<span class="lg-chev">' + ic('<path d="m6 9 6 6 6-6"/>') + '</span></button>' +
+            '<div class="lg-body"><div class="lg-in"><div class="lg-ex">' + l[8].map(function (x) { return '<div class="ex-r' + (x[2] ? ' pr' : '') + '"><b dir="ltr">' + x[0] + '</b><span class="num">' + x[1] + '</span>' + (x[2] ? '<em>' + ic('<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/>', 11) + 'שיא</em>' : '') + '</div>'; }).join('') + '</div>' +
+            (l[9] || l[6] ? '<div class="lg-side">' + (l[9] ? '<div class="lg-note"><small>ההערה שלה</small>' + l[9] + '</div>' : '') + (l[6] ? '<div class="lg-photo" style="background:linear-gradient(160deg,#FFE3EE,' + l[1] + '55)"><span>תמונה מהאימון</span></div>' : '') + '</div>' : '') + '</div></div></article>';
+        }).join('') + '</section>';
+      }).join('');
+      return sum + '<div class="ach-bar"><h3>תיעודי אימונים</h3>' + seg('lf', F, LG.f) + '</div><div class="lg-list">' + (groups || '<div class="bd-empty sm"><b>אין תיעודים שתואמים לסינון</b></div>') + '</div>';
+    }
+    window.__tpTab = { body: bodyTab, achievements: achTab, nutrition: nutTab, log: logTab };
     window.__tpAfter = function (tab, waiting) { if (tab === 'body') bodyAfter(waiting); if (tab === 'achievements') achAfter(); };
     function rerender() { var b = pg.querySelector('[data-tab][aria-selected="true"]'); if (b) b.click(); }
     pg.addEventListener('click', function (e) {
@@ -2761,6 +3281,8 @@ button { cursor: pointer; }
       if ((t = e.target.closest('[data-brange]'))) { bs.range = t.dataset.brange; var s = t.parentNode, bb = [].slice.call(s.querySelectorAll('button')); bb.forEach(function (x) { x.setAttribute('aria-pressed', x === t); }); s.style.setProperty('--i', bb.indexOf(t)); bodyAfter(false); return; }
       if ((t = e.target.closest('[data-bm]'))) { bs.m = t.dataset.bm; rerender(); return; }
       if ((t = e.target.closest('[data-af]'))) { as.f = t.dataset.af; rerender(); return; }
+      if ((t = e.target.closest('[data-lf]'))) { LG.f = t.dataset.lf; rerender(); return; }
+      if ((t = e.target.closest('[data-lg]'))) { var id = +t.dataset.lg, art = t.closest('.lg'), was = art.classList.contains('open'); pg.querySelectorAll('.lg.open').forEach(function (a) { a.classList.remove('open'); a.querySelector('.lg-h').setAttribute('aria-expanded', 'false'); }); if (!was) { art.classList.add('open'); t.setAttribute('aria-expanded', 'true'); } LG.open = was ? 0 : id; return; }
       if ((t = e.target.closest('[data-ach]'))) { openAch(+t.dataset.ach, window.__tpWaiting); return; }
     });
     pg.addEventListener('input', function (e) { if (e.target.matches('[data-cmp]')) e.target.parentNode.style.setProperty('--x', e.target.value + '%'); });
@@ -2782,9 +3304,12 @@ button { cursor: pointer; }
     var CAT = [['P', 'חלבון'], ['C', 'פחמימה'], ['F', 'שומן'], ['S', 'נשנוש']];
     var ACT = [['1.2', 'יושבנית'], ['1.375', 'לפי 2 ימי האימון שלה'], ['1.55', 'לפי 4 ימי אימון'], ['1.725', 'פעילה מאוד']];
     var GOALS = [['cut', 'ירידה', '−15%', -0.15, '#0094FF'], ['keep', 'שמירה', '0%', 0, '#7C4DFF'], ['gain', 'עלייה במסת שריר', '+10%', 0.10, '#FF006E']];
+    var FOODS = [['ביצים', 'P', 'כ-100 גרם (2 ביצים)'], ['טופו', 'P', 'כ-150 גרם'], ['יוגורט סויה', 'P', 'גביע 150 גרם'], ['קוטג׳ 5%', 'P', 'כ-120 גרם'], ['לחם קל', 'C', '3 פרוסות'], ['אורז מלא', 'C', 'כ-120 גרם מבושל'], ['שיבולת שועל', 'C', 'כ-40 גרם'], ['בטטה', 'C', 'כ-150 גרם'], ['אבוקדו', 'F', 'כ-1/3 בינוני'], ['שמן זית', 'F', 'כף'], ['טחינה', 'F', 'כף גולמית'], ['אגוזי מלך', 'F', 'כ-15 גרם'], ['חטיף חלבון', 'S', 'יחידה']];
+    var TPLS = [['4 ארוחות · בסיס', '4 ארוחות · 1,950 קק״ל'], ['3 ארוחות + 2 נשנושים', '5 ארוחות · 1,800 קק״ל'], ['צמחונית · חיטוב', '4 ארוחות · 1,650 קק״ל']];
     var MC = ['#FF8FC0', '#C9A6FF', '#FFC48A', '#9ED3FF', '#F7B6CF', '#B9A4FF'];
     var S = { w: 60, h: 160, a: 26, act: '1.375', goal: 'gain', tw: '', wk: '', target: null, msg: '', tips: ['לשתות לפחות 2 ליטר מים ביום'], tpl: '',
-      meals: [{ n: 'ארוחת בוקר', o: [{ P: 1, C: 1, F: 1, S: 0, v: false }], cur: 0 }, { n: 'ארוחת צהריים', o: [{ P: 1, C: 1, F: 1, S: 0, v: true }], cur: 0 }, { n: 'ארוחת ביניים', o: [{ P: 0, C: 1, F: 1, S: 0, v: false }], cur: 0 }, { n: 'ארוחת ערב', o: [{ P: 1, C: 1, F: 1, S: 0, v: true }], cur: 0 }] };
+      fp: null, tplOpen: false, ai: { more: false, hidden: false, applied: false },
+      meals: [{ n: 'ארוחת בוקר', o: [{ P: 1, C: 1, F: 1, S: 0, v: true, it: [{ n: 'ביצים', d: 'ביצה שלמה, מבושלת/מטוגנת', a: 'כ-100 גרם (כ-2 ביצים בגודל M/L)', c: 'P', q: 1 }, { n: 'לחם קל', d: '', a: 'כ-75–80 גרם (כ-3 פרוסות)', c: 'C', q: 1 }, { n: 'אבוקדו', d: '', a: 'כ-55–60 גרם (כ-1/3 אבוקדו בינוני)', c: 'F', q: 1 }], tx: [] }, { P: 1, C: 1, F: 1, S: 0, v: false, it: [], tx: [] }], cur: 0 }, { n: 'ארוחת צהריים', o: [{ P: 1, C: 1, F: 1, S: 0, v: true, it: [{ n: 'טופו', d: 'מוקפץ', a: 'כ-150 גרם', c: 'P', q: 1 }, { n: 'אורז מלא', d: 'מבושל', a: 'כ-120 גרם', c: 'C', q: 1 }], tx: ['אפשר להחליף את האורז בקינואה'] }], cur: 0 }, { n: 'ארוחת ביניים', o: [{ P: 0, C: 1, F: 1, S: 0, v: false }], cur: 0 }, { n: 'ארוחת ערב', o: [{ P: 1, C: 1, F: 1, S: 0, v: true }], cur: 0 }] };
     function ic(p, s) { return '<svg width="' + (s || 16) + '" height="' + (s || 16) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg>'; }
     function fr(n) { var w = Math.floor(n), h = n - w >= 0.5; return '<bdi dir="ltr">' + (w || !h ? w : '') + (h ? '½' : '') + '</bdi>'; }
     function k(n) { return Math.round(n).toLocaleString('en-US'); }
@@ -2798,6 +3323,25 @@ button { cursor: pointer; }
       var alloc = tot.P * KC.P + tot.C * KC.C + tot.F * KC.F + tot.S * KC.S;
       var pace = (delta * 7 / 7700), weeks = S.tw && pace ? Math.abs(Math.round((S.tw - S.w) / pace)) : null;
       return { bmr: bmr, tdee: tdee, g: g, rec: rec, delta: delta, target: target, por: por, tot: tot, alloc: alloc, pace: pace, weeks: weeks };
+    }
+    function foods(o, i, m) {
+      o.it = o.it || []; o.tx = o.tx || [];
+      var L = { P: 'חלבון', C: 'פחמימה', F: 'שומן', S: 'נשנוש' };
+      var rows = o.it.map(function (f, j) {
+        return '<div class="fi ' + f.c + '"><span class="fc">' + L[f.c] + '</span><div class="fn"><b>' + f.n + (f.d ? ' <em>(' + f.d + ')</em>' : '') + '</b><small>' + f.a + '</small></div>' +
+          '<div class="fq"><button type="button" data-fs="' + i + ':' + j + ':-1" aria-label="פחות"' + (f.q > 0.5 ? '' : ' disabled') + '>−</button><b>' + fr(f.q) + '</b><button type="button" data-fs="' + i + ':' + j + ':1" aria-label="עוד">+</button><span>מנות</span></div>' +
+          '<button type="button" class="fx" data-fdel="' + i + ':' + j + '" aria-label="הסרת ' + f.n + '">' + ic('<path d="M6 6l12 12M18 6 6 18"/>', 13) + '</button></div>';
+      }).join('');
+      var veg = o.v ? '<div class="fi V"><span class="fc">ירקות</span><div class="fn"><b>ירקות חתוכים</b><small>חופשי, בכל כמות</small></div></div>' : '';
+      var tx = o.tx.map(function (t, j) { return '<div class="fi T"><span class="fc">' + ic('<path d="M4 6h16M4 12h16M4 18h10"/>', 13) + '</span><input class="ft" value="' + t.replace(/"/g, '&quot;') + '" placeholder="שורת טקסט חופשי…" data-txt="' + i + ':' + j + '" aria-label="שורת טקסט"><button type="button" class="fx" data-tdel="' + i + ':' + j + '" aria-label="מחיקת השורה">' + ic('<path d="M6 6l12 12M18 6 6 18"/>', 13) + '</button></div>'; }).join('');
+      var pop = S.fp && S.fp.i === i ? '<div class="fpop" role="dialog" aria-label="הוספת פריט מזון"><label class="fsearch">' + ic('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>') + '<input data-fq placeholder="חיפוש מזון…" value="' + (S.fp.q || '') + '" aria-label="חיפוש מזון"></label><div class="flist" id="flist' + i + '">' + flist(i) + '</div></div>' : '';
+      return '<div class="fbox"><div class="fbox-h"><span>אפשרות ' + 'אבגדה'[m.cur] + '׳ · מה היא אוכלת</span><small>' + (o.it.length ? o.it.length + ' פריטים' : 'עוד אין פריטים') + '</small></div>' + rows + veg + tx +
+        '<div class="fadd"><button type="button" class="fadd-b" data-fadd="' + i + '" aria-expanded="' + !!pop + '">' + ic('<path d="M12 5v14M5 12h14"/>') + 'פריט מזון</button><button type="button" class="fadd-b soft" data-tadd="' + i + '">' + ic('<path d="M12 5v14M5 12h14"/>') + 'שורת טקסט</button>' + pop + '</div></div>';
+    }
+    function flist(i) {
+      var q = (S.fp && S.fp.q || '').trim(), L = { P: 'חלבון', C: 'פחמימה', F: 'שומן', S: 'נשנוש' };
+      var r = FOODS.map(function (f, k) { return [f, k]; }).filter(function (x) { return !q || x[0][0].indexOf(q) > -1; });
+      return r.length ? r.map(function (x) { return '<button type="button" class="fopt ' + x[0][1] + '" data-fpick="' + i + ':' + x[1] + '"><i></i><b>' + x[0][0] + '</b><span>' + x[0][2] + '</span><em>' + L[x[0][1]] + '</em></button>'; }).join('') : '<p class="fnone">לא נמצא מזון בשם הזה</p>';
     }
     function mealK(o) { return o.P * KC.P + o.C * KC.C + o.F * KC.F + o.S * KC.S; }
 
@@ -2830,14 +3374,14 @@ button { cursor: pointer; }
         '<p class="nb-sub" style="margin:12px 0 8px">מנות ביום</p><div class="tgt-por"><span class="pchip2"><b>' + fr(c.por.P) + '</b>חלבון</span><span class="pchip2 C"><b>' + fr(c.por.C) + '</b>פחמימה</span><span class="pchip2 F"><b>' + fr(c.por.F) + '</b>שומן</span><small>≈ ' + k(c.por.P * KC.P + c.por.C * KC.C + c.por.F * KC.F) + ' קק״ל · חלוקה מההגדרות</small></div></div></div></section>';
 
       // section 2
-      var s2 = '<section class="nb-card" id="nbs2"><div class="nb-ch"><span class="n">2</span><div><h2>ארוחות</h2><p>חלקי את המנות בין הארוחות. הסיכום בצד מתעדכן בזמן אמת</p></div><div class="r tpl-row"><select aria-label="התחלה מתבנית" data-nf="tpl"><option value="">התחלה מתבנית…</option><option>4 ארוחות · בסיס</option><option>3 ארוחות + 2 נשנושים</option></select><button type="button" data-tplapply>החלה</button></div></div><div class="meals2">' +
+      var s2 = '<section class="nb-card" id="nbs2"><div class="nb-ch"><span class="n">2</span><div><h2>ארוחות</h2><p>חלקי את המנות בין הארוחות. הסיכום בצד מתעדכן בזמן אמת</p></div><div class="r tplm"><button type="button" class="tpl-btn" data-tplopen aria-haspopup="menu" aria-expanded="' + S.tplOpen + '">' + ic('<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18M9 9v11"/>') + 'התחלה מתבנית' + ic('<path d="m6 9 6 6 6-6"/>', 14) + '</button>' + (S.tplOpen ? '<div class="tpl-menu" role="menu"><small>הארוחות הנוכחיות יוחלפו</small>' + TPLS.map(function (t, i) { return '<button type="button" role="menuitem" data-tplpick="' + i + '"><b>' + t[0] + '</b><span>' + t[1] + '</span></button>'; }).join('') + '</div>' : '') + '</div></div><div class="meals2">' +
         S.meals.map(function (m, i) {
           var o = m.o[m.cur];
           return '<article class="meal2" style="--mc:' + MC[i % MC.length] + '"><div class="m-top"><span class="m-num">' + (i + 1) + '</span><input class="m-name" value="' + m.n + '" data-mname="' + i + '" aria-label="שם הארוחה"><span class="m-kcal num">' + k(mealK(o)) + ' <small>קק״ל</small></span>' +
             '<div class="m-tools"><button type="button" data-mup="' + i + '" aria-label="העברה למעלה"' + (i ? '' : ' disabled') + '>' + ic('<path d="M12 19V5M6 11l6-6 6 6"/>') + '</button><button type="button" data-mdown="' + i + '" aria-label="העברה למטה"' + (i < S.meals.length - 1 ? '' : ' disabled') + '>' + ic('<path d="M12 5v14M6 13l6 6 6-6"/>') + '</button><button type="button" class="del" data-mdel="' + i + '" aria-label="מחיקת הארוחה">' + ic('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>') + '</button></div></div>' +
             '<div class="m-opts" role="tablist">' + m.o.map(function (_, j) { return '<button type="button" role="tab" data-mopt="' + i + ':' + j + '" aria-pressed="' + (j === m.cur) + '">אפשרות ' + 'אבגדה'[j] + '׳</button>'; }).join('') + '<button type="button" class="add" data-madd="' + i + '">+ אפשרות</button></div>' +
             '<div class="m-por">' + CAT.map(function (cc) { var v = o[cc[0]]; return '<div class="ps ' + cc[0] + (v ? '' : ' zero') + '"><span>' + cc[1] + '</span><button type="button" data-ps="' + i + ':' + cc[0] + ':-1" aria-label="פחות ' + cc[1] + '"' + (v ? '' : ' disabled') + '>−</button><b>' + fr(v) + '</b><button type="button" data-ps="' + i + ':' + cc[0] + ':1" aria-label="עוד ' + cc[1] + '">+</button></div>'; }).join('') +
-            '<label class="veg"><input type="checkbox" data-veg="' + i + '"' + (o.v ? ' checked' : '') + '><span class="sw"></span>ירקות חופשי</label></div></article>';
+            '<label class="veg"><input type="checkbox" data-veg="' + i + '"' + (o.v ? ' checked' : '') + '><span class="sw"></span>ירקות חופשי</label></div>' + foods(o, i, m) + '</article>';
         }).join('') + '<button type="button" class="add-meal" data-addmeal>' + ic('<path d="M12 5v14M5 12h14"/>') + 'ארוחה</button></div></section>';
 
       // section 3
@@ -2860,11 +3404,16 @@ button { cursor: pointer; }
           return '<div class="br ' + x + '"><div class="br-t"><i></i><span>' + mLabel[x] + '</span><b>' + fr(t) + ' / ' + fr(g) + '</b>' + st + '</div><div class="br-bar' + (t > g ? ' over' : '') + '"><u style="--v:' + Math.min(100, t / g * 100) + '%"></u></div></div>';
         }).join('') + '<div class="bud-s"><span>נשנושים</span><b>' + fr(c.tot.S) + ' מנות · ' + k(c.tot.S * KC.S) + ' קק״ל</b></div></section>';
       var chk = '<section class="chk"><h3>לפני פרסום</h3>' + checks.map(function (x) { return '<button type="button" class="' + (x[2] ? 'ok' : x[4] ? 'opt' : 'no') + '" data-jump="' + x[3] + '"><i>' + (x[2] ? ic('<path d="m5 12.5 4.5 4.5L19 7.5"/>', 12) : x[4] ? '·' : '!') + '</i><span>' + x[1] + '</span>' + (x[4] ? '<small>רשות</small>' : '') + '</button>'; }).join('') + '</section>';
+      var aiB = S.ai.hidden ? '' : '<section class="aib' + (S.ai.applied ? ' done' : '') + '"><div class="aib-h"><span class="aib-ic">' + ic('<path d="M12 3l1.8 4.6L18 9.5l-4.2 1.9L12 16l-1.8-4.6L6 9.5l4.2-1.9z"/>', 18) + '</span><div><h3>' + (S.ai.applied ? 'טיוטת ה-AI הוחלה על התוכנית' : 'טיוטת AI מוכנה') + '</h3><p>4 ארוחות · 8 באוק׳, 15:48 · <span dir="ltr">gemini-3.5-flash-lite</span></p></div><button type="button" class="aib-x" data-aihide aria-label="הסתרה">' + ic('<path d="M6 6l12 12M18 6 6 18"/>', 14) + '</button></div>' +
+        '<div class="aib-nums"><span class="k"><b>1,620</b> קק״ל <em dir="ltr">' + (1620 - c.target > 0 ? '+' : '−') + k(Math.abs(1620 - c.target)) + '</em></span><span class="pchip2"><b>5</b>חלבון</span><span class="pchip2 C"><b>' + fr(4.5) + '</b>פחמימה</span><span class="pchip2 F"><b>' + fr(3.5) + '</b>שומן</span></div>' +
+        '<p class="aib-sum' + (S.ai.more ? ' open' : '') + '" dir="auto">The trainee aims to lose weight and improve endurance over a 12-week timeline with a target weight of 62 kg. Her daily energy intake is structured around 1605 kcal portions to support a safe and steady caloric deficit. She adheres to a vegetarian and kosher diet while avoiding tree nuts and kiwi as noted in her preferences.</p><button type="button" class="aib-more" data-aimore>' + (S.ai.more ? 'פחות' : 'קריאה מלאה') + '</button>' +
+        '<div class="aib-warn">' + ic('<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>', 15) + '<span><b>לבדוק ידנית, לא נבדק בקוד:</b> המילים שלה. רשימת המזון סוננה רק לפי התשובות שבחרה.</span></div>' +
+        '<div class="aib-acts">' + (S.ai.applied ? '<button type="button" class="btn-soft" data-aiundo>ביטול ההחלה</button>' : '<button type="button" class="btn-pk press" data-aiapply>החלה על התוכנית</button><button type="button" class="btn-soft">יצירה מחדש</button>') + '</div></section>';
       var ai = '<section class="ai-mini"><b>' + ic('<path d="M12 3l1.8 4.6L18 9.5l-4.2 1.9L12 16l-1.8-4.6L6 9.5l4.2-1.9z"/>') + 'טיוטת AI</b><p>עדיין אין טיוטה למתאמנת הזו. ה-AI יציע חלוקה וארוחות לפי היעד וההעדפות שלה.</p><button type="button">יצירת טיוטת AI</button></section>';
       var pref = '<section class="side-c"><h3>ההעדפות שלה <span class="src">מהשאלון</span></h3><div class="none"><i></i>היא לא ענתה על שאלות התזונה</div></section>';
       var tpl = '<section class="side-c"><h3>שמירה כתבנית</h3><div class="tpl-save"><input placeholder="שם התבנית" data-nf="tpl" value="' + S.tpl + '" aria-label="שם התבנית"><button type="button"' + (S.tpl.trim() ? '' : ' disabled') + '>שמירה</button></div></section>';
       var y = scrollY;
-      pg.innerHTML = head + steps + '<div class="nb"><div class="nb-main">' + s1 + s2 + s3 + '</div><aside class="nb-side">' + bud + chk + ai + pref + tpl + '</aside></div>';
+      pg.innerHTML = head + steps + '<div class="nb"><div class="nb-main">' + aiB + s1 + s2 + s3 + '</div><aside class="nb-side">' + bud + chk + (S.ai.hidden ? ai : '') + pref + tpl + '</aside></div>';
       scrollTo(0, y);
       if (sel) { var e = pg.querySelector('[data-nf="' + sel + '"]'); if (e) { e.focus({ preventScroll: true }); if (e.setSelectionRange && e.type !== 'number') e.setSelectionRange(e.value.length, e.value.length); } }
     }
@@ -2874,6 +3423,20 @@ button { cursor: pointer; }
     pg.addEventListener('click', function (e) {
       var t, m = function (a) { return S.meals[+a]; };
       if ((t = e.target.closest('[data-jump]'))) { var el = document.getElementById(t.dataset.jump); if (el) el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); return; }
+      if (S.fp && !e.target.closest('.fpop') && !e.target.closest('[data-fadd]')) { S.fp = null; render(true); }
+      if (S.tplOpen && !e.target.closest('.tplm')) { S.tplOpen = false; render(true); }
+      if (e.target.closest('[data-tplopen]')) return upd(function () { S.tplOpen = !S.tplOpen; });
+      if ((t = e.target.closest('[data-tplpick]'))) return upd(function () { S.tplOpen = false; });
+      if ((t = e.target.closest('[data-fadd]'))) { var fi = +t.dataset.fadd; upd(function () { S.fp = S.fp && S.fp.i === fi ? null : { i: fi, q: '' }; }); var q0 = pg.querySelector('[data-fq]'); if (q0) q0.focus({ preventScroll: true }); return; }
+      if ((t = e.target.closest('[data-fpick]'))) { var fpk = t.dataset.fpick.split(':'); return upd(function () { var mm = S.meals[+fpk[0]], f = FOODS[+fpk[1]]; mm.o[mm.cur].it.push({ n: f[0], d: '', a: f[2], c: f[1], q: 1 }); S.fp = null; }); }
+      if ((t = e.target.closest('[data-fs]'))) { var fs = t.dataset.fs.split(':'); return upd(function () { var mm = S.meals[+fs[0]], it = mm.o[mm.cur].it[+fs[1]]; it.q = Math.max(0.5, it.q + 0.5 * +fs[2]); }); }
+      if ((t = e.target.closest('[data-fdel]'))) { var fd = t.dataset.fdel.split(':'); return upd(function () { var mm = S.meals[+fd[0]]; mm.o[mm.cur].it.splice(+fd[1], 1); }); }
+      if ((t = e.target.closest('[data-tadd]'))) { var ta = +t.dataset.tadd; upd(function () { var mm = S.meals[ta]; mm.o[mm.cur].tx.push(''); }); var ins = pg.querySelectorAll('[data-txt^="' + ta + ':"]'); if (ins.length) ins[ins.length - 1].focus(); return; }
+      if ((t = e.target.closest('[data-tdel]'))) { var td = t.dataset.tdel.split(':'); return upd(function () { var mm = S.meals[+td[0]]; mm.o[mm.cur].tx.splice(+td[1], 1); }); }
+      if (e.target.closest('[data-aimore]')) return upd(function () { S.ai.more = !S.ai.more; });
+      if (e.target.closest('[data-aihide]')) return upd(function () { S.ai.hidden = true; });
+      if (e.target.closest('[data-aiapply]')) return upd(function () { S.ai.applied = true; S.target = 1620; });
+      if (e.target.closest('[data-aiundo]')) return upd(function () { S.ai.applied = false; S.target = null; });
       if ((t = e.target.closest('[data-goal]'))) return upd(function () { S.goal = t.dataset.goal; });
       if (e.target.closest('[data-userec]')) return upd(function () { S.target = calc().rec; });
       if ((t = e.target.closest('[data-tstep]'))) return upd(function () { S.target = Math.max(1000, calc().target + +t.dataset.tstep); });
@@ -2882,8 +3445,8 @@ button { cursor: pointer; }
       if ((t = e.target.closest('[data-mdown]'))) return upd(function () { var i = +t.dataset.mdown; S.meals.splice(i + 1, 0, S.meals.splice(i, 1)[0]); });
       if ((t = e.target.closest('[data-mdel]'))) return upd(function () { S.meals.splice(+t.dataset.mdel, 1); });
       if ((t = e.target.closest('[data-mopt]'))) { var q = t.dataset.mopt.split(':'); return upd(function () { m(q[0]).cur = +q[1]; }); }
-      if ((t = e.target.closest('[data-madd]'))) return upd(function () { var mm = m(t.dataset.madd); mm.o.push({ P: 0, C: 0, F: 0, S: 0, v: false }); mm.cur = mm.o.length - 1; });
-      if (e.target.closest('[data-addmeal]')) return upd(function () { S.meals.push({ n: 'ארוחה ' + (S.meals.length + 1), o: [{ P: 0, C: 0, F: 0, S: 0, v: false }], cur: 0 }); });
+      if ((t = e.target.closest('[data-madd]'))) return upd(function () { var mm = m(t.dataset.madd); mm.o.push({ P: 0, C: 0, F: 0, S: 0, v: false, it: [], tx: [] }); mm.cur = mm.o.length - 1; });
+      if (e.target.closest('[data-addmeal]')) return upd(function () { S.meals.push({ n: 'ארוחה ' + (S.meals.length + 1), o: [{ P: 0, C: 0, F: 0, S: 0, v: false, it: [], tx: [] }], cur: 0 }); });
       if ((t = e.target.closest('[data-tipdel]'))) return upd(function () { S.tips.splice(+t.dataset.tipdel, 1); });
       if (e.target.closest('[data-tipadd]')) { var inp = pg.querySelector('[data-tipin]'); if (inp.value.trim()) upd(function () { S.tips.push(inp.value.trim()); }); return; }
       if ((t = e.target.closest('[data-nbpub]')) && t.getAttribute('aria-disabled') === 'true') { var no = pg.querySelector('.chk .no'); if (no) no.click(); }
@@ -2898,13 +3461,157 @@ button { cursor: pointer; }
     pg.addEventListener('input', function (e) {
       var t = e.target;
       if (t.dataset.nf === 'msg') { S.msg = t.value; document.getElementById('nbCnt').textContent = t.value.length; var b = document.getElementById('nbBub'); b.textContent = t.value || 'ההודעה שלך תופיע כאן'; b.classList.toggle('ph', !t.value); saved(); }
+      if (t.matches('[data-fq]')) { S.fp.q = t.value; var fl = document.getElementById('flist' + S.fp.i); if (fl) fl.innerHTML = flist(S.fp.i); return; }
+      if (t.dataset.txt) { var tq = t.dataset.txt.split(':'), mm = S.meals[+tq[0]]; mm.o[mm.cur].tx[+tq[1]] = t.value; saved(); return; }
       if (t.dataset.nf === 'tpl') { S.tpl = t.value; t.nextElementSibling.disabled = !t.value.trim(); }
     });
     pg.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && (S.fp || S.tplOpen)) { S.fp = null; S.tplOpen = false; render(true); return; }
       if (e.key === 'Enter' && e.target.matches('[data-tipin]')) { e.preventDefault(); pg.querySelector('[data-tipadd]').click(); }
       if (e.key === 'Enter' && e.target.matches('input[type=number]')) e.target.blur();
     });
     window.__renderNB = function () { render(false); };
+  })();
+
+  // ---- food lists (catalog · templates · settings) ----
+  (function () {
+    var pg = document.getElementById('p-foods');
+    function ic(p, s) { return '<svg width="' + (s || 16) + '" height="' + (s || 16) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg>'; }
+    var G = { P: ['חלבון', '#FF006E', '#FFE3EE', '#C80058'], C: ['פחמימה', '#7C4DFF', '#EFE7FF', '#5B2FD6'], F: ['שומן', '#FF7A00', '#FFEBD6', '#C75A00'], S: ['נשנוש', '#0094FF', '#E1F1FF', '#0070C9'], V: ['ירקות', '#A50047', '#FBE3EC', '#A50047'] };
+    var CONT = ['בשר', 'עוף', 'דגים', 'חלב', 'ביצים', 'גלוטן', 'בוטנים', 'אגוזים', 'שומשום', 'סויה', 'פירות ים', 'חזיר', 'לקטוז', 'אלכוהול', 'עתיר FODMAP'];
+    var F = [
+      { g: 'P', cat: 'מוצרי חלב', n: 'קוטג׳ 5%', por: 'כ-155 גרם (כ-3/4 גביע או 6 כפות גדושות)', gr: 155, k: null, c: ['חלב', 'לקטוז', 'עתיר FODMAP'] },
+      { g: 'P', cat: 'מוצרי חלב', n: 'יוגורט יווני 0%', por: 'גביע אחד', gr: 170, k: 100, c: ['חלב', 'לקטוז'], nw: 1 },
+      { g: 'P', cat: 'ביצים', n: 'ביצים', por: '2 ביצים בגודל M/L', gr: 100, k: 143, c: ['ביצים'] },
+      { g: 'P', cat: 'צמחי', n: 'טופו', por: 'כ-150 גרם', gr: 150, k: 120, c: ['סויה'] },
+      { g: 'P', cat: 'עוף', n: 'חזה עוף', por: 'כ-100 גרם מבושל', gr: 100, k: 110, c: ['עוף'] },
+      { g: 'P', cat: 'דגים', n: 'טונה במים', por: 'קופסה מסוננת', gr: 100, k: 116, c: ['דגים'] },
+      { g: 'C', cat: 'לחם', n: 'לחם קל', por: '3 פרוסות', gr: 75, k: 120, c: ['גלוטן'] },
+      { g: 'C', cat: 'דגנים', n: 'אורז מלא', por: 'כוס מבושל', gr: 120, k: 134, c: [] },
+      { g: 'C', cat: 'דגנים', n: 'שיבולת שועל', por: '4 כפות', gr: 30, k: 110, c: ['גלוטן'] },
+      { g: 'C', cat: 'ירקות עמילניים', n: 'בטטה', por: 'בטטה בינונית קטנה', gr: 150, k: 115, c: [] },
+      { g: 'F', cat: 'פירות שומניים', n: 'אבוקדו', por: 'כ-1/3 אבוקדו בינוני', gr: 60, k: 96, c: [] },
+      { g: 'F', cat: 'ממרחים', n: 'טחינה גולמית', por: 'כף', gr: 15, k: 90, c: ['שומשום'] },
+      { g: 'F', cat: 'אגוזים', n: 'אגוזי מלך', por: '7 חצאים', gr: 15, k: 98, c: ['אגוזים'] },
+      { g: 'S', cat: 'חטיפים', n: 'חטיף חלבון', por: 'יחידה', gr: 40, k: 150, c: ['חלב', 'סויה'] },
+      { g: 'V', cat: 'ירקות', n: 'ירקות חתוכים', por: 'חופשי', gr: null, k: null, c: [] }
+    ];
+    var CAP = { P: 150, C: 120, F: 90, S: 150 };
+    var ST = { kc: { P: 150, C: 120, F: 90, S: 150 }, goals: [['ירידה בשומן', -20], ['ירידה בשומן (אגרסיבית)', -25], ['חיטוב / ריקומפ', -10], ['עלייה במסת שריר', 10], ['שמירה', 0]], act: [1.375, 1.375, 1.55, 1.55, 1.55, 1.725, 1.725], floor: 1200, dirty: false };
+    var T = [['צמחונית · חיטוב', 4, 1650, [5, 4, 3.5, 0], 3, '8 באוק׳'], ['4 ארוחות · בסיס', 4, 1950, [6, 5.5, 4.5, 0], 7, '22 בספט׳'], ['3 ארוחות + 2 נשנושים', 5, 1800, [5, 5, 4, 2], 2, '2 בספט׳']];
+    var S = { tab: 'list', g: 'all', q: '', arch: false, sheet: null, tplEmpty: false, form: null };
+    function fr(n) { var w = Math.floor(n), h = n - w >= 0.5; return '<bdi dir="ltr">' + (w || !h ? w : '') + (h ? '½' : '') + '</bdi>'; }
+    function head() {
+      var tabs = [['list', 'רשימת מזון', F.length], ['tpl', 'תבניות', T.length], ['set', 'הגדרות']];
+      var i = tabs.map(function (t) { return t[0]; }).indexOf(S.tab);
+      return '<div class="fd-head"><div><h1>תזונה · ספרייה</h1><p>הבסיס שממנו בונים כל תוכנית תזונה: המזונות, התבניות והמספרים מאחורי החישוב</p></div>' +
+        '<div class="fd-tabs" role="tablist" style="--i:' + i + '"><i></i>' + tabs.map(function (t) { return '<button type="button" role="tab" data-ftab="' + t[0] + '" aria-selected="' + (t[0] === S.tab) + '">' + t[1] + (t[2] != null ? ' <span>' + t[2] + '</span>' : '') + '</button>'; }).join('') + '</div></div>';
+    }
+    function explain(items) { return '<div class="fd-how">' + items.map(function (x) { return '<div style="--c:' + x[2] + '"><span>' + ic(x[0], 18) + '</span><div><b>' + x[1] + '</b><small>' + x[3] + '</small></div></div>'; }).join('') + '</div>'; }
+
+    /* list */
+    function list() {
+      var how = explain([['<path d="M4 6h16M4 12h16M4 18h16"/>', 'שורה אחת = מנה אחת', '#FF006E', 'כל פריט מוגדר בכמות של מנה אחת מהקבוצה שלו'], ['<path d="M7 7h11l-3-3M17 17H6l3 3"/>', 'מחליפים בתוך הקבוצה', '#7C4DFF', 'כל חלבון שווה למנת חלבון אחרת, וכך המתאמנת בוחרת חופשי'], ['<path d="M3 5h18l-7 8v6l-4 2v-8z"/>', '"מכיל" מסנן אוטומטית', '#FF7A00', 'פריט עם רכיב שהיא נמנעת ממנו לא יוצע לה']]);
+      var vis = F.filter(function (f) { return (S.g === 'all' || f.g === S.g) && (!S.q || (f.n + f.cat).indexOf(S.q) > -1); });
+      var chips = '<div class="fd-groups"><button type="button" class="gch" data-fg="all" aria-pressed="' + (S.g === 'all') + '">כל הקבוצות <span>' + F.length + '</span></button>' + Object.keys(G).map(function (k) {
+        return '<button type="button" class="gch" style="--c:' + G[k][1] + ';--s:' + G[k][2] + ';--t:' + G[k][3] + '" data-fg="' + k + '" aria-pressed="' + (S.g === k) + '"><i></i>' + G[k][0] + ' <span>' + F.filter(function (f) { return f.g === k; }).length + '</span></button>';
+      }).join('') + '</div>';
+      var tools = '<div class="fd-tools"><label class="fd-search">' + ic('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>') + '<input data-fdq placeholder="חיפוש מזון או קטגוריה" value="' + S.q + '" aria-label="חיפוש מזון"></label>' +
+        '<label class="veg fd-arch"><input type="checkbox" data-farch' + (S.arch ? ' checked' : '') + '><span class="sw"></span>הצגת ארכיון</label><button type="button" class="btn-pk press" data-fnew>' + ic('<path d="M12 5v14M5 12h14"/>') + 'פריט מזון</button></div>';
+      var groups = Object.keys(G).filter(function (k) { return S.g === 'all' || S.g === k; }).map(function (k) {
+        var items = vis.filter(function (f) { return f.g === k; }); if (!items.length) return '';
+        return '<section class="fd-grp" style="--c:' + G[k][1] + ';--s:' + G[k][2] + ';--t:' + G[k][3] + '"><h3><i></i>' + G[k][0] + (CAP[k] ? '<small>עד ' + CAP[k] + ' קק״ל למנה</small>' : '<small>חופשי</small>') + '<span>' + items.length + ' פריטים</span></h3><div class="fd-cards">' + items.map(function (f) {
+          var idx = F.indexOf(f), over = f.k && CAP[k] && f.k > CAP[k], miss = f.k == null && k !== 'V';
+          return '<article class="food' + (miss || over ? ' warn' : '') + '" tabindex="0"><div class="fo-top"><span class="fo-cat">' + f.cat + '</span>' + (f.nw ? '<span class="fo-new">חדש</span>' : '') + '<div class="fo-acts"><button type="button" data-fedit="' + idx + '" aria-label="עריכה">' + ic('<path d="M4 20h4L19 9l-4-4L4 16z"/>', 14) + '</button><button type="button" aria-label="העברה לארכיון">' + ic('<rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v10h14V9M10 13h4"/>', 14) + '</button></div></div>' +
+            '<h4>' + f.n + '</h4><p>' + f.por + '</p>' +
+            '<div class="fo-num"><span><b class="num">' + (f.gr ? f.gr : '—') + '</b>' + (f.gr ? ' גרם' : '') + '</span><span class="' + (miss ? 'miss' : over ? 'over' : '') + '"><b class="num">' + (f.k ? f.k : '—') + '</b> קק״ל' + (miss ? ' · חסר' : over ? ' · מעל המכסה' : '') + '</span></div>' +
+            (CAP[k] && f.k ? '<div class="fo-bar"><u style="--v:' + Math.min(100, f.k / CAP[k] * 100) + '%"></u></div>' : '') +
+            (f.c.length ? '<div class="fo-tags">' + f.c.map(function (c) { return '<span>' + c + '</span>'; }).join('') + '</div>' : '<div class="fo-tags none"><span>ללא רכיבים מסומנים</span></div>') + '</article>';
+        }).join('') + '</div></section>';
+      }).join('');
+      return how + chips + tools + (groups || '<div class="bd-empty sm"><b>לא נמצא מזון</b><span>נסי חיפוש אחר</span></div>') + sheet();
+    }
+    function sheet() {
+      if (S.sheet == null) return '';
+      var f = S.form;
+      return '<div class="fd-scrim" data-fclose></div><aside class="fd-sheet" role="dialog" aria-modal="true" aria-label="' + (S.sheet === 'new' ? 'פריט מזון חדש' : 'עריכת פריט') + '"><div class="fs-h"><h2>' + (S.sheet === 'new' ? 'פריט מזון חדש' : 'עריכת פריט') + '</h2><button type="button" class="qv-x" style="position:static" data-fclose aria-label="סגירה">' + ic('<path d="M6 6l12 12M18 6 6 18"/>', 15) + '</button></div><div class="fs-b">' +
+        '<p class="fs-l">קבוצה</p><div class="fs-g">' + Object.keys(G).map(function (k) { return '<button type="button" style="--c:' + G[k][1] + ';--s:' + G[k][2] + ';--t:' + G[k][3] + '" data-fsg="' + k + '" aria-pressed="' + (f.g === k) + '">' + G[k][0] + '</button>'; }).join('') + '</div>' +
+        '<div class="fs-row"><div class="fld"><label>שם</label><input data-ff="n" value="' + f.n + '" placeholder="למשל: יוגורט יווני 0%"></div><div class="fld"><label>קטגוריה</label><input data-ff="cat" value="' + f.cat + '" placeholder="מוצרי חלב"></div></div>' +
+        '<div class="fld"><label>מנה (איך המתאמנת תמדוד)</label><input data-ff="por" value="' + f.por + '" placeholder="גביע אחד / 2 פרוסות / כף"></div>' +
+        '<div class="fs-row"><div class="fld"><label>גרם</label><input type="number" data-ff="gr" value="' + (f.gr || '') + '"><span class="u">גרם</span></div><div class="fld' + (CAP[f.g] && f.k > CAP[f.g] ? ' bad' : '') + '"><label>קלוריות למנה</label><input type="number" data-ff="k" value="' + (f.k || '') + '"><span class="u">' + (CAP[f.g] ? 'מתוך ' + CAP[f.g] : 'קק״ל') + '</span></div></div>' +
+        '<p class="fs-l">מכיל <small>פריט יוסתר ממתאמנות שנמנעות מהרכיב</small></p><div class="fs-c">' + CONT.map(function (c) { return '<button type="button" data-fsc="' + c + '" aria-pressed="' + (f.c.indexOf(c) > -1) + '">' + c + '</button>'; }).join('') + '</div>' +
+        '<label class="veg" style="margin:6px 0 0"><input type="checkbox"' + (f.nw ? ' checked' : '') + '><span class="sw"></span>לסמן כחדש</label></div>' +
+        '<div class="fs-f"><button type="button" class="pw-soft" data-fclose>ביטול</button><button type="button" class="btn-pk press" data-fsave' + (f.n.trim() ? '' : ' aria-disabled="true"') + '>' + (S.sheet === 'new' ? 'הוספה לרשימה' : 'שמירה') + '</button></div></aside>';
+    }
+
+    /* templates */
+    function tpl() {
+      var how = explain([['<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>', 'שומרים מתוך הבונה', '#FF006E', 'בבונה התזונה של מתאמנת: "שמירה כתבנית"'], ['<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18"/>', 'מתחילים ממנה תוכנית', '#7C4DFF', 'בבונה של מתאמנת אחרת: "התחלה מתבנית"'], ['<path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/>', 'חוסך זמן', '#FF7A00', 'הארוחות והחלוקה נטענות, ואת רק מתאימה']]);
+      if (S.tplEmpty || !T.length) return how + '<section class="nu-empty" style="margin-top:4px"><div class="ne-art" aria-hidden="true"><i class="a"></i><i class="b"></i><i class="c"></i><span>' + ic('<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18M9 9v11"/>', 30) + '</span></div><h2>עדיין אין תבניות</h2><p>פתחי תוכנית תזונה של מתאמנת, ובסוף הבונה בחרי "שמירה כתבנית".</p><div class="ne-acts"><button type="button" class="btn-pk press" data-go="nutrition">פתיחת בונה התזונה</button></div></section>';
+      return how + '<div class="tp-cards">' + T.map(function (t, i) {
+        return '<article class="tcard" tabindex="0"><div class="tc-top"><span class="tc-ic">' + ic('<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18M9 9v11"/>', 18) + '</span><div class="fo-acts"><button type="button" aria-label="שינוי שם">' + ic('<path d="M4 20h4L19 9l-4-4L4 16z"/>', 14) + '</button><button type="button" aria-label="מחיקה">' + ic('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>', 14) + '</button></div></div>' +
+          '<h4>' + t[0] + '</h4><p>' + t[1] + ' ארוחות · <b class="num">' + t[2].toLocaleString('en-US') + '</b> קק״ל</p><div class="tc-por">' + ['P', 'C', 'F', 'S'].map(function (k, j) { return t[3][j] ? '<span style="--s:' + G[k][2] + ';--t:' + G[k][3] + '"><b>' + fr(t[3][j]) + '</b>' + G[k][0] + '</span>' : ''; }).join('') + '</div>' +
+          '<div class="tc-meta"><span>שומשה ' + t[4] + ' פעמים</span><span>עודכנה ' + t[5] + '</span></div><button type="button" class="tc-use" data-go="nutrition">שימוש לתוכנית חדשה ' + ic('<path d="m15 6-6 6 6 6"/>', 14) + '</button></article>';
+      }).join('') + '</div>';
+    }
+
+    /* settings */
+    function calcEx() { var bmr = 10 * 60 + 6.25 * 165 - 5 * 30 - 161, t = bmr * ST.act[2], g = ST.goals[2][1]; return Math.max(ST.floor, Math.round(t * (1 + g / 100) / 10) * 10); }
+    function settings() {
+      var kc = '<section class="st-card"><div class="st-h"><span class="st-n">1</span><div><h3>קלוריות למנה</h3><p>כמה קלוריות שווה מנה אחת מכל קבוצה. קובע כמה מנות יוצאות מכל יעד קלורי</p></div></div><div class="kc-grid">' + ['P', 'C', 'F', 'S'].map(function (k) {
+        return '<div class="kc" style="--c:' + G[k][1] + ';--s:' + G[k][2] + ';--t:' + G[k][3] + '"><span>' + G[k][0] + '</span><div class="kc-in"><button type="button" data-kc="' + k + ':-10" aria-label="פחות">−</button><input type="number" data-kci="' + k + '" value="' + ST.kc[k] + '" aria-label="קלוריות למנת ' + G[k][0] + '"><button type="button" data-kc="' + k + ':10" aria-label="עוד">+</button></div><small>קק״ל למנה</small></div>';
+      }).join('') + '</div></section>';
+      var min = -30, max = 15, pos = function (v) { return (v - min) / (max - min) * 100; };
+      var goals = '<section class="st-card"><div class="st-h"><span class="st-n">2</span><div><h3>התאמה לפי מטרה</h3><p>כמה להוסיף או להוריד מהתחזוקה (TDEE) לפי המטרה שהמתאמנת בחרה</p></div></div>' +
+        '<div class="gscale"><div class="gs-track"><i class="neg"></i><i class="pos"></i></div>' + ST.goals.map(function (g, i) { return '<span class="gs-m' + (g[1] > 0 ? ' up' : g[1] < 0 ? ' dn' : '') + '" style="--p:' + pos(g[1]) + '%;--row:' + (i % 2) + '"><em dir="ltr">' + (g[1] > 0 ? '+' : '') + g[1] + '%</em></span>'; }).join('') + '</div>' +
+        '<div class="g-rows">' + ST.goals.map(function (g, i) { return '<div class="g-row' + (g[1] > 0 ? ' up' : g[1] < 0 ? ' dn' : '') + '"><span>' + g[0] + '</span><div class="kc-in sm"><button type="button" data-gl="' + i + ':-1" aria-label="פחות">−</button><input type="number" dir="ltr" data-gli="' + i + '" value="' + g[1] + '" aria-label="' + g[0] + '"><button type="button" data-gl="' + i + ':1" aria-label="עוד">+</button></div><small>%</small></div>'; }).join('') + '</div></section>';
+      var mx = 1.9, mn = 1.1;
+      var act = '<section class="st-card"><div class="st-h"><span class="st-n">3</span><div><h3>מקדם פעילות לפי ימי אימון</h3><p>מכפילים את ה-BMR כדי לקבל תחזוקה. יותר ימי אימון = מקדם גבוה יותר</p></div></div><div class="act-cols">' + ST.act.map(function (a, i) {
+        return '<div class="act-c"><input type="number" step="0.025" data-act="' + i + '" value="' + a + '" aria-label="' + (i + 1) + ' ימים"><div class="act-bar"><u style="--v:' + ((a - mn) / (mx - mn) * 100) + '%"></u></div><span>' + (i ? (i + 1) + ' ימים' : 'יום אחד') + '</span></div>';
+      }).join('') + '</div></section>';
+      var floor = '<section class="st-card"><div class="st-h"><span class="st-n">4</span><div><h3>רצפת בטיחות</h3><p>הצעה לעולם לא תרד מתחת למספר הזה, גם בגירעון אגרסיבי</p></div></div><div class="floor"><div class="kc-in big"><button type="button" data-fl="-50" aria-label="פחות">−</button><input type="number" data-fli value="' + ST.floor + '" aria-label="רצפת בטיחות"><button type="button" data-fl="50" aria-label="עוד">+</button></div><span>קק״ל ליום · מינימום</span></div></section>';
+      var prev = '<aside class="st-prev"><span class="eyebrow">תצוגה חיה</span><h3>כך זה ישפיע</h3><p>מתאמנת לדוגמה: 60 ק״ג, 165 ס״מ, בת 30, 3 ימי אימון, חיטוב</p><div class="sp-big"><b class="num" id="spK">' + calcEx().toLocaleString('en-US') + '</b><span>קק״ל ליום</span></div><div class="sp-por">' + ['P', 'C', 'F'].map(function (k, j) { var share = [0.4, 0.39, 0.2][j]; return '<span style="--s:' + G[k][2] + ';--t:' + G[k][3] + '"><b>' + fr(Math.round(calcEx() * share / ST.kc[k] * 2) / 2) + '</b>' + G[k][0] + '</span>'; }).join('') + '</div><p class="sp-note">' + ic('<circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/>', 14) + 'שינויים חלים על הצעות מעכשיו. תוכניות שכבר פורסמו שומרות על המספרים שלהן.</p></aside>';
+      var bar = ST.dirty ? '<div class="st-save"><span>' + ic('<circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/>', 16) + 'יש שינויים שלא נשמרו</span><button type="button" class="pw-soft" data-streset>ביטול</button><button type="button" class="btn-pk press" data-stsave>שמירת ההגדרות</button></div>' : '';
+      return '<div class="st-wrap"><div class="st-main">' + kc + goals + act + floor + '</div>' + prev + '</div>' + bar;
+    }
+    function render(keepQ) {
+      var y = scrollY;
+      pg.innerHTML = head() + '<div class="fdl-body">' + (S.tab === 'list' ? list() : S.tab === 'tpl' ? tpl() : settings()) + '</div>';
+      scrollTo(0, y);
+      if (keepQ) { var q = pg.querySelector('[data-fdq]'); if (q) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); } }
+    }
+    function dirty(fn) { fn(); ST.dirty = true; render(); }
+    pg.addEventListener('click', function (e) {
+      var t;
+      if ((t = e.target.closest('[data-ftab]'))) { S.tab = t.dataset.ftab; return render(); }
+      if ((t = e.target.closest('[data-fg]'))) { S.g = t.dataset.fg; return render(); }
+      if (e.target.closest('[data-fnew]')) { S.sheet = 'new'; S.form = { g: S.g !== 'all' ? S.g : 'P', n: '', cat: '', por: '', gr: '', k: '', c: [] }; return render(); }
+      if ((t = e.target.closest('[data-fedit]'))) { S.sheet = +t.dataset.fedit; S.form = JSON.parse(JSON.stringify(F[S.sheet])); return render(); }
+      if (e.target.closest('[data-fclose]')) { S.sheet = null; return render(); }
+      if ((t = e.target.closest('[data-fsg]'))) { S.form.g = t.dataset.fsg; return render(); }
+      if ((t = e.target.closest('[data-fsc]'))) { var c = t.dataset.fsc, a = S.form.c, i = a.indexOf(c); if (i > -1) a.splice(i, 1); else a.push(c); t.setAttribute('aria-pressed', i < 0); return; }
+      if ((t = e.target.closest('[data-fsave]')) && t.getAttribute('aria-disabled') !== 'true') { if (S.sheet === 'new') F.unshift(Object.assign({ nw: 1 }, S.form)); else F[S.sheet] = S.form; S.sheet = null; return render(); }
+      if ((t = e.target.closest('[data-kc]'))) { var p = t.dataset.kc.split(':'); return dirty(function () { ST.kc[p[0]] = Math.max(10, ST.kc[p[0]] + +p[1]); }); }
+      if ((t = e.target.closest('[data-gl]'))) { var q = t.dataset.gl.split(':'); return dirty(function () { ST.goals[+q[0]][1] += +q[1]; }); }
+      if ((t = e.target.closest('[data-fl]'))) return dirty(function () { ST.floor = Math.max(800, ST.floor + +t.dataset.fl); });
+      if (e.target.closest('[data-stsave]') || e.target.closest('[data-streset]')) { ST.dirty = false; return render(); }
+    });
+    pg.addEventListener('input', function (e) {
+      var t = e.target;
+      if (t.matches('[data-fdq]')) { S.q = t.value.trim(); return render(true); }
+      if (t.dataset.ff) { S.form[t.dataset.ff] = t.type === 'number' ? (t.value === '' ? '' : +t.value) : t.value; var sv = pg.querySelector('[data-fsave]'); if (sv) { if (S.form.n.trim()) sv.removeAttribute('aria-disabled'); else sv.setAttribute('aria-disabled', 'true'); } }
+    });
+    pg.addEventListener('change', function (e) {
+      var t = e.target;
+      if (t.matches('[data-farch]')) { S.arch = t.checked; return; }
+      if (t.dataset.kci) return dirty(function () { ST.kc[t.dataset.kci] = +t.value; });
+      if (t.dataset.gli) return dirty(function () { ST.goals[+t.dataset.gli][1] = +t.value; });
+      if (t.dataset.act) return dirty(function () { ST.act[+t.dataset.act] = +t.value; });
+      if (t.matches('[data-fli]')) return dirty(function () { ST.floor = +t.value; });
+      if (t.dataset.ff === 'k' || t.dataset.ff === 'gr') render();
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && S.sheet != null && !pg.hidden) { S.sheet = null; render(); } });
+    window.__renderFoods = function () { render(); };
   })();
 
   // ---- exercise library v2 ----

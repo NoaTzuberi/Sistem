@@ -35,19 +35,3 @@
 .trainee-panel {
   min-width: 0;
 }
-
-/* The sections that were not redesigned yet: their own content, on one white card. */
-.trainee-panel-card {
-  padding: var(--space-4);
-  border-radius: var(--radius-panel);
-  background-color: var(--color-bg);
-  box-shadow: var(--shadow-panel);
-  /* These sections were sized for the app's base text, not the dashboard's smaller one. */
-  font-size: var(--text-base);
-}
-
-@media (max-width: 860px) { /* = --breakpoint-dash-nav */
-  .trainee-panel-card {
-    padding: var(--space-3);
-  }
-}

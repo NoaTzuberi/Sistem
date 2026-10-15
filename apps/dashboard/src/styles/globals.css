@@ -247,3 +247,35 @@ button {
 .nutrition-group-snack {
   --group-color: var(--color-macro-snack);
 }
+
+/* A food group's identity colors in the nutrition library (fill, soft tint, the ink that reads on that tint).
+   Set on any element that shows one group; children read --group / --group-soft / --group-text. */
+.food-group-protein {
+  --group: var(--color-portion-protein);
+  --group-soft: var(--color-portion-protein-soft);
+  --group-text: var(--color-portion-protein-text);
+}
+
+.food-group-carb {
+  --group: var(--color-portion-carb);
+  --group-soft: var(--color-portion-carb-soft);
+  --group-text: var(--color-portion-carb-text);
+}
+
+.food-group-fat {
+  --group: var(--color-portion-fat);
+  --group-soft: var(--color-portion-fat-soft);
+  --group-text: var(--color-portion-fat-text);
+}
+
+.food-group-snack {
+  --group: var(--color-portion-snack);
+  --group-soft: var(--color-portion-snack-soft);
+  --group-text: var(--color-portion-snack-text);
+}
+
+.food-group-vegetable {
+  --group: var(--color-portion-vegetable);
+  --group-soft: var(--color-portion-vegetable-soft);
+  --group-text: var(--color-portion-vegetable-text);
+}

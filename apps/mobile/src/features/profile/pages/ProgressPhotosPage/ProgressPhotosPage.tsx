@@ -7,15 +7,19 @@ import { StateMessage } from '../../../../components/common/StateMessage/StateMe
 import { ROUTES, progressPhotosDayPath } from '../../../../app/config/routes';
 import { ProgressPhotoGallery } from '../../../bodyTracking/components/ProgressPhotoGallery/ProgressPhotoGallery';
 import { bodyCopy } from '../../../bodyTracking/copy';
+import { StartingPhotoCard } from '../../../bodyTracking/components/StartingPhotoCard/StartingPhotoCard';
 import { SubPageHeader } from '../../components/SubPageHeader/SubPageHeader';
 import { useMyBodyMetrics } from '../../hooks/useMyBody';
+import { useMyUnits } from '../../hooks/useMyBody';
 import './ProgressPhotosPage.css';
 
 // Progress photos (PRD §5.5): dated front / side / back, newest first; add, edit, compare.
 export function ProgressPhotosPage() {
   const copy = useCopy(bodyCopy);
   const navigate = useNavigate();
-  const { list, error, isLoading, reload } = useMyBodyMetrics();
+  const { list, error, isLoading, reload, applyDay } = useMyBodyMetrics();
+  const { today } = useMyUnits();
+  const startingMetric = list?.items.find((metric) => metric.startingPhoto);
   const canCompare = list !== undefined && photoDays(list.items).length >= 2;
 
   return (
@@ -41,6 +45,16 @@ export function ProgressPhotosPage() {
 
         {list && (
           <>
+            <StartingPhotoCard
+              date={today}
+              photoDate={startingMetric?.date}
+              photo={startingMetric?.startingPhoto}
+              onDayChange={(metric) => {
+                applyDay(today, metric);
+                reload();
+              }}
+              onLinkExpired={reload}
+            />
             {canCompare && (
               <Button variant="secondary" onClick={() => navigate(ROUTES.PROFILE_PHOTOS_COMPARE)}>
                 {copy.compare}

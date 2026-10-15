@@ -36,6 +36,17 @@ export const SUGGESTION_ROUND_TO_KCAL = 10;
 // Mifflin-St Jeor: 10 × kg + 6.25 × cm − 5 × age + s (a formula, not a setting).
 export const MIFFLIN_SEX_CONSTANT = { male: 5, female: -161 } as const;
 
+// The settings screen's live preview (dashboard): one fixed example trainee the coach's unsaved
+// numbers are run on — the real calculation, never her trainees' data. Not a setting.
+export const SETTINGS_PREVIEW_SAMPLE = {
+  weightKg: 60,
+  heightCm: 165,
+  ageYears: 30,
+  sex: 'female',
+  trainingDays: 3,
+  goal: 'recomp',
+} as const;
+
 // Bounds for the coach's overrides — wide enough for any real use, narrow enough that a
 // typo can't produce nonsense.
 export const NUTRITION_SETTING_BOUNDS = {

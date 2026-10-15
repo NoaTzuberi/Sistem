@@ -10,29 +10,31 @@ import './StartingPhotoCard.css';
 
 interface StartingPhotoCardProps {
   date: string;
+  photoDate?: string;
   photo?: StartingPhoto;
   onDayChange: (metric: BodyMetric | null) => void;
   onLinkExpired: () => void;
 }
 
-export function StartingPhotoCard({ date, photo, onDayChange, onLinkExpired }: StartingPhotoCardProps) {
+export function StartingPhotoCard({ date, photoDate, photo, onDayChange, onLinkExpired }: StartingPhotoCardProps) {
   const copy = useCopy(bodyCopy);
   const language = useLanguage();
   const inputRef = useRef<HTMLInputElement>(null);
   const upload = useStartingPhotoUpload(date, onDayChange);
+  const shownDate = photoDate ?? date;
 
   return (
     <section className="starting-photo-card" aria-labelledby="starting-photo-title">
       <div className="starting-photo-card-copy">
         <h2 id="starting-photo-title" className="starting-photo-card-title">{copy.startingPhotoTitle}</h2>
         <p className="starting-photo-card-privacy">{copy.startingPhotoPrivacy}</p>
-        {photo && <p className="starting-photo-card-date">{formatDateOnly(date, language)}</p>}
+        {photo && <p className="starting-photo-card-date">{formatDateOnly(shownDate, language)}</p>}
       </div>
       {photo && (
         <PrivatePhoto
           photo={photo}
           localSrc={upload.localSrc}
-          alt={`${copy.startingPhotoTitle}, ${formatDateOnly(date, language)}`}
+          alt={`${copy.startingPhotoTitle}, ${formatDateOnly(shownDate, language)}`}
           openLabel={copy.startingPhotoTitle}
           closeLabel={copy.close}
           onLinkExpired={onLinkExpired}
@@ -44,7 +46,7 @@ export function StartingPhotoCard({ date, photo, onDayChange, onLinkExpired }: S
       {upload.error && (
         <div className="starting-photo-card-error" role="alert">
           <span>{upload.error}</span>
-          {upload.retry && <Button variant="secondary" onClick={upload.retry}>{copy.retry}</Button>}
+          {upload.canRetry && <Button variant="secondary" onClick={upload.retry}>{copy.retry}</Button>}
         </div>
       )}
       <Button

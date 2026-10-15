@@ -12,7 +12,7 @@ import {
   restoreCoachFood,
   updateCoachFood,
 } from './foodItem.service';
-import { NutritionSettingsConflictError, getNutritionSettings, saveNutritionSettings } from './nutritionSettings.service';
+import { NutritionSettingsConflictError, getNutritionSettings, previewNutritionSettings, saveNutritionSettings } from './nutritionSettings.service';
 import {
   NutritionPlanConflictError,
   NutritionPlanNotFoundError,
@@ -25,6 +25,7 @@ import {
   getTraineeNutritionPlan,
   listNutritionTemplates,
   markNutritionIntroSeen,
+  renameNutritionTemplate,
   publishCoachNutritionPlan,
   saveCoachNutritionPlan,
   type CoachNutritionPlanResult,
@@ -37,6 +38,7 @@ import {
   parseCreateNutritionTemplatePayload,
   parseFoodItemPayload,
   parseNutritionSettingsPayload,
+  parseRenameNutritionTemplatePayload,
   parseSaveNutritionPlanPayload,
   validateIdParam,
 } from './nutrition.validation';
@@ -160,10 +162,35 @@ export async function putSettings(req: AuthenticatedRequest, res: Response) {
   }
 }
 
+/** The settings screen's live preview: her unsaved numbers on the example trainee (nothing stored). */
+export function postSettingsPreview(req: AuthenticatedRequest, res: Response) {
+  const { value, error } = parseNutritionSettingsPayload(req.body);
+  if (!value) {
+    sendError(res, 400, error);
+    return;
+  }
+  res.status(200).json(previewNutritionSettings(value, new Date()));
+}
+
 // --- Templates (coach) --------------------------------------------------------
 
 export async function getTemplates(req: AuthenticatedRequest, res: Response) {
   res.status(200).json({ items: await listNutritionTemplates(req.userId!) });
+}
+
+export async function patchTemplate(req: AuthenticatedRequest, res: Response) {
+  const templateId = readId(req, res, 'templateId', 'template');
+  if (!templateId) return;
+  const { value, error } = parseRenameNutritionTemplatePayload(req.body);
+  if (!value) {
+    sendError(res, 400, error);
+    return;
+  }
+  try {
+    res.status(200).json({ template: await renameNutritionTemplate(req.userId!, templateId, value.name) });
+  } catch (renameError) {
+    sendNutritionError(res, renameError);
+  }
 }
 
 export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {

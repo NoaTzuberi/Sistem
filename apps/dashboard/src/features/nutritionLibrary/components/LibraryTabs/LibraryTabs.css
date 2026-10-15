@@ -1,0 +1,96 @@
+.library-tabs {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 4px;
+  border-radius: var(--radius-card);
+  background-color: var(--surface-pill);
+}
+
+/* The white thumb under the chosen third. It only ever moves by transform. */
+.library-tabs-thumb {
+  position: absolute;
+  inset-block: 4px;
+  inset-inline-start: 4px;
+  width: calc((100% - 8px) / 3);
+  border-radius: var(--radius-tile);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-segment-thumb);
+  transition: transform var(--transition-segment) var(--ease-press);
+}
+
+/* Each step is one third along the reading direction (transforms have no logical form). */
+:root[dir='rtl'] .library-tabs-at-1 .library-tabs-thumb { transform: translateX(-100%); }
+:root[dir='rtl'] .library-tabs-at-2 .library-tabs-thumb { transform: translateX(-200%); }
+:root[dir='ltr'] .library-tabs-at-1 .library-tabs-thumb { transform: translateX(100%); }
+:root[dir='ltr'] .library-tabs-at-2 .library-tabs-thumb { transform: translateX(200%); }
+
+.library-tabs-tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 116px;
+  min-height: var(--touch-target-min);
+  padding: 0 14px;
+  border-radius: var(--radius-tile);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  transition:
+    color var(--transition-fast) ease,
+    transform var(--transition-press) var(--ease-press);
+}
+
+.library-tabs-tab[aria-selected='true'] {
+  color: var(--color-text);
+}
+
+.library-tabs-tab:active {
+  transform: scale(0.97);
+}
+
+.library-tabs-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-fill-soft);
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.library-tabs-tab:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .library-tabs-tab:not([aria-selected='true']):hover {
+    color: var(--color-text);
+  }
+}
+
+@media (max-width: 760px) {
+  .library-tabs {
+    width: 100%;
+  }
+
+  .library-tabs-tab {
+    min-width: 0;
+    padding: 0 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .library-tabs-thumb,
+  .library-tabs-tab {
+    transition: none;
+  }
+}

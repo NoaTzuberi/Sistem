@@ -76,5 +76,14 @@ export function useStartingPhotoUpload(date: string, onSaved: (metric: BodyMetri
     return undefined;
   }
 
-  return { busy, error, localSrc, saved, handlePicked, retry: () => pending && void upload(pending), status: statusText() };
+  return {
+    busy,
+    error,
+    localSrc,
+    saved,
+    handlePicked,
+    canRetry: Boolean(pending),
+    retry: () => pending && void upload(pending),
+    status: statusText(),
+  };
 }
