@@ -16,7 +16,7 @@
     "dev:mobile": "npm run dev -w @sistem/mobile",
     "dev:dashboard": "npm run dev -w @sistem/dashboard",
     "build": "npm run build --workspaces --if-present",
-    "lint": "npm run lint --workspaces --if-present && npm run lint:i18n",
+    "lint": "npm run lint --workspaces --if-present && npm run lint:i18n && npm run lint:contrast",
     "test": "npm run test --workspaces --if-present && npm run test:i18n",
     "import:exercises": "npm run import:exercises -w @sistem/server",
     "clean:exercise-names": "npm run clean:exercise-names -w @sistem/server",
@@ -28,7 +28,8 @@
     "reset:nutrition": "npm run reset:nutrition -w @sistem/server --",
     "backfill:achievements": "npm run backfill:achievements -w @sistem/server --",
     "test:i18n": "vitest run --config vitest.i18n.config.mts",
-    "lint:i18n": "node scripts/i18n-audit.mjs"
+    "lint:i18n": "node scripts/i18n-audit.mjs",
+    "lint:contrast": "node scripts/contrast-audit.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
