@@ -30,7 +30,7 @@
 .session-block-now {
   margin-inline-start: auto;
   padding: 2px var(--space-2);
-  background-color: var(--color-primary);
+  background-color: var(--solid-pink); /* small white text: Neon Pink is only 3.8:1 */
   color: var(--color-on-primary);
 }
 

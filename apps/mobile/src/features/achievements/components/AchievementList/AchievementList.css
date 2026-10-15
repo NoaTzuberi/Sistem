@@ -77,7 +77,7 @@
   border: 0;
   appearance: none;
   background-color: var(--color-border);
-  color: var(--color-primary);
+  color: var(--color-primary); /* contrast-ignore: the bar's fill color, not text */
 }
 
 .achievement-row-progress::-webkit-progress-bar {

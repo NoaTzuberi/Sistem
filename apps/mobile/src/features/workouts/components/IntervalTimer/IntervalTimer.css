@@ -16,7 +16,7 @@
 }
 
 .interval-timer-work {
-  background-color: var(--color-primary);
+  background-color: var(--solid-pink); /* its 16px "next" line needs 4.5:1 — Neon Pink is 3.8:1 */
   color: var(--color-on-primary);
 }
 

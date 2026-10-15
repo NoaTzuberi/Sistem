@@ -43,8 +43,8 @@
 
 .selectable-chip-selected,
 .selectable-chip-selected:active {
-  border-color: var(--color-primary);
-  background-color: var(--color-primary);
+  border-color: var(--solid-pink);
+  background-color: var(--solid-pink); /* 16px medium white text: Neon Pink is only 3.8:1 */
   color: var(--color-on-primary);
 }
 
