@@ -1,0 +1,169 @@
+Contrast audit — white text disappearing (dashboard + trainee app)
+==================================================================
+Date: 2026-10-15. Not a numbered phase: a global fix done before further design work.
+
+Summary
+-------
+- Root cause of most "white text on light cards": `--color-on-hero-muted` was defined TWICE in tokens.css. The second
+  copy (white 80 %, meant for the achievements hero) overrode the first (charcoal 70 %), so every caption on the light
+  hero cards (overview hero stats, goal card, key numbers, AI plan card, week ticks, waiting list, retention, start
+  cards, workout hero, issue panel, notifications) rendered near-white. The hero now uses its own `--color-on-ach-hero-muted`.
+- Every rule that puts white text / icons on a fill was checked against WCAG AA (4.5:1; 3:1 for 18px+ or bold 14px+ and
+  for icons). Failing fills moved to new contrast-safe tokens; light tags use colored ink on a tint; gradients under
+  white text were darkened or switched to dark text; disabled pink buttons are soft pink + Cherry text, no opacity.
+- New dev check `scripts/contrast-audit.mjs` (`npm run lint:contrast`, part of `npm run lint`). It found 27 problems
+  before the fixes (incl. colored text that was too light, not only white) and finds 0 now.
+
+Contrast reference (white text unless noted)
+--------------------------------------------
+Neon Pink #FF006E 3.83 (bold 14px+ / 18px+ only) · --solid-pink #D4005C 5.31 · Cherry #A50047 7.80 · orange #FF7A00 2.61 ·
+#C75A00 4.29 · --solid-orange #B85300 4.91 · sky #0094FF 3.14 · --solid-blue #0070C9 5.05 · purple #7C4DFF 4.81 ·
+amber #D9952B 2.53 · --solid-amber #946200 5.24 · faded pink #FFB3D1 ≈ 1.9.
+Inks on tints: #A50047/#FFE3EE 6.49 · #8A4A00/#FFF4E5 6.31 · #5B2FD6/#EFE7FF 6.22 · #0066B8/#E1F1FF 5.07 · #7A5600/#FFF4D6 6.07.
+
+Deviations from the brief (numbers above)
+- Orange solid: the brief's #C75A00 is 4.29:1 with white, under 4.5 for small text → --solid-orange #B85300.
+- Blue ink: the brief's #0070C9 on #E1F1FF is 4.38:1 → --ink-blue #0066B8 (#0070C9 stays the solid blue under white).
+- Small white text on Neon Pink (badges, tags, step / check marks, 12px buttons) → --solid-pink #D4005C (the existing
+  "ring-mid" pink). Pink buttons with bold 14px+ labels keep Neon Pink (3.83 passes 3:1).
+- Token names follow the brief (--on-pink, --tint-*, --ink-*), plus --solid-* (white-text fills) and --disabled-bg / -ink.
+
+Files changed (line numbers = the new file)
+-------------------------------------------
+Added
+  scripts/contrast-audit.mjs                                   the dev check (whole file)
+  docs/phase-reports/contrast-audit.txt                        this report
+
+Tokens / shared
+  packages/tokens/tokens.css
+    195            --color-qv-waiting-avatar-from #FF5CA2 → #FF006E
+    198-199        active avatar #B18CFF→#7C4DFF / #7C4DFF→#5B2FD6
+    203-204        attention avatar #FFB061→#D07000 / #C75A00→#A85800
+    207-208        inactive avatar #C9C2CB→#8F8792 / #8F8792→#6B6470   (all four ≥ 3:1 under 22px white initials)
+    275            --gradient-avatar starts at Neon Pink (was pink-bright, 2.87:1)
+    312-317        --gradient-ach-hero = Cherry → --solid-pink (was ending #FF7A9F, 2.46:1); glows 75/60 % → 20 %
+    323-325        --color-on-hero-muted duplicate renamed --color-on-ach-hero-muted (full white)
+    345,351,354    --color-portion-{protein,fat,snack}-text → --ink-pink / --ink-orange / --ink-blue
+    359-360        --color-nb-recommended-from/to #FF4E9A/#D4005C → #D4005C/#A50047
+    395-419        NEW: --on-pink, --solid-{pink,orange,amber,blue,purple}, --tint-/--ink-{pink,orange,purple,blue,yellow},
+                   --disabled-bg, --disabled-ink
+  apps/dashboard/src/styles/globals.css
+    78-79,84,90,96,102,108       --workout-solid per workout color (fill under white text, text on white)
+    195-196,201,207,213,219,225,231  --ach-solid per achievement category
+  package.json  19,31-32          lint runs lint:contrast; new script lint:contrast
+
+Dashboard
+  components/common/Button/Button.css               26-35   primary disabled / aria-disabled: --disabled-bg + ink; :active skips disabled
+  components/common/PillButton/PillButton.css       52      small primary → --solid-pink; 74-82 primary disabled state
+  components/common/Tag/Tag.css                     20      tag-solid → --solid-pink
+  components/layout/Sidebar/Sidebar.css             142,242 hot badge → --solid-pink
+  features/aiDraft/components/AiDraftSheet/AiDraftSheet.css  92  solid tag → --solid-pink
+  features/auth/pages/Login/Login.css               228-231 busy submit: soft pink + Cherry text (was opacity)
+  features/exerciseLibrary/components/FamilyDetail/FamilyDetail.css  77-78  pattern chip: dark text on the tint
+  features/exerciseLibrary/components/FamilyRow/FamilyRow.css        51     pattern name: pattern color mixed 60 % with text
+  features/exerciseLibrary/components/FamilyTile/FamilyTile.css      12-13,16  dark letters, gradient stays light
+  features/exerciseLibrary/components/IssuePanel/IssuePanel.css      64-68  pressed pattern: tint + ring + dark text
+  features/exerciseLibrary/components/PatternChips/PatternChips.css  42-46,51  same; "All" keeps white on charcoal
+  features/exerciseLibrary/components/VariantCard/VariantCard.css    53     main badge → --solid-pink
+  features/notifications/components/NotificationItem/NotificationItem.css  11,40,46,52,58,139  --notice-solid for the action
+  features/nutrition/components/BuilderHeader/BuilderHeader.css      155-157  "פרסום" disabled: --disabled-bg + ink (was #FFB3D1 + white)
+  features/nutrition/components/CalcEquation/CalcEquation.css        62,69  gradient without the Neon Pink stop; captions full white
+  features/nutrition/components/DailyTarget/DailyTarget.css          95     "use" pill → --solid-pink
+  features/nutrition/components/DayPortionCard/DayPortionCard.css    75     today pill → --solid-pink
+  features/nutrition/components/FoodPicker/FoodPicker.css            21     open trigger → --solid-pink
+  features/nutrition/components/GoalSegmented/GoalSegmented.css      37     "gain" → --solid-pink
+  features/nutrition/components/MealCard/MealCard.css                47     meal number ink 45 → 35 % (4.30 → ≥ 4.5)
+  features/nutrition/components/PortionBudgetCard/PortionBudgetCard.css  163  "missing" state → --solid-pink
+  features/nutrition/components/PublishChecklist/PublishChecklist.css    40   check mark → --solid-pink
+  features/nutrition/components/StepNav/StepNav.css                  43     step number → --solid-pink
+  features/overview/components/WaitingList/WaitingList.css           56     urgent pill → --solid-pink
+  features/overview/components/WeekBoard/WeekBoard.css               112    missed pill text faint → muted (2.27 → 4.87)
+  features/planBuilder/components/ExerciseRow/ExerciseRow.css        30-32  thumb: workout ink on a light tint; 89,224,320 text → --workout-solid
+  features/planBuilder/components/SlotSection/SlotSection.css        55,75,93  --workout-solid (badge, "+ add", its hover)
+  features/planBuilder/components/WorkoutCard/WorkoutCard.css        41,58,69  text → --workout-solid
+  features/planBuilder/components/WorkoutTabs/WorkoutTabs.css        75     selected tab → --workout-solid
+  features/trainees/components/AchievementBadge/AchievementBadge.css 59     next label → --ach-solid
+  features/trainees/components/AchievementModal/AchievementModal.css 127,151  category ink, "done" button → --ach-solid
+  features/trainees/components/AchievementStats/AchievementStats.css 30     icon square → --ach-solid
+  features/trainees/components/AchievementsHero/AchievementsHero.css 52,62,111  → --color-on-ach-hero-muted
+  features/trainees/components/Medal/Medal.css                       76     unlocked disc: ach color → ach solid
+  features/trainees/components/PlansToolbar/PlansToolbar.css         33     primary pill semibold (white on Neon Pink needs bold)
+  features/trainees/components/ProfileLinksList/ProfileLinksList.css 36,39  nutrition / achievements icons → solids
+  features/trainees/components/StreakCard/StreakCard.css             54     → --color-on-ach-hero-muted
+  features/trainees/components/WorkoutLogCard/WorkoutLogCard.css     115    PR chip: --solid-blue → --ink-blue
+
+Mobile (trainee app)
+  features/achievements/components/AchievementList/AchievementList.css  80  contrast-ignore (progress bar fill, not text)
+  features/auth/components/AuthSubmitButton/AuthSubmitButton.css   32-42  disabled: soft pink + Cherry; busy keeps pink under the spinner
+  features/onboarding/components/DeckButton/DeckButton.css          61-63,70-71  "Next" disabled: soft pink + Cherry (was opacity .35); busy stays pink
+  features/onboarding/components/SelectableChip/SelectableChip.css  46-47  selected chip (16px medium) → --solid-pink
+  features/workouts/components/IntervalTimer/IntervalTimer.css      19     work screen → --solid-pink (its 16px "next" line)
+  features/workouts/components/SessionBlock/SessionBlock.css        33     "now" label (12px) → --solid-pink
+
+Checked and left as is: white on Cherry / charcoal / Apple black / error red; pink buttons with bold 14px+ labels
+(dashboard Button, PillButton, publish, AI apply, quick-view footer, login, auth submit, waiting CTA, deck "Next",
+rating, holds, rest-over); icons on Neon Pink (3.83 ≥ 3); the auth screen (white 16px+ bold / 18px on the brand
+gradient, darkest-light point 3.83); the profile header (photo under a 68–88 % charcoal scrim where the text sits).
+
+Dependencies
+------------
+None added or removed.
+
+How to test
+-----------
+1. npm run lint            → oxlint + i18n audit + "Contrast audit: … no findings."
+2. npm run lint:contrast   → the check alone. To see it fail: set `.tag-solid { background-color: var(--color-workout-3) }`
+                             and run it again (then undo).
+3. npm run build -w @sistem/dashboard && npm run build -w @sistem/mobile   (both built here)
+4. Manual (npm run dev:all, seed:dev):
+   - Overview: hero stat captions, "waiting" list, week ticks are dark, not white.
+   - Trainee profile: Goal card captions and Key numbers labels dark; Achievements hero readable on the right (Hebrew).
+   - Nutrition builder: "פרסום" while blocked = soft pink + Cherry text; recommended kcal card; goal "gain"; budget pills.
+   - Plan builder: the orange (3rd) and blue (4th) workouts — selected tab, "required" badge, "+ add" hover, thumbs.
+   - Exercise library: pressed pattern chips (tint + ring), family tiles (dark letters).
+   - Mobile: onboarding "Next" disabled = soft pink + Cherry; while saving it stays pink with the white spinner;
+     selected chips; interval timer work screen; login button disabled vs busy.
+   I did not open the apps in a browser for this change — please look at the screens above.
+
+Known issues / TODOs
+--------------------
+- Visible design changes the owner should approve: the achievements hero is now Cherry → #D4005C with faint glows
+  (the bright pink / peach end is gone); the quick-view avatar gradients are deeper; the selected onboarding chips, interval
+  work screen and small pink badges use #D4005C; pressed pattern chips use tint + ring instead of a solid fill; family tiles
+  and exercise thumbs use dark / colored ink on light tints.
+- The check reads one rule at a time. It skips gradients, photos, SVG / canvas colors, and text whose background comes
+  from an ancestor; those were reviewed by hand in this pass. New gradients under white text need the same eye.
+- The brief says "keep aria-disabled": the onboarding "Next" and the auth submit use the native `disabled` attribute
+  (unchanged); the dashboard Button / PillButton styles now cover both `:disabled` and `[aria-disabled='true']`.
+- WCAG exempts disabled controls; the disabled styles were changed because the brief asked for it.
+- `--color-text-muted` and `--color-error` are still TEMPORARY owner values; the check will catch a new value that fails.
+
+Suggested commits
+-----------------
+1. fix(tokens): stop the achievements hero from whitening hero captions; add contrast-safe pairs
+   packages/tokens/tokens.css, apps/dashboard/src/styles/globals.css,
+   apps/dashboard/src/features/trainees/components/AchievementsHero/AchievementsHero.css,
+   apps/dashboard/src/features/trainees/components/StreakCard/StreakCard.css
+2. fix(dashboard): readable white text — solid fills, inks on tints, disabled pink buttons
+   (the dashboard CSS files listed above, except commit 1's)
+3. fix(mobile): readable white text on pink and disabled / busy pink buttons
+   (the mobile CSS files listed above)
+4. chore: add the contrast audit to npm run lint
+   scripts/contrast-audit.mjs, package.json
+5. docs: contrast audit report
+   docs/phase-reports/contrast-audit.txt
+
+git add -A -- packages/tokens/tokens.css apps/dashboard/src/styles/globals.css apps/dashboard/src/features/trainees/components/AchievementsHero/AchievementsHero.css apps/dashboard/src/features/trainees/components/StreakCard/StreakCard.css
+git commit -m "fix(tokens): stop the achievements hero from whitening hero captions; add contrast-safe pairs"
+
+git add -A -- apps/dashboard/src/components/common/Button/Button.css apps/dashboard/src/components/common/PillButton/PillButton.css apps/dashboard/src/components/common/Tag/Tag.css apps/dashboard/src/components/layout/Sidebar/Sidebar.css apps/dashboard/src/features/aiDraft/components/AiDraftSheet/AiDraftSheet.css apps/dashboard/src/features/auth/pages/Login/Login.css apps/dashboard/src/features/exerciseLibrary/components/FamilyDetail/FamilyDetail.css apps/dashboard/src/features/exerciseLibrary/components/FamilyRow/FamilyRow.css apps/dashboard/src/features/exerciseLibrary/components/FamilyTile/FamilyTile.css apps/dashboard/src/features/exerciseLibrary/components/IssuePanel/IssuePanel.css apps/dashboard/src/features/exerciseLibrary/components/PatternChips/PatternChips.css apps/dashboard/src/features/exerciseLibrary/components/VariantCard/VariantCard.css apps/dashboard/src/features/notifications/components/NotificationItem/NotificationItem.css apps/dashboard/src/features/nutrition/components/BuilderHeader/BuilderHeader.css apps/dashboard/src/features/nutrition/components/CalcEquation/CalcEquation.css apps/dashboard/src/features/nutrition/components/DailyTarget/DailyTarget.css apps/dashboard/src/features/nutrition/components/DayPortionCard/DayPortionCard.css apps/dashboard/src/features/nutrition/components/FoodPicker/FoodPicker.css apps/dashboard/src/features/nutrition/components/GoalSegmented/GoalSegmented.css apps/dashboard/src/features/nutrition/components/MealCard/MealCard.css apps/dashboard/src/features/nutrition/components/PortionBudgetCard/PortionBudgetCard.css apps/dashboard/src/features/nutrition/components/PublishChecklist/PublishChecklist.css apps/dashboard/src/features/nutrition/components/StepNav/StepNav.css apps/dashboard/src/features/overview/components/WaitingList/WaitingList.css apps/dashboard/src/features/overview/components/WeekBoard/WeekBoard.css apps/dashboard/src/features/planBuilder/components/ExerciseRow/ExerciseRow.css apps/dashboard/src/features/planBuilder/components/SlotSection/SlotSection.css apps/dashboard/src/features/planBuilder/components/WorkoutCard/WorkoutCard.css apps/dashboard/src/features/planBuilder/components/WorkoutTabs/WorkoutTabs.css apps/dashboard/src/features/trainees/components/AchievementBadge/AchievementBadge.css apps/dashboard/src/features/trainees/components/AchievementModal/AchievementModal.css apps/dashboard/src/features/trainees/components/AchievementStats/AchievementStats.css apps/dashboard/src/features/trainees/components/Medal/Medal.css apps/dashboard/src/features/trainees/components/PlansToolbar/PlansToolbar.css apps/dashboard/src/features/trainees/components/ProfileLinksList/ProfileLinksList.css apps/dashboard/src/features/trainees/components/WorkoutLogCard/WorkoutLogCard.css
+git commit -m "fix(dashboard): readable white text — solid fills, inks on tints, disabled pink buttons"
+
+git add -A -- apps/mobile/src/features/achievements/components/AchievementList/AchievementList.css apps/mobile/src/features/auth/components/AuthSubmitButton/AuthSubmitButton.css apps/mobile/src/features/onboarding/components/DeckButton/DeckButton.css apps/mobile/src/features/onboarding/components/SelectableChip/SelectableChip.css apps/mobile/src/features/workouts/components/IntervalTimer/IntervalTimer.css apps/mobile/src/features/workouts/components/SessionBlock/SessionBlock.css
+git commit -m "fix(mobile): readable white text on pink and disabled / busy pink buttons"
+
+git add -A -- scripts/contrast-audit.mjs package.json
+git commit -m "chore: add the contrast audit to npm run lint"
+
+git add -A -- docs/phase-reports/contrast-audit.txt
+git commit -m "docs: contrast audit report"
