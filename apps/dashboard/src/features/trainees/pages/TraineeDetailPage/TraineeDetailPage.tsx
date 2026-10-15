@@ -82,10 +82,8 @@ export function TraineeDetailPage() {
           <TraineeHeader trainee={trainee} nowMs={nowMs} onBuildPlan={handleBuildPlan} />
           <TraineeTabs selected={tab} counts={{ plans: plansLoad.plans?.length }} panelId={PANEL_ID} onSelect={selectTab} />
 
-          {/* The redesigned sections sit on the canvas (their own cards); the logs keep their content
-              for now, on one white card. */}
           <section
-            className={tab === 'logs' ? 'trainee-panel trainee-panel-card' : 'trainee-panel'}
+            className="trainee-panel"
             role="tabpanel"
             id={PANEL_ID}
             aria-labelledby={traineeTabId(tab)}
@@ -95,7 +93,7 @@ export function TraineeDetailPage() {
                 onNewPlanHandled={handleNewPlanHandled}
                 onPlansChanged={reload} />}
             {tab === 'nutrition' && <TraineeNutritionTab traineeId={trainee.id} />}
-            {tab === 'logs' && <WorkoutLogList traineeId={trainee.id} />}
+            {tab === 'logs' && <WorkoutLogList traineeId={trainee.id} timezone={trainee.timezone} currentWeekStart={trainee.currentWeekStart} />}
             {tab === 'metrics' && <BodyTracking traineeId={trainee.id} traineeName={trainee.name} timezone={trainee.timezone} />}
             {tab === 'achievements' && <TraineeAchievements traineeId={trainee.id} />}
           </section>

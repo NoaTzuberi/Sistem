@@ -1,0 +1,185 @@
+/* --log-tone: the workout's identity color (its strip) — not a status. */
+.log-card {
+  --log-tone: var(--color-workout-1);
+  overflow: hidden;
+  border-radius: 22px;
+  background-color: var(--surface-glass-row);
+  -webkit-backdrop-filter: var(--blur-soft);
+  backdrop-filter: var(--blur-soft);
+  box-shadow: var(--shadow-panel);
+}
+
+.log-card[data-tone='1'] { --log-tone: var(--color-workout-2); }
+.log-card[data-tone='2'] { --log-tone: var(--color-workout-3); }
+.log-card[data-tone='3'] { --log-tone: var(--color-workout-4); }
+.log-card[data-tone='4'] { --log-tone: var(--color-workout-5); }
+
+.log-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 10px 14px;
+  padding-inline-start: 10px;
+  text-align: start;
+  transition: background-color var(--transition-fast) ease;
+}
+
+.log-card-head:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: -2px;
+  border-radius: 22px;
+}
+
+.log-card-strip {
+  flex: none;
+  align-self: stretch;
+  width: 12px;
+  border-radius: var(--radius-round);
+  background-color: var(--log-tone);
+}
+
+.log-card-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.log-card-name {
+  overflow: hidden;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.log-card-meta {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.log-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Done: Cherry Rose on soft pink · partial: amber · still open: grey. */
+.log-card-status {
+  padding: 3px 10px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-primary-soft);
+  font-size: var(--text-2xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-deep);
+}
+
+.log-card-status[data-state='partial'] {
+  background-color: var(--color-warning-soft);
+  color: var(--color-warning-text);
+}
+
+.log-card-status[data-state='in_progress'] {
+  background-color: var(--color-fill-soft);
+  color: var(--color-text-muted);
+}
+
+.log-card-rating {
+  display: inline-flex;
+  gap: 3px;
+  direction: ltr;
+}
+
+.log-card-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-hairline);
+}
+
+.log-card-dot[data-on] {
+  background-color: var(--color-qv-attention-avatar-from);
+}
+
+.log-card-pr {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--radius-round);
+  background-image: linear-gradient(120deg, var(--color-workout-4), var(--color-stat-blue));
+  font-size: var(--text-2xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-on-primary);
+}
+
+.log-card-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-field);
+  object-fit: cover;
+}
+
+.log-card-chevron {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-fill-soft);
+  transition: transform var(--transition-chevron) var(--ease-press);
+}
+
+.log-card[data-open] .log-card-chevron {
+  transform: rotate(180deg);
+}
+
+/* Opening: the row grows from 0 to its content's height. */
+.log-card-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 280ms var(--ease-press);
+}
+
+.log-card[data-open] .log-card-body {
+  grid-template-rows: 1fr;
+}
+
+.log-card-body-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .log-card-head:hover {
+    background-color: color-mix(in srgb, var(--color-card) 60%, transparent);
+  }
+}
+
+@media (max-width: 760px) {
+  .log-card-head {
+    flex-wrap: wrap;
+  }
+
+  .log-card-badges {
+    order: 3;
+    width: 100%;
+    justify-content: flex-start;
+    padding-inline-start: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .log-card-head,
+  .log-card-chevron,
+  .log-card-body {
+    transition: none;
+  }
+}

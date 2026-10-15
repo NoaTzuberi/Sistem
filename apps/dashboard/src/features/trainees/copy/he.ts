@@ -163,6 +163,7 @@ export const he = {
     privateNote: 'רק את ו{name} רואות אותן',
     compareLabel: 'השוואה בין התמונות',
     noPhotos: 'עדיין אין תמונות התקדמות',
+    startingPhoto: 'תמונת התחלה',
   },
   // Achievements tab, game-like. Wording from the design brief.
   achievementsTab: {
@@ -194,6 +195,22 @@ export const he = {
       // PLACEHOLDER: the design has no body-tracking category; the Body tab's name for now.
       tracking: 'גוף',
     },
+  },
+  // The workout logs tab (round 3).
+  logs: {
+    workouts: 'אימונים',
+    averageRating: 'דירוג ממוצע',
+    filterLabel: 'סינון', // PLACEHOLDER (screen readers)
+    filterAll: 'הכול · {count}',
+    filterPrs: 'שיאים · {count}',
+    filterPhoto: 'עם תמונה · {count}',
+    partial: 'חלקי',
+    prPill: 'שיא אישי',
+    prRow: 'שיא',
+    rating: 'דירוג {rating} מתוך 5', // screen readers
+    herNote: 'ההערה שלה', // PLACEHOLDER
+    setsReps: '{sets}×{reps}',
+    noneFiltered: 'אין אימונים שמתאימים לסינון.', // PLACEHOLDER
   },
   createFor: 'יצירת תוכנית ל־{range}',
 } as const;
