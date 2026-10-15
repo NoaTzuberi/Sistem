@@ -5,7 +5,7 @@ import { useTraineeNutrition } from '../../hooks/useTraineeNutrition';
 import { CurrentNutritionPlanCard } from '../CurrentNutritionPlanCard/CurrentNutritionPlanCard';
 import { NutritionEmptyState } from '../NutritionEmptyState/NutritionEmptyState';
 import { NutritionPreferencesCard } from '../NutritionPreferencesCard/NutritionPreferencesCard';
-import { TrackingWeek } from '../TrackingWeek/TrackingWeek';
+import { PortionTrackingCard } from '../PortionTrackingCard/PortionTrackingCard';
 import './TraineeNutritionTab.css';
 
 /**
@@ -42,7 +42,7 @@ export function TraineeNutritionTab({ traineeId }: { traineeId: string }) {
       </div>
       {data.published && (
         <div className="trainee-nutrition-tracking">
-          <TrackingWeek traineeId={traineeId} />
+          <PortionTrackingCard traineeId={traineeId} />
         </div>
       )}
     </div>

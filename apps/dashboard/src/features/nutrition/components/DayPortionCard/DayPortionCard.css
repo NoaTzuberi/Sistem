@@ -1,0 +1,153 @@
+.nb-day {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  min-height: 132px;
+  padding: 12px;
+  border-radius: var(--radius-qv-tile);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+  font-size: var(--text-xs);
+  text-align: start;
+}
+
+.nb-day-button {
+  transition:
+    transform var(--transition-lift) var(--ease-press),
+    box-shadow var(--transition-lift) ease;
+}
+
+.nb-day-button:active {
+  transform: scale(0.97);
+}
+
+.nb-day-button[aria-expanded='true'] {
+  box-shadow: var(--ring-field), var(--shadow-panel);
+}
+
+.nb-day-button:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Today: a pink ring. */
+.nb-day[data-today] {
+  box-shadow: 0 0 0 2px var(--color-primary), var(--shadow-panel);
+}
+
+/* Nothing marked: striped. A day still to come: a dashed outline. */
+.nb-day[data-state='not_marked'] {
+  background-image: repeating-linear-gradient(135deg, var(--color-fill-soft) 0 6px, var(--color-card) 6px 12px);
+}
+
+.nb-day[data-state='future'] {
+  background-color: transparent;
+  box-shadow: none;
+  border: 1.5px dashed var(--color-nb-dash);
+}
+
+.nb-day[data-state='no_plan'] {
+  background-color: var(--color-fill-soft);
+  box-shadow: none;
+}
+
+.nb-day-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.nb-day-letter {
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-bold);
+}
+
+.nb-day-date {
+  color: var(--color-text-muted);
+}
+
+.nb-day-today {
+  margin-inline-start: auto;
+  padding: 1px 8px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-primary);
+  font-size: var(--text-2xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-on-primary);
+}
+
+.nb-day-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+/* --nb-bar / --nb-bar-soft: the group's colors (the one portion map). */
+.nb-day-bar {
+  --nb-bar: var(--color-portion-protein);
+  --nb-bar-soft: var(--color-portion-protein-soft);
+  position: relative;
+  display: block;
+  height: 5px;
+  overflow: hidden;
+  border-radius: var(--radius-round);
+  background-color: var(--nb-bar-soft);
+}
+
+.nb-day-bar[data-group='carb'] { --nb-bar: var(--color-portion-carb); --nb-bar-soft: var(--color-portion-carb-soft); }
+.nb-day-bar[data-group='fat'] { --nb-bar: var(--color-portion-fat); --nb-bar-soft: var(--color-portion-fat-soft); }
+.nb-day-bar[data-group='snack'] { --nb-bar: var(--color-portion-snack); --nb-bar-soft: var(--color-portion-snack-soft); }
+
+.nb-day-bar-fill {
+  display: block;
+  width: var(--nb-share);
+  height: 100%;
+  border-radius: var(--radius-round);
+  background-color: var(--nb-bar);
+}
+
+.nb-day-total {
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.nb-day-muted {
+  flex: 1;
+  color: var(--color-text-muted);
+}
+
+.nb-day-photos {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-fill-soft);
+  font-size: var(--text-2xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .nb-day-button:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-tile-lift);
+  }
+
+  .nb-day-button[data-today]:hover {
+    box-shadow: 0 0 0 2px var(--color-primary), var(--shadow-tile-lift);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nb-day-button {
+    transition: none;
+  }
+
+  .nb-day-button:hover {
+    transform: none;
+  }
+}
