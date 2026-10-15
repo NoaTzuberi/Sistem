@@ -22,10 +22,6 @@
     "seed:nutrition": "tsx src/features/nutrition/scripts/seedNutrition.ts",
     "reset:nutrition": "tsx src/features/nutrition/scripts/resetNutrition.ts"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
     "bcrypt": "^6.0.0",
     "cloudinary": "^2.11.0",
