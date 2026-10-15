@@ -192,20 +192,20 @@
   --color-quick-view-bg: #f7f5f7;
   --color-qv-waiting-cloud: #ff8fc0;
   --color-qv-waiting-cloud-warm: #ffb59e;
-  --color-qv-waiting-avatar-from: #ff5ca2;
+  --color-qv-waiting-avatar-from: #ff006e;      /* Avatar gradients keep ≥ 3:1 under the white initials (22px) */
   --color-qv-waiting-avatar-to: #a50047;
   --color-qv-active-cloud: #c9a6ff;
-  --color-qv-active-avatar-from: #b18cff;
-  --color-qv-active-avatar-to: #7c4dff;
+  --color-qv-active-avatar-from: #7c4dff;
+  --color-qv-active-avatar-to: #5b2fd6;
   --color-qv-active-ink: #5b2fd6;
   --color-qv-attention-cloud: #ffc48a;
   --color-qv-attention-cloud-light: #ffd9a8;
-  --color-qv-attention-avatar-from: #ffb061;
-  --color-qv-attention-avatar-to: #c75a00;
+  --color-qv-attention-avatar-from: #d07000;
+  --color-qv-attention-avatar-to: #a85800;
   --color-qv-inactive-cloud: #e2dde3;
   --color-qv-inactive-cloud-dark: #d9d2d8;
-  --color-qv-inactive-avatar-from: #c9c2cb;
-  --color-qv-inactive-avatar-to: #8f8792;
+  --color-qv-inactive-avatar-from: #8f8792;
+  --color-qv-inactive-avatar-to: #6b6470;
   --color-qv-late-tint: #fff0f5;          /* The spotlight card when the 48h window has passed */
   --color-qv-hairline: color-mix(in srgb, var(--color-text) 12%, transparent); /* the grouped list's separators */
   --color-qv-row-hover: #faf8fa;
@@ -272,7 +272,7 @@
   --color-flag-soft: #fff0dc;
   --surface-on-flag: color-mix(in srgb, var(--color-card) 75%, transparent);   /* a row on the amber "before you build" card */
   /* The trainee profile: the initials avatar, and the soft pink / lilac cloud in the header card's corner. */
-  --gradient-avatar: linear-gradient(140deg, var(--color-pink-bright), var(--color-primary-deep));
+  --gradient-avatar: linear-gradient(140deg, var(--color-primary), var(--color-primary-deep)); /* ≥ 3:1 under the white initials */
   --gradient-profile-cloud:
     radial-gradient(40% 40% at 60% 40%, color-mix(in srgb, var(--color-primary) 16%, transparent), transparent 70%),
     radial-gradient(35% 35% at 30% 60%, color-mix(in srgb, var(--color-lilac) 22%, transparent), transparent 70%);
@@ -309,16 +309,20 @@
   --color-ach-volume-light: #ff8fb8;
   --color-ach-tracking: #d9952b;       /* Body tracking — not in the design; see the report */
   --color-ach-tracking-light: #ffe3b0;
-  --gradient-ach-hero: linear-gradient(125deg, #a50047 0%, #ff006e 55%, #ff7a9f 100%);
+  /* White text sits on every part of the hero (it is on the right in Hebrew): the gradient stays at or
+     below --solid-pink and the glows stay faint, so white keeps ≥ 4.5:1 everywhere. */
+  --gradient-ach-hero: linear-gradient(125deg, var(--color-primary-deep) 0%, var(--solid-pink) 100%);
   --gradient-ach-hero-glow:
-    radial-gradient(30% 35% at 80% 20%, color-mix(in srgb, #ffc48a 75%, transparent), transparent 70%),
-    radial-gradient(30% 40% at 15% 90%, color-mix(in srgb, #c9a6ff 60%, transparent), transparent 70%);
+    radial-gradient(30% 35% at 80% 20%, color-mix(in srgb, #ffc48a 20%, transparent), transparent 70%),
+    radial-gradient(30% 40% at 15% 90%, color-mix(in srgb, #c9a6ff 20%, transparent), transparent 70%);
   --color-ach-hero-dots: color-mix(in srgb, var(--color-on-primary) 90%, transparent);
   --shadow-ach-hero: 0 20px 50px color-mix(in srgb, var(--color-primary-deep) 28%, transparent);
   --surface-on-hero: color-mix(in srgb, var(--color-on-primary) 16%, transparent);       /* the streak card */
   --surface-on-hero-strong: color-mix(in srgb, var(--color-on-primary) 95%, transparent); /* the latest-unlock card */
   --surface-on-hero-track: color-mix(in srgb, var(--color-on-primary) 25%, transparent); /* the XP bar's track, a cold flame */
-  --color-on-hero-muted: color-mix(in srgb, var(--color-on-primary) 80%, transparent);
+  /* Its own name: it once reused --color-on-hero-muted, and as the later line it turned every light
+     hero card's captions white. */
+  --color-on-ach-hero-muted: var(--on-pink); /* full white: any alpha drops small captions under 4.5:1 */
   --gradient-xp: linear-gradient(to left, var(--color-on-primary), #ffd6e6);
   --shadow-xp: 0 0 12px color-mix(in srgb, var(--color-on-primary) 70%, transparent);
   --gradient-flame: linear-gradient(160deg, #ffc48a, #ff7a00);
@@ -338,22 +342,22 @@
   /* Nutrition plan builder: THE portion-group map (fill, text, soft) — identity colors, never statuses.
      Missing = solid pink, over = amber (--color-warning-*), complete = Cherry Rose. */
   --color-portion-protein: #ff006e;
-  --color-portion-protein-text: #ff006e;
+  --color-portion-protein-text: var(--ink-pink);   /* the -text inks keep 4.5:1 on their soft */
   --color-portion-protein-soft: #ffe3ee;
   --color-portion-carb: #7c4dff;
   --color-portion-carb-text: #5b2fd6;
   --color-portion-carb-soft: #efe7ff;
   --color-portion-fat: #ff7a00;
-  --color-portion-fat-text: #c75a00;
+  --color-portion-fat-text: var(--ink-orange);
   --color-portion-fat-soft: #ffebd6;
   --color-portion-snack: #0094ff;
-  --color-portion-snack-text: #0070c9;
+  --color-portion-snack-text: var(--ink-blue);
   --color-portion-snack-soft: #e1f1ff;
   --color-nb-goal-loss: #0070c9;     /* Goal buttons: losing, keeping, gaining */
   --color-nb-goal-keep: #7c4dff;
   --color-nb-goal-gain: #ff006e;
-  --color-nb-recommended-from: #ff4e9a; /* The recommended-kcal card's gradient */
-  --color-nb-recommended-to: #d4005c;
+  --color-nb-recommended-from: #d4005c; /* The recommended-kcal card's gradient — dark enough for white captions */
+  --color-nb-recommended-to: #a50047;
   --color-nb-target-tint: #fff0f6;   /* The daily target panel */
   --color-nb-tip: #fff8e9;           /* A coach tip row */
   --color-nb-meal-ground: #fbfafb;   /* A meal card at rest */
@@ -387,6 +391,31 @@
   --gradient-blob-lilac: linear-gradient(150deg, #efe7ff, #c9a6ff);
   --surface-meal: color-mix(in srgb, var(--color-fill-soft) 85%, transparent);
   --color-on-workout-muted: color-mix(in srgb, var(--color-on-primary) 80%, transparent); /* small text on a filled workout pill */
+
+  /* Contrast-safe pairs (WCAG AA: 4.5:1 for text, 3:1 for 18px+ / bold 14px+ text and icons).
+     White text sits only on a --solid-* fill, or on Neon Pink when the text is 18px+ or bold 14px+
+     (white on Neon Pink is 3.8:1). On a light tint, text takes that tint's --ink-*. Identity colors
+     that are too light for white text (orange, sky blue, amber) use their --solid-* under it.
+     `npm run lint` checks this (scripts/contrast-audit.mjs). */
+  --on-pink: var(--color-on-primary);       /* White on Neon Pink / Cherry Rose / a --solid-* fill */
+  --solid-pink: #d4005c;                    /* 5.3:1 — small white text on pink (badges, tags, marks) */
+  --solid-orange: #b85300;                  /* 4.9:1 */
+  --solid-amber: #946200;                   /* 5.2:1 */
+  --solid-blue: #0070c9;                    /* 5.1:1 */
+  --solid-purple: #7c4dff;                  /* 4.8:1 */
+  --tint-pink: #ffe3ee;
+  --ink-pink: #a50047;                      /* 6.5:1 on its tint */
+  --tint-orange: #fff4e5;
+  --ink-orange: #8a4a00;                    /* 6.3:1 */
+  --tint-purple: #efe7ff;
+  --ink-purple: #5b2fd6;                    /* 6.2:1 */
+  --tint-blue: #e1f1ff;
+  --ink-blue: #0066b8;                      /* 5.1:1 */
+  --tint-yellow: #fff4d6;
+  --ink-yellow: #7a5600;                    /* 6.1:1 */
+  /* A disabled pink button: soft pink with Cherry text — never a faded white label. */
+  --disabled-bg: var(--tint-pink);
+  --disabled-ink: var(--ink-pink);
 
   /* Third-party button colors fixed by the provider's guidelines (social sign-in, Phase 5c). */
   --color-apple-button: #000000;

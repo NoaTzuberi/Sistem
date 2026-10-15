@@ -51,7 +51,7 @@
 
 .streak-card-best {
   font-size: var(--text-2xs);
-  color: var(--color-on-hero-muted);
+  color: var(--color-on-ach-hero-muted);
 }
 
 .streak-card-cold .streak-card-best {

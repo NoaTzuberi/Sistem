@@ -49,7 +49,7 @@
 .ach-hero-eyebrow {
   font-size: var(--text-xs);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-on-hero-muted);
+  color: var(--color-on-ach-hero-muted);
 }
 
 .ach-hero-count {
@@ -59,7 +59,7 @@
   gap: 6px 12px;
   margin: 4px 0 14px;
   font-size: var(--text-base);
-  color: var(--color-on-hero-muted);
+  color: var(--color-on-ach-hero-muted);
 }
 
 .ach-hero-number {
@@ -108,7 +108,7 @@
 .ach-hero-next {
   margin: 12px 0 0;
   font-size: var(--text-sm);
-  color: var(--color-on-hero-muted);
+  color: var(--color-on-ach-hero-muted);
 }
 
 .ach-hero-next b {
