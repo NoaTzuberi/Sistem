@@ -52,9 +52,7 @@ export function PortionBudgetCard({ budget }: { budget: PortionBudget }) {
         </span>
         <p className="nb-budget-text">
           {hasTarget ? (
-            <bdi>
-              {fill(b.budgetAllocated, { allocated: formatNumber(budget.allocatedKcal, language), target: formatNumber(budget.targetKcal ?? 0, language) })}
-            </bdi>
+            fill(b.budgetAllocated, { amount: isolateLtr(`${formatNumber(budget.allocatedKcal, language)} / ${formatNumber(budget.targetKcal ?? 0, language)}`) })
           ) : (
             b.budgetNoTarget
           )}

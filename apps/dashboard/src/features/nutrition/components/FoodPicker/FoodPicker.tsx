@@ -2,7 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { FoodGroup, FoodItem } from '@sistem/types';
 import { FOOD_GROUPS, searchByText, sharedCopy, useCopy } from '@sistem/shared';
-import { Button } from '../../../../components/common/Button/Button';
+import { Icon } from '../../../../components/common/Icon/Icon';
 import { CategoryChips } from '../CategoryChips/CategoryChips';
 import { matchesCategory } from '../../data/foodFilters';
 import type { CategoryFilter } from '../../data/foodFilters';
@@ -38,6 +38,8 @@ export function FoodPicker({ foods, recentFoodIds, initialGroup, onPick }: FoodP
   const searchRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const listId = useId();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const activeFoods = useMemo(() => foods.filter((food) => !food.archivedAt), [foods]);
   const groups = FOOD_GROUPS.filter((candidate) => activeFoods.some((food) => food.group === candidate));
@@ -89,27 +91,39 @@ export function FoodPicker({ foods, recentFoodIds, initialGroup, onPick }: FoodP
     }
   }
 
+  function close() {
+    setIsOpen(false);
+    triggerRef.current?.focus();
+  }
+
   function handleEscape(event: KeyboardEvent) {
     if (event.key !== 'Escape') return;
     event.preventDefault();
-    setIsOpen(false);
+    close();
   }
 
-  if (!isOpen) {
-    return (
-      <Button size="sm" onClick={open}>
-        {copy.addFood}
-      </Button>
-    );
-  }
+  // A press outside closes it.
+  useEffect(() => {
+    if (!isOpen) return;
+    function handlePointer(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) setIsOpen(false);
+    }
+    document.addEventListener('pointerdown', handlePointer);
+    return () => document.removeEventListener('pointerdown', handlePointer);
+  }, [isOpen]);
 
   return (
+    <div className="food-picker-anchor" ref={rootRef}>
+      <button ref={triggerRef} className="food-picker-trigger" type="button" aria-expanded={isOpen} onClick={() => (isOpen ? setIsOpen(false) : open())}>
+        {copy.builder.addFoodItem}
+      </button>
+      {isOpen && (
     <div className="food-picker" role="dialog" aria-label={copy.pickerTitle} onKeyDown={handleEscape}>
       <div className="food-picker-head">
         <GroupTabs groups={groups} value={group} onChange={(next) => { setGroup(next); setCategory(null); }} label={copy.pickerGroups} />
-        <Button size="sm" onClick={() => setIsOpen(false)} aria-label={copy.pickerClose}>
-          ✕
-        </Button>
+        <button className="food-picker-close" type="button" onClick={close} aria-label={copy.pickerClose}>
+          <Icon name="close" size="sm" />
+        </button>
       </div>
       <CategoryChips group={group} items={inGroup} value={category} onChange={setCategory} />
       <input
@@ -152,6 +166,7 @@ export function FoodPicker({ foods, recentFoodIds, initialGroup, onPick }: FoodP
             onMouseEnter={() => setActive(index)}
             onClick={() => pick(food)}
           >
+            <span className="food-picker-dot" data-group={food.group} aria-hidden="true" />
             <span className="food-picker-name" dir="auto">
               <bdi>{food.name}</bdi>
             </span>
@@ -163,6 +178,8 @@ export function FoodPicker({ foods, recentFoodIds, initialGroup, onPick }: FoodP
         ))}
       </ul>
       <p className="food-picker-hint">{copy.pickerHint}</p>
+    </div>
+      )}
     </div>
   );
 }

@@ -45,7 +45,8 @@ export function MessageTipsSection({ message, onMessageChange, tips, onTipsChang
             rows={5}
             maxLength={MAX_INTRO_LENGTH}
             value={message}
-            onChange={(event) => onMessageChange(event.target.value)}
+            // maxLength stops typing; a paste or a template's text is cut here too.
+            onChange={(event) => onMessageChange(event.target.value.slice(0, MAX_INTRO_LENGTH))}
           />
           <span className="nb-message-count" data-limit={atLimit || undefined} aria-live="polite">
             <bdi>{fill(copy.introCount, { count: formatNumber(message.length, language), max: formatNumber(MAX_INTRO_LENGTH, language) })}</bdi>

@@ -21,7 +21,7 @@ interface PortionStepperProps {
 export function PortionStepper({ label, value, onChange, group, min = 0, max = 10 }: PortionStepperProps) {
   const copy = useCopy(nutritionCopy);
   return (
-    <div className="nb-stepper" role="group" aria-label={label} data-group={group} data-zero={value === 0 || undefined}>
+    <div className="nb-stepper" role="group" aria-label={label} data-group={group} data-variant={group ? 'portion' : 'item'} data-zero={value === 0 || undefined}>
       <span className="nb-stepper-label">{label}</span>
       <button
         type="button"

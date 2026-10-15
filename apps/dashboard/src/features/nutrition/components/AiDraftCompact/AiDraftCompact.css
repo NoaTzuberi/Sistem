@@ -1,0 +1,65 @@
+.nb-ai-compact {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px 12px;
+  padding: 16px;
+  overflow: hidden;
+  border-radius: var(--radius-qv-card);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+}
+
+.nb-ai-compact::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset-block-start: -40px;
+  inset-inline-end: -40px;
+  width: 160px;
+  height: 120px;
+  background-image: radial-gradient(50% 50% at 50% 50%, var(--color-qv-active-cloud), transparent 70%);
+  filter: var(--blur-rating-cloud);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.nb-ai-compact-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-field);
+  background-image: linear-gradient(140deg, var(--color-qv-active-avatar-from), var(--color-primary));
+  color: var(--color-on-primary);
+}
+
+.nb-ai-compact-title {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.nb-ai-compact-line {
+  margin: 2px 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.nb-ai-compact-error {
+  color: var(--color-warning-text);
+}
+
+.nb-ai-compact-actions {
+  display: flex;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 8px;
+}
+
+.nb-ai-compact-actions .nb-text-button {
+  margin-inline-start: 0;
+}

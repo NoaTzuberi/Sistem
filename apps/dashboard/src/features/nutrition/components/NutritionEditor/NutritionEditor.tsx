@@ -1,28 +1,36 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import type { AiNutritionRecommendation, CoachNutritionPlanResponse, NutritionTemplate } from '@sistem/types';
-import { fill, formatDateTime, useCopy, useLanguage } from '@sistem/shared';
+import type { AiNutritionRecommendation, CoachNutritionPlanResponse, NutritionTemplate, PortionCounts } from '@sistem/types';
+import { fill, formatDateTime, formatKcal, PORTION_GROUPS, useCopy, useI18n } from '@sistem/shared';
 import { saveNutritionTemplate } from '../../../../services/coach/coachService';
 import { traineePath } from '../../../../app/config/routes';
-import { Button } from '../../../../components/common/Button/Button';
-import { Badge } from '../../../../components/common/Badge/Badge';
-import { SaveIndicator } from '../../../planBuilder/components/SaveIndicator/SaveIndicator';
-import { useNutritionEditor } from '../../hooks/useNutritionEditor';
 import { useLatestAiDraft } from '../../../aiDraft/hooks/useLatestAiDraft';
-import { NutritionAiDraftCard } from '../../../aiDraft/components/NutritionAiDraftCard/NutritionAiDraftCard';
-import { NutritionAiRationale } from '../../../aiDraft/components/NutritionAiRationale/NutritionAiRationale';
 import { draftMealsFromAi } from '../../../aiDraft/aiDraftToNutrition';
 import { aiDraftCopy } from '../../../aiDraft/copy';
-import { CalculationSummary } from '../CalculationSummary/CalculationSummary';
-import { IntroEditor } from '../IntroEditor/IntroEditor';
-import { MealEditor } from '../MealEditor/MealEditor';
-import { TipsEditor } from '../TipsEditor/TipsEditor';
-import { PreferencesPanel } from '../PreferencesPanel/PreferencesPanel';
-import { IssueList } from '../IssueList/IssueList';
 import { nutritionCopy } from '../../copy';
-import { move, newMeal } from '../../nutritionDraft';
+import { scrollToSection } from '../../data/scrollToSection';
+import { useNutritionCalc } from '../../hooks/useNutritionCalc';
+import { useNutritionEditor } from '../../hooks/useNutritionEditor';
+import { portionsKcal, usePortionBudget } from '../../hooks/usePortionBudget';
+import { usePublishChecklist } from '../../hooks/usePublishChecklist';
 import type { NutritionDraft } from '../../nutritionDraft';
+import { NutritionAiRationale } from '../../../aiDraft/components/NutritionAiRationale/NutritionAiRationale';
+import { useAiDraftBanner } from '../../hooks/useAiDraftBanner';
+import { AiDraftBanner } from '../AiDraftBanner/AiDraftBanner';
+import { AiDraftCompact } from '../AiDraftCompact/AiDraftCompact';
+import { BuilderHeader } from '../BuilderHeader/BuilderHeader';
+import { CalorieTargetSection } from '../CalorieTargetSection/CalorieTargetSection';
+import { IssueList } from '../IssueList/IssueList';
+import { MealsSection } from '../MealsSection/MealsSection';
+import { MessageTipsSection } from '../MessageTipsSection/MessageTipsSection';
+import { PortionBudgetCard } from '../PortionBudgetCard/PortionBudgetCard';
+import { PreferencesCard } from '../PreferencesCard/PreferencesCard';
+import { PublishChecklist } from '../PublishChecklist/PublishChecklist';
+import { SaveTemplateCard } from '../SaveTemplateCard/SaveTemplateCard';
+import { StepNav } from '../StepNav/StepNav';
 import './NutritionEditor.css';
+
+// The server's publish errors the checklist shows as its own items.
+const CHECKLIST_CODES = new Set(['target_missing', 'floor_unconfirmed', 'no_meals']);
 
 interface NutritionEditorProps {
   traineeId: string;
@@ -32,32 +40,48 @@ interface NutritionEditorProps {
 }
 
 /**
- * The nutrition plan builder (PRD §5.6): the calculation summary and target, the coach's
- * message, meals with portions per group,
- * options, tips, templates, the AI draft (13c) and publish. Autosaves; the server computes the kcal and the
- * publish issues, which are shown as of the last save.
+ * The nutrition plan builder (PRD §5.6) in three steps — calorie target, meals, message and tips —
+ * with a live portion budget and "before publish" beside them. Autosaves; the server computes the
+ * calculation, the day's portions and the publish issues.
  */
 export function NutritionEditor({ traineeId, traineeName, initial, templates }: NutritionEditorProps) {
-  const language = useLanguage();
+  const { language, plural } = useI18n();
   const aiDraftText = useCopy(aiDraftCopy);
   const copy = useCopy(nutritionCopy);
+  const b = copy.builder;
   const editor = useNutritionEditor(traineeId, initial);
   const { response, draft, updateDraft, saveStatus, isDirty } = editor;
-  const [templateId, setTemplateId] = useState('');
-  const [templateName, setTemplateName] = useState('');
   const [message, setMessage] = useState<string>();
   const [isPublishing, setIsPublishing] = useState(false);
   const ai = useLatestAiDraft(traineeId, 'nutrition_plan');
+  const { suggestion, requestError } = useNutritionCalc(traineeId, draft.target);
+  const { groupKcal, floorKcal, goalAdjustments } = response.config;
+  const readyDraft = ai.ready;
+  const banner = useAiDraftBanner(traineeId, readyDraft?.id ?? null);
+  // Meals with anything in them: replacing them asks first.
+  const hasMealContent = draft.meals.some((meal) => meal.options.length > 0 || PORTION_GROUPS.some((group) => meal.portions[group] > 0));
 
   const foodsById = useMemo(() => new Map(response.foods.map((food) => [food.id, food])), [response.foods]);
-  const mealKcal = useMemo(
-    () => new Map((response.plan?.kcal.meals ?? []).map((meal) => [meal.mealId, meal.kcal])),
-    [response.plan],
-  );
   const plan = response.plan;
-  const hasErrors = response.issues.some((issue) => issue.severity === 'error');
-  const nothingNew = plan !== null && plan.publishedVersion > 0 && !plan.changedSincePublish;
-  const canPublish = isDirty || (plan !== null && !hasErrors && !nothingNew);
+  const kcal = draft.target.kcal;
+
+  // The day's recommended portions for the target: the live calculation's when the target is its
+  // suggestion, else the server's for the saved target (a typed target is split after the next save).
+  let targetPortions: PortionCounts | null = null;
+  let targetPortionsKcal: number | null = null;
+  if (kcal !== undefined && suggestion?.kcal === kcal && suggestion.portions) {
+    targetPortions = suggestion.portions;
+    targetPortionsKcal = suggestion.portionsKcal;
+  } else if (kcal !== undefined && plan?.calorieTarget.kcal === kcal && plan.targetPortions) {
+    targetPortions = plan.targetPortions;
+    targetPortionsKcal = portionsKcal(plan.targetPortions, groupKcal);
+  }
+  const budget = usePortionBudget(draft.meals, kcal, targetPortions, groupKcal);
+  const checklist = usePublishChecklist(draft, response.issues, budget, floorKcal);
+
+  const isPublished = plan !== null && plan.publishedVersion > 0;
+  const nothingNew = isPublished && !plan.changedSincePublish && !isDirty;
+  const stateOf = (id: string) => checklist.items.find((item) => item.id === id)?.state;
 
   function setTarget(patch: Partial<NutritionDraft['target']>) {
     updateDraft((current) => ({ ...current, target: { ...current.target, ...patch } }));
@@ -71,14 +95,22 @@ export function NutritionEditor({ traineeId, traineeName, initial, templates }: 
   function handleLoadAiDraft(recommendation: AiNutritionRecommendation) {
     const output = recommendation.output;
     if (!output) return;
-    const hasContent = plan !== null || draft.meals.some((meal) => meal.options.length > 0);
-    if (hasContent && !window.confirm(aiDraftText.nutrition.replaceConfirm)) return;
+    if (hasMealContent && !window.confirm(aiDraftText.nutrition.replaceConfirm)) return;
+    banner.rememberBefore(recommendation.id, { meals: draft.meals, aiRecommendationId: draft.aiRecommendationId, target: draft.target });
     updateDraft((current) => ({
       ...current,
       meals: draftMealsFromAi(output),
       aiRecommendationId: recommendation.id,
       target: current.target.kcal === undefined ? { ...current.target, kcal: output.kcal, source: 'suggested' } : current.target,
     }));
+  }
+
+  /** Puts the plan back as it was right before the draft was applied (this visit only). */
+  function handleUndoAiDraft(id: string) {
+    const before = banner.undoFor(id);
+    if (!before) return;
+    updateDraft((current) => ({ ...current, ...before }));
+    banner.clearUndo();
   }
 
   async function handlePublish() {
@@ -89,151 +121,129 @@ export function NutritionEditor({ traineeId, traineeName, initial, templates }: 
     setIsPublishing(false);
   }
 
-  async function handleApplyTemplate() {
-    if (!templateId) return;
-    if (draft.meals.length > 0 && !window.confirm(copy.templateReplaceConfirm)) return;
-    if (await editor.applyTemplate(templateId)) setTemplateId('');
+  async function handleApplyTemplate(templateId: string): Promise<boolean> {
+    if (hasMealContent && !window.confirm(copy.templateReplaceConfirm)) return false;
+    return editor.applyTemplate(templateId);
   }
 
-  async function handleSaveTemplate() {
-    const name = templateName.trim();
-    if (!name) return;
+  async function handleSaveTemplate(name: string): Promise<boolean> {
     setMessage(undefined);
     try {
-      if (!(await editor.save())) return;
+      if (!(await editor.save())) return false;
       const template = await saveNutritionTemplate(traineeId, { name });
-      setTemplateName('');
       setMessage(fill(copy.templateSaved, { name: template.name }));
+      return true;
     } catch (error) {
       setMessage(error instanceof Error ? error.message : copy.templateSaveError);
+      return false;
     }
   }
 
-  return (
-    <div className="nutrition-editor">
-      <Link className="nutrition-back" to={traineePath(traineeId, 'nutrition')}>
-        {copy.backToTrainee}
-      </Link>
+  const steps = [
+    { section: 'target' as const, number: 1, label: b.step1, detail: kcal !== undefined ? formatKcal(kcal, language) : b.noTargetYet, done: stateOf('target') === 'ok' },
+    {
+      section: 'meals' as const,
+      number: 2,
+      label: b.step2,
+      detail: plural(b.mealCount, draft.meals.length),
+      done: stateOf('meals') === 'ok' && stateOf('issues') === 'ok' && stateOf('portions') === 'ok',
+    },
+    {
+      section: 'message' as const,
+      number: 3,
+      label: b.step3,
+      detail: plural(b.tipCount, draft.tips.filter((tip) => tip.text.trim()).length),
+      done: draft.introMessage.trim().length > 0,
+    },
+  ];
 
-      <header className="nutrition-header">
-        <div className="nutrition-heading">
-          <h1 className="nutrition-title">{fill(copy.builderTitle, { name: traineeName })}</h1>
-          <span className="nutrition-status">
-            {plan && plan.publishedVersion > 0 && plan.publishedAt
-              ? fill(copy.statusPublished, { version: plan.publishedVersion, date: formatDateTime(plan.publishedAt, language) })
-              : copy.statusNever}
-          </span>
-          {plan && plan.publishedVersion > 0 && plan.changedSincePublish && <Badge tone="accent">{copy.statusChanged}</Badge>}
-          {draft.aiRecommendationId && <Badge tone="alert">{aiDraftText.nutrition.loadedBadge}</Badge>}
-        </div>
-        <div className="nutrition-actions">
-          <SaveIndicator status={saveStatus} />
-          <Button variant="primary" onClick={handlePublish} disabled={!canPublish || isPublishing}>
-            {plan && plan.publishedVersion > 0 ? copy.publishUpdate : copy.publish}
-          </Button>
-        </div>
-      </header>
+  return (
+    <div className="nb-builder">
+      <BuilderHeader
+        traineeName={traineeName}
+        backTo={traineePath(traineeId, 'nutrition')}
+        status={isPublished && !plan.changedSincePublish && !isDirty ? 'live' : 'draft'}
+        meta={isPublished && plan.publishedAt ? fill(copy.statusPublished, { version: plan.publishedVersion, date: formatDateTime(plan.publishedAt, language) }) : b.neverPublished}
+        saveStatus={saveStatus}
+        onRetry={editor.retry}
+        publishLabel={isPublished ? copy.publishUpdate : copy.publish}
+        blockers={checklist.blockers}
+        publishDisabled={nothingNew || isPublishing}
+        onPublish={handlePublish}
+        onBlockedPublish={() => checklist.firstBlocker && scrollToSection(checklist.firstBlocker.section)}
+      />
+      <StepNav label={b.stepsLabel} steps={steps} onGo={scrollToSection} />
 
       {editor.error && (
-        <div className="nutrition-error" role="alert">
+        <div className="nb-alert" role="alert">
           <p>{editor.error}</p>
           <IssueList issues={editor.saveIssues} />
         </div>
       )}
-      {nothingNew && !isDirty && <p className="nutrition-note">{copy.nothingToPublish}</p>}
+      {nothingNew && <p className="nb-status-line">{copy.nothingToPublish}</p>}
       {message && (
-        <p className="nutrition-note" role="status">
+        <p className="nb-status-line" role="status">
           {message}
         </p>
       )}
 
-      <div className="nutrition-layout">
-        <div className="nutrition-main">
-          <CalculationSummary
-            traineeId={traineeId}
+      <div className="nb-layout">
+        <div className="nb-main">
+          {readyDraft && !banner.isDismissed && (
+            <AiDraftBanner
+              draft={readyDraft}
+              targetKcal={kcal}
+              applied={draft.aiRecommendationId === readyDraft.id}
+              canUndo={banner.undoFor(readyDraft.id) !== null}
+              regenerateDisabled={ai.running || ai.isStarting || ai.unavailableReason !== null}
+              onApply={() => handleLoadAiDraft(readyDraft)}
+              onUndo={() => handleUndoAiDraft(readyDraft.id)}
+              onRegenerate={() => void ai.generate()}
+              onDismiss={banner.dismiss}
+            />
+          )}
+          <CalorieTargetSection
             target={draft.target}
             onChange={setTarget}
-            floorKcal={response.config.floorKcal}
-            dayKcal={plan?.kcal.day ?? null}
-            dayPortions={plan?.dayPortions ?? null}
+            suggestion={suggestion}
+            requestError={requestError}
+            floorKcal={floorKcal}
+            goalAdjustments={goalAdjustments}
+            portions={targetPortions}
+            portionsKcal={targetPortionsKcal}
           />
-
-          <IntroEditor value={draft.introMessage} onChange={(introMessage) => updateDraft((current) => ({ ...current, introMessage }))} />
-
-          <section className="nutrition-templates" aria-label={copy.templateTitle}>
-            <select className="nutrition-select" value={templateId} onChange={(event) => setTemplateId(event.target.value)} aria-label={copy.templatePick}>
-              <option value="">{copy.templatePick}</option>
-              {templates.map((template) => (
-                <option key={template.id} value={template.id}>
-                  <bdi>{template.name}</bdi>
-                </option>
-              ))}
-            </select>
-            <Button size="sm" onClick={handleApplyTemplate} disabled={!templateId}>
-              {copy.templateApply}
-            </Button>
-          </section>
-
-          <section className="nutrition-meals" aria-labelledby="nutrition-meals-title">
-            <h2 className="nutrition-panel-title" id="nutrition-meals-title">
-              {copy.mealsTitle}
-            </h2>
-            {draft.meals.length === 0 && <p className="nutrition-note">{copy.noMeals}</p>}
-            {draft.meals.map((meal, index) => (
-              <MealEditor
-                key={meal.key}
-                meal={meal}
-                index={index}
-                count={draft.meals.length}
-                foods={response.foods}
-                recentFoodIds={response.recentFoodIds}
-                foodsById={foodsById}
-                kcal={meal.id ? mealKcal.get(meal.id) : undefined}
-                issues={response.issues.filter((issue) => issue.mealIndex === index)}
-                onChange={(next) => updateDraft((current) => ({ ...current, meals: current.meals.map((m, i) => (i === index ? next : m)) }))}
-                onRemove={() => updateDraft((current) => ({ ...current, meals: current.meals.filter((_, i) => i !== index) }))}
-                onMove={(offset) => updateDraft((current) => ({ ...current, meals: move(current.meals, index, offset) }))}
-              />
-            ))}
-            <Button size="sm" onClick={() => updateDraft((current) => ({ ...current, meals: [...current.meals, newMeal(`Meal ${current.meals.length + 1}`)] }))}>
-              {copy.addMeal}
-            </Button>
-          </section>
-
-          <TipsEditor tips={draft.tips} onChange={(tips) => updateDraft((current) => ({ ...current, tips }))} />
+          <MealsSection
+            meals={draft.meals}
+            onMealsChange={(update) => updateDraft((current) => ({ ...current, meals: update(current.meals) }))}
+            groupKcal={groupKcal}
+            foods={response.foods}
+            recentFoodIds={response.recentFoodIds}
+            foodsById={foodsById}
+            issues={response.issues}
+            templates={templates}
+            onApplyTemplate={handleApplyTemplate}
+          />
+          <MessageTipsSection
+            message={draft.introMessage}
+            onMessageChange={(introMessage) => updateDraft((current) => ({ ...current, introMessage }))}
+            tips={draft.tips}
+            onTipsChange={(tips) => updateDraft((current) => ({ ...current, tips }))}
+          />
         </div>
 
-        <aside className="nutrition-side">
-          <NutritionAiDraftCard ai={ai} onLoad={handleLoadAiDraft} loadedId={draft.aiRecommendationId} />
+        <aside className="nb-side">
+          <PortionBudgetCard budget={budget} />
+          <PublishChecklist
+            items={checklist.items}
+            issues={response.issues.filter((issue) => issue.mealIndex === undefined && !CHECKLIST_CODES.has(issue.code))}
+            onGo={scrollToSection}
+          />
+          {(!readyDraft || banner.isDismissed || ai.running) && <AiDraftCompact ai={ai} hiddenDraft={readyDraft !== null && banner.isDismissed} onShow={banner.show} />}
           {draft.aiRecommendationId && (
             <NutritionAiRationale traineeId={traineeId} recommendationId={draft.aiRecommendationId} recommendation={ai.latest} />
           )}
-          <PreferencesPanel preferences={response.preferences} />
-
-          <section aria-labelledby="nutrition-issues-title">
-            <h2 className="nutrition-panel-title" id="nutrition-issues-title">
-              {copy.issuesTitle}
-            </h2>
-            {plan && response.issues.length === 0 ? (
-              <p className="nutrition-note">{copy.noIssues}</p>
-            ) : (
-              <IssueList issues={response.issues.filter((issue) => issue.mealIndex === undefined || issue.severity === 'error')} />
-            )}
-          </section>
-
-          <section className="nutrition-save-template" aria-label={copy.saveAsTemplate}>
-            <input
-              className="nutrition-input"
-              dir="auto"
-              value={templateName}
-              placeholder={copy.templateName}
-              aria-label={copy.templateName}
-              onChange={(event) => setTemplateName(event.target.value)}
-            />
-            <Button size="sm" onClick={handleSaveTemplate} disabled={!templateName.trim() || draft.meals.length === 0}>
-              {copy.saveAsTemplate}
-            </Button>
-          </section>
+          <PreferencesCard preferences={response.preferences} />
+          <SaveTemplateCard disabled={draft.meals.length === 0} onSave={handleSaveTemplate} />
         </aside>
       </div>
     </div>

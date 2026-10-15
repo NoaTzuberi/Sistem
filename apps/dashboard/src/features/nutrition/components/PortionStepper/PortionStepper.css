@@ -4,10 +4,11 @@
   --nb-pill-soft: var(--color-fill-soft);
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  min-height: 40px;
+  gap: 4px;
+  /* A meal's portion pill: 44px, roomy on the label side, 6px on the button side. */
+  height: 44px;
   padding-block: 0;
-  padding-inline: 12px 4px;
+  padding-inline: 14px 6px;
   border-radius: var(--radius-round);
   background-color: var(--nb-pill-soft);
   transition: box-shadow var(--transition-fast) ease;
@@ -33,6 +34,13 @@
   --nb-pill-soft: var(--color-portion-snack-soft);
 }
 
+/* A food item's portions: 40px with 4px all round, its "portions" label inside. */
+.nb-stepper[data-variant='item'] {
+  height: 40px;
+  padding: 4px;
+  padding-inline-start: 12px;
+}
+
 /* Nothing of this group in the meal: outlined and quiet. */
 .nb-stepper[data-zero] {
   --nb-pill: var(--color-text-faint);
@@ -41,7 +49,7 @@
 }
 
 .nb-stepper-label {
-  margin-inline-end: 6px;
+  margin-inline-end: 4px;
   font-size: var(--text-xs);
   font-weight: var(--font-weight-semibold);
   color: var(--nb-pill);
@@ -60,6 +68,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: none;
   width: 32px;
   height: 32px;
   border-radius: var(--radius-round);

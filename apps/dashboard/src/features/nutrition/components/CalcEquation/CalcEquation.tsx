@@ -3,9 +3,9 @@ import { fill, formatNumber, isolateLtr, sharedCopy, useCopy, useI18n } from '@s
 import { nutritionCopy } from '../../copy';
 import './CalcEquation.css';
 
-/** '+250', '−1,200' — the sign stays in front of the number in Hebrew text too. */
-function signed(value: number, language: Language): string {
-  return isolateLtr(`${value > 0 ? '+' : value < 0 ? '−' : ''}${formatNumber(Math.abs(value), language)}`);
+/** '+250', '−1,200', '−10%' — the sign (and a % after it) stay with the number in Hebrew text too. */
+function signed(value: number, language: Language, suffix = ''): string {
+  return isolateLtr(`${value > 0 ? '+' : value < 0 ? '−' : ''}${formatNumber(Math.abs(value), language)}${suffix}`);
 }
 
 interface CalcEquationProps {
@@ -49,7 +49,7 @@ export function CalcEquation({ suggestion, floorKcal }: CalcEquationProps) {
         <div className="nb-eq-term nb-eq-outline">
           <span className="nb-eq-label">{delta < 0 ? copy.deficit : copy.surplus}</span>
           <b className="nb-eq-value">
-            {signed(suggestion.deltaPct ?? 0, language)}% <small className="nb-eq-small">{signed(delta, language)}</small>
+            {signed(suggestion.deltaPct ?? 0, language, '%')} <small className="nb-eq-small">{signed(delta, language)}</small>
           </b>
         </div>
         <span className="nb-eq-op" aria-hidden="true">=</span>
@@ -69,7 +69,7 @@ export function CalcEquation({ suggestion, floorKcal }: CalcEquationProps) {
         </li>
         <li>
           {copy.method}{' '}
-          <b>{suggestion.method === 'timeline' ? copy.methodTimeline : fill(copy.methodPercent, { pct: signed(suggestion.inputs.adjustmentPct, language) })}</b>
+          <b>{suggestion.method === 'timeline' ? copy.methodTimeline : fill(copy.builder.methodGoal, { pct: signed(suggestion.inputs.adjustmentPct, language, '%') })}</b>
         </li>
       </ul>
 

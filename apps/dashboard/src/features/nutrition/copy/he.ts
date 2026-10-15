@@ -235,6 +235,8 @@ export const he = {
     years: 'שנים',
     weeksUnit: 'שבועות',
     activityShort: 'פעילות',
+    // {pct} carries its own % sign (kept with the number in RTL).
+    methodGoal: 'מטרה {pct}',
     goalLabel: 'מטרה',
     dailyTarget: 'יעד יומי',
     lessKcal: 'פחות 50 קק״ל', // PLACEHOLDER (screen readers)
@@ -256,7 +258,7 @@ export const he = {
     tipPlaceholder: 'טיפ חדש…', // PLACEHOLDER
     tipAdd: 'הוספה',
     budgetTitle: 'חלוקת המנות', // PLACEHOLDER
-    budgetAllocated: '{allocated} / {target} קק״ל חולקו לארוחות',
+    budgetAllocated: '{amount} קק״ל חולקו לארוחות',
     budgetNoTarget: 'קבעי יעד קלורי כדי לראות כמה מנות לחלק.', // PLACEHOLDER
     budgetMissing: 'חסרות {list}',
     budgetOver: 'עודף של {list}', // PLACEHOLDER
@@ -270,6 +272,37 @@ export const he = {
     checkIssues: 'הארוחות תקינות', // PLACEHOLDER
     checkMessage: 'הודעה אליה',
     noPreferences: 'היא לא ענתה על שאלות התזונה',
+    // Builder fixes (round 3): template menu, the option's food items, the AI banner.
+    templateButton: 'התחלה מתבנית',
+    templateNote: 'הארוחות הנוכחיות יוחלפו',
+    templateEmpty: 'אין עדיין תבניות.', // PLACEHOLDER
+    // After the option's own name (an editable field): "אפשרות א׳ · מה היא אוכלת".
+    optionFoods: '· מה היא אוכלת',
+    itemCount: plural({ one: 'פריט אחד', two: '2 פריטים', other: '{count} פריטים' }),
+    vegetablesTag: 'ירקות',
+    vegetablesLine: 'ירקות חתוכים · חופשי',
+    addFoodItem: '+ פריט מזון',
+    aiReady: 'טיוטת AI מוכנה',
+    aiDismiss: 'הסתרת הטיוטה', // PLACEHOLDER (screen readers)
+    aiKcalDiff: '{diff} מהיעד',
+    readMore: 'קריאה מלאה',
+    readLess: 'פחות',
+    checkManually: 'לבדוק ידנית, לא נבדק בקוד:',
+    aiApply: 'החלה על התוכנית',
+    aiApplied: 'טיוטת ה-AI הוחלה על התוכנית',
+    aiUndo: 'ביטול ההחלה',
+  },
+  // Portion tracking card on the trainee's Nutrition tab (round 3).
+  tracking: {
+    subtitle: 'מה היא סימנה מול התוכנית, יום אחרי יום', // PLACEHOLDER
+    previousWeek: 'השבוע הקודם',
+    nextWeek: 'השבוע הבא',
+    today: 'היום',
+    weekRing: '{group}: {eaten} מתוך {planned} השבוע', // screen readers
+    photos: plural({ one: 'תמונה אחת', two: '2 תמונות', other: '{count} תמונות' }),
+    perDay: '{group} · {count} ביום',
+    openDay: 'פרטי היום', // PLACEHOLDER (screen readers)
+    dayMeals: 'הארוחות של היום', // PLACEHOLDER
   },
   tab: {
     // The trainee's Nutrition tab (design round: Body / Achievements / Nutrition). Wording from the design brief.
