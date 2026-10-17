@@ -1,0 +1,390 @@
+.publish-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background-color: var(--color-modal-scrim);
+  -webkit-backdrop-filter: var(--blur-modal-scrim);
+  backdrop-filter: var(--blur-modal-scrim);
+  animation: publish-fade var(--transition-modal-in) var(--ease-press) both;
+}
+
+/* Glass card with a soft pink / lilac / peach cloud at the top. */
+.publish-card {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: min(420px, 100%);
+  max-height: calc(100dvh - 32px);
+  padding: 32px 24px 22px;
+  overflow: hidden auto;
+  border-radius: 34px;
+  background-color: var(--surface-modal);
+  box-shadow: var(--shadow-float);
+  text-align: center;
+  animation: publish-in var(--transition-modal-in) var(--ease-drawer) both;
+}
+
+.publish-card::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -60px -40px auto;
+  height: 220px;
+  background-image:
+    radial-gradient(35% 50% at 30% 50%, var(--color-qv-waiting-cloud), transparent 70%),
+    radial-gradient(35% 50% at 55% 40%, var(--color-qv-active-cloud), transparent 70%),
+    radial-gradient(35% 50% at 78% 55%, var(--color-qv-waiting-cloud-warm), transparent 70%);
+  filter: var(--blur-qv-cloud);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+@keyframes publish-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes publish-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+}
+
+.publish-avatar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+  margin-bottom: 6px;
+  border-radius: var(--radius-round);
+  background-image: linear-gradient(140deg, var(--color-qv-waiting-avatar-from), var(--color-qv-waiting-avatar-to));
+  box-shadow: 0 0 0 4px var(--color-card), 0 12px 28px color-mix(in srgb, var(--color-primary) 25%, transparent);
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-medium);
+  color: var(--on-pink);
+}
+
+.publish-avatar-badge {
+  position: absolute;
+  inset-block-end: -2px;
+  inset-inline-end: -4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-round);
+  background-color: var(--solid-pink);
+  box-shadow: 0 0 0 3px var(--color-card);
+  color: var(--on-pink);
+}
+
+.publish-title {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.publish-text {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.publish-summary {
+  width: 100%;
+  margin-top: 6px;
+  padding: 14px;
+  border-radius: var(--radius-qv-tile);
+  background-color: var(--color-fill-soft);
+  text-align: start;
+}
+
+.publish-summary-title {
+  margin: 0 0 10px;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.publish-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.publish-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-card);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+/* A workout: its tint, its readable color for the text (never white on the tint). */
+.publish-chip-workout {
+  background-color: var(--workout-color-soft);
+  color: var(--workout-solid);
+}
+
+.publish-chip-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-round);
+  background-color: var(--workout-color);
+}
+
+.publish-error {
+  width: 100%;
+  margin: 4px 0 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-field);
+  background-color: var(--color-warning-soft);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-warning-text);
+}
+
+.publish-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.publish-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-primary);
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--on-pink);
+  transition:
+    transform var(--transition-press) var(--ease-press),
+    background-color var(--transition-fast) ease;
+}
+
+/* Publishing: pink-soft with Cherry Rose text and a spinner — not a faded white. */
+.publish-primary[data-busy] {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary-deep);
+  cursor: progress;
+}
+
+.publish-primary:not([data-busy]):active {
+  transform: scale(0.97);
+}
+
+.publish-secondary {
+  min-height: 44px;
+  border-radius: var(--radius-round);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  transition:
+    transform var(--transition-press) var(--ease-press),
+    background-color var(--transition-fast) ease;
+}
+
+.publish-secondary:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+.publish-secondary:disabled {
+  opacity: var(--opacity-disabled);
+}
+
+.publish-primary:focus-visible,
+.publish-secondary:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary-deep);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.publish-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid color-mix(in srgb, var(--color-primary-deep) 25%, transparent);
+  border-top-color: var(--color-primary-deep);
+  border-radius: var(--radius-round);
+  animation: publish-spin 700ms linear infinite;
+}
+
+@keyframes publish-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- The celebration ------------------------------------------------------------------ */
+.publish-success {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 96px;
+  margin-bottom: 8px;
+}
+
+.publish-success-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-round);
+  background-color: var(--color-primary);
+  opacity: 0;
+  animation: publish-ring 900ms 120ms var(--ease-press) both;
+}
+
+.publish-success-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-primary);
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--color-primary) 35%, transparent);
+  animation: publish-pop 520ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.publish-success-check {
+  width: 48px;
+  height: 48px;
+  fill: none;
+  stroke: var(--on-pink);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.publish-success-check path {
+  stroke-dasharray: 1;
+  animation: publish-draw 420ms 260ms var(--ease-press) both;
+}
+
+@keyframes publish-pop {
+  from {
+    transform: scale(0.4);
+  }
+}
+
+@keyframes publish-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+@keyframes publish-ring {
+  from {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+}
+
+/* One burst: each piece flies up and out, then falls (gravity) — once. */
+.publish-confetti {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  pointer-events: none;
+}
+
+.publish-confetti-piece {
+  --piece-color: var(--color-confetti-1);
+  position: absolute;
+  width: 7px;
+  height: 11px;
+  border-radius: 2px;
+  background-color: var(--piece-color);
+  opacity: 0;
+  animation: publish-confetti var(--piece-duration) var(--piece-delay) cubic-bezier(0.2, 0.6, 0.4, 1) both;
+}
+
+.publish-confetti-piece[data-tone='2'] { --piece-color: var(--color-confetti-2); }
+.publish-confetti-piece[data-tone='3'] { --piece-color: var(--color-confetti-3); }
+.publish-confetti-piece[data-tone='4'] { --piece-color: var(--color-confetti-4); }
+
+@keyframes publish-confetti {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+  }
+
+  30% {
+    opacity: 1;
+    transform: translate(calc(var(--piece-x) * 0.7), calc(var(--piece-rise) * -1)) rotate(calc(var(--piece-turn) * 0.4));
+    animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.6);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(var(--piece-x), 260px) rotate(var(--piece-turn));
+  }
+}
+
+.publish-pill {
+  padding: 3px 12px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-primary-soft);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-deep);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .publish-primary:not([data-busy]):hover {
+    background-color: var(--color-primary-hover);
+  }
+
+  .publish-secondary:not(:disabled):hover {
+    background-color: var(--color-fill-soft);
+    color: var(--color-text);
+  }
+}
+
+/* Reduced motion: no confetti, no pop or draw — the check is simply there. */
+@media (prefers-reduced-motion: reduce) {
+  .publish-scrim,
+  .publish-card,
+  .publish-success-circle,
+  .publish-success-check path,
+  .publish-success-ring {
+    animation: none;
+  }
+
+  .publish-confetti {
+    display: none;
+  }
+
+  .publish-primary,
+  .publish-secondary {
+    transition: none;
+  }
+}

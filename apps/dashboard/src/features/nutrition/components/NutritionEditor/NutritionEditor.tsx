@@ -1,7 +1,12 @@
 import { useMemo, useState } from 'react';
 import type { AiNutritionRecommendation, CoachNutritionPlanResponse, NutritionTemplate, PortionCounts } from '@sistem/types';
-import { fill, formatDateTime, formatKcal, PORTION_GROUPS, useCopy, useI18n } from '@sistem/shared';
+import { describePortion, fill, formatDateTime, formatKcal, formatPlural, PORTION_GROUPS, useCopy, useI18n } from '@sistem/shared';
+import { PublishModal } from '../../../../components/common/PublishModal/PublishModal';
+import type { PublishSummary } from '../../../../components/common/PublishModal/PublishModal';
+import { appCopy } from '../../../../copy';
+import { usePublishFlow } from '../../../../hooks/usePublishFlow';
 import { saveNutritionTemplate } from '../../../../services/coach/coachService';
+import { useNavigate } from 'react-router-dom';
 import { traineePath } from '../../../../app/config/routes';
 import { useLatestAiDraft } from '../../../aiDraft/hooks/useLatestAiDraft';
 import { draftMealsFromAi } from '../../../aiDraft/aiDraftToNutrition';
@@ -10,6 +15,7 @@ import { nutritionCopy } from '../../copy';
 import { scrollToSection } from '../../data/scrollToSection';
 import { useNutritionCalc } from '../../hooks/useNutritionCalc';
 import { useNutritionEditor } from '../../hooks/useNutritionEditor';
+import { useTemplateHandoff } from '../../hooks/useTemplateHandoff';
 import { portionsKcal, usePortionBudget } from '../../hooks/usePortionBudget';
 import { usePublishChecklist } from '../../hooks/usePublishChecklist';
 import type { NutritionDraft } from '../../nutritionDraft';
@@ -52,7 +58,11 @@ export function NutritionEditor({ traineeId, traineeName, initial, templates }: 
   const editor = useNutritionEditor(traineeId, initial);
   const { response, draft, updateDraft, saveStatus, isDirty } = editor;
   const [message, setMessage] = useState<string>();
-  const [isPublishing, setIsPublishing] = useState(false);
+  const navigate = useNavigate();
+  const appText = useCopy(appCopy);
+  // Publishing goes through the designed modal (confirm → the existing publish call → celebration).
+  const publishFlow = usePublishFlow(editor.publish);
+  const isPublishing = publishFlow.step === 'publishing';
   const ai = useLatestAiDraft(traineeId, 'nutrition_plan');
   const { suggestion, requestError } = useNutritionCalc(traineeId, draft.target);
   const { groupKcal, floorKcal, goalAdjustments } = response.config;
@@ -77,6 +87,16 @@ export function NutritionEditor({ traineeId, traineeName, initial, templates }: 
     targetPortionsKcal = portionsKcal(plan.targetPortions, groupKcal);
   }
   const budget = usePortionBudget(draft.meals, kcal, targetPortions, groupKcal);
+  const publishSummary: PublishSummary = {
+    kind: 'nutrition',
+    title: kcal !== undefined ? fill(appText.publish.nutritionTitle, { kcal: formatKcal(kcal, language) }) : b.title,
+    chips: [
+      { id: 'meals', label: formatPlural(language, appText.publish.meals, draft.meals.length) },
+      ...(['protein', 'carb', 'fat'] as const)
+        .filter((group) => budget.allocated[group] > 0)
+        .map((group) => ({ id: group, label: describePortion(group, budget.allocated[group], language) })),
+    ],
+  };
   const checklist = usePublishChecklist(draft, response.issues, budget, floorKcal);
 
   const isPublished = plan !== null && plan.publishedVersion > 0;
@@ -113,18 +133,17 @@ export function NutritionEditor({ traineeId, traineeName, initial, templates }: 
     banner.clearUndo();
   }
 
-  async function handlePublish() {
-    if (!window.confirm(fill(copy.publishConfirm, { name: traineeName }))) return;
-    setIsPublishing(true);
+  function handlePublish() {
     setMessage(undefined);
-    await editor.publish();
-    setIsPublishing(false);
+    publishFlow.open();
   }
 
   async function handleApplyTemplate(templateId: string): Promise<boolean> {
     if (hasMealContent && !window.confirm(copy.templateReplaceConfirm)) return false;
     return editor.applyTemplate(templateId);
   }
+
+  useTemplateHandoff(handleApplyTemplate);
 
   async function handleSaveTemplate(name: string): Promise<boolean> {
     setMessage(undefined);
@@ -246,6 +265,15 @@ export function NutritionEditor({ traineeId, traineeName, initial, templates }: 
           <SaveTemplateCard disabled={draft.meals.length === 0} onSave={handleSaveTemplate} />
         </aside>
       </div>
+      <PublishModal
+        flow={publishFlow}
+        traineeName={traineeName}
+        summary={publishSummary}
+        onOpenProfile={() => {
+          publishFlow.close();
+          navigate(traineePath(traineeId, 'nutrition'));
+        }}
+      />
     </div>
   );
 }

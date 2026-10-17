@@ -5,7 +5,11 @@ import { DUPLICATE_WEEK_STATE, traineePath } from '../../../../app/config/routes
 import type { ActionMenuItem } from '../../../../components/common/ActionMenu/ActionMenu';
 import { Toast } from '../../../../components/common/Toast/Toast';
 import { useToast } from '../../../../hooks/useToast';
-import { fill, findWorkoutType, useCopy, useLanguage } from '@sistem/shared';
+import { fill, findWorkoutType, formatPlural, formatWeekSpan, sharedCopy, splitLabel, useCopy, useLanguage } from '@sistem/shared';
+import { PublishModal } from '../../../../components/common/PublishModal/PublishModal';
+import type { PublishSummary } from '../../../../components/common/PublishModal/PublishModal';
+import { appCopy } from '../../../../copy';
+import { usePublishFlow } from '../../../../hooks/usePublishFlow';
 import { usePlanEditor } from '../../hooks/usePlanEditor';
 import { workoutColorClass } from '../../data/workoutColors';
 import { workoutTabId } from '../../data/workoutTabs';
@@ -67,6 +71,20 @@ export function PlanEditor({ traineeId, traineeName, currentWeekStart, initialPl
   const selectedIndex = selected ? workouts.indexOf(selected) : -1;
   const planIssues = issues.filter((issue) => issue.workoutIndex === undefined);
   const plansTab = traineePath(traineeId, 'plans');
+  const sharedText = useCopy(sharedCopy);
+  const appText = useCopy(appCopy);
+  // Publishing goes through the designed modal (confirm → the existing publish call → celebration).
+  const publishFlow = usePublishFlow(() => runAction(publish));
+  const exerciseCount = workouts.reduce((total, workout) => total + workout.exercises.length, 0);
+  const publishSummary: PublishSummary = {
+    kind: 'plan',
+    title: [plan.splitId ? splitLabel(plan.splitId, language) : null, formatWeekSpan(plan.weekStartDate, language)].filter(Boolean).join(' · '),
+    chips: [
+      { id: 'workouts', label: formatPlural(language, appText.publish.workouts, workouts.length) },
+      { id: 'exercises', label: formatPlural(language, sharedText.coach.exerciseCount, exerciseCount) },
+    ],
+    workouts: workouts.map((workout, index) => ({ id: workout.key, name: workout.title, colorClass: workoutColorClass(index) })),
+  };
   // Only one workout is on screen, so the tabs mark the ones the server found a problem in.
   const issueKeys = useMemo(
     () => new Set(issues.flatMap((issue) => (issue.workoutIndex !== undefined && workouts[issue.workoutIndex] ? [workouts[issue.workoutIndex].key] : []))),
@@ -199,9 +217,8 @@ export function PlanEditor({ traineeId, traineeName, currentWeekStart, initialPl
     }
   }
 
-  async function handlePublish() {
-    if (!window.confirm(fill(copy.publishConfirm, { name: traineeName }))) return;
-    if (await runAction(publish)) showToast(fill(copy.toastPublished, { name: traineeName }));
+  function handlePublish() {
+    publishFlow.open();
   }
 
   function handleUnpublish() {
@@ -345,6 +362,15 @@ export function PlanEditor({ traineeId, traineeName, currentWeekStart, initialPl
         onUseSplitOnly={handleUseSplitOnly}
       />
       <Toast message={toastMessage} />
+      <PublishModal
+        flow={publishFlow}
+        traineeName={traineeName}
+        summary={publishSummary}
+        onOpenProfile={() => {
+          publishFlow.close();
+          navigate(plansTab);
+        }}
+      />
     </div>
   );
 }
