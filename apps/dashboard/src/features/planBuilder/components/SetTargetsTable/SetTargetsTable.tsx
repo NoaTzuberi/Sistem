@@ -2,6 +2,7 @@ import { fill, sharedCopy, useCopy } from '@sistem/shared';
 import type { SetType } from '@sistem/types';
 import { PillButton } from '../../../../components/common/PillButton/PillButton';
 import { NumberField } from '../../../../components/common/NumberField/NumberField';
+import { Select } from '../../../../components/common/Select/Select';
 import { SET_TYPE_IDS } from '../../data/planDefaults';
 import { newKey, newSetTarget } from '../../planDraft';
 import type { DraftSetTarget } from '../../types';
@@ -52,7 +53,7 @@ export function SetTargetsTable({ targets, onChange }: SetTargetsTableProps) {
               <tr key={target.key}>
                 <td className="set-targets-number">{index + 1}</td>
                 <td>
-                  <select
+                  <Select
                     className="set-targets-type"
                     aria-label={fill(copy.setTypeAria, { set: setLabel })}
                     value={target.type}
@@ -63,7 +64,7 @@ export function SetTargetsTable({ targets, onChange }: SetTargetsTableProps) {
                         {shared.plan.setTypes[option]}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </td>
                 <td>
                   <NumberField hideLabel label={fill(copy.setRepsAria, { set: setLabel })} min={1} value={target.reps} onChange={(reps) => update(target.key, { reps })} />

@@ -67,33 +67,12 @@
   gap: 6px 12px;
 }
 
-.library-level {
+/* The switch at the filter row's text size and ink. */
+.switch.library-check {
   min-height: 34px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: var(--radius-round);
   font-size: var(--text-sm);
+  font-weight: var(--font-weight-regular);
   color: var(--color-text);
-  background-color: var(--color-fill-soft);
-}
-
-.library-level:focus {
-  outline: none;
-  box-shadow: var(--ring-field);
-}
-
-.library-check {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 34px;
-  cursor: pointer;
-}
-
-.library-check input {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--color-primary);
 }
 
 /* "Show all exercises" / "back to the slot's exercises": a text link, tall enough to press. */

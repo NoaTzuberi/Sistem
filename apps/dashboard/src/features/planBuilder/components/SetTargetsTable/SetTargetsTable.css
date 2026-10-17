@@ -33,20 +33,21 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* The shared NumberField and the type select, in the builder's soft rounded look. */
-.set-targets-type,
+/* The shared NumberField and the type select, in the table's tighter size. */
 .set-targets .number-field-input {
   min-height: 36px;
   padding: 0 8px;
-  border: 0;
   border-radius: var(--radius-tooltip);
-  background-color: var(--color-fill-soft);
 }
 
-.set-targets-type:focus,
-.set-targets .number-field-input:focus {
-  outline: none;
-  box-shadow: var(--ring-field);
+.set-targets-type .select-input {
+  min-height: 36px;
+  padding-inline: 8px 26px;
+  border-radius: var(--radius-tooltip);
+}
+
+.set-targets-type .select-chevron {
+  inset-inline-end: 6px;
 }
 
 .set-targets-actions {

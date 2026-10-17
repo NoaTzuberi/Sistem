@@ -35,11 +35,6 @@
   color: var(--color-text);
 }
 
-/* The switch sits in the row as is (VegToggle pushes itself to the end inside a meal card). */
-.food-toolbar-archive .nb-veg {
-  margin-inline-start: 0;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .food-toolbar-search {
     transition: none;

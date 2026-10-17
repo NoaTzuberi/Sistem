@@ -3,6 +3,7 @@ import type { KeyboardEvent } from 'react';
 import type { AiSplitOption, AiTrainingRecommendation, TrainingConfig } from '@sistem/types';
 import { describeSplit, fill, formatDateTime, sharedCopy, splitLabel, useCopy, useLanguage } from '@sistem/shared';
 import { PillButton } from '../../../../components/common/PillButton/PillButton';
+import { Select } from '../../../../components/common/Select/Select';
 import { SideSheet } from '../../../../components/common/SideSheet/SideSheet';
 import { aiDraftCopy } from '../../copy';
 import type { useLatestAiDraft } from '../../hooks/useLatestAiDraft';
@@ -99,7 +100,7 @@ export function AiDraftSheet({ isOpen, onClose, traineeId, ai, config, linkedRec
           {!unavailableReason && !running && latest?.status === 'ready' && (
             <label className="ai-sheet-regenerate">
               <span>{copy.training.regenerateFor}</span>
-              <select className="ai-sheet-select" value={regenerateFor} onChange={(event) => setRegenerateFor(event.target.value)}>
+              <Select className="ai-sheet-select" value={regenerateFor} onChange={(event) => setRegenerateFor(event.target.value)}>
                 <option value="">{copy.training.aiChooses}</option>
                 {config?.splits
                   .filter((split) => split.enabled)
@@ -109,7 +110,7 @@ export function AiDraftSheet({ isOpen, onClose, traineeId, ai, config, linkedRec
                       {outsideDays(split.id) ? ` (${copy.training.outsideDays})` : ''}
                     </option>
                   ))}
-              </select>
+              </Select>
             </label>
           )}
           <div className="ai-sheet-secondary">

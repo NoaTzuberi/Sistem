@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ExerciseFamilyDetail, ExerciseFamilySummary, PatternId } from '@sistem/types';
 import { fill, formatDateShort, patternLabel, useCopy, useLanguage, variantLabel } from '@sistem/shared';
+import { Icon } from '../../../../components/common/Icon/Icon';
 import { PillButton } from '../../../../components/common/PillButton/PillButton';
 import { searchExerciseFamilies } from '../../../../services/coach/coachService';
 import { PATTERN_FILTERS } from '../../../planBuilder/data/exerciseFilters';
@@ -101,24 +102,31 @@ export function FamilyTools({ family, review }: FamilyToolsProps) {
         <fieldset className="family-tools-group">
           <legend className="family-tools-label">{copy.members}</legend>
           <ul className="family-tools-list">
-            {family.members.map((member) => (
-              <li key={member.exerciseId}>
-                <label className="family-tools-member">
-                  <input
-                    type="checkbox"
-                    checked={selected.includes(member.exerciseId)}
-                    onChange={(event) =>
-                      setSelected((current) => (event.target.checked ? [...current, member.exerciseId] : current.filter((id) => id !== member.exerciseId)))
+            {family.members.map((member) => {
+              const isSelected = selected.includes(member.exerciseId);
+              return (
+                <li key={member.exerciseId}>
+                  {/* A toggle row: pressed = picked for "split off". */}
+                  <button
+                    className="family-tools-member"
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() =>
+                      setSelected((current) => (isSelected ? current.filter((id) => id !== member.exerciseId) : [...current, member.exerciseId]))
                     }
-                  />
-                  <bdi className="family-tools-member-name">{member.name}</bdi>
-                  <span className="family-tools-muted">
-                    {variantLabel(member.variant, language)}
-                    {member.isPrimary ? ` · ${copy.primary}` : ` · ${copy.copyTag}`}
-                  </span>
-                </label>
-              </li>
-            ))}
+                  >
+                    <span className="family-tools-member-mark" aria-hidden="true">
+                      {isSelected && <Icon name="check" size="sm" />}
+                    </span>
+                    <bdi className="family-tools-member-name">{member.name}</bdi>
+                    <span className="family-tools-muted">
+                      {variantLabel(member.variant, language)}
+                      {member.isPrimary ? ` · ${copy.primary}` : ` · ${copy.copyTag}`}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
           <PillButton variant="fill" size="sm" disabled={review.isBusy || selected.length === 0 || selected.length === family.members.length} onClick={handleSplit}>
             {copy.splitOff}

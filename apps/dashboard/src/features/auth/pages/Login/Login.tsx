@@ -7,6 +7,7 @@ import { ROUTES } from '../../../../app/config/routes';
 import { FlowBackground } from '../../../../components/common/FlowBackground/FlowBackground';
 import { Logo } from '../../../../components/common/Logo/Logo';
 import { LanguageToggle } from '../../../../components/common/LanguageToggle/LanguageToggle';
+import { Switch } from '../../../../components/common/Switch/Switch';
 import { useCopy } from '@sistem/shared';
 import { appCopy } from '../../../../copy';
 import { LoginField } from '../../components/LoginField/LoginField';
@@ -27,6 +28,8 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Shown only behind REMEMBER_ME_ENABLED; the auth doesn't read it yet.
+  const [rememberMe, setRememberMe] = useState(false);
 
   if (user?.role === 'coach') {
     return <Navigate to={ROUTES.HOME} replace />;
@@ -135,10 +138,7 @@ export function Login() {
 
             {REMEMBER_ME_ENABLED && (
               // TODO: not wired — the auth has no remember-me yet (data/authConfig.ts).
-              <label className="login-remember">
-                <input type="checkbox" className="login-remember-box" />
-                <span>{copy.login.rememberMe}</span>
-              </label>
+              <Switch className="login-remember" label={copy.login.rememberMe} checked={rememberMe} onChange={setRememberMe} />
             )}
 
             {error && (

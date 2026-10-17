@@ -1,5 +1,6 @@
 import type { CalculationOverrides, CalorieSuggestionInputs, FormulaSex } from '@sistem/types';
 import { fill, formatDateShort, sharedCopy, useCopy, useLanguage } from '@sistem/shared';
+import { Select } from '../../../../components/common/Select/Select';
 import { nutritionCopy } from '../../copy';
 import './HerDataFields.css';
 
@@ -81,11 +82,17 @@ export function HerDataFields({ inputs, overrides, formulaSex, onOverride, onFor
           {inputs?.sex === 'male' || inputs?.sex === 'female' ? (
             <b className="nb-field-value">{shared.onboardingOptions.gender[inputs.sex]}</b>
           ) : (
-            <select className="nb-field-input nb-field-select" aria-label={copy.formula} value={formulaSex ?? ''} onChange={(event) => onFormulaSex((event.target.value || null) as FormulaSex | null)}>
+            <Select
+              variant="bare"
+              className="nb-field-select"
+              aria-label={copy.formula}
+              value={formulaSex ?? ''}
+              onChange={(event) => onFormulaSex((event.target.value || null) as FormulaSex | null)}
+            >
               <option value="">{copy.formulaPick}</option>
               <option value="female">{shared.onboardingOptions.gender.female}</option>
               <option value="male">{shared.onboardingOptions.gender.male}</option>
-            </select>
+            </Select>
           )}
         </div>
         <div className="nb-field nb-field-wide" data-overridden={overridden.has('activityFactor') || undefined}>
@@ -93,8 +100,9 @@ export function HerDataFields({ inputs, overrides, formulaSex, onOverride, onFor
             {copy.activity}
             {overridden.has('activityFactor') && <span aria-hidden="true"> •</span>}
           </label>
-          <select
-            className="nb-field-input nb-field-select"
+          <Select
+            variant="bare"
+            className="nb-field-select"
             id="nb-field-activity"
             value={overrides.activityFactor ?? ''}
             onChange={(event) => onOverride('activityFactor', event.target.value === '' ? undefined : Number(event.target.value))}
@@ -105,7 +113,7 @@ export function HerDataFields({ inputs, overrides, formulaSex, onOverride, onFor
                 {copy.activityLevels[level]}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
         {field('targetWeightKg', b.targetWeight, b.kg, 0.5, true)}
         {field('timelineWeeks', b.timeline, b.weeksUnit, 1, true)}

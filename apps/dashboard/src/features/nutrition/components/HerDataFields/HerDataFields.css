@@ -101,10 +101,8 @@
   -webkit-appearance: none;
 }
 
-.nb-field-select {
-  padding-inline-end: 0;
-  font-size: var(--text-sm);
-  cursor: pointer;
+.nb-field-select .select-input {
+  font-weight: var(--font-weight-semibold);
 }
 
 .nb-field-value {

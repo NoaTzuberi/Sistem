@@ -185,7 +185,6 @@
 /* On a white card the fields are the soft ones. */
 .exercise-editor .exercise-field-box,
 .exercise-editor .exercise-notes-input,
-.exercise-editor .exercise-superset-select,
 .exercise-editor .exercise-mode {
   background-color: var(--color-fill-soft);
 }
@@ -240,29 +239,16 @@
   color: var(--color-text-muted);
 }
 
-.exercise-superset-select {
+.exercise-superset-select .select-input {
   min-height: 34px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: var(--radius-round);
-  font-size: var(--text-sm);
-  color: var(--color-text);
 }
 
-.exercise-interval {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
+/* The switch at the row's text size and ink. */
+.switch.exercise-interval {
   min-height: 34px;
+  font-size: inherit;
   font-weight: var(--font-weight-medium);
-  cursor: pointer;
-}
-
-.exercise-interval input {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--workout-color);
+  color: var(--color-text);
 }
 
 .exercise-interval-hint {
@@ -288,7 +274,7 @@
 }
 
 .exercise-notes-input:focus,
-.exercise-superset-select:focus {
+.exercise-superset-select .select-input:focus-visible {
   outline: none;
   box-shadow: 0 0 0 1.5px var(--workout-color);
 }

@@ -166,19 +166,6 @@
 
 .ai-sheet-select {
   flex: 1;
-  min-width: 0;
-  min-height: 34px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: var(--radius-round);
-  font-size: var(--text-sm);
-  color: var(--color-text);
-  background-color: var(--color-fill-soft);
-}
-
-.ai-sheet-select:focus {
-  outline: none;
-  box-shadow: var(--ring-field);
 }
 
 .ai-sheet-secondary {

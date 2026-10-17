@@ -1,7 +1,7 @@
 import { useCopy } from '@sistem/shared';
 import { Icon } from '../../../../components/common/Icon/Icon';
 import { PillButton } from '../../../../components/common/PillButton/PillButton';
-import { VegToggle } from '../../../nutrition/components/VegToggle/VegToggle';
+import { Switch } from '../../../../components/common/Switch/Switch';
 import { nutritionLibraryCopy } from '../../copy';
 import './FoodToolbar.css';
 
@@ -31,7 +31,7 @@ export function FoodToolbar({ query, onQueryChange, showArchived, onShowArchived
         />
       </label>
       <span className="food-toolbar-archive">
-        <VegToggle label={copy.showArchived} checked={showArchived} onChange={onShowArchivedChange} />
+        <Switch label={copy.showArchived} checked={showArchived} onChange={onShowArchivedChange} />
       </span>
       <PillButton variant="primary" onClick={onAdd}>
         <Icon name="plus" size="sm" />

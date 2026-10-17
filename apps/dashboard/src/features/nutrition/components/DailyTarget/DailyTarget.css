@@ -178,11 +178,10 @@
   margin: 0 0 6px;
 }
 
-.nb-target-confirm {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: var(--font-weight-semibold);
+/* The switch takes the alert's own ink and size. */
+.switch.nb-target-confirm {
+  font-size: inherit;
+  color: inherit;
 }
 
 .nb-target-step:focus-visible,

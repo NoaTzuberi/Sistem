@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Icon } from '../../../../components/common/Icon/Icon';
+import { Select } from '../../../../components/common/Select/Select';
+import { Switch } from '../../../../components/common/Switch/Switch';
 import { PillButton } from '../../../../components/common/PillButton/PillButton';
 import { fill, humanizeId, isolateLtr, useCopy, useLanguage, variantLabel } from '@sistem/shared';
 import type { ExerciseFacts } from '@sistem/types';
@@ -200,7 +202,7 @@ export function ExerciseRow({
 
             <label className="exercise-superset">
               <span className="exercise-option-label">{copy.superset}</span>
-              <select
+              <Select
                 className="exercise-superset-select"
                 value={exercise.supersetGroup}
                 onChange={(event) => onChange({ ...exercise, supersetGroup: event.target.value })}
@@ -215,19 +217,25 @@ export function ExerciseRow({
                 {exercise.supersetGroup && !(SUPERSET_LABELS as readonly string[]).includes(exercise.supersetGroup) && (
                   <option value={exercise.supersetGroup}>{exercise.supersetGroup}</option>
                 )}
-              </select>
+              </Select>
             </label>
 
             {/* Shown for timed exercises (and to switch off a flag that no longer fits). */}
             {(isTimedExercise(exercise) || exercise.interval) && (
-              <label className="exercise-interval">
-                <input type="checkbox" checked={exercise.interval} onChange={(event) => onIntervalChange(event.target.checked)} />
-                <span>{copy.interval}</span>
-                <span className="exercise-interval-hint">
-                  {exercise.supersetGroup ? fill(copy.wholeSuperset, { group: exercise.supersetGroup }) : ''}
-                  {copy.intervalHint}
-                </span>
-              </label>
+              <Switch
+                className="exercise-interval"
+                checked={exercise.interval}
+                onChange={onIntervalChange}
+                label={
+                  <>
+                    <span>{copy.interval}</span>{' '}
+                    <span className="exercise-interval-hint">
+                      {exercise.supersetGroup ? fill(copy.wholeSuperset, { group: exercise.supersetGroup }) : ''}
+                      {copy.intervalHint}
+                    </span>
+                  </>
+                }
+              />
             )}
 
             <div className="exercise-options-end">

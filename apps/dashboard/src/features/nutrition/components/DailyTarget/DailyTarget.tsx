@@ -1,6 +1,7 @@
 import type { CalorieSuggestion, PortionCounts } from '@sistem/types';
 import { fill, formatKcal, formatNumber, formatPortionCount, isolateLtr, sharedCopy, useCopy, useLanguage } from '@sistem/shared';
 import { Icon } from '../../../../components/common/Icon/Icon';
+import { Switch } from '../../../../components/common/Switch/Switch';
 import { nutritionCopy } from '../../copy';
 import type { NutritionDraft } from '../../nutritionDraft';
 import './DailyTarget.css';
@@ -92,10 +93,12 @@ export function DailyTarget({ target, suggestion, floorKcal, portions, portionsK
         {belowFloor && (
           <div className="nb-target-floor" role="alert">
             <p>{fill(copy.belowFloor, { floor: formatNumber(floorKcal, language) })}</p>
-            <label className="nb-target-confirm">
-              <input type="checkbox" checked={target.confirmBelowFloor} onChange={(event) => onChange({ confirmBelowFloor: event.target.checked })} />
-              {copy.confirmBelowFloor}
-            </label>
+            <Switch
+              className="nb-target-confirm"
+              label={copy.confirmBelowFloor}
+              checked={target.confirmBelowFloor}
+              onChange={(confirmBelowFloor) => onChange({ confirmBelowFloor })}
+            />
           </div>
         )}
       </div>

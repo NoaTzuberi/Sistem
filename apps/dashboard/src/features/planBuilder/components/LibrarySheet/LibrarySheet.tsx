@@ -3,7 +3,9 @@ import type { ExerciseFacts, ExerciseFamilySummary, TrainingSlot } from '@sistem
 import { fill, formatPlural, humanizeId, patternLabel, sharedCopy, slotLabel, useCopy, useLanguage, variantLabel } from '@sistem/shared';
 import { Icon } from '../../../../components/common/Icon/Icon';
 import { PillButton } from '../../../../components/common/PillButton/PillButton';
+import { Select } from '../../../../components/common/Select/Select';
 import { SideSheet } from '../../../../components/common/SideSheet/SideSheet';
+import { Switch } from '../../../../components/common/Switch/Switch';
 import { DIFFICULTY_FILTERS, PATTERN_FILTERS } from '../../data/exerciseFilters';
 import { defaultVariant, variantFacts } from '../../data/familyFacts';
 import { useExerciseLibrary } from '../../hooks/useExerciseLibrary';
@@ -109,7 +111,7 @@ function LibraryList({ traineeId, targetSlot, onAdd }: Pick<LibrarySheetProps, '
       )}
 
       <div className="library-filters">
-        <select
+        <Select
           className="library-level"
           aria-label={copy.level}
           value={library.difficulty}
@@ -121,11 +123,8 @@ function LibraryList({ traineeId, targetSlot, onAdd }: Pick<LibrarySheetProps, '
               {shared.training.levels[option]}
             </option>
           ))}
-        </select>
-        <label className="library-check">
-          <input type="checkbox" checked={library.equipmentOnly} onChange={(event) => library.setEquipmentOnly(event.target.checked)} />
-          <span>{copy.pickerEquipmentOnly}</span>
-        </label>
+        </Select>
+        <Switch className="library-check" label={copy.pickerEquipmentOnly} checked={library.equipmentOnly} onChange={library.setEquipmentOnly} />
         {targetSlot && (
           <button className="library-link" type="button" onClick={toggleShowAll}>
             {library.showAll ? copy.pickerBackToSlot : copy.pickerShowAll}
