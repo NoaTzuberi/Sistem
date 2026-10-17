@@ -1,0 +1,351 @@
+<title>Sistem Trainee Home</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,700;1,700;1,800&family=Rubik:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: "training OS". White screen, ink type, one hot-pink stage with a live 3D kettlebell (the brand mark). Scoreboard numerals in condensed italic, hairline rules instead of cards, slide-to-start. Light-only by design. */
+:root {
+  --bg: #FFFFFF; --ink: #141116; --ink2: #2A2530; --muted: #7A7380; --faint: #B7B0BC; --rule: #ECE9EE; --soft: #F5F3F6;
+  --pink: #FF006E; --pink2: #FF4E9A; --cherry: #A50047; --blush: #FFE3EF;
+  --w1: #FF006E; --w2: #7C4DFF; --w3: #FF7A00; --w4: #0094FF;
+  --num: 'Barlow Condensed', 'Rubik', sans-serif; --font: 'Rubik', 'Heebo', system-ui, sans-serif;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1); --spring: cubic-bezier(.34,1.42,.64,1);
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; font-family: var(--font); color: var(--ink); direction: rtl; background: #E9E6EA; padding-block: 24px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+button { font: inherit; color: inherit; cursor: pointer; }
+.n { font-family: var(--num); font-variant-numeric: tabular-nums; letter-spacing: 0; }
+.stage { display: flex; justify-content: center; }
+.phone { position: relative; width: 390px; max-width: 100%; height: 844px; border-radius: 54px; overflow: hidden; background: var(--bg); box-shadow: 0 0 0 10px #141116, 0 0 0 11px #3a3540, 0 40px 90px rgba(20,17,22,0.3); }
+.island { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 120px; height: 34px; border-radius: 20px; background: #000; z-index: 40; }
+.views { position: absolute; inset: 0; perspective: 1200px; }
+.view { position: absolute; inset: 0; overflow-y: auto; scrollbar-width: none; padding-bottom: 120px; background: var(--bg); }
+.view::-webkit-scrollbar { display: none; }
+
+/* stage */
+.top { position: relative; background: var(--pink); color: #fff; border-radius: 0 0 40px 40px; padding: 58px 20px 22px; overflow: hidden; isolation: isolate; }
+.top::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0.16;
+  background: repeating-linear-gradient(90deg, #fff 0 1px, transparent 1px 44px), linear-gradient(#fff 1px, transparent 1px) 0 100% / 100% 44px; -webkit-mask-image: linear-gradient(to bottom, transparent 20%, #000 90%); mask-image: linear-gradient(to bottom, transparent 20%, #000 90%); }
+.bar { display: flex; align-items: center; justify-content: space-between; }
+.me { display: flex; align-items: center; gap: 10px; }
+.av { width: 40px; height: 40px; border-radius: 50%; background: #fff; color: var(--pink); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+.me b { display: block; font-size: 15px; font-weight: 600; } .me small { font-size: 12px; opacity: 0.85; }
+.bell { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(255,255,255,0.18); color: #fff; display: flex; align-items: center; justify-content: center; transition: transform 140ms var(--ease-out); }
+.bell i { position: absolute; top: 8px; inset-inline-end: 9px; width: 8px; height: 8px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 2px var(--pink); }
+.bell:active { transform: scale(0.94); }
+.kb { position: relative; height: 250px; margin: 4px -20px 0; touch-action: pan-y; cursor: grab; }
+.kb canvas { display: block; width: 100% !important; height: 100% !important; }
+.kb .fb { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.kb .fb span { width: 150px; height: 150px; border-radius: 50%; background: radial-gradient(60% 60% at 35% 30%, #fff, #FF8FC0 40%, #C4005A); box-shadow: 0 30px 40px rgba(80,0,40,0.35); }
+.hint { position: absolute; bottom: 6px; inset-inline-start: 20px; font-size: 11px; font-weight: 600; opacity: 0.75; display: flex; gap: 6px; align-items: center; }
+.today { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: -6px; }
+.today small { display: block; font-size: 12px; font-weight: 600; opacity: 0.85; margin-bottom: 2px; }
+.today h1 { margin: 0; font-family: var(--num); font-style: italic; font-weight: 800; font-size: 64px; line-height: 0.86; letter-spacing: -0.5px; text-transform: uppercase; direction: ltr; text-align: right; }
+.facts { display: flex; gap: 0; margin-top: 16px; border-top: 1px solid rgba(255,255,255,0.3); }
+.facts div { flex: 1; padding-top: 10px; } .facts div + div { border-inline-start: 1px solid rgba(255,255,255,0.3); padding-inline-start: 12px; }
+.facts b { display: block; font-family: var(--num); font-weight: 700; font-size: 30px; line-height: 1; }
+.facts span { font-size: 11px; opacity: 0.85; }
+.slide { position: relative; margin-top: 18px; height: 62px; border-radius: 31px; background: rgba(20,17,22,0.22); overflow: hidden; user-select: none; touch-action: none; }
+.slide .lbl { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; letter-spacing: 0.2px; pointer-events: none; }
+.slide .lbl em { font-style: normal; opacity: 0.6; margin-inline-start: 8px; animation: nudge 1.6s ease-in-out infinite; display: inline-block; }
+@keyframes nudge { 50% { transform: translateX(-5px); opacity: 1; } }
+.slide .fill { position: absolute; inset-block: 0; right: 0; width: calc(var(--x, 0px) + 62px); background: #fff; border-radius: 31px; opacity: 0.18; }
+.knob { position: absolute; top: 5px; right: 5px; width: 52px; height: 52px; border-radius: 50%; border: 0; background: #fff; color: var(--pink); display: flex; align-items: center; justify-content: center; transform: translateX(calc(var(--x, 0px) * -1)); box-shadow: 0 6px 16px rgba(80,0,40,0.3); cursor: grab; }
+.slide.snap .knob, .slide.snap .fill { transition: transform 380ms var(--spring), width 380ms var(--spring); }
+.slide.done { background: #fff; } .slide.done .lbl { color: var(--pink); } .slide.done .knob { background: var(--pink); color: #fff; }
+
+/* body */
+.sec { padding: 22px 20px 0; }
+.sh { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+.sh h2 { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.4px; color: var(--muted); }
+.sh button { border: 0; background: none; padding: 0; font-size: 13px; font-weight: 600; color: var(--pink); }
+.photo { display: flex; align-items: center; gap: 12px; margin: 16px 20px 0; padding: 12px 14px; border-radius: 18px; background: var(--soft); }
+.photo .pi { width: 36px; height: 36px; border-radius: 12px; background: var(--ink); color: #fff; display: flex; align-items: center; justify-content: center; flex: none; }
+.photo div { flex: 1; min-width: 0; } .photo b { display: block; font-size: 13px; font-weight: 600; } .photo span { font-size: 12px; color: var(--muted); }
+.photo .go { height: 32px; padding: 0 12px; border: 0; border-radius: 16px; background: #fff; font-size: 12px; font-weight: 700; box-shadow: 0 0 0 1px var(--rule); }
+.photo .x { width: 28px; height: 28px; border: 0; border-radius: 50%; background: none; color: var(--faint); display: flex; align-items: center; justify-content: center; }
+
+/* week track */
+.track { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.lane { border: 0; background: none; padding: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.lane small { font-size: 11px; font-weight: 600; color: var(--muted); }
+.col { position: relative; width: 100%; height: 92px; border-radius: 14px; background: var(--soft); overflow: hidden; display: flex; align-items: flex-end; justify-content: center; transition: transform 200ms var(--ease-out); }
+.col::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(to top, transparent 0 17px, rgba(20,17,22,0.05) 17px 18px); pointer-events: none; }
+.col u { position: absolute; inset-inline: 0; bottom: 0; height: 100%; background: var(--c); }
+.col b { position: relative; z-index: 1; font-family: var(--num); font-weight: 700; font-size: 22px; padding-bottom: 6px; color: var(--ink); }
+.lane.done .col b { color: #fff; }
+.lane.done .col u { height: 100%; }
+.lane.plan .col { background: #fff; box-shadow: inset 0 0 0 2px var(--c); }
+.lane.plan .col u, .lane.rest .col u { height: 0; }
+.lane.rest .col { background: transparent; box-shadow: inset 0 0 0 1px var(--rule); }
+.lane.rest .col b { color: var(--faint); }
+.lane.today .col { background: var(--ink); box-shadow: none; }
+.lane.today .col b { color: #fff; }
+.lane.today .col::before { content: ''; position: absolute; top: 8px; left: 50%; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: var(--pink); box-shadow: 0 0 0 4px rgba(255,0,110,0.3); animation: pulse 1.8s ease-in-out infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 7px rgba(255,0,110,0); } }
+.lane[aria-pressed="true"] small { color: var(--ink); }
+.lane[aria-pressed="true"] .col { transform: translateY(-4px); }
+.dline { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 12px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.dline i { width: 10px; height: 10px; border-radius: 3px; background: var(--c); flex: none; }
+.dline b { font-family: var(--num); font-style: italic; font-weight: 700; font-size: 22px; text-transform: uppercase; direction: ltr; }
+.dline span { margin-inline-start: auto; font-size: 12px; color: var(--muted); }
+
+/* scoreboard */
+.score { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.score div { padding: 4px 0; } .score div + div { border-inline-start: 1px solid var(--rule); padding-inline-start: 14px; }
+.score b { display: block; text-align: right; font-family: var(--num); font-weight: 700; font-size: 44px; line-height: 0.95; }
+.score b sup { font-size: 18px; color: var(--pink); vertical-align: top; margin-inline-start: 2px; }
+.score span { font-size: 12px; color: var(--muted); }
+
+/* coach */
+.coach { display: flex; gap: 12px; align-items: flex-start; }
+.cav { width: 42px; height: 42px; border-radius: 50%; background: var(--ink); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex: none; position: relative; }
+.cav::after { content: ''; position: absolute; bottom: 0; inset-inline-end: 0; width: 11px; height: 11px; border-radius: 50%; background: var(--pink); box-shadow: 0 0 0 2px #fff; }
+.cm { flex: 1; min-width: 0; }
+.cm-h { display: flex; gap: 6px; align-items: baseline; font-size: 13px; } .cm-h b { font-weight: 600; } .cm-h time { margin-inline-start: auto; font-size: 11px; color: var(--faint); }
+.cm p { margin: 4px 0 0; font-size: 15px; line-height: 1.5; }
+.chip-row { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.chip { height: 36px; padding: 0 14px; border: 0; border-radius: 18px; background: var(--soft); font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: background-color 150ms ease, transform 140ms var(--ease-out); }
+.chip.pk { background: var(--blush); color: var(--cherry); }
+.chip:active { transform: scale(0.96); }
+
+/* next achievement */
+.ach-h { display: flex; align-items: baseline; gap: 8px; }
+.ach-h b { font-family: var(--num); font-style: italic; font-weight: 800; font-size: 34px; text-transform: uppercase; line-height: 1; }
+.ach-h span { margin-inline-start: auto; font-family: var(--num); font-weight: 700; font-size: 22px; color: var(--pink); }
+.ticks { display: grid; grid-template-columns: repeat(25, minmax(0, 1fr)); gap: 3px; margin-top: 10px; direction: rtl; }
+.ticks i { height: 26px; border-radius: 3px; background: var(--soft); transform-origin: bottom; }
+.ticks i.on { background: var(--ink); }
+.ticks i.nx { background: var(--pink); animation: tick 1.4s ease-in-out infinite; }
+@keyframes tick { 50% { opacity: 0.35; } }
+.ach-s { margin-top: 8px; font-size: 12px; color: var(--muted); }
+.others { display: flex; gap: 8px; margin-top: 14px; overflow-x: auto; scrollbar-width: none; margin-inline: -20px; padding-inline: 20px; }
+.others::-webkit-scrollbar { display: none; }
+.ob { flex: none; display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px 0 6px; border: 0; border-radius: 20px; background: var(--soft); font-size: 12px; font-weight: 600; }
+[dir="rtl"] .ob { padding: 0 6px 0 14px; }
+.ob i { width: 28px; height: 28px; border-radius: 50%; background: conic-gradient(var(--c) calc(var(--p) * 1%), #E2DEE5 0); display: flex; align-items: center; justify-content: center; }
+.ob i::after { content: ''; width: 20px; height: 20px; border-radius: 50%; background: var(--soft); }
+
+/* fuel */
+.fuel { display: flex; flex-direction: column; gap: 10px; }
+.fr { display: grid; grid-template-columns: 60px minmax(0, 1fr) 40px; gap: 10px; align-items: center; font-size: 13px; font-weight: 500; }
+.segs { display: flex; gap: 4px; } .segs i { flex: 1; height: 12px; border-radius: 4px; background: var(--soft); } .segs i.on { background: var(--c); }
+.fr b { font-family: var(--num); font-weight: 700; font-size: 18px; text-align: left; }
+.timer { display: flex; align-items: center; gap: 12px; width: calc(100% - 40px); margin: 22px 20px 0; height: 60px; padding: 0 16px; border: 0; border-radius: 20px; background: var(--ink); color: #fff; text-align: start; transition: transform 160ms var(--ease-out); }
+.timer b { flex: 1; font-size: 15px; font-weight: 600; } .timer span { font-family: var(--num); font-weight: 700; font-size: 24px; color: #FF8FC0; }
+.timer:active { transform: scale(0.98); }
+
+/* other views */
+.vh { padding: 64px 20px 0; } .vh small { font-size: 12px; font-weight: 600; color: var(--muted); }
+.vh h1 { margin: 2px 0 0; font-family: var(--num); font-style: italic; font-weight: 800; font-size: 56px; line-height: 0.9; text-transform: uppercase; }
+.vh .he { font-family: var(--font); font-style: normal; font-weight: 700; font-size: 34px; letter-spacing: -1px; }
+.ghost { margin: 20px; display: flex; flex-direction: column; gap: 10px; } .ghost i { height: 70px; border-radius: 18px; background: var(--soft); } .ghost i:first-child { height: 160px; background: var(--c); opacity: 0.12; }
+.ghost p { margin: 6px 0 0; font-size: 13px; color: var(--muted); text-align: center; }
+
+/* transitions */
+.view.in-f { animation: v-in-f 440ms cubic-bezier(.32,.72,0,1) both; } .view.in-b { animation: v-in-b 440ms cubic-bezier(.32,.72,0,1) both; }
+.view.out-f { animation: v-out-f 300ms cubic-bezier(.4,0,1,1) both; } .view.out-b { animation: v-out-b 300ms cubic-bezier(.4,0,1,1) both; }
+@keyframes v-in-f { from { transform: translateX(-30%) rotateY(-16deg) scale(0.92); opacity: 0; } }
+@keyframes v-in-b { from { transform: translateX(30%) rotateY(16deg) scale(0.92); opacity: 0; } }
+@keyframes v-out-f { to { transform: translateX(24%) rotateY(12deg) scale(0.88); opacity: 0; filter: brightness(0.92); } }
+@keyframes v-out-b { to { transform: translateX(-24%) rotateY(-12deg) scale(0.88); opacity: 0; filter: brightness(0.92); } }
+
+/* nav: ink dock, active tab expands */
+.dock { position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 30; display: flex; gap: 4px; padding: 6px; border-radius: 34px; background: var(--ink); box-shadow: 0 16px 36px rgba(20,17,22,0.35), inset 0 1px 0 rgba(255,255,255,0.08); }
+.dk { position: relative; height: 54px; min-width: 54px; padding: 0 16px; border: 0; border-radius: 27px; background: transparent; color: rgba(255,255,255,0.55); display: flex; align-items: center; justify-content: center; gap: 0; overflow: hidden;
+  transition: background-color 280ms var(--ease-out), color 200ms ease, padding 420ms var(--spring), gap 420ms var(--spring); }
+.dk .l { max-width: 0; opacity: 0; white-space: nowrap; font-size: 13px; font-weight: 700; transition: max-width 420ms var(--spring), opacity 200ms ease; }
+.dk svg { flex: none; transition: transform 420ms var(--spring); }
+.dk[aria-current="page"] { background: var(--pink); color: #fff; padding: 0 18px; gap: 8px; box-shadow: 0 6px 16px rgba(255,0,110,0.45); }
+.dk[aria-current="page"] .l { max-width: 80px; opacity: 1; }
+.dk[aria-current="page"] svg { transform: rotate(-8deg) scale(1.08); }
+.dk:active svg { transform: scale(0.86); }
+.hi { position: absolute; bottom: 7px; left: 50%; transform: translateX(-50%); width: 130px; height: 5px; border-radius: 3px; background: var(--ink); z-index: 31; opacity: 0.85; }
+.note { text-align: center; color: var(--muted); font-size: 12px; margin-top: 16px; }
+
+@media (hover: hover) and (pointer: fine) {
+  .dk:not([aria-current="page"]):hover { color: #fff; background: rgba(255,255,255,0.08); }
+  .lane:not([aria-pressed="true"]):hover .col { transform: translateY(-2px); }
+  .chip:hover { background: #ECE8EE; } .chip.pk:hover { background: #FFD3E5; }
+  .bell:hover { background: rgba(255,255,255,0.28); } .ob:hover { background: #ECE8EE; } .timer:hover { background: var(--ink2); }
+}
+@media (max-width: 440px) {
+  body { padding: 0; } .phone { width: 100%; height: 100dvh; border-radius: 0; box-shadow: none; } .island, .hi, .note { display: none; }
+  .top { padding-top: max(20px, env(safe-area-inset-top, 0px)); } .vh { padding-top: max(24px, env(safe-area-inset-top, 0px)); }
+  .dock { bottom: max(14px, env(safe-area-inset-bottom, 0px)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .view.in-f, .view.in-b, .view.out-f, .view.out-b { animation: fade 160ms ease both; } @keyframes fade { from { opacity: 0; } }
+  .slide .lbl em, .ticks i.nx, .lane.today .col::before { animation: none; }
+  .dk, .dk .l, .dk svg { transition-duration: 1ms; }
+}
+:focus-visible { outline: 2px solid var(--pink); outline-offset: 2px; }
+</style>
+
+<div class="stage"><div class="phone">
+  <div class="island" aria-hidden="true"></div>
+  <div class="views" id="views">
+    <main class="view" data-v="0">
+      <section class="top">
+        <div class="bar"><div class="me"><span class="av">מכ</span><div><b>בוקר טוב, מאיה</b><small>יום ה׳ · 15 באוקטובר</small></div></div>
+          <button class="bell" type="button" aria-label="התראות, 2 חדשות"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><i></i></button></div>
+        <div class="kb" id="kb" aria-hidden="true"><div class="fb" id="fb"><span></span></div><span class="hint"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg>גררי לסובב</span></div>
+        <div class="today"><div><small>האימון של היום · שבוע 6</small><h1>Full Body C</h1></div></div>
+        <div class="facts"><div><b class="n">05</b><span>תרגילים</span></div><div><b class="n">45′</b><span>דקות בערך</span></div><div><b class="n">3/4</b><span>השבוע</span></div></div>
+        <div class="slide" id="slide"><span class="fill"></span><span class="lbl" id="slbl">החליקי להתחלת אימון<em>←</em></span><button class="knob" type="button" id="knob" aria-label="התחלת אימון"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></button></div>
+      </section>
+
+      <div class="photo" id="photo"><span class="pi"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="3"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/></svg></span><div><b>תמונת התחלה</b><span>כדי לראות את השינוי שלך</span></div><button class="go" type="button">צילום</button><button class="x" type="button" aria-label="לא עכשיו" id="px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+
+      <section class="sec"><div class="sh"><h2>השבוע · 11–17 באוק׳</h2><button type="button">התוכנית</button></div>
+        <div class="track" id="track" role="tablist" aria-label="ימי השבוע"></div><div id="dline"></div></section>
+
+      <section class="sec"><div class="score">
+        <div><b class="n" dir="ltr">03<sup>/4</sup></b><span>אימונים השבוע</span></div>
+        <div><b class="n">3</b><span>שבועות ברצף</span></div>
+        <div><b class="n" dir="ltr">18.4<sup>T</sup></b><span>נפח כולל</span></div></div></section>
+
+      <button class="timer" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg><b>טיימר אינטרוולים</b><span class="n">00:40</span></button>
+
+      <section class="sec"><div class="sh"><h2>מהמאמנת</h2></div>
+        <div class="coach"><span class="cav">שק</span><div class="cm"><div class="cm-h"><b>שקד</b><time>לפני שעה</time></div>
+          <p>כל הכבוד על השבוע! העליתי קצת משקל בסקוואט. אם הברך מציקה, תורידי ותכתבי לי.</p>
+          <div class="chip-row"><button class="chip pk" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18"/></svg>שבוע 7 מוכן</button><button class="chip" type="button">👍 תודה!</button><button class="chip" type="button">תשובה</button></div></div></div></section>
+
+      <section class="sec"><div class="sh"><h2>ההישג הבא</h2><button type="button">כל ההישגים</button></div>
+        <div class="ach-h"><b class="n" dir="ltr">25 Workouts</b><span class="n" dir="ltr">21/25</span></div>
+        <div class="ticks" id="ticks"></div><div class="ach-s">עוד 4 אימונים. האימון של היום מקרב אותך לאחד.</div>
+        <div class="others"><button class="ob" type="button" style="--c:var(--w3);--p:75"><i></i>רצף 4 שבועות · 3/4</button><button class="ob" type="button" style="--c:var(--w2);--p:75"><i></i>שבוע מושלם · 3/4</button><button class="ob" type="button" style="--c:var(--w4);--p:37"><i></i>נפח 50 טון</button></div></section>
+
+      <section class="sec"><div class="sh"><h2>תזונה היום</h2><button type="button">סימון ארוחה</button></div>
+        <div class="fuel" id="fuel"></div></section>
+    </main>
+    <main class="view" data-v="1" hidden><div class="vh"><small>שבוע 6 · 4 אימונים</small><h1 class="he">אימונים</h1></div><div class="ghost" style="--c:var(--w2)"><i></i><i></i><i></i><p>המסך הזה בסבב הבא. כאן רואים את המעבר בין הדפים.</p></div></main>
+    <main class="view" data-v="2" hidden><div class="vh"><small>1,850 קק״ל ליום</small><h1 class="he">תזונה</h1></div><div class="ghost" style="--c:var(--w3)"><i></i><i></i><i></i><p>המסך הזה בסבב הבא. כאן רואים את המעבר בין הדפים.</p></div></main>
+    <main class="view" data-v="3" hidden><div class="vh"><small>מאיה כהן</small><h1 class="he">פרופיל</h1></div><div class="ghost" style="--c:var(--w4)"><i></i><i></i><i></i><p>המסך הזה בסבב הבא. כאן רואים את המעבר בין הדפים.</p></div></main>
+  </div>
+  <nav class="dock" id="dock" aria-label="ניווט">
+    <button class="dk" type="button" data-t="0" aria-current="page"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 4l9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span class="l">בית</span></button>
+    <button class="dk" type="button" data-t="1"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7v10M3 9v6M18 7v10M21 9v6M6 12h12"/></svg><span class="l">אימונים</span></button>
+    <button class="dk" type="button" data-t="2"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v8a3 3 0 0 0 6 0V3M10 3v18M17 3c-2 2-2 6 0 8v10"/></svg><span class="l">תזונה</span></button>
+    <button class="dk" type="button" data-t="3"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span class="l">פרופיל</span></button>
+  </nav>
+  <span class="hi" aria-hidden="true"></span>
+</div></div>
+<p class="note">אב-טיפוס · כיוון B · נתונים לדוגמה</p>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  var RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var W = [['Full Body A', 'var(--w1)', 'done'], ['Full Body B', 'var(--w2)', 'done'], ['Full Body C', 'var(--w3)', 'today'], ['Full Body D', 'var(--w4)', 'plan']];
+  var D = [['א׳', 11, 0], ['ב׳', 12, -1], ['ג׳', 13, 1], ['ד׳', 14, -1], ['ה׳', 15, 2], ['ו׳', 16, -1], ['ש׳', 17, 3]], sel = 4;
+  function week() {
+    document.getElementById('track').innerHTML = D.map(function (d, i) { var w = d[2] >= 0 ? W[d[2]] : null, st = !w ? 'rest' : w[2];
+      return '<button class="lane ' + st + '" type="button" role="tab" data-d="' + i + '" aria-pressed="' + (i === sel) + '" style="--c:' + (w ? w[1] : 'transparent') + '"><small>' + d[0] + '</small><span class="col"><u></u><b>' + d[1] + '</b></span></button>'; }).join('');
+    var w = D[sel][2] >= 0 ? W[D[sel][2]] : null;
+    document.getElementById('dline').innerHTML = '<div class="dline" style="--c:' + (w ? w[1] : 'var(--faint)') + '"><i></i>' + (w ? '<b>' + w[0] + '</b><span>' + (w[2] === 'done' ? '✓ בוצע' : w[2] === 'today' ? 'היום · 5 תרגילים' : 'מתוכנן · 4 תרגילים') + '</span>' : '<span style="margin:0;font-size:14px;color:var(--ink)">יום מנוחה · התאוששות</span>') + '</div>';
+  }
+  document.getElementById('track').addEventListener('click', function (e) { var b = e.target.closest('[data-d]'); if (b) { sel = +b.dataset.d; week(); } });
+  week();
+  var t = ''; for (var i = 0; i < 25; i++) t += '<i class="' + (i < 21 ? 'on' : i === 21 ? 'nx' : '') + '"></i>'; document.getElementById('ticks').innerHTML = t;
+  document.getElementById('fuel').innerHTML = [['חלבון', 'var(--w1)', 2, 4], ['פחמימה', 'var(--w2)', 1, 3], ['שומן', 'var(--w3)', 2, 3], ['נשנוש', 'var(--w4)', 0, 1]].map(function (f) { var s = ''; for (var i = 0; i < f[3]; i++) s += '<i class="' + (i < f[2] ? 'on' : '') + '"></i>'; return '<div class="fr" style="--c:' + f[1] + '"><span>' + f[0] + '</span><span class="segs">' + s + '</span><b dir="ltr">' + f[2] + '/' + f[3] + '</b></div>'; }).join('');
+  document.getElementById('px').addEventListener('click', function () { document.getElementById('photo').hidden = true; });
+
+  // slide to start
+  var sl = document.getElementById('slide'), kn = document.getElementById('knob'), drag = null, max = 0;
+  function setX(x) { sl.style.setProperty('--x', x + 'px'); }
+  function finish() { sl.classList.add('snap', 'done'); setX(max); document.getElementById('slbl').textContent = 'האימון התחיל 💪'; if (navigator.vibrate) try { navigator.vibrate(20); } catch (x) {} setTimeout(function () { sl.classList.remove('done'); setX(0); document.getElementById('slbl').innerHTML = 'החליקי להתחלת אימון<em>←</em>'; }, 1800); }
+  kn.addEventListener('pointerdown', function (e) { max = sl.clientWidth - 62; drag = { x: e.clientX }; sl.classList.remove('snap'); kn.setPointerCapture(e.pointerId); });
+  kn.addEventListener('pointermove', function (e) { if (!drag) return; setX(Math.max(0, Math.min(max, drag.x - e.clientX))); });
+  kn.addEventListener('pointerup', function (e) { if (!drag) return; var x = Math.max(0, Math.min(max, drag.x - e.clientX)); drag = null; if (x > max * 0.8) finish(); else { sl.classList.add('snap'); setX(0); } });
+  kn.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); max = sl.clientWidth - 62; finish(); } });
+
+  // dock + depth transitions
+  var dock = document.getElementById('dock'), cur = 0, busy = false;
+  dock.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-t]'); if (!b) return; var n = +b.dataset.t; if (n === cur || busy) return;
+    var fwd = n > cur, vs = document.querySelectorAll('.view'), from = vs[cur], to = vs[n];
+    dock.querySelectorAll('.dk').forEach(function (d, k) { if (k === n) d.setAttribute('aria-current', 'page'); else d.removeAttribute('aria-current'); });
+    if (navigator.vibrate) try { navigator.vibrate(8); } catch (x) {}
+    busy = true; to.hidden = false; to.scrollTop = 0; to.style.zIndex = 2; from.style.zIndex = 1;
+    from.classList.add(fwd ? 'out-f' : 'out-b'); to.classList.add(fwd ? 'in-f' : 'in-b');
+    setTimeout(function () { from.hidden = true; from.className = 'view'; to.className = 'view'; busy = false; }, RM ? 170 : 450);
+    cur = n;
+  });
+
+  // 3D kettlebell — cast-iron, studio-lit, procedural (no external assets)
+  if (!window.THREE) return;
+  try {
+    var box = document.getElementById('kb'), Wd = box.clientWidth, H = box.clientHeight;
+    var r = new THREE.WebGLRenderer({ antialias: true, alpha: true }); r.setPixelRatio(Math.min(2, devicePixelRatio || 1)); r.setSize(Wd, H);
+    r.outputEncoding = THREE.sRGBEncoding; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.05; r.physicallyCorrectLights = true;
+    box.insertBefore(r.domElement, box.firstChild); document.getElementById('fb').hidden = true;
+    var sc = new THREE.Scene(), cam = new THREE.PerspectiveCamera(26, Wd / H, 0.1, 50); cam.position.set(0, 0.35, 9.4); cam.lookAt(0, 0.25, 0);
+
+    // studio environment: soft gradient room + softboxes + a pink bounce card (the screen behind it)
+    var envS = new THREE.Scene();
+    var room = new THREE.Mesh(new THREE.SphereGeometry(20, 32, 16), new THREE.MeshBasicMaterial({ side: THREE.BackSide, vertexColors: true }));
+    var cols = [], pos = room.geometry.attributes.position;
+    for (var i = 0; i < pos.count; i++) { var y = pos.getY(i) / 20, c = new THREE.Color().setRGB(0.10 + 0.25 * Math.max(0, y), 0.08 + 0.22 * Math.max(0, y), 0.10 + 0.24 * Math.max(0, y)); cols.push(c.r, c.g, c.b); }
+    room.geometry.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3)); envS.add(room);
+    function card(w, h, col, x, y, z) { var m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide })); m.position.set(x, y, z); m.lookAt(0, 0, 0); envS.add(m); }
+    card(10, 6, 0xffffff, -6, 7, 8); card(4, 10, 0xffffff, 9, 2, 3); card(14, 6, 0xff2a7f, 0, -4, 10); card(6, 4, 0xffd2b0, 2, 6, -9);
+    var pm = new THREE.PMREMGenerator(r); var env = pm.fromScene(envS, 0.02).texture; sc.environment = env;
+
+    // surface maps: cast-iron grain + pink weight print
+    function noiseCanvas(w, h, base, amp, seed) {
+      var c = document.createElement('canvas'); c.width = w; c.height = h; var x = c.getContext('2d'), d = x.createImageData(w, h), s = seed;
+      function rnd() { s = (s * 16807) % 2147483647; return s / 2147483647; }
+      for (var p = 0; p < w * h; p++) { var v = base + (rnd() - 0.5) * amp; d.data[p * 4] = d.data[p * 4 + 1] = d.data[p * 4 + 2] = v; d.data[p * 4 + 3] = 255; }
+      x.putImageData(d, 0, 0);
+      for (var k = 0; k < 260; k++) { x.fillStyle = 'rgba(' + (rnd() > 0.5 ? '255,255,255' : '0,0,0') + ',' + (0.04 + rnd() * 0.06) + ')'; x.beginPath(); x.arc(rnd() * w, rnd() * h, 2 + rnd() * 10, 0, 7); x.fill(); }
+      return c;
+    }
+    var rough = new THREE.CanvasTexture(noiseCanvas(512, 256, 150, 70, 7)), bump = new THREE.CanvasTexture(noiseCanvas(512, 256, 128, 120, 13));
+    var lab = document.createElement('canvas'); lab.width = 2048; lab.height = 1024; var lx = lab.getContext('2d');
+    lx.fillStyle = '#26232A'; lx.fillRect(0, 0, 2048, 1024);
+    lx.globalAlpha = 0.18; lx.drawImage(noiseCanvas(512, 256, 120, 90, 29), 0, 0, 2048, 1024); lx.globalAlpha = 1;
+    lx.fillStyle = '#FF2A85'; lx.font = 'italic 800 170px "Barlow Condensed", Rubik, sans-serif'; lx.textAlign = 'center'; lx.textBaseline = 'middle';
+    lx.save(); lx.translate(1024, 520); lx.scale(0.62, 1); lx.fillText('12 KG', 0, 0); lx.restore();
+    lx.fillRect(884, 620, 280, 8);
+    var map = new THREE.CanvasTexture(lab); map.encoding = THREE.sRGBEncoding; map.anisotropy = 4;
+    [rough, bump].forEach(function (t) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(3, 2); });
+
+    var iron = new THREE.MeshPhysicalMaterial({ map: map, roughness: 0.62, roughnessMap: rough, metalness: 0.55, bumpMap: bump, bumpScale: 0.012, clearcoat: 0.35, clearcoatRoughness: 0.45, envMapIntensity: 1.1 });
+    var grip = new THREE.MeshPhysicalMaterial({ color: 0x2e2b31, roughness: 0.34, metalness: 0.7, bumpMap: bump, bumpScale: 0.006, clearcoat: 0.6, clearcoatRoughness: 0.25, envMapIntensity: 1.3 });
+
+    var g = new THREE.Group(); sc.add(g);
+    var prof = [[0, -1.1], [0.6, -1.1], [0.7, -1.08], [0.78, -1.02], [0.98, -0.82], [1.13, -0.5], [1.19, -0.12], [1.15, 0.26], [1.0, 0.6], [0.8, 0.84], [0.56, 0.99], [0.3, 1.05], [0, 1.07]];
+    var body = new THREE.Mesh(new THREE.LatheGeometry(prof.map(function (p) { return new THREE.Vector2(p[0], p[1]); }), 128, Math.PI, Math.PI * 2), iron);
+    g.add(body);
+    var path = new THREE.CatmullRomCurve3([new THREE.Vector3(-0.62, 0.72, 0), new THREE.Vector3(-0.74, 1.12, 0), new THREE.Vector3(-0.72, 1.6, 0), new THREE.Vector3(-0.46, 1.9, 0), new THREE.Vector3(0, 1.98, 0), new THREE.Vector3(0.46, 1.9, 0), new THREE.Vector3(0.72, 1.6, 0), new THREE.Vector3(0.74, 1.12, 0), new THREE.Vector3(0.62, 0.72, 0)]);
+    var handle = new THREE.Mesh(new THREE.TubeGeometry(path, 160, 0.155, 40, false), grip); g.add(handle);
+    [-1, 1].forEach(function (sx) { var h = new THREE.Mesh(new THREE.SphereGeometry(0.22, 32, 24), iron); h.position.set(sx * 0.6, 0.74, 0); h.scale.set(1, 0.8, 1); g.add(h); });
+
+    var sl = new THREE.DirectionalLight(0xffffff, 2.2); sl.position.set(-3, 5, 4); sc.add(sl);
+    var rim = new THREE.DirectionalLight(0xffc4a0, 1.6); rim.position.set(4, 2, -3); sc.add(rim);
+    // contact shadow
+    var sh = document.createElement('canvas'); sh.width = sh.height = 256; var sx2 = sh.getContext('2d'), gr = sx2.createRadialGradient(128, 128, 0, 128, 128, 128);
+    gr.addColorStop(0, 'rgba(70,0,30,0.55)'); gr.addColorStop(0.45, 'rgba(70,0,30,0.25)'); gr.addColorStop(1, 'rgba(70,0,30,0)'); sx2.fillStyle = gr; sx2.fillRect(0, 0, 256, 256);
+    var shadow = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 3.4), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sh), transparent: true, depthWrite: false }));
+    shadow.rotation.x = -Math.PI / 2; shadow.position.y = -1.12; sc.add(shadow);
+
+    g.rotation.set(0.06, 0.35, 0.05); g.position.y = 0;
+    var base0 = 0.35, vy = 0, dragX = null, last = 0, t0 = performance.now();
+    box.addEventListener('pointerdown', function (e) { dragX = e.clientX; last = e.clientX; box.setPointerCapture(e.pointerId); box.style.cursor = 'grabbing'; });
+    box.addEventListener('pointermove', function (e) { if (dragX == null) return; var d = (e.clientX - last) * 0.012; base0 += d; vy = d; last = e.clientX; });
+    box.addEventListener('pointerup', function () { dragX = null; box.style.cursor = ''; });
+    (function loop(t) {
+      var k = (t - t0) / 1000;
+      if (dragX == null) { vy *= 0.94; base0 += vy; }
+      g.rotation.y = base0 + (RM ? 0 : Math.sin(k * 0.6) * 0.4);
+      if (!RM) { var lift = (Math.sin(k * 1.3) + 1) * 0.06; g.position.y = lift; shadow.material.opacity = 1 - lift * 2.5; shadow.scale.setScalar(1 - lift * 0.8); }
+      r.render(sc, cam); requestAnimationFrame(loop);
+    })(t0);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { lx.fillStyle = '#26232A'; lx.fillRect(700, 340, 650, 340); lx.fillStyle = '#FF2A85'; lx.save(); lx.translate(1024, 520); lx.scale(0.62, 1); lx.fillText('12 KG', 0, 0); lx.restore(); lx.fillRect(884, 620, 280, 8); map.needsUpdate = true; });
+  } catch (e) { document.getElementById('fb').hidden = false; }
+})();
+</script>

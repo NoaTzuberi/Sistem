@@ -1988,6 +1988,79 @@ button { cursor: pointer; }
 }
 @media (prefers-reduced-motion: reduce) { .fd-sheet, .fd-scrim, .st-save { animation: none; } .food, .tcard, .fd-tabs i { transition: none; } }
 
+
+/* ===== publish modal ===== */
+.pubm { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(31,27,34,0.28); -webkit-backdrop-filter: blur(12px) saturate(120%); backdrop-filter: blur(12px) saturate(120%); transition: opacity 220ms ease; }
+.pubm[data-off] { opacity: 0; pointer-events: none; }
+.pub-card { position: relative; overflow: hidden; isolation: isolate; width: min(420px, 100%); border-radius: 34px; padding: 34px 26px 24px; background: rgba(255,255,255,0.94); box-shadow: 0 0 0 0.5px rgba(255,255,255,0.8) inset, 0 40px 100px rgba(31,27,34,0.32); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  animation: pub-in 360ms cubic-bezier(.32,.72,0,1) both; }
+@keyframes pub-in { from { opacity: 0; transform: translateY(14px) scale(0.94); } }
+.pubm[data-off] .pub-card { animation: none; }
+.pub-glow { position: absolute; z-index: -1; inset: -40% -20% 45%; filter: blur(44px); opacity: 0.75; pointer-events: none; background: radial-gradient(35% 45% at 30% 60%, #FF8FC0, transparent 70%), radial-gradient(35% 45% at 70% 50%, #C9A6FF, transparent 70%), radial-gradient(30% 40% at 50% 30%, #FFC48A, transparent 70%); }
+.pub-av { position: relative; width: 84px; height: 84px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 600; color: #fff; background: linear-gradient(140deg, #B18CFF, #7C4DFF); box-shadow: 0 0 0 5px rgba(255,255,255,0.9), 0 14px 32px rgba(124,77,255,0.32); margin-bottom: 8px; }
+.pub-av i { position: absolute; bottom: -2px; inset-inline-end: -4px; width: 32px; height: 32px; border-radius: 50%; background: var(--pink); color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 3px #fff, 0 6px 14px rgba(255,0,110,0.35); }
+.pub-card h2 { margin: 0; font-size: 26px; font-weight: 600; letter-spacing: -0.6px; line-height: 1.15; }
+.pub-card p { margin: 0; font-size: 14px; color: var(--muted); line-height: 1.5; max-width: 32ch; }
+.pub-sum { width: 100%; margin-top: 12px; padding: 14px; border-radius: 22px; background: rgba(246,244,246,0.9); text-align: start; display: flex; flex-direction: column; gap: 8px; }
+.pub-sum > b { font-size: 15px; font-weight: 600; }
+.pub-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.pub-chips span { height: 26px; padding: 0 10px; border-radius: 13px; background: #fff; font-size: 12px; font-weight: 500; display: inline-flex; align-items: center; }
+.pub-items { display: flex; gap: 6px; flex-wrap: wrap; }
+.pub-items span { height: 28px; padding: 0 10px; border-radius: 14px; background: color-mix(in srgb, var(--c) 12%, #fff); color: color-mix(in srgb, var(--c) 75%, #1F1B22); font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; direction: ltr; }
+.pub-items i { width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+.pub-acts { width: 100%; display: flex; flex-direction: column; gap: 6px; margin-top: 16px; }
+.pub-go { width: 100%; height: 52px; border-radius: 26px; justify-content: center; font-size: 16px; transition: transform 140ms var(--ease-out), background-color 150ms ease; }
+.pub-go:active { transform: scale(0.97); }
+.pub-go[disabled] { background: var(--pink-soft); color: var(--cherry); box-shadow: none; }
+.pub-no { height: 44px; border: 0; border-radius: 22px; background: none; color: var(--muted); font-weight: 600; transition: background-color 150ms ease, color 150ms ease; }
+.spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor; border-top-color: transparent; animation: spin 700ms linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.pub-card.done .pub-glow { background: radial-gradient(40% 50% at 50% 50%, #FF8FC0, transparent 70%), radial-gradient(35% 45% at 20% 40%, #FFC48A, transparent 70%), radial-gradient(35% 45% at 80% 40%, #C9A6FF, transparent 70%); opacity: 0.9; }
+.pub-check { position: relative; width: 96px; height: 96px; margin-bottom: 6px; }
+.pub-check::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--pink); opacity: 0.25; animation: ring 900ms 200ms var(--ease-out) both; }
+@keyframes ring { from { transform: scale(0.6); opacity: 0.5; } to { transform: scale(1.6); opacity: 0; } }
+.pub-check svg { position: relative; border-radius: 50%; box-shadow: 0 12px 26px rgba(255,0,110,0.35); }
+.pub-check .cc { fill: var(--pink); transform-box: fill-box; transform-origin: center; animation: pop 500ms cubic-bezier(.34,1.56,.64,1) both; }
+@keyframes pop { from { transform: scale(0.4); } }
+.pub-check .ck { fill: none; stroke: #fff; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 450ms 280ms var(--ease-out) forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.pub-ey { height: 26px; padding: 0 12px; border-radius: 13px; background: var(--pink-soft); color: var(--cherry); font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; }
+.pub-card .confetti { position: absolute; top: 30%; left: 50%; width: 0; height: 0; z-index: 2; pointer-events: none; }
+.pub-card .confetti i { position: absolute; display: block; border-radius: 2px; }
+@media (hover: hover) and (pointer: fine) { .pub-go:not([disabled]):hover { background: #E8005F; } .pub-no:hover { background: var(--soft); color: var(--ink); } }
+@media (prefers-reduced-motion: reduce) { .pub-card, .pub-check::before, .pub-check .cc { animation: none; } .pub-check .ck { animation: none; stroke-dashoffset: 0; } .spin { animation-duration: 1.5s; } }
+
+
+/* ===== settings card 5 ===== */
+.x-sub { margin: 18px 0 10px; font-size: 13px; font-weight: 700; } .x-sub small { font-weight: 400; color: var(--muted); margin-inline-start: 6px; }
+.st-card .x-sub:first-of-type { margin-top: 0; }
+.x-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.xt { --s: var(--soft); --t: var(--ink); border-radius: 20px; padding: 12px; background: var(--s); display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.xt .xl { font-size: 12px; font-weight: 700; color: var(--t); display: inline-flex; align-items: center; gap: 6px; }
+.xt .xl i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+.xt small { font-size: 11px; color: var(--t); opacity: 0.8; line-height: 1.3; }
+.xt.dn { --s: #EEF6FF; --t: #0070C9; } .xt.up { --s: #FFF0F6; --t: var(--cherry); } .xt.am { --s: #FFF4E5; --t: #8A4A00; }
+.xt .kc-in input { width: 64px; font-size: 18px; }
+.x-sub2 { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 22px; margin-bottom: 10px; } .x-sub2 .x-sub { margin: 0; }
+.sum { height: 26px; padding: 0 10px; border-radius: 13px; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; }
+.sum.ok { background: var(--pink-soft); color: var(--cherry); } .sum.bad { background: var(--pink); color: #fff; }
+.split-bar { display: flex; height: 34px; border-radius: 17px; overflow: hidden; background: var(--soft); margin-bottom: 8px; direction: rtl; }
+[dir="ltr"] .split-bar { direction: ltr; }
+.split-bar i { width: var(--w); background: var(--c); display: flex; align-items: center; justify-content: center; transition: width 300ms var(--ease-out); min-width: 0; }
+.split-bar i + i { box-shadow: inset -2px 0 0 #fff; } [dir="rtl"] .split-bar i + i { box-shadow: inset 2px 0 0 #fff; }
+.split-bar i b { font-size: 12px; font-weight: 700; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.25); white-space: nowrap; }
+.split-bar i.gap { background: repeating-linear-gradient(135deg, #FFE3EE 0 6px, #fff 6px 12px); }
+.x-alert { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 14px; margin-bottom: 10px; background: var(--pink); color: #fff; font-size: 13px; font-weight: 600; }
+.x-hint { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; border-radius: 14px; margin-bottom: 10px; background: #FFF4E5; color: #8A4A00; font-size: 12px; line-height: 1.5; }
+.x-hint svg, .x-alert svg { flex: none; }
+.x-keto { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 12px; align-items: center; }
+.x-keto p { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.55; }
+.x-foot { display: flex; justify-content: flex-end; margin-top: 18px; padding-top: 14px; border-top: 0.5px solid var(--line); }
+.x-reset { display: inline-flex; align-items: center; gap: 8px; }
+@media (hover: hover) and (pointer: fine) { .x-reset:hover { background: #ECE8EB; } }
+@media (max-width: 760px) { .x-grid { grid-template-columns: 1fr 1fr; } .x-keto { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .split-bar i { transition: none; } }
+
 /* ===== responsive ===== */
 @media (max-width: 1180px) { .s4 { grid-column: span 6; } .s4.pump { grid-column: span 12; } .s7, .s5 { grid-column: span 12; } .stats { gap: 24px; } }
 @media (max-width: 860px) {
@@ -2722,7 +2795,7 @@ button { cursor: pointer; }
       else if (k === 'wmenu') toast('שכפול, מחיקה והזזה של האימון');
       else if (k === 'new') { W.push({ t: 'אימון ' + (W.length + 1), day: 'ללא יום', type: 'פול באדי', c: (W.length % 5) + 1, notes: '', slots: [slot('רגליים – ברך', true, 2, []), slot('חזה', true, 2, []), slot('גב', true, 2, [])] }); cur = W.length - 1; open = null; draft(); render(); var ti = $('wkTitle'); if (ti) { ti.focus(); ti.select(); } }
     }
-    $('publish').addEventListener('click', function () { if (!W.length) { toast('אין עדיין אימונים לפרסום'); return; } var s = $('bStatus'); s.className = 'status pub'; s.innerHTML = '<i></i>פורסם'; toast('פורסם. מאיה קיבלה התראה.'); });
+    $('publish').addEventListener('click', function () { if (!W.length) { toast('אין עדיין אימונים לפרסום'); return; } var n = W.reduce(function (a, w) { return a + w.slots.reduce(function (b, s) { return b + s.ex.length; }, 0); }, 0); window.__publishFlow({ who: 'מאיה', id: 'maya', ini: 'מכ', kind: 'תוכנית', title: 'שבוע 7 · 18–24 באוקטובר', chips: [W.length + ' אימונים', n + ' תרגילים'], items: W.map(function (w, i) { return [w.t || ('אימון ' + (i + 1)), ['#FF006E', '#7C4DFF', '#FF7A00', '#0094FF', '#A50047'][i % 5]]; }), onDone: function () { var s = $('bStatus'); s.className = 'status pub'; s.innerHTML = '<i></i>פורסם'; } }); });
 
     var scrim = $('scrim'), openSheet = null;
     function sheet(id, on) {
@@ -3450,6 +3523,7 @@ button { cursor: pointer; }
       if ((t = e.target.closest('[data-tipdel]'))) return upd(function () { S.tips.splice(+t.dataset.tipdel, 1); });
       if (e.target.closest('[data-tipadd]')) { var inp = pg.querySelector('[data-tipin]'); if (inp.value.trim()) upd(function () { S.tips.push(inp.value.trim()); }); return; }
       if ((t = e.target.closest('[data-nbpub]')) && t.getAttribute('aria-disabled') === 'true') { var no = pg.querySelector('.chk .no'); if (no) no.click(); }
+      else if ((t = e.target.closest('[data-nbpub]'))) { var cc = calc(); window.__publishFlow({ who: 'test', id: 'noa', ini: 'T', kind: 'תוכנית תזונה', title: 'תוכנית תזונה · ' + k(cc.target) + ' קק״ל ליום', chips: [S.meals.length + ' ארוחות', fr(cc.por.P).replace(/<[^>]+>/g, '') + ' חלבון', fr(cc.por.C).replace(/<[^>]+>/g, '') + ' פחמימה', fr(cc.por.F).replace(/<[^>]+>/g, '') + ' שומן'] }); }
     });
     pg.addEventListener('change', function (e) {
       var t = e.target;
@@ -3497,7 +3571,9 @@ button { cursor: pointer; }
       { g: 'V', cat: 'ירקות', n: 'ירקות חתוכים', por: 'חופשי', gr: null, k: null, c: [] }
     ];
     var CAP = { P: 150, C: 120, F: 90, S: 150 };
-    var ST = { kc: { P: 150, C: 120, F: 90, S: 150 }, goals: [['ירידה בשומן', -20], ['ירידה בשומן (אגרסיבית)', -25], ['חיטוב / ריקומפ', -10], ['עלייה במסת שריר', 10], ['שמירה', 0]], act: [1.375, 1.375, 1.55, 1.55, 1.55, 1.725, 1.725], floor: 1200, dirty: false };
+    var ST = { kc: { P: 150, C: 120, F: 90, S: 150 }, goals: [['ירידה בשומן', -20], ['ירידה בשומן (אגרסיבית)', -25], ['חיטוב / ריקומפ', -10], ['עלייה במסת שריר', 10], ['שמירה', 0]], act: [1.375, 1.375, 1.55, 1.55, 1.55, 1.725, 1.725], floor: 1200, dirty: false, x: { loss: 1, gain: 0.5, maxDef: 25, kpk: 7700, sP: 45, sC: 32, sF: 23, sS: 0, keto: 1 } };
+    var XD = JSON.parse(JSON.stringify(ST.x));
+    var XS = { loss: 0.1, gain: 0.1, maxDef: 1, kpk: 100, sP: 1, sC: 1, sF: 1, sS: 1, keto: 0.5 };
     var T = [['צמחונית · חיטוב', 4, 1650, [5, 4, 3.5, 0], 3, '8 באוק׳'], ['4 ארוחות · בסיס', 4, 1950, [6, 5.5, 4.5, 0], 7, '22 בספט׳'], ['3 ארוחות + 2 נשנושים', 5, 1800, [5, 5, 4, 2], 2, '2 בספט׳']];
     var S = { tab: 'list', g: 'all', q: '', arch: false, sheet: null, tplEmpty: false, form: null };
     function fr(n) { var w = Math.floor(n), h = n - w >= 0.5; return '<bdi dir="ltr">' + (w || !h ? w : '') + (h ? '½' : '') + '</bdi>'; }
@@ -3570,9 +3646,20 @@ button { cursor: pointer; }
         return '<div class="act-c"><input type="number" step="0.025" data-act="' + i + '" value="' + a + '" aria-label="' + (i + 1) + ' ימים"><div class="act-bar"><u style="--v:' + ((a - mn) / (mx - mn) * 100) + '%"></u></div><span>' + (i ? (i + 1) + ' ימים' : 'יום אחד') + '</span></div>';
       }).join('') + '</div></section>';
       var floor = '<section class="st-card"><div class="st-h"><span class="st-n">4</span><div><h3>רצפת בטיחות</h3><p>הצעה לעולם לא תרד מתחת למספר הזה, גם בגירעון אגרסיבי</p></div></div><div class="floor"><div class="kc-in big"><button type="button" data-fl="-50" aria-label="פחות">−</button><input type="number" data-fli value="' + ST.floor + '" aria-label="רצפת בטיחות"><button type="button" data-fl="50" aria-label="עוד">+</button></div><span>קק״ל ליום · מינימום</span></div></section>';
+      var X = ST.x, sum = X.sP + X.sC + X.sF + X.sS;
+      var xs = function (key, label, unit, cls, hint) { return '<div class="xt ' + (cls || '') + '"><span class="xl">' + label + '</span><div class="kc-in"><button type="button" data-xs="' + key + ':-1" aria-label="פחות">−</button><input type="number" dir="ltr" step="' + XS[key] + '" data-xi="' + key + '" value="' + X[key] + '" aria-label="' + label + '"><button type="button" data-xs="' + key + ':1" aria-label="עוד">+</button></div><small>' + unit + '</small>' + (hint ? '<em>' + hint + '</em>' : '') + '</div>'; };
+      var split = [['sP', 'חלבון', 'P'], ['sC', 'פחמימה', 'C'], ['sF', 'שומן', 'F'], ['sS', 'נשנוש', 'S']];
+      var x5 = '<section class="st-card"><div class="st-h"><span class="st-n">5</span><div><h3>קצב, חלוקה וקטו</h3><p>עוד מספרים שהחישוב משתמש בהם</p></div></div>' +
+        '<p class="x-sub">קצב ובטיחות</p><div class="x-grid">' + xs('loss', 'ירידה בטוחה', '% ממשקל הגוף / שבוע', 'dn') + xs('gain', 'עלייה בטוחה', '% ממשקל הגוף / שבוע', 'up') + xs('maxDef', 'הגירעון הגדול ביותר', '% מה-TDEE', 'am') + xs('kpk', 'קלוריות לק״ג', 'קק״ל לק״ג משקל גוף') + '</div>' +
+        '<div class="x-sub2"><p class="x-sub">חלוקת מנות <small>% מהקלוריות היומיות</small></p><span class="sum ' + (sum === 100 ? 'ok' : 'bad') + '" dir="ltr">' + (sum === 100 ? '✓ 100%' : sum + '% / 100%') + '</span></div>' +
+        '<div class="split-bar" role="img" aria-label="חלוקה">' + split.map(function (p) { return X[p[0]] ? '<i style="--w:' + X[p[0]] + '%;--c:' + G[p[2]][1] + '"><b>' + X[p[0]] + '%</b></i>' : ''; }).join('') + (sum < 100 ? '<i class="gap" style="--w:' + (100 - sum) + '%"></i>' : '') + '</div>' +
+        (sum !== 100 ? '<div class="x-alert">' + ic('<circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/>', 16) + (sum < 100 ? 'חסרים ' + (100 - sum) + '% כדי להגיע ל-100%' : 'יש ' + (sum - 100) + '% מעל 100%') + '</div>' : '<div class="x-hint">' + ic('<circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/>', 14) + 'חלוקת ברירת המחדל היא זמנית, הגדירי משלך. נשנוש 0 = החישוב אף פעם לא מוסיף פינוקים.</div>') +
+        '<div class="x-grid">' + split.map(function (p) { return '<div class="xt pc" style="--c:' + G[p[2]][1] + ';--s:' + G[p[2]][2] + ';--t:' + G[p[2]][3] + '"><span class="xl"><i></i>' + p[1] + '</span><div class="kc-in"><button type="button" data-xs="' + p[0] + ':-1" aria-label="פחות">−</button><input type="number" dir="ltr" data-xi="' + p[0] + '" value="' + X[p[0]] + '" aria-label="' + p[1] + '"><button type="button" data-xs="' + p[0] + ':1" aria-label="עוד">+</button></div><small>%</small></div>'; }).join('') + '</div>' +
+        '<p class="x-sub">קטו / דל פחמימות</p><div class="x-keto">' + xs('keto', 'מנות פחמימה ביום', 'לפני אזהרה') + '<p>אם תוכנית יורדת מתחת למספר הזה, תופיע בבונה אזהרה שזו תוכנית קטו / דלת פחמימות.</p></div>' +
+        '<div class="x-foot"><button type="button" class="pw-soft x-reset" data-xreset>' + ic('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>') + 'חזרה לברירות המחדל</button></div></section>';
       var prev = '<aside class="st-prev"><span class="eyebrow">תצוגה חיה</span><h3>כך זה ישפיע</h3><p>מתאמנת לדוגמה: 60 ק״ג, 165 ס״מ, בת 30, 3 ימי אימון, חיטוב</p><div class="sp-big"><b class="num" id="spK">' + calcEx().toLocaleString('en-US') + '</b><span>קק״ל ליום</span></div><div class="sp-por">' + ['P', 'C', 'F'].map(function (k, j) { var share = [0.4, 0.39, 0.2][j]; return '<span style="--s:' + G[k][2] + ';--t:' + G[k][3] + '"><b>' + fr(Math.round(calcEx() * share / ST.kc[k] * 2) / 2) + '</b>' + G[k][0] + '</span>'; }).join('') + '</div><p class="sp-note">' + ic('<circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/>', 14) + 'שינויים חלים על הצעות מעכשיו. תוכניות שכבר פורסמו שומרות על המספרים שלהן.</p></aside>';
       var bar = ST.dirty ? '<div class="st-save"><span>' + ic('<circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/>', 16) + 'יש שינויים שלא נשמרו</span><button type="button" class="pw-soft" data-streset>ביטול</button><button type="button" class="btn-pk press" data-stsave>שמירת ההגדרות</button></div>' : '';
-      return '<div class="st-wrap"><div class="st-main">' + kc + goals + act + floor + '</div>' + prev + '</div>' + bar;
+      return '<div class="st-wrap"><div class="st-main">' + kc + goals + act + floor + x5 + '</div>' + prev + '</div>' + bar;
     }
     function render(keepQ) {
       var y = scrollY;
@@ -3594,6 +3681,8 @@ button { cursor: pointer; }
       if ((t = e.target.closest('[data-kc]'))) { var p = t.dataset.kc.split(':'); return dirty(function () { ST.kc[p[0]] = Math.max(10, ST.kc[p[0]] + +p[1]); }); }
       if ((t = e.target.closest('[data-gl]'))) { var q = t.dataset.gl.split(':'); return dirty(function () { ST.goals[+q[0]][1] += +q[1]; }); }
       if ((t = e.target.closest('[data-fl]'))) return dirty(function () { ST.floor = Math.max(800, ST.floor + +t.dataset.fl); });
+      if ((t = e.target.closest('[data-xs]'))) { var xp = t.dataset.xs.split(':'); return dirty(function () { var v = ST.x[xp[0]] + XS[xp[0]] * +xp[1]; ST.x[xp[0]] = Math.max(0, Math.round(v * 100) / 100); }); }
+      if (e.target.closest('[data-xreset]')) { return dirty(function () { ST.x = JSON.parse(JSON.stringify(XD)); }); }
       if (e.target.closest('[data-stsave]') || e.target.closest('[data-streset]')) { ST.dirty = false; return render(); }
     });
     pg.addEventListener('input', function (e) {
@@ -3607,11 +3696,64 @@ button { cursor: pointer; }
       if (t.dataset.kci) return dirty(function () { ST.kc[t.dataset.kci] = +t.value; });
       if (t.dataset.gli) return dirty(function () { ST.goals[+t.dataset.gli][1] = +t.value; });
       if (t.dataset.act) return dirty(function () { ST.act[+t.dataset.act] = +t.value; });
+      if (t.dataset.xi) return dirty(function () { ST.x[t.dataset.xi] = +t.value; });
       if (t.matches('[data-fli]')) return dirty(function () { ST.floor = +t.value; });
       if (t.dataset.ff === 'k' || t.dataset.ff === 'gr') render();
     });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && S.sheet != null && !pg.hidden) { S.sheet = null; render(); } });
     window.__renderFoods = function () { render(); };
+  })();
+
+  // ---- publish confirm + celebration modal ----
+  (function () {
+    var RM = matchMedia('(prefers-reduced-motion: reduce)').matches, last = null;
+    function ic(p, s) { return '<svg width="' + (s || 16) + '" height="' + (s || 16) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg>'; }
+    var m = document.createElement('div'); m.className = 'pubm'; m.setAttribute('data-off', ''); document.body.appendChild(m);
+    var o = null;
+    function close() { m.setAttribute('data-off', ''); if (last) last.focus({ preventScroll: true }); }
+    function confirmView() {
+      return '<div class="pub-card" role="alertdialog" aria-modal="true" aria-labelledby="pubT" aria-describedby="pubD"><div class="pub-glow"></div>' +
+        '<div class="pub-av"><span>' + o.ini + '</span><i>' + ic('<path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/>', 14) + '</i></div>' +
+        '<h2 id="pubT">לפרסם ל' + o.who + '?</h2><p id="pubD">היא תקבל התראה ותראה את ה' + o.kind + ' מיד באפליקציה.</p>' +
+        '<div class="pub-sum"><b>' + o.title + '</b><div class="pub-chips">' + o.chips.map(function (c) { return '<span>' + c + '</span>'; }).join('') + '</div>' +
+        (o.items ? '<div class="pub-items">' + o.items.map(function (x) { return '<span style="--c:' + x[1] + '"><i></i>' + x[0] + '</span>'; }).join('') + '</div>' : '') + '</div>' +
+        '<div class="pub-acts"><button type="button" class="btn-pk pub-go" data-pubgo>' + ic('<path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/>') + 'פרסום עכשיו</button><button type="button" class="pub-no" data-pubx>עוד לא</button></div></div>';
+    }
+    function doneView() {
+      return '<div class="pub-card done" role="dialog" aria-modal="true" aria-labelledby="pubT2"><div class="pub-glow"></div><div class="confetti" aria-hidden="true"></div>' +
+        '<div class="pub-check"><svg width="96" height="96" viewBox="0 0 96 96" aria-hidden="true"><circle class="cc" cx="48" cy="48" r="44"/><path class="ck" d="M30 49l12 12 24-26" pathLength="1"/></svg></div>' +
+        '<span class="pub-ey">פורסם</span><h2 id="pubT2">ה' + o.kind + ' בדרך ל' + o.who + '</h2><p>שלחנו לה התראה עכשיו. אפשר לעקוב אחרי הביצוע בפרופיל שלה.</p>' +
+        '<div class="pub-acts"><button type="button" class="btn-pk pub-go" data-pubx>מעולה</button><button type="button" class="pub-no" data-pubprof>לפרופיל של ' + o.who + '</button></div></div>';
+    }
+    function burst() {
+      var box = m.querySelector('.confetti'); if (!box || RM) return;
+      var cols = ['#FF006E', '#FF8FC0', '#7C4DFF', '#C9A6FF', '#FF7A00', '#FFC48A', '#0094FF'];
+      for (var k = 0; k < 60; k++) {
+        var s = document.createElement('i'), ang = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.4, d = 120 + Math.random() * 160;
+        s.style.background = cols[k % cols.length]; s.style.width = (5 + Math.random() * 6) + 'px'; s.style.height = (8 + Math.random() * 8) + 'px'; if (k % 4 === 0) { s.style.borderRadius = '50%'; s.style.height = s.style.width; }
+        box.appendChild(s);
+        s.animate([{ transform: 'translate(0,0) rotate(0)', opacity: 1 }, { transform: 'translate(' + Math.cos(ang) * d + 'px,' + Math.sin(ang) * d + 'px) rotate(' + (Math.random() * 720 - 360) + 'deg)', opacity: 1, offset: 0.55 }, { transform: 'translate(' + Math.cos(ang) * d * 1.15 + 'px,' + (Math.sin(ang) * d + 200) + 'px) rotate(' + (Math.random() * 900) + 'deg)', opacity: 0 }], { duration: 1600 + Math.random() * 700, easing: 'cubic-bezier(.23,1,.32,1)', fill: 'forwards', delay: 250 + Math.random() * 120 });
+      }
+    }
+    window.__publishFlow = function (opts) {
+      o = opts; last = document.activeElement;
+      m.innerHTML = confirmView(); m.removeAttribute('data-off');
+      requestAnimationFrame(function () { var b = m.querySelector('[data-pubgo]'); if (b) b.focus({ preventScroll: true }); });
+    };
+    m.addEventListener('click', function (e) {
+      if (e.target === m || e.target.closest('[data-pubx]')) return close();
+      if (e.target.closest('[data-pubprof]')) { close(); if (window.__openTrainee) window.__openTrainee(o.id || 'maya', 'plans'); return; }
+      var g = e.target.closest('[data-pubgo]');
+      if (g && !g.disabled) {
+        g.disabled = true; g.innerHTML = '<span class="spin"></span>מפרסם…';
+        setTimeout(function () { m.innerHTML = doneView(); burst(); if (o.onDone) o.onDone(); m.querySelector('[data-pubx]').focus({ preventScroll: true }); }, RM ? 200 : 700);
+      }
+    });
+    document.addEventListener('keydown', function (e) {
+      if (m.hasAttribute('data-off')) return;
+      if (e.key === 'Escape') close();
+      if (e.key === 'Tab') { var f = m.querySelectorAll('button:not([disabled])'); if (!f.length) return; var a = f[0], z = f[f.length - 1]; if (e.shiftKey && document.activeElement === a) { e.preventDefault(); z.focus(); } else if (!e.shiftKey && document.activeElement === z) { e.preventDefault(); a.focus(); } }
+    });
   })();
 
   // ---- exercise library v2 ----
