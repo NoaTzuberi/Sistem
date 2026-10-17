@@ -1,0 +1,268 @@
+import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import type { FoodItem, FoodItemPayload, NutritionTemplate } from '@sistem/types';
+import { fill, useCopy } from '@sistem/shared';
+import { nutritionBuilderPath } from '../../../../app/config/routes';
+import { PageHeader } from '../../../../components/common/PageHeader/PageHeader';
+import { StateLine } from '../../../../components/common/StateLine/StateLine';
+import { Toast } from '../../../../components/common/Toast/Toast';
+import { useToast } from '../../../../hooks/useToast';
+import { CategoryChips } from '../../../nutrition/components/CategoryChips/CategoryChips';
+import { TEMPLATE_STATE_KEY } from '../../data/templateHandoff';
+import { TAB_PATHS, libraryTabId, tabFromPath } from '../../data/libraryTabs';
+import type { LibraryTab } from '../../data/libraryTabs';
+import { useFoods } from '../../hooks/useFoods';
+import { useTemplates } from '../../hooks/useTemplates';
+import { useNutritionSettings } from '../../hooks/useNutritionSettings';
+import { useSettingsPreview } from '../../hooks/useSettingsPreview';
+import { usePortionSplit } from '../../hooks/usePortionSplit';
+import { useUnsavedChangesGuard } from '../../hooks/useUnsavedChangesGuard';
+import { LibraryTabs } from '../../components/LibraryTabs/LibraryTabs';
+import { HowItWorks } from '../../components/HowItWorks/HowItWorks';
+import type { HowItWorksItem } from '../../components/HowItWorks/HowItWorks';
+import { GroupChips } from '../../components/GroupChips/GroupChips';
+import { FoodToolbar } from '../../components/FoodToolbar/FoodToolbar';
+import { FoodGroupSection } from '../../components/FoodGroupSection/FoodGroupSection';
+import { FoodSheet } from '../../components/FoodSheet/FoodSheet';
+import { TemplatesGrid } from '../../components/TemplatesGrid/TemplatesGrid';
+import { TraineePickerSheet } from '../../components/TraineePickerSheet/TraineePickerSheet';
+import { TemplateRenameSheet } from '../../components/TemplateRenameSheet/TemplateRenameSheet';
+import { SettingsKcalPerPortion } from '../../components/SettingsKcalPerPortion/SettingsKcalPerPortion';
+import { SettingsGoalAdjustments } from '../../components/SettingsGoalAdjustments/SettingsGoalAdjustments';
+import { SettingsActivityMultipliers } from '../../components/SettingsActivityMultipliers/SettingsActivityMultipliers';
+import { SettingsSafetyFloor } from '../../components/SettingsSafetyFloor/SettingsSafetyFloor';
+import { SettingsMore } from '../../components/SettingsMore/SettingsMore';
+import { SettingsLivePreview } from '../../components/SettingsLivePreview/SettingsLivePreview';
+import { UnsavedChangesBar } from '../../components/UnsavedChangesBar/UnsavedChangesBar';
+import { nutritionLibraryCopy } from '../../copy';
+import './FoodLibraryPage.css';
+
+const PANEL_ID = 'nutrition-library-panel';
+
+/** A sheet that opens fresh each time: a new key remounts its form. */
+interface SheetState<T> {
+  isOpen: boolean;
+  subject: T;
+  key: number;
+}
+
+/**
+ * The coach's nutrition library (PRD §5.6): her food list, her templates and the numbers behind every
+ * calculation — one page, three tabs, the open tab in the URL. Each tab starts by saying what it is for.
+ */
+export function FoodLibraryPage() {
+  const copy = useCopy(nutritionLibraryCopy);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const tab = tabFromPath(location.pathname);
+  const { toastMessage, showToast } = useToast();
+
+  const foods = useFoods();
+  const templates = useTemplates();
+  const settings = useNutritionSettings();
+  const preview = useSettingsPreview(settings.payload);
+  const split = usePortionSplit(settings.form);
+  useUnsavedChangesGuard(settings.isDirty, copy.leaveConfirm);
+
+  const [foodSheet, setFoodSheet] = useState<SheetState<FoodItem | null>>({ isOpen: false, subject: null, key: 0 });
+  const [picker, setPicker] = useState<SheetState<NutritionTemplate | null>>({ isOpen: false, subject: null, key: 0 });
+  const [rename, setRename] = useState<SheetState<NutritionTemplate | null>>({ isOpen: false, subject: null, key: 0 });
+
+  function changeTab(next: LibraryTab) {
+    if (next === tab) return;
+    if (tab === 'settings' && settings.isDirty) {
+      if (!window.confirm(copy.leaveConfirm)) return;
+      settings.cancel();
+    }
+    navigate(TAB_PATHS[next]);
+  }
+
+  // --- Food list -----------------------------------------------------------------------------
+
+  const openFoodSheet = (item: FoodItem | null) => setFoodSheet((current) => ({ isOpen: true, subject: item, key: current.key + 1 }));
+  const closeFoodSheet = () => setFoodSheet((current) => ({ ...current, isOpen: false }));
+
+  async function saveFood(payload: FoodItemPayload): Promise<boolean> {
+    const result = await foods.save(foodSheet.subject, payload);
+    showToast(result.message);
+    return result.ok;
+  }
+
+  async function removeFood(item: FoodItem) {
+    if (!window.confirm(fill(copy.removeConfirm, { name: item.name }))) return;
+    showToast((await foods.remove(item)).message);
+  }
+
+  async function restoreFood(item: FoodItem) {
+    showToast((await foods.restore(item)).message);
+  }
+
+  // --- Templates -----------------------------------------------------------------------------
+
+  const openPicker = (template: NutritionTemplate | null) => setPicker((current) => ({ isOpen: true, subject: template, key: current.key + 1 }));
+  const closePicker = () => setPicker((current) => ({ ...current, isOpen: false }));
+  const closeRename = () => setRename((current) => ({ ...current, isOpen: false }));
+
+  function pickTrainee(traineeId: string) {
+    const template = picker.subject;
+    closePicker();
+    // Her builder applies the template on arrival (and asks first when her meals have content).
+    navigate(nutritionBuilderPath(traineeId), template ? { state: { [TEMPLATE_STATE_KEY]: template.id } } : undefined);
+  }
+
+  async function deleteTemplate(template: NutritionTemplate) {
+    if (!window.confirm(fill(copy.deleteConfirm, { name: template.name }))) return;
+    showToast((await templates.remove(template)).message);
+  }
+
+  async function renameTemplate(name: string): Promise<boolean> {
+    if (!rename.subject) return false;
+    const result = await templates.rename(rename.subject, name);
+    showToast(result.message);
+    return result.ok;
+  }
+
+  // --- Settings ------------------------------------------------------------------------------
+
+  async function saveSettings() {
+    if (!settings.payload) {
+      if (split.message) showToast(split.message);
+      return;
+    }
+    const result = await settings.save();
+    showToast(result.message);
+    // The food list's caps come from these numbers.
+    if (result.ok) foods.reload();
+  }
+
+  const howFoods: HowItWorksItem[] = [
+    { id: 'portion', icon: 'list', tone: 'protein', ...copy.howFoods.portion },
+    { id: 'swap', icon: 'swap', tone: 'carb', ...copy.howFoods.swap },
+    { id: 'contains', icon: 'filter', tone: 'fat', ...copy.howFoods.contains },
+  ];
+  const howTemplates: HowItWorksItem[] = [
+    { id: 'save', icon: 'download', tone: 'protein', ...copy.howTemplates.save },
+    { id: 'start', icon: 'template', tone: 'carb', ...copy.howTemplates.start },
+    { id: 'time', icon: 'clock', tone: 'fat', ...copy.howTemplates.time },
+  ];
+
+  return (
+    <div className="food-library-page">
+      <PageHeader title={copy.title} subtitle={copy.subtitle}>
+        <LibraryTabs
+          value={tab}
+          counts={{ foods: foods.isReady ? foods.activeCount : undefined, templates: templates.templates?.length }}
+          onChange={changeTab}
+          panelId={PANEL_ID}
+        />
+      </PageHeader>
+
+      <div className="food-library-panel" id={PANEL_ID} role="tabpanel" aria-labelledby={libraryTabId(tab)}>
+        {tab === 'foods' && (
+          <>
+            <HowItWorks label={copy.howLabel} items={howFoods} />
+            {!foods.isReady ? (
+              <StateLine error={foods.error} onRetry={foods.reload} />
+            ) : (
+              <>
+                <div className="food-library-filters">
+                  <GroupChips value={foods.filter.group} counts={foods.counts} onChange={foods.setGroup} />
+                  {foods.filter.group && (
+                    <CategoryChips group={foods.filter.group} items={foods.groupItems} value={foods.filter.category} onChange={foods.setCategory} />
+                  )}
+                  <FoodToolbar
+                    query={foods.filter.query}
+                    onQueryChange={foods.setQuery}
+                    showArchived={foods.filter.showArchived}
+                    onShowArchivedChange={foods.setShowArchived}
+                    onAdd={() => openFoodSheet(null)}
+                  />
+                </div>
+                {foods.sections.length === 0 ? (
+                  <div className="food-library-empty" role="status">
+                    <strong className="food-library-empty-title">{copy.noResultsTitle}</strong>
+                    <span className="food-library-empty-text">{copy.noResultsText}</span>
+                  </div>
+                ) : (
+                  foods.sections.map((section) => (
+                    <FoodGroupSection key={section.group} section={section} onEdit={openFoodSheet} onRemove={removeFood} onRestore={restoreFood} />
+                  ))
+                )}
+                {foods.caps && (
+                  <FoodSheet
+                    key={foodSheet.key}
+                    isOpen={foodSheet.isOpen}
+                    item={foodSheet.subject}
+                    defaultGroup={foods.filter.group ?? 'protein'}
+                    caps={foods.caps}
+                    onClose={closeFoodSheet}
+                    onSave={saveFood}
+                  />
+                )}
+              </>
+            )}
+          </>
+        )}
+
+        {tab === 'templates' && (
+          <>
+            <HowItWorks label={copy.howLabel} items={howTemplates} />
+            {!templates.templates ? (
+              <StateLine error={templates.error} onRetry={templates.reload} />
+            ) : (
+              <TemplatesGrid
+                templates={templates.templates}
+                onUse={openPicker}
+                onRename={(template) => setRename((current) => ({ isOpen: true, subject: template, key: current.key + 1 }))}
+                onDelete={deleteTemplate}
+                onOpenBuilder={() => openPicker(null)}
+              />
+            )}
+          </>
+        )}
+
+        {tab === 'settings' &&
+          (!settings.form ? (
+            <StateLine error={settings.error} onRetry={settings.reload} />
+          ) : (
+            <>
+              <div className="food-library-settings">
+                <div className="food-library-settings-cards">
+                  <SettingsKcalPerPortion form={settings.form} errors={settings.errors} update={settings.update} />
+                  <SettingsGoalAdjustments form={settings.form} errors={settings.errors} update={settings.update} />
+                  <SettingsActivityMultipliers form={settings.form} errors={settings.errors} update={settings.update} />
+                  <SettingsSafetyFloor form={settings.form} errors={settings.errors} update={settings.update} />
+                  <SettingsMore form={settings.form} errors={settings.errors} update={settings.update} onResetDefaults={settings.resetDefaults} />
+                </div>
+                <SettingsLivePreview suggestion={preview.suggestion} isInvalid={preview.isInvalid} hasError={preview.hasError} />
+              </div>
+              {settings.isDirty && (
+                <UnsavedChangesBar
+                  canSave={settings.payload !== undefined}
+                  blockedReason={split.message}
+                  isSaving={settings.isSaving}
+                  onCancel={settings.cancel}
+                  onSave={saveSettings}
+                />
+              )}
+            </>
+          ))}
+      </div>
+
+      {/* Mounted from the first opening on — its trainee list loads only when it is wanted. */}
+      {picker.key > 0 && (
+        <TraineePickerSheet
+          key={`picker-${picker.key}`}
+          isOpen={picker.isOpen}
+          templateName={picker.subject?.name ?? null}
+          onClose={closePicker}
+          onPick={pickTrainee}
+        />
+      )}
+      {rename.subject && (
+        <TemplateRenameSheet key={`rename-${rename.key}`} isOpen={rename.isOpen} name={rename.subject.name} onClose={closeRename} onSave={renameTemplate} />
+      )}
+      <Toast message={toastMessage} />
+    </div>
+  );
+}

@@ -1,0 +1,47 @@
+.unsaved-bar {
+  position: sticky;
+  bottom: 16px;
+  z-index: var(--z-overlay);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-block-start: 16px;
+  padding: 10px;
+  padding-inline-start: 18px;
+  border-radius: var(--radius-panel);
+  background-color: var(--surface-nb-header);
+  -webkit-backdrop-filter: var(--blur-nb-header);
+  backdrop-filter: var(--blur-nb-header);
+  box-shadow: var(--shadow-notice-panel);
+  animation: unsaved-bar-in var(--transition-drawer-in) var(--ease-drawer) both;
+}
+
+@keyframes unsaved-bar-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+.unsaved-bar-text {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 160px;
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-warning-text);
+}
+
+.unsaved-bar-text-blocked {
+  color: var(--color-primary-deep);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .unsaved-bar {
+    animation: none;
+  }
+}

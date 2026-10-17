@@ -13,3 +13,8 @@ export const TAB_PATHS: Record<LibraryTab, string> = {
 export function tabFromPath(pathname: string): LibraryTab {
   return LIBRARY_TABS.find((tab) => pathname.startsWith(TAB_PATHS[tab])) ?? 'foods';
 }
+
+/** The tab button's id (its panel is labelled by it). */
+export function libraryTabId(tab: LibraryTab): string {
+  return `nutrition-library-tab-${tab}`;
+}

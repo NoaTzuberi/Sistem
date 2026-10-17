@@ -1,0 +1,11 @@
+.safety-floor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+
+.safety-floor-unit {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}

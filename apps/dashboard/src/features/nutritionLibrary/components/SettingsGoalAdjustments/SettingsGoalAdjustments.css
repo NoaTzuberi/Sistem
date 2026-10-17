@@ -1,0 +1,118 @@
+/* physical: the scale is an axis — minus on the left, plus on the right, in both languages. */
+.settings-goal-scale {
+  position: relative;
+  height: 72px;
+  margin: 0 24px 14px;
+}
+
+.settings-goal-scale-track {
+  position: absolute;
+  top: 32px;
+  right: 0; /* physical: an axis (see above) */
+  left: 0; /* physical: an axis (see above) */
+  display: flex;
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-bar);
+  background-color: var(--color-fill-soft);
+}
+
+.settings-goal-scale-deficit {
+  width: var(--zero);
+  background-image: var(--gradient-goal-deficit);
+}
+
+.settings-goal-scale-surplus {
+  flex: 1;
+  background-image: var(--gradient-goal-surplus);
+}
+
+.settings-goal-scale-zero {
+  position: absolute;
+  top: 44px;
+  left: var(--zero); /* physical: an axis (see above) */
+  font-size: var(--text-2xs);
+  color: var(--color-text-muted);
+  transform: translateX(-50%);
+}
+
+.settings-goal-scale-marker {
+  position: absolute;
+  left: var(--at); /* physical: an axis (see above) */
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+  font-size: var(--text-2xs);
+  font-weight: var(--font-weight-bold);
+  line-height: 22px;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.settings-goal-scale-row-0 {
+  top: 0;
+}
+
+.settings-goal-scale-row-1 {
+  top: 50px;
+}
+
+.settings-goal-scale-marker-deficit {
+  color: var(--ink-blue);
+}
+
+.settings-goal-scale-marker-surplus {
+  color: var(--color-primary-deep);
+}
+
+.settings-goal-scale-marker-zero {
+  color: var(--color-text);
+}
+
+.settings-goal-rows {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+  gap: 8px;
+}
+
+.settings-goal-row {
+  min-width: 0;
+  padding: 6px;
+  padding-inline-start: 14px;
+  border-radius: var(--radius-tile);
+  background-color: var(--color-fill-soft);
+}
+
+.settings-goal-row-deficit {
+  background-color: var(--color-goal-deficit-row);
+}
+
+.settings-goal-row-surplus {
+  background-color: var(--color-goal-surplus-row);
+}
+
+.settings-goal-row-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-goal-row-name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.settings-goal-row-unit {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 760px) {
+  .settings-goal-scale {
+    margin-inline: 20px;
+  }
+}

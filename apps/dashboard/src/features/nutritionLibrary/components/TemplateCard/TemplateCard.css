@@ -1,0 +1,184 @@
+.template-card {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 16px;
+  border-radius: var(--radius-qv-card);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+  transition:
+    transform var(--transition-lift) var(--ease-out),
+    box-shadow var(--transition-lift) ease;
+}
+
+.template-card-top {
+  display: flex;
+  align-items: center;
+}
+
+.template-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-notice-icon);
+  background-image: var(--gradient-template-tile);
+  color: var(--color-text);
+}
+
+.template-card-actions {
+  display: flex;
+  gap: 2px;
+  margin-inline-start: auto;
+  opacity: 0;
+  transition: opacity var(--transition-fast) ease;
+}
+
+.template-card:focus-within .template-card-actions {
+  opacity: 1;
+}
+
+.template-card-action {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-round);
+  background-color: var(--color-fill-soft);
+  color: var(--color-text-muted);
+  transition:
+    background-color var(--transition-fast) ease,
+    color var(--transition-fast) ease,
+    transform var(--transition-press) var(--ease-press);
+}
+
+.template-card-action::after {
+  content: '';
+  position: absolute;
+  inset: -7px;
+}
+
+.template-card-action:active {
+  transform: scale(0.97);
+}
+
+.template-card-action:focus-visible,
+.template-card-use:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.template-card-name {
+  margin: 4px 0 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.template-card-description,
+.template-card-meta {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.template-card-kcal {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.template-card-portions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.template-card-portion {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: var(--radius-round);
+  background-color: var(--group-soft);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--group-text);
+}
+
+.template-card-portion b {
+  font-size: var(--text-sm);
+}
+
+.template-card-updated {
+  margin: 2px 0 0;
+  font-size: var(--text-2xs);
+  color: var(--color-text-muted);
+}
+
+/* "Use for a new plan": a soft pill that turns pink under the pointer. */
+.template-card-use {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: var(--touch-target-min);
+  margin-block-start: auto;
+  border-radius: var(--radius-round);
+  background-color: var(--color-fill-soft);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  transition:
+    background-color var(--transition-fast) ease,
+    color var(--transition-fast) ease,
+    transform var(--transition-press) var(--ease-press);
+}
+
+.template-card-use:active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .template-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-tile-lift);
+  }
+
+  .template-card:hover .template-card-actions {
+    opacity: 1;
+  }
+
+  .template-card-action:hover {
+    background-color: var(--color-text);
+    color: var(--color-on-primary);
+  }
+
+  .template-card-use:hover {
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+}
+
+@media (hover: none) {
+  .template-card-actions {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .template-card,
+  .template-card-actions,
+  .template-card-action,
+  .template-card-use {
+    transition: none;
+  }
+}

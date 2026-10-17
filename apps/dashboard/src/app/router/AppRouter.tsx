@@ -3,16 +3,13 @@ import { ROUTES } from '../config/routes';
 import { Login } from '../../features/auth/pages/Login/Login';
 import { RequireCoach } from '../../features/auth/components/RequireCoach/RequireCoach';
 import { AppShell } from '../../components/layout/AppShell/AppShell';
-import { PagePanel } from '../../components/layout/PagePanel/PagePanel';
 import { OverviewPage } from '../../features/overview/pages/OverviewPage/OverviewPage';
 import { StatsPage } from '../../features/stats/pages/StatsPage/StatsPage';
 import { TraineesPage } from '../../features/trainees/pages/TraineesPage/TraineesPage';
 import { TraineeDetailPage } from '../../features/trainees/pages/TraineeDetailPage/TraineeDetailPage';
 import { PlanBuilderPage } from '../../features/planBuilder/pages/PlanBuilderPage/PlanBuilderPage';
 import { NutritionBuilderPage } from '../../features/nutrition/pages/NutritionBuilderPage/NutritionBuilderPage';
-import { FoodListPage } from '../../features/nutrition/pages/FoodListPage/FoodListPage';
-import { NutritionTemplatesPage } from '../../features/nutrition/pages/NutritionTemplatesPage/NutritionTemplatesPage';
-import { NutritionSettingsPage } from '../../features/nutrition/pages/NutritionSettingsPage/NutritionSettingsPage';
+import { FoodLibraryPage } from '../../features/nutritionLibrary/pages/FoodLibraryPage/FoodLibraryPage';
 import { ExerciseLibraryPage } from '../../features/exerciseLibrary/pages/ExerciseLibraryPage/ExerciseLibraryPage';
 
 export function AppRouter() {
@@ -29,13 +26,11 @@ export function AppRouter() {
           <Route path={ROUTES.PLAN} element={<PlanBuilderPage />} />
           <Route path={ROUTES.EXERCISES} element={<ExerciseLibraryPage />} />
           <Route path={ROUTES.TRAINEE_NUTRITION} element={<NutritionBuilderPage />} />
-          {/* Not redesigned yet: each sits on one white panel on the canvas. */}
-          <Route element={<PagePanel />}>
-            <Route path={ROUTES.NUTRITION} element={<Navigate to={ROUTES.NUTRITION_FOODS} replace />} />
-            <Route path={ROUTES.NUTRITION_FOODS} element={<FoodListPage />} />
-            <Route path={ROUTES.NUTRITION_TEMPLATES} element={<NutritionTemplatesPage />} />
-            <Route path={ROUTES.NUTRITION_SETTINGS} element={<NutritionSettingsPage />} />
-          </Route>
+          {/* The nutrition library: one page, its tab in the path. */}
+          <Route path={ROUTES.NUTRITION} element={<Navigate to={ROUTES.NUTRITION_FOODS} replace />} />
+          <Route path={ROUTES.NUTRITION_FOODS} element={<FoodLibraryPage />} />
+          <Route path={ROUTES.NUTRITION_TEMPLATES} element={<FoodLibraryPage />} />
+          <Route path={ROUTES.NUTRITION_SETTINGS} element={<FoodLibraryPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />

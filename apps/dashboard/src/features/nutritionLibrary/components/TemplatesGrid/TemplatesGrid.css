@@ -1,0 +1,99 @@
+.templates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.templates-grid-cell {
+  display: flex;
+  min-width: 0;
+}
+
+.templates-empty {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 40px 28px;
+  overflow: hidden;
+  border-radius: var(--radius-notice-panel);
+  background-color: var(--surface-glass-card);
+  -webkit-backdrop-filter: var(--blur-glass-card);
+  backdrop-filter: var(--blur-glass-card);
+  box-shadow: var(--shadow-glass-card);
+  text-align: center;
+}
+
+.templates-empty::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -30%;
+  background-image: var(--gradient-nutrition-empty);
+  filter: var(--blur-ach-glow);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Three pastel blobs and a template. */
+.templates-empty-art {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 120px;
+  margin-block-end: 8px;
+}
+
+.templates-empty-blob {
+  position: absolute;
+  border-radius: var(--radius-round);
+}
+
+.templates-empty-blob-main {
+  inset: 0;
+  background-image: var(--gradient-blob-pink);
+}
+
+.templates-empty-blob-peach {
+  inset-block-start: -6px;
+  inset-inline-end: -10px;
+  width: 46px;
+  height: 46px;
+  background-image: var(--gradient-blob-peach);
+}
+
+.templates-empty-blob-lilac {
+  inset-block-end: 4px;
+  inset-inline-start: -8px;
+  width: 30px;
+  height: 30px;
+  background-image: var(--gradient-blob-lilac);
+}
+
+.templates-empty-art .templates-empty-icon {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  color: var(--color-primary-deep);
+}
+
+.templates-empty-title {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.templates-empty-text {
+  max-width: 420px;
+  margin: 0 0 8px;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}

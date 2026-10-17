@@ -17,16 +17,17 @@ export const SETTING_BOUNDS = {
   ketoMaxCarbPortions: { min: 0, max: 10 },
 } as const;
 
-/** The design's steppers: ±10 kcal a portion, ±1 goal %, ±50 kcal floor. */
-export const STEPS = { groupKcal: 10, goalPct: 1, floorKcal: 50, activityFactor: 0.025 } as const;
+/** The design's steppers: ±10 kcal a portion, ±1 goal %, ±50 kcal floor, ±1 split %, ±0.5 keto portions. */
+export const STEPS = { groupKcal: 10, goalPct: 1, floorKcal: 50, activityFactor: 0.025, portionSplitPct: 1, ketoMaxCarbPortions: 0.5 } as const;
 
 export const GOALS: readonly NutritionGoal[] = ['fat_loss', 'fat_loss_aggressive', 'recomp', 'muscle_gain', 'maintenance'];
 
+/** Card 5's pace and safety tiles, each with its tint (blue = losing, pink = gaining, amber = the deficit cap). */
 export const SAFETY_FIELDS = [
-  { key: 'maxLossRatePctPerWeek', step: 0.1, bounds: SETTING_BOUNDS.lossRatePct },
-  { key: 'maxGainRatePctPerWeek', step: 0.1, bounds: SETTING_BOUNDS.gainRatePct },
-  { key: 'maxDeficitPct', step: 1, bounds: SETTING_BOUNDS.maxDeficitPct },
-  { key: 'kcalPerKg', step: 100, bounds: SETTING_BOUNDS.kcalPerKg },
+  { key: 'maxLossRatePctPerWeek', step: 0.1, bounds: SETTING_BOUNDS.lossRatePct, tone: 'loss' },
+  { key: 'maxGainRatePctPerWeek', step: 0.1, bounds: SETTING_BOUNDS.gainRatePct, tone: 'gain' },
+  { key: 'maxDeficitPct', step: 1, bounds: SETTING_BOUNDS.maxDeficitPct, tone: 'deficit' },
+  { key: 'kcalPerKg', step: 100, bounds: SETTING_BOUNDS.kcalPerKg, tone: 'neutral' },
 ] as const;
 
 type Value = number | undefined;
@@ -90,6 +91,12 @@ export function validateSettings(form: SettingsForm): SettingsErrors {
     if (Math.abs(sum - 100) > 0.01) errors.portionSplit = { kind: 'splitSum', sum: Math.round(sum * 100) / 100 };
   }
   return errors;
+}
+
+/** The split as typed, an empty share counted as 0 — what the bar and the sum pill show while she types. */
+export function splitTotal(form: SettingsForm): number {
+  const sum = PORTION_GROUPS.reduce<number>((total, group) => total + (form.portionSplit[group] ?? 0), 0);
+  return Math.round(sum * 100) / 100;
 }
 
 /** The payload, or undefined while anything is marked. */

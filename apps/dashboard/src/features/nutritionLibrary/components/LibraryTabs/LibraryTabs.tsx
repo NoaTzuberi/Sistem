@@ -1,6 +1,6 @@
 import type { KeyboardEvent } from 'react';
 import { useCopy } from '@sistem/shared';
-import { LIBRARY_TABS } from '../../data/libraryTabs';
+import { LIBRARY_TABS, libraryTabId } from '../../data/libraryTabs';
 import type { LibraryTab } from '../../data/libraryTabs';
 import { nutritionLibraryCopy } from '../../copy';
 import './LibraryTabs.css';
@@ -12,10 +12,6 @@ interface LibraryTabsProps {
   onChange: (tab: LibraryTab) => void;
   /** The id of the panel the tabs control. */
   panelId: string;
-}
-
-export function libraryTabId(tab: LibraryTab): string {
-  return `nutrition-library-tab-${tab}`;
 }
 
 /** The library's sections as an iOS segmented control: a white thumb that slides (transform only). Arrows move between tabs. */

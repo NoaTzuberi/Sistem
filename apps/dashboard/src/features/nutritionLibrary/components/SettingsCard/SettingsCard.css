@@ -1,0 +1,52 @@
+.settings-card {
+  min-width: 0;
+  padding: 20px;
+  border-radius: var(--radius-panel);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-panel);
+}
+
+.settings-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-block-end: 16px;
+}
+
+.settings-card-number {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-qv-icon);
+  background-color: var(--color-text);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-on-primary);
+}
+
+.settings-card-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.settings-card-title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.settings-card-text {
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 760px) {
+  .settings-card {
+    padding: 16px 12px;
+  }
+}

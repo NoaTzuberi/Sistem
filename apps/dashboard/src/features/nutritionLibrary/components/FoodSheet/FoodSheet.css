@@ -1,0 +1,171 @@
+.food-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.food-sheet-label {
+  margin: 8px 0 0;
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.food-sheet-hint {
+  margin-inline-start: 6px;
+  font-weight: var(--font-weight-regular);
+}
+
+/* The five groups as colored segments. */
+.food-sheet-groups {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.food-sheet-group {
+  min-height: var(--touch-target-min);
+  padding: 0 4px;
+  border-radius: var(--radius-button);
+  background-color: var(--color-fill-soft);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  transition:
+    background-color var(--transition-fast) ease,
+    color var(--transition-fast) ease,
+    transform var(--transition-press) var(--ease-press);
+}
+
+.food-sheet-group[aria-pressed='true'] {
+  background-color: var(--group-soft);
+  color: var(--group-text);
+  box-shadow: inset 0 0 0 1.5px var(--group);
+}
+
+.food-sheet-group:active {
+  transform: scale(0.97);
+}
+
+.food-sheet-group:focus-visible {
+  outline: var(--border-width-medium) solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.food-sheet-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.food-sheet-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.food-sheet-field .food-sheet-label {
+  margin: 0;
+}
+
+.food-sheet-input {
+  width: 100%;
+  min-height: var(--touch-target-min);
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-field);
+  background-color: var(--color-fill-soft);
+  font: inherit;
+  font-size: var(--text-base);
+  color: var(--color-text);
+  outline: none;
+  transition: box-shadow var(--transition-fast) ease;
+}
+
+/* The category select: the shared pill at the sheet's field size. */
+.food-sheet-select {
+  width: 100%;
+}
+
+.food-sheet-select .select-input {
+  min-height: var(--touch-target-min);
+  border-radius: var(--radius-field);
+  font-size: var(--text-base);
+}
+
+.food-sheet-input:focus-visible {
+  box-shadow: var(--ring-field);
+}
+
+.food-sheet-input:disabled {
+  color: var(--color-text-muted);
+}
+
+/* A number with its unit at the end of the field. */
+.food-sheet-number {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.food-sheet-number .food-sheet-input {
+  padding-inline-end: 64px;
+}
+
+.food-sheet-unit {
+  position: absolute;
+  inset-inline-end: 12px;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+/* Over the group's cap: amber, never red. */
+.food-sheet-number-over .food-sheet-input {
+  background-color: var(--color-warning-soft);
+  box-shadow: 0 0 0 2px var(--color-food-warn-ring);
+}
+
+.food-sheet-number-over .food-sheet-unit,
+.food-sheet-warning {
+  color: var(--color-warning-text);
+}
+
+.food-sheet-warning {
+  margin: 0;
+  font-size: var(--text-xs);
+}
+
+.food-sheet-footer {
+  display: flex;
+  gap: 8px;
+}
+
+.food-sheet-footer .food-sheet-submit {
+  flex: 1;
+  justify-content: center;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .food-sheet-group:not([aria-pressed='true']):hover {
+    background-color: var(--color-hairline);
+  }
+}
+
+@media (max-width: 760px) {
+  .food-sheet-groups {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .food-sheet-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .food-sheet-group,
+  .food-sheet-input {
+    transition: none;
+  }
+}

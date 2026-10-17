@@ -1,0 +1,59 @@
+/* A tile's tint and its ink: each tone sets the pair (the inks keep 4.5:1 on their tint). */
+.settings-tile {
+  --settings-tile-soft: var(--color-fill-soft);
+  --settings-tile-text: var(--color-text);
+  --settings-tile-dot: var(--color-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px 8px;
+  border-radius: var(--radius-glass);
+  background-color: var(--settings-tile-soft);
+  text-align: center;
+}
+
+.settings-tile-group {
+  --settings-tile-soft: var(--group-soft);
+  --settings-tile-text: var(--group-text);
+  --settings-tile-dot: var(--group);
+}
+
+.settings-tile-loss {
+  --settings-tile-soft: var(--color-goal-deficit-row);
+  --settings-tile-text: var(--color-stat-blue);
+}
+
+.settings-tile-gain {
+  --settings-tile-soft: var(--color-goal-surplus-row);
+  --settings-tile-text: var(--color-primary-deep);
+}
+
+.settings-tile-deficit {
+  --settings-tile-soft: var(--color-warning-soft);
+  --settings-tile-text: var(--color-warning-text);
+}
+
+.settings-tile-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--settings-tile-text);
+}
+
+.settings-tile-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-round);
+  background-color: var(--settings-tile-dot);
+}
+
+.settings-tile-unit {
+  font-size: var(--text-2xs);
+  line-height: 1.3;
+  color: var(--settings-tile-text);
+}
