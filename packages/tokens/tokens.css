@@ -214,6 +214,13 @@
   --surface-qv-close: color-mix(in srgb, var(--color-card) 75%, transparent);   /* the floating close button */
   --surface-qv-pill: color-mix(in srgb, var(--color-card) 85%, transparent);    /* the status pill and the AI strip's icon tile */
   --surface-qv-footer: color-mix(in srgb, var(--color-quick-view-bg) 85%, transparent);
+  /* The publish modal: its scrim and glass card, and the confetti's brand colors. */
+  --color-modal-scrim: color-mix(in srgb, var(--color-text) 28%, transparent);
+  --surface-modal: color-mix(in srgb, var(--color-card) 94%, transparent);
+  --color-confetti-1: var(--color-primary);
+  --color-confetti-2: var(--color-stat-purple-cloud);
+  --color-confetti-3: var(--color-workout-3);
+  --color-confetti-4: var(--color-workout-4);
   --color-primary-hover: color-mix(in srgb, var(--color-primary) 91%, var(--color-text));
   --gradient-ai-soft: linear-gradient(120deg, var(--color-primary-tint), var(--color-lilac-mist));
   --gradient-ai-soft-hover: linear-gradient(120deg, color-mix(in srgb, var(--color-primary) 18%, var(--color-card)), color-mix(in srgb, var(--color-lilac) 40%, var(--color-card)));
@@ -363,6 +370,7 @@
   --gradient-goal-surplus: linear-gradient(to right, #ffb3d1, var(--color-primary));          /* … and its plus side */
   --color-goal-deficit-row: #eef6ff;
   --color-goal-surplus-row: #fff0f6;
+  --gradient-split-gap: repeating-linear-gradient(135deg, var(--tint-pink) 0 6px, var(--color-card) 6px 12px); /* the split's missing % */
   --gradient-activity-bar: linear-gradient(to top, var(--color-portion-carb), var(--color-lilac));
   --gradient-settings-preview:
     radial-gradient(40% 40% at 60% 40%, #ff8fc0, transparent 70%),
@@ -601,6 +609,7 @@
   --ring-badge: 0 0 0 2px var(--color-card);            /* Around the wheel's check badge */
   --ring-focus: 0 0 0 3px var(--color-primary);
   --blur-soft: blur(10px);
+  --blur-modal-scrim: blur(12px);
   --blur-qv-glass: blur(12px);     /* The quick view's close button */
   --blur-qv-footer: blur(20px);
   --blur-qv-cloud: blur(30px);     /* The cloud behind the quick view's hero */
@@ -638,6 +647,7 @@
   --transition-popover: 180ms;   /* The "new plan" popover growing from its corner */
   --transition-hover: 180ms;     /* A pill lifting / changing shade under a fine pointer */
   --transition-chevron: 200ms;
+  --transition-modal-in: 360ms;  /* A modal settling in (on --ease-drawer) */
   --transition-qv-ring: 900ms;     /* The quick view's spotlight ring filling as it opens */
   /* Statistics page. Hover / thumb motion, then the once-per-session intro. */
   --transition-range-thumb: 260ms; /* The range control's thumb sliding */

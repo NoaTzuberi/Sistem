@@ -9,21 +9,42 @@
   color: var(--color-text-muted);
 }
 
+/* The dashboard's soft rounded field (no border); the number reads left to right in both languages. */
 .number-field-input {
   width: var(--space-7);
-  min-height: var(--space-5);
-  padding: 0 var(--space-1);
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-field);
+  outline: none;
+  background-color: var(--color-fill-soft);
   font-size: var(--text-sm);
-  background-color: var(--color-bg);
-  border: var(--border-width-thin) solid var(--color-border);
-  border-radius: var(--radius-none);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  -moz-appearance: textfield;
+  appearance: textfield;
+  transition:
+    background-color var(--transition-fast) ease,
+    box-shadow var(--transition-fast) ease;
+}
+
+.number-field-input::-webkit-outer-spin-button,
+.number-field-input::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
 }
 
 .number-field-input:focus-visible {
-  outline: var(--border-width-medium) solid var(--color-primary);
-  outline-offset: 0;
+  background-color: var(--color-card);
+  box-shadow: var(--ring-field);
 }
 
 .number-field-input:disabled {
-  opacity: var(--opacity-disabled);
+  color: var(--color-text-faint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .number-field-input {
+    transition: none;
+  }
 }

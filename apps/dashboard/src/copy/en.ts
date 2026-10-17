@@ -1,3 +1,4 @@
+import { plural } from '@sistem/shared';
 import type { CopyShape } from '@sistem/shared';
 import type { he } from './he';
 
@@ -52,4 +53,22 @@ export const en: CopyShape<typeof he> = {
   coachOnly: 'This dashboard is for coach accounts only.',
   loginFailed: 'Login failed. Please try again.',
   languageSaveError: "Couldn't save the language. Try again.",
+  publish: {
+    title: 'Publish to {name}?',
+    textPlan: "She'll get a notification and see the plan in the app right away.",
+    textNutrition: "She'll get a notification and see the nutrition plan in the app right away.",
+    nutritionTitle: 'Nutrition plan · {kcal} a day',
+    workouts: plural({ one: '1 workout', other: '{count} workouts' }),
+    meals: plural({ one: '1 meal', other: '{count} meals' }),
+    now: 'Publish now',
+    notYet: 'Not yet',
+    publishing: 'Publishing…',
+    failed: "Publishing didn't work. Try again.",
+    published: 'Published',
+    doneTitlePlan: 'The plan is on its way to {name}',
+    doneTitleNutrition: 'The nutrition plan is on its way to {name}',
+    doneText: 'We sent her a notification. You can follow how it goes on her profile.',
+    great: 'Great',
+    toProfile: "To {name}'s profile",
+  },
 };

@@ -20,6 +20,7 @@ export function NumberField({ label, value, onChange, min = 0, step = 1, disable
         className="number-field-input"
         type="number"
         inputMode="decimal"
+        dir="ltr"
         min={min}
         step={step}
         disabled={disabled}

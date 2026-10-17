@@ -13,6 +13,12 @@
   transition-duration: var(--transition-drawer-in);
 }
 
+/* Fades in with the scrim (opacity), so the blur arrives with it. */
+.sheet-scrim-blur {
+  -webkit-backdrop-filter: var(--blur-notice-scrim);
+  backdrop-filter: var(--blur-notice-scrim);
+}
+
 /* Floats 12px inside the window, on the far side from the sidebar. Out: fast, plain ease-out. */
 .side-sheet {
   position: fixed;

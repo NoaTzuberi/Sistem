@@ -1,0 +1,69 @@
+/* The scrim fades (opacity) with its blur; the card settles in on the drawer curve and leaves faster. */
+.confirm-dialog-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background-color: var(--color-scrim);
+  -webkit-backdrop-filter: var(--blur-notice-scrim);
+  backdrop-filter: var(--blur-notice-scrim);
+  opacity: 0;
+  transition: opacity var(--transition-drawer-out) ease;
+}
+
+.confirm-dialog-shown {
+  opacity: 1;
+  transition-duration: var(--transition-drawer-in);
+}
+
+.confirm-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(380px, 100%);
+  padding: 24px 22px 18px;
+  border-radius: var(--radius-dialog);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-float);
+  transform: translateY(10px) scale(0.96);
+  transition: transform var(--transition-drawer-out) var(--ease-drawer-out);
+}
+
+.confirm-dialog-shown .confirm-dialog {
+  transform: none;
+  transition: transform var(--transition-drawer-in) var(--ease-drawer);
+}
+
+.confirm-dialog-title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.confirm-dialog-text {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-block-start: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confirm-dialog-scrim,
+  .confirm-dialog {
+    transition: none;
+  }
+
+  .confirm-dialog {
+    transform: none;
+  }
+}

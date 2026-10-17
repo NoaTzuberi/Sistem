@@ -19,6 +19,8 @@ interface SideSheetProps {
   /** Stays at the bottom of the sheet (its buttons). */
   footer?: ReactNode;
   children: ReactNode;
+  /** Blur the page behind the scrim (the nutrition library's food sheet). */
+  blurScrim?: boolean;
 }
 
 /**
@@ -26,7 +28,7 @@ interface SideSheetProps {
  * faster; Esc and the scrim close it; Tab stays inside; the focus goes back to what opened it.
  * While closed it is not in the page at all, so it can never sit over the buttons under it.
  */
-export function SideSheet({ isOpen, onClose, title, subtitle, footer, children }: SideSheetProps) {
+export function SideSheet({ isOpen, onClose, title, subtitle, footer, children, blurScrim = false }: SideSheetProps) {
   const shared = useCopy(sharedCopy);
   const { isMounted, isShown } = useDrawerTransition(isOpen, CLOSE_MS);
   const panelRef = useRef<HTMLElement>(null);
@@ -72,7 +74,7 @@ export function SideSheet({ isOpen, onClose, title, subtitle, footer, children }
 
   return createPortal(
     <>
-      <div className={isShown ? 'sheet-scrim sheet-scrim-shown' : 'sheet-scrim'} onClick={onClose} />
+      <div className={['sheet-scrim', isShown && 'sheet-scrim-shown', blurScrim && 'sheet-scrim-blur'].filter(Boolean).join(' ')} onClick={onClose} />
       <aside
         ref={panelRef}
         className={isShown ? 'side-sheet side-sheet-shown' : 'side-sheet'}

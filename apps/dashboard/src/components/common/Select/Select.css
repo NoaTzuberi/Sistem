@@ -1,0 +1,85 @@
+.select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  --select-bg: var(--color-fill-soft);
+  --select-bg-hover: var(--color-hairline);
+}
+
+.select-card {
+  --select-bg: var(--color-card);
+  --select-bg-hover: var(--color-fill-soft);
+}
+
+/* Inside a field tile that is already the field: just the value and the chevron. */
+.select-bare {
+  --select-bg: transparent;
+  --select-bg-hover: transparent;
+  width: 100%;
+}
+
+.select-bare .select-input {
+  min-height: 0;
+  padding-block: 2px;
+  padding-inline: 0 22px;
+  border-radius: 0;
+}
+
+.select-bare .select-input:focus-visible {
+  box-shadow: none;
+}
+
+.select-bare .select-chevron {
+  inset-inline-end: 0;
+}
+
+.select-input {
+  width: 100%;
+  min-height: 36px;
+  padding-block: 0;
+  padding-inline: 14px 34px;
+  border: 0;
+  border-radius: var(--radius-round);
+  outline: none;
+  background-color: var(--select-bg);
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  text-overflow: ellipsis;
+  appearance: none;
+  cursor: pointer;
+  transition: background-color var(--transition-fast) ease;
+}
+
+.select-input:focus-visible {
+  box-shadow: var(--ring-field);
+}
+
+.select-input:active:not(:disabled) {
+  background-color: var(--select-bg-hover);
+}
+
+.select-input:disabled {
+  color: var(--color-text-faint);
+  cursor: default;
+}
+
+.select-chevron {
+  position: absolute;
+  inset-inline-end: 12px;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .select-input:hover:not(:disabled) {
+    background-color: var(--select-bg-hover);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .select-input {
+    transition: none;
+  }
+}
